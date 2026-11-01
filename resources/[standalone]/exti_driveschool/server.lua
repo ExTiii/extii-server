@@ -434,21 +434,24 @@ local function normKey(k)
     return L[k] and k or nil
 end
 
---- SetLicence(src, licence, on) -> ok      (old form SetLicence(src, on) = the car)
+--- SetLicence(src, licence, on) -> ok, why  (old form SetLicence(src, on) = the car)
+--- on = true only works for a licence passed at the school (why = 'not_passed')
 exports('SetLicence', function(src, k, on)
     if type(k) == 'boolean' then on, k = k, 'car' end
     k = normKey(k)
     local p = getPlayer(src)
     if not p or not k then return false end
-    setLicence(p, k, on)
     local ds = markNew(p)
+    -- give back only what was earned at the school (and taken by the police): never a free licence
+    if on and not (type(ds[k]) == 'table' and ds[k].passed == true) then return false, 'not_passed' end
+    setLicence(p, k, on)
     ds[k].suspended = (not on) and ds[k].passed == true or nil
     p.Functions.SetMetaData('driveschool', ds)
     notify(src, on and 'success' or 'error', (on and 'أعادت لك الشرطة %s' or 'سحبت منك الشرطة %s'):format(L[k].label))
     return true
 end)
 
---- SetLicenceOffline(citizenid, licence, on) -> ok (the player may be away)
+--- SetLicenceOffline(citizenid, licence, on) -> ok, why (the player may be away)
 exports('SetLicenceOffline', function(cid, k, on)
     if type(k) == 'boolean' then on, k = k, 'car' end
     k = normKey(k)
@@ -459,11 +462,13 @@ exports('SetLicenceOffline', function(cid, k, on)
     if not r then return false end
     local ok, meta = pcall(json.decode, r.metadata or '')
     if not ok or type(meta) ~= 'table' then return false end
-    meta.licences = type(meta.licences) == 'table' and meta.licences or {}
-    meta.licences[L[k].metaKey] = on and true or false
     local ds = type(meta.driveschool) == 'table' and meta.driveschool or {}
     if ds.passed ~= nil and ds.car == nil then ds = { car = { passed = ds.passed == true, at = ds.at, suspended = ds.suspended } } end
     ds[k] = type(ds[k]) == 'table' and ds[k] or { passed = false }
+    -- give back only what was earned at the school (and taken by the police): never a free licence
+    if on and ds[k].passed ~= true then return false, 'not_passed' end
+    meta.licences = type(meta.licences) == 'table' and meta.licences or {}
+    meta.licences[L[k].metaKey] = on and true or false
     ds[k].suspended = (not on) and ds[k].passed == true or nil
     meta.driveschool = ds
     MySQL.update.await('UPDATE `players` SET `metadata` = ? WHERE `citizenid` = ?', { json.encode(meta), cid })

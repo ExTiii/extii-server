@@ -297,6 +297,7 @@ local function billRow(r)
     return {
         id = r.id, kind = r.kind, title = r.title, note = r.note, amount = tonumber(r.amount) or 0,
         issuer = r.issuer, society = r.society, created = r.created, paid = r.paid,
+        societyLabel = r.society and (Config.societies[r.society] or r.society) or nil,
     }
 end
 

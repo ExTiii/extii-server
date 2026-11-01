@@ -212,6 +212,25 @@ cb('citizenSearch', function(source, player, q)
     return { list = findCitizens(q, 25) }
 end)
 
+-- everyone in the city (the list the citizens page opens with): online first, then by name
+cb('citizenAll', function(source, player)
+    local online = {}
+    for _, p in pairs(exports.qbx_core:GetQBPlayers() or {}) do
+        if p.PlayerData and p.PlayerData.citizenid then online[p.PlayerData.citizenid] = true end
+    end
+    local rows = MySQL.query.await('SELECT `citizenid`, `charinfo`, `job` FROM `players` LIMIT 2000') or {}
+    local out = {}
+    for _, r in ipairs(rows) do
+        local c = citizenRow(r)
+        out[#out + 1] = { cid = c.cid, name = c.name, phone = c.phone, online = online[c.cid] == true }
+    end
+    table.sort(out, function(a, b)
+        if a.online ~= b.online then return a.online end
+        return (a.name or '') < (b.name or '')
+    end)
+    return { list = out }
+end)
+
 cb('citizenGet', function(source, player, cid)
     if type(cid) ~= 'string' then return false, 'failed' end
     local r = MySQL.single.await('SELECT `citizenid`, `charinfo`, `job`, `metadata` FROM `players` WHERE `citizenid` = ?', { cid })
@@ -284,8 +303,9 @@ cb('licenceSet', function(source, player, cid, kind, on)
     local okL, types = pcall(function() return exports.exti_driveschool:Licences() end)
     local info = okL and type(types) == 'table' and types[kind] or nil
     if not info then return false, 'failed' end
-    local ok, done = pcall(function() return exports.exti_driveschool:SetLicenceOffline(cid, kind, on == true) end)
-    if not ok or not done then return false, 'failed' end
+    local ok, done, why = pcall(function() return exports.exti_driveschool:SetLicenceOffline(cid, kind, on == true) end)
+    if not ok then return false, 'failed' end
+    if not done then return false, why or 'failed' end
     local row = MySQL.single.await('SELECT `charinfo` FROM `players` WHERE `citizenid` = ?', { cid })
     local who = row and decode(row.charinfo) or {}
     POL.log(source, on and 'licence_restored' or 'licence_suspended', ('%s %s · %s'):format(who.firstname or '', who.lastname or cid, info.short or kind))

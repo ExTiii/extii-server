@@ -12,15 +12,29 @@
     // ------------------------------------------------------------------
     // Citizens
     // ------------------------------------------------------------------
-    S.cit = { q: '', list: null, cur: null, note: '', busy: false };
+    S.cit = { q: '', list: null, all: null, cur: null, note: '', busy: false };
     const C = () => S.cit;
+
+    // everyone in the city, filtered as you type (name, ID or phone)
+    function citShown() {
+        const c = C();
+        const q = (c.q || '').trim().toLowerCase();
+        const base = PT.list(c.all);
+        if (!q) return base;
+        return base.filter((p) => String(p.name || '').toLowerCase().includes(q) || String(p.cid || '').toLowerCase().includes(q) || String(p.phone || '').includes(q));
+    }
 
     function citList() {
         const c = C();
-        if (c.list == null) return `<div class="pt-cempty"><b>ابحث عن مواطن</b><small>بالاسم أو رقم الهوية أو رقم الهاتف.</small></div>`;
-        if (!c.list.length) return '<p class="pt-mute pad">لا نتيجة.</p>';
-        return c.list.map((p) => `<button class="pt-frow2 ${c.cur && c.cur.citizen.cid === p.cid ? 'on' : ''}" data-act="recCitizen" data-cid="${esc(p.cid)}">
-            <i class="pt-fic amber">${I('user', 17, 2)}</i><span><b>${esc(p.name)}</b><small><bdi class="ltr">${esc(p.cid)}</bdi>${p.phone ? ` · <bdi class="ltr">${esc(p.phone)}</bdi>` : ''}</small></span></button>`).join('');
+        if (c.all == null) return loading;
+        const list = citShown();
+        if (!list.length) return `<p class="pt-mute pad">${(c.q || '').trim() ? 'لا نتيجة.' : 'لا يوجد مواطنون بعد.'}</p>`;
+        return list.map((p) => `<button class="pt-frow2 ${c.cur && c.cur.citizen.cid === p.cid ? 'on' : ''}" data-act="recCitizen" data-cid="${esc(p.cid)}">
+            <i class="pt-fic amber">${I('user', 17, 2)}</i><span><b>${esc(p.name)}</b><small>${p.online ? '<em class="pt-tag green">في المدينة</em> ' : ''}<bdi class="ltr">${esc(p.cid)}</bdi>${p.phone ? ` · <bdi class="ltr">${esc(p.phone)}</bdi>` : ''}</small></span></button>`).join('');
+    }
+
+    function citLoad() {
+        call('citizenAll').then((res) => { C().all = res.ok ? PT.list(res.r.list) : []; if (!res.ok) fail(res); render(); });
     }
 
     function citDetail() {
@@ -46,7 +60,9 @@
                 <div class="pt-ffield"><small>العمل</small><p>${esc(z.job || '—')}${z.jobGrade ? ` · ${esc(z.jobGrade)}` : ''}</p></div>
                 <div class="pt-ffield"><small>الرخص</small><p class="pt-tags">${lic(d.citizen.licences.weapon, 'سلاح')}
                     ${PT.list(d.citizen.driving).map((l) => `<span class="pt-licrow">${lic(l.has, l.short)}${l.suspended ? '<em class="pt-tag red">مسحوبة</em>' : ''}
-                        <button class="pt-mini ${l.has ? 'danger' : 'green'}" data-act="recLicence" data-key="${esc(l.key)}" data-on="${l.has ? '0' : '1'}" title="${esc(l.label)}">${l.has ? 'سحب' : 'إرجاع'}</button></span>`).join('')}</p></div>
+                        ${l.has ? `<button class="pt-mini danger" data-act="recLicence" data-key="${esc(l.key)}" data-on="0" title="${esc(l.label)}">سحب</button>`
+                            : l.passed ? `<button class="pt-mini green" data-act="recLicence" data-key="${esc(l.key)}" data-on="1" title="${esc(l.label)}">إرجاع</button>`
+                            : '<em class="pt-tag grey">لم يجتز الاختبار</em>'}</span>`).join('')}</p></div>
             </div>
             <h4 class="pt-h4">المركبات (${PT.list(d.vehicles).length})</h4>
             ${PT.list(d.vehicles).length ? `<div class="pt-tablewrap"><table class="pt-table"><thead><tr><th>اللوحة</th><th>المركبة</th><th>أين</th></tr></thead><tbody>
@@ -66,9 +82,9 @@
 
     function citView() {
         const c = C();
-        return `<div class="pt-appwin">${PT.head('السجلات', 'المواطنون', PT.metaBox('النتائج', String(PT.list(c.list).length)))}
+        return `<div class="pt-appwin">${PT.head('السجلات', 'المواطنون', PT.metaBox('المواطنون', String(citShown().length)))}
             <div class="pt-abody split">
-                ${listSide('', 0, `<div class="pt-search sm grow">${I('search', 14, 2)}<input class="pt-in bare" data-model="cit.q" data-enter="recCitSearch" value="${esc(c.q)}" placeholder="الاسم، رقم الهوية، الهاتف…"></div><button class="pt-btn primary xs" data-act="recCitSearch">بحث</button>`, citList())}
+                ${listSide('', 0, `<div class="pt-search sm grow">${I('search', 14, 2)}<input class="pt-in bare" data-model="cit.q" data-live="1" data-enter="recCitSearch" value="${esc(c.q)}" placeholder="الاسم، رقم الهوية، الهاتف…"></div>`, citList())}
                 <section class="pt-fmain">${citDetail()}</section>
             </div></div>`;
     }
@@ -81,7 +97,7 @@
             c.busy = false;
             if (!res.ok) { fail(res); render(); return; }
             c.cur = res.r;
-            if (!PT.list(c.list).some((p) => p.cid === cid)) c.list = [{ cid, name: res.r.citizen.name, phone: res.r.citizen.phone }].concat(PT.list(c.list));
+            if (!PT.list(c.all).some((p) => p.cid === cid)) c.all = [{ cid, name: res.r.citizen.name, phone: res.r.citizen.phone, online: !!res.r.citizen.online }].concat(PT.list(c.all));
             S.scrolls.recdetail = 0;
             render();
         });
@@ -89,12 +105,12 @@
 
     PT.app('citizens', {
         view: citView,
-        enter() { if (!C().pending) { C().cur = null; } const p = C().pending; C().pending = null; if (p) openCitizen(p); else render(); },
+        enter() { if (!C().pending) { C().cur = null; C().q = ''; } const p = C().pending; C().pending = null; citLoad(); if (p) openCitizen(p); else render(); },
         act: {
             recCitSearch: () => {
-                const q = (C().q || '').trim();
-                if (q.length < 2) return toast('اكتب حرفين على الأقل', 'error');
-                call('citizenSearch', q).then((res) => { if (!res.ok) return fail(res); C().list = PT.list(res.r.list); render(); });
+                // Enter: the first match opens (the list already filters as you type)
+                const first = citShown()[0];
+                if (first) openCitizen(first.cid); else toast('لا نتيجة', 'error');
             },
             recCitizen: (el) => { if (S.app !== 'citizens') { C().pending = el.dataset.cid; PT.openApp('citizens'); } else openCitizen(el.dataset.cid); },
             recNote: () => {

@@ -253,7 +253,7 @@ for _, name in ipairs({
     'calendar', 'calendarAdd', 'calendarDelete',
     'formsList', 'formGet', 'formAction',
     'offences', 'offenceSave', 'offenceDelete', 'prisonList', 'prisonRelease', 'prisonLocker',
-    'citizenSearch', 'citizenGet', 'citizenNote', 'citizenNoteDelete', 'licenceSet', 'vehicleSearch',
+    'citizenSearch', 'citizenAll', 'citizenGet', 'citizenNote', 'citizenNoteDelete', 'licenceSet', 'vehicleSearch',
     'reports', 'reportGet', 'reportSave', 'reportDelete', 'warrants', 'warrantAdd', 'warrantClose',
     'bolos', 'boloAdd', 'boloClose', 'cases', 'caseGet', 'caseSave', 'caseItem', 'caseItemDelete', 'caseDelete',
     'bossDashboard', 'bossCashFlow', 'bossFunds', 'bossDeposit', 'bossWithdraw', 'bossMembers',

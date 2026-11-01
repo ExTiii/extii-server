@@ -72,6 +72,19 @@ local function logTransaction(cid, title, amount, note, issuer, receiver, kind, 
     return result
 end
 
+-- الفواتير غير المدفوعة (المخالفات، فواتير الورشة...) من exti_bank
+local function billsOf(citizenid)
+    if GetResourceState('exti_bank') ~= 'started' then return {} end
+    local ok, list = pcall(function() return exports.exti_bank:GetBills(citizenid) end)
+    if not ok or type(list) ~= 'table' then return {} end
+    local out = {}
+    for i, b in ipairs(list) do
+        out[i] = { id = b.id, title = b.title, amount = b.amount, note = b.note, issuer = b.issuer,
+            society = b.society, societyLabel = b.societyLabel, created = b.created }
+    end
+    return out
+end
+
 lib.callback.register('npwd_city:bank:get', function(source)
     local player = exports.qbx_core:GetPlayer(source)
     if not player then return nil end
@@ -83,8 +96,31 @@ lib.callback.register('npwd_city:bank:get', function(source)
         balance = money.bank or 0,
         cash = money.cash or 0,
         history = bankHistory(player.PlayerData.citizenid),
+        bills = billsOf(player.PlayerData.citizenid),
     }
 end)
+
+-- دفع فاتورة من الهاتف: نفس الدفع في الفرع والصراف (exti_bank يتحقق من كل شيء ويحوّل المال لحساب الجهة)
+local lastBillPay = {}
+lib.callback.register('npwd_city:bank:payBill', function(source, data)
+    local id = math.tointeger(tonumber(type(data) == 'table' and data.id or nil))
+    if not id then return { ok = false, error = 'generic' } end
+    local now = os.time()
+    if lastBillPay[source] and now - lastBillPay[source] < 2 then
+        return { ok = false, error = 'cooldown', wait = 2 - (now - lastBillPay[source]) }
+    end
+    lastBillPay[source] = now
+    if GetResourceState('exti_bank') ~= 'started' then return { ok = false, error = 'generic' } end
+    local ok, done, code, bill = pcall(function() return exports.exti_bank:PayBill(source, id, 'bank') end)
+    if not ok then return { ok = false, error = 'generic' } end
+    if not done then
+        return { ok = false, error = (code == 'no_bank' or code == 'no_bill') and code or 'generic' }
+    end
+    local updated = exports.qbx_core:GetPlayer(source)
+    return { ok = true, amount = bill and bill.amount or nil, balance = updated and updated.PlayerData.money.bank or nil }
+end)
+
+AddEventHandler('playerDropped', function() lastBillPay[source] = nil end)
 
 -- يبحث عن صاحب الرقم: أولًا بين المتصلين، ثم في قاعدة البيانات إذا كان مسموحًا
 local function onlineInfo(player)
