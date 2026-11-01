@@ -260,7 +260,8 @@ for _, name in ipairs({
 RegisterNUICallback('ptCall', function(data, cb)
     if not tablet.open or type(data) ~= 'table' or not ALLOWED[data.fn] then return cb({ ok = false, e = 'failed' }) end
     local a = type(data.args) == 'table' and data.args or {}
-    local ok, res, err = pcall(lib.callback.await, 'exti_mechanic:server:tab_' .. data.fn, false, a[1], a[2], a[3], a[4])
+    -- up to 8 values (the price list sends 5: id, name, category, price, jail minutes)
+    local ok, res, err = pcall(lib.callback.await, 'exti_mechanic:server:tab_' .. data.fn, false, a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8])
     if not ok then return cb({ ok = false, e = 'failed' }) end
     if res == nil or res == false then return cb({ ok = false, e = err or 'failed' }) end
     cb({ ok = true, r = res })
