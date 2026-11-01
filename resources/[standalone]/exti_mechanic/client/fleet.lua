@@ -62,7 +62,7 @@ function MEC.openGarage(spot, kind)
     SendNUIMessage({ action = 'garage', open = true, data = withStats(data) })
 end
 
--- drive onto the garage spot / helicopter pad and press E
+-- drive onto the garage spot and press E
 function MEC.parkIn(spot)
     local ok, err = lib.callback.await('exti_mechanic:server:parkIn', false, spot.station)
     if not ok then return MEC.error(err) end
@@ -83,10 +83,7 @@ local function openFleetTrunk(veh)
     trunkBusy = true
     local ok, err = lib.callback.await('exti_mechanic:server:vehicleTrunk', false, NetworkGetNetworkIdFromEntity(veh))
     if not ok then trunkBusy = false return MEC.error(err) end
-    local doors = {}
-    if not Entity(veh).state.exti_mechanic_air then
-        doors = GetIsDoorValid(veh, 5) and { 5 } or { 2, 3 }
-    end
+    local doors = GetIsDoorValid(veh, 5) and { 5 } or { 2, 3 }
     for _, d in ipairs(doors) do SetVehicleDoorOpen(veh, d, false, false) end
     TaskTurnPedToFaceEntity(cache.ped, veh, 800)
     CreateThread(function()
@@ -105,19 +102,13 @@ end
 
 MEC.openFleetTrunk = openFleetTrunk
 
--- the "[E]" line when you stand at the back of one of the team's vehicles (the side door of the
--- helicopter)
+-- the "[E]" line when you stand at the back of one of the team's vehicles
 function MEC.trunkPrompt(p)
     if cache.vehicle or trunkBusy or not MEC.onDuty() then return end
     local veh = lib.getClosestVehicle(p, 8.0, false)
     if not veh or not Entity(veh).state.exti_mechanic_fleet then return end
     local min, max = GetModelDimensions(GetEntityModel(veh))
-    local spots
-    if Entity(veh).state.exti_mechanic_air then
-        spots = { GetOffsetFromEntityInWorldCoords(veh, max.x + 0.5, 0.0, 0.0), GetOffsetFromEntityInWorldCoords(veh, min.x - 0.5, 0.0, 0.0) }
-    else
-        spots = { GetOffsetFromEntityInWorldCoords(veh, 0.0, min.y - 0.35, 0.0) }
-    end
+    local spots = { GetOffsetFromEntityInWorldCoords(veh, 0.0, min.y - 0.35, 0.0) }
     for _, s in ipairs(spots) do
         if #(vec3(p.x, p.y, p.z) - s) < 1.5 then
             return '[E] صندوق المركبة', function() openFleetTrunk(veh) end

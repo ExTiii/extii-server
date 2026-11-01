@@ -1,6 +1,6 @@
 -- =====================================================================
 -- EX_Tii Mechanic (client): the E spots in the stations (clock in terminal, cloakroom, personal
--- locker, armory, the public forms, the forms inbox, garage, helicopter pad), the station icons on
+-- locker, armory, the public forms, the forms inbox, service garage, car garage), the station icons on
 -- the map, and the "[E]" line.
 -- =====================================================================
 
@@ -98,7 +98,7 @@ local function buildSpots()
             if st[kind] then list[#list + 1] = { station = name, kind = kind, coords = st[kind], public = kind == 'forms' } end
         end
         if st.garage then list[#list + 1] = { station = name, kind = 'garage', coords = st.garage.coords } end
-        if st.heli then list[#list + 1] = { station = name, kind = 'heli', coords = st.heli.coords } end
+        if st.cars then list[#list + 1] = { station = name, kind = 'cars', coords = st.cars.coords } end
     end
     spots = list
     buildBlips()
@@ -111,9 +111,9 @@ AddStateBagChangeHandler('exti_mechanic_spots', 'global', function(_, _, value)
     buildSpots()
 end)
 
--- in your car / helicopter you can return it from a bit further away
+-- in a workshop vehicle you can return it from a bit further away
 local function reachOf(spot)
-    if cache.vehicle and (spot.kind == 'garage' or spot.kind == 'heli') then return Config.vehicleReach or Config.reachPoint end
+    if cache.vehicle and (spot.kind == 'garage' or spot.kind == 'cars') then return Config.vehicleReach or Config.reachPoint end
     return Config.reachPoint
 end
 
@@ -175,7 +175,7 @@ do
                 local r, g, b = COLOR[1], COLOR[2], COLOR[3]
                 for i = 1, #near do
                     local s = near[i]
-                    if s.drawZ and (not cache.vehicle or s.kind == 'garage' or s.kind == 'heli') then
+                    if s.drawZ and (not cache.vehicle or s.kind == 'garage' or s.kind == 'cars') then
                         local here = #(p - s.coords) < reachOf(s)
                         local size = here and SIZE * 1.08 or SIZE
                         local alpha = here and 210 or 140
@@ -212,12 +212,12 @@ local SPOT_TEXT = {
     duty = '[E] تسجيل الدخول والخروج',
     cloakroom = '[E] غرفة الملابس',
     locker = '[E] خزانتك الشخصية',
-    armory = '[E] مستودع الأسلحة',
+    armory = '[E] خزانة الأدوات',
     forms = '[E] نماذج الورشة',
     inbox = '[E] صندوق النماذج',
-    evidence = '[E] غرفة المصادرات',
-    garage = '[E] مرآب الورشة',
-    heli = '[E] مهبط المروحية',
+    evidence = '[E] رفّ القطع',
+    garage = '[E] مرآب مركبات الخدمة',
+    cars = '[E] مرآب السيارات',
 }
 
 local function runSpot(spot)
@@ -229,9 +229,9 @@ local function runSpot(spot)
     if spot.kind == 'armory' then return openArmory() end
     if spot.kind == 'evidence' then return MEC.openShelf(spot) end
     if spot.kind == 'inbox' then return MEC.openInbox(spot) end
-    if spot.kind == 'garage' or spot.kind == 'heli' then
+    if spot.kind == 'garage' or spot.kind == 'cars' then
         if cache.vehicle then return MEC.parkIn(spot) end
-        return MEC.openGarage(spot, spot.kind == 'heli' and 'air' or 'ground')
+        return MEC.openGarage(spot, spot.kind == 'cars' and 'car' or 'ground')
     end
 end
 
@@ -255,10 +255,10 @@ CreateThread(function()
                     if d < reachOf(s) and (not bestDist or d < bestDist) then best, bestDist = s, d end
                 end
             end
-            if best and cache.vehicle and best.kind ~= 'garage' and best.kind ~= 'heli' then best = nil end
+            if best and cache.vehicle and best.kind ~= 'garage' and best.kind ~= 'cars' then best = nil end
             if best then
                 sleep = 0
-                text = (cache.vehicle and (best.kind == 'garage' or best.kind == 'heli')) and '[E] أدخل المركبة للمرآب' or SPOT_TEXT[best.kind]
+                text = (cache.vehicle and (best.kind == 'garage' or best.kind == 'cars')) and '[E] أدخل المركبة للمرآب' or SPOT_TEXT[best.kind]
                 local spot = best
                 action = function() runSpot(spot) end
             elseif cop and MEC.trunkPrompt then

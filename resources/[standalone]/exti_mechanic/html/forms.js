@@ -104,7 +104,7 @@ const Forms = (() => {
         box.innerHTML = `<div class="fx-h"><b>${esc(it.typeLabel)} — ${esc(it.name)}</b><span><bdi>${esc(it.ref)}</bdi> · <bdi>${esc(fmtTime(it.time))}</bdi></span></div>
             <div class="fx-tags" style="margin-top:6px">${tagsOf(it)}${it.reviewedBy ? `<span class="fx-tag">راجعه ${esc(it.reviewedBy)}</span>` : ''}</div>
             <div class="fx-fields">${fields}</div>
-            <div class="fx-notes"><small>ملاحظات الورشة</small>${notes || '<div class="fx-note" style="background:transparent;padding-right:0;color:#7f93ad">لا توجد ملاحظات</div>'}
+            <div class="fx-notes"><small>ملاحظات الورشة</small>${notes || '<div class="fx-note" style="background:transparent;padding-right:0;color:#90897a">لا توجد ملاحظات</div>'}
                 <div class="fx-add"><input class="fx-note-in" maxlength="300" placeholder="اكتب ملاحظة…"><button class="fx-btn blue" data-act="note">أضف</button></div></div>
             <div class="fx-actions">
                 ${it.archived ? '<button class="fx-btn" data-act="unarchive">أرجعه من الأرشيف</button>' : `${it.reviewed ? '' : '<button class="fx-btn green" data-act="review">تمت المراجعة</button>'}<button class="fx-btn" data-act="archive">أرشفة</button>`}

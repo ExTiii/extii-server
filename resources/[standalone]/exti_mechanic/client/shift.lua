@@ -224,22 +224,22 @@ local KIND_LABEL = {
     duty = 'جهاز تسجيل الدخول (الاستقبال)',
     cloakroom = 'غرفة الملابس',
     locker = 'الخزانة الشخصية',
-    armory = 'مستودع الأسلحة',
+    armory = 'خزانة الأدوات',
     forms = 'نماذج الورشة (للمواطنين)',
     inbox = 'صندوق النماذج (كمبيوتر المكتب)',
-    evidence = 'غرفة المصادرات',
-    garage = 'مرآب السيارات (مكان الزر)',
-    garageSpawn = 'مرآب السيارات (مكان ظهور السيارة)',
-    heli = 'مهبط المروحية (مكان الزر)',
-    heliSpawn = 'مهبط المروحية (مكان ظهور المروحية)',
+    evidence = 'رفّ القطع',
+    garage = 'مرآب مركبات الخدمة (مكان الزر)',
+    garageSpawn = 'مرآب مركبات الخدمة (مكان ظهور المركبة)',
+    cars = 'مرآب السيارات (مكان الزر)',
+    carsSpawn = 'مرآب السيارات (مكان ظهور السيارة)',
 }
-local KIND_ORDER = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence', 'garage', 'garageSpawn', 'heli', 'heliSpawn' }
+local KIND_ORDER = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence', 'garage', 'garageSpawn', 'cars', 'carsSpawn' }
 
 local function spotNow(st, kind)
     if kind == 'garageSpawn' then return st.garage and st.garage.spawn end
-    if kind == 'heliSpawn' then return st.heli and st.heli.spawn end
+    if kind == 'carsSpawn' then return st.cars and st.cars.spawn end
     if kind == 'garage' then return st.garage and st.garage.coords end
-    if kind == 'heli' then return st.heli and st.heli.coords end
+    if kind == 'cars' then return st.cars and st.cars.coords end
     return st[kind]
 end
 

@@ -2,7 +2,7 @@
 -- EX_Tii Mechanic (server): the garages like the video — the team's vehicles (each with its own
 -- plate and its own trunk that keeps what you leave in it between shifts), park out / park in,
 -- open the trunk from the garage, and the leader buys / sells vehicles with the workshop bank
--- account and can change a plate. Cars at the garage, helicopters at the pad.
+-- account and can change a plate. Service units (tow trucks, vans) at the service garage, cars at the car garage (like the video).
 -- =====================================================================
 
 local JOB = Config.job
@@ -18,9 +18,9 @@ local ready = false
 
 local function trunkId(id) return 'exti_mechanic_trunk_' .. id end
 
--- the garage spot for this kind of vehicle (ground = garage, air = heli pad)
+-- the garage spot for this kind of vehicle (ground = service units garage, car = car garage)
 local function spotOf(st, kind)
-    return st and (kind == 'air' and st.heli or kind == 'ground' and st.garage) or nil
+    return st and (kind == 'car' and st.cars or kind == 'ground' and st.garage) or nil
 end
 
 local function newPlate()
@@ -143,7 +143,7 @@ end
 local function garageCheck(src, station, kind)
     local player = getPlayer(src)
     if not onDuty(player) then return nil, 'off_duty' end
-    if kind ~= 'ground' and kind ~= 'air' then return nil, 'failed' end
+    if kind ~= 'ground' and kind ~= 'car' then return nil, 'failed' end
     local spot = spotOf(stationOf(station), kind)
     if not spot or not near(src, spot.coords, Config.reachPoint + 2.0) then return nil, 'too_far' end
     if not ready then return nil, 'failed' end
@@ -185,7 +185,6 @@ lib.callback.register('exti_mechanic:server:parkOut', function(source, station, 
     Entity(veh).state:set('fuel', v.fuel, true)
     Entity(veh).state:set('exti_mechanic', true, true)
     Entity(veh).state:set('exti_mechanic_fleet', v.id, true)
-    Entity(veh).state:set('exti_mechanic_air', v.kind == 'air', true)
     pcall(function() exports.qbx_vehiclekeys:GiveKeys(source, veh, true) end)
     pcall(function() exports.qbx_vehiclekeys:SetLockState(veh, 'unlock') end)
     lib.logger(source, 'mechanic', ('took %s (%s)'):format(v.model, v.plate))

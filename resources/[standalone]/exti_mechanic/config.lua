@@ -21,7 +21,8 @@ Config.offDutyOnLogin = true      -- mechanics always start a session off duty (
 --   armory    = the tool storage (free, each rank gets its own list)
 --   forms     = the public forms (anyone: job application, complaint, service request)
 --   evidence  = the parts shelf (parts and things taken off customers' vehicles land here)
---   garage    = the workshop's vehicles (spawn = where the vehicle appears)
+--   garage    = the service units garage: tow trucks, flatbeds, vans (spawn = where the vehicle appears)
+--   cars      = the car garage: the workshop's cars (like the video: one garage for cars, one for service units)
 Config.stations = {
     burton = {
         label = 'ورشة بيرتون',
@@ -32,6 +33,8 @@ Config.stations = {
         forms = vec3(-330.20, -144.40, 39.01),
         evidence = vec3(-346.90, -134.60, 39.01),
         garage = { coords = vec3(-355.60, -119.60, 38.70), spawn = vec4(-355.60, -119.60, 38.70, 70.0) },
+        -- not checked in game yet: move it with /mechspots → مرآب السيارات
+        cars = { coords = vec3(-370.20, -108.30, 38.68), spawn = vec4(-370.20, -108.30, 38.68, 70.0) },
     },
 }
 
@@ -108,8 +111,13 @@ Config.fleet = {
         burrito3 = { label = 'فان الورشة', kind = 'ground', price = 18000 },
         speedo = { label = 'فان صغير', kind = 'ground', price = 15000 },
         bison = { label = 'بيك أب', kind = 'ground', price = 20000 },
+        -- the car garage (kind = 'car')
+        sultan = { label = 'سلطان', kind = 'car', price = 24000 },
+        kuruma = { label = 'كوروما', kind = 'car', price = 30000 },
+        buffalo = { label = 'بافالو', kind = 'car', price = 28000 },
+        blista = { label = 'بليستا', kind = 'car', price = 12000 },
     },
-    start = { 'flatbed', 'towtruck2', 'burrito3' }, -- what the workshop has the first time
+    start = { 'flatbed', 'towtruck2', 'burrito3', 'sultan' }, -- what the workshop has the first time
 }
 
 -- the public forms: customers fill them at the counter, the team reads them on the tablet.

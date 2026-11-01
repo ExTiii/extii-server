@@ -8,7 +8,7 @@ MEC = MEC or {}
 -- the spots an admin can move. point = an E spot; spawn = where a vehicle appears (with heading)
 MEC.SPOT_KINDS = {
     duty = 'point', cloakroom = 'point', locker = 'point', armory = 'point', forms = 'point', inbox = 'point',
-    evidence = 'point', garage = 'point', garageSpawn = 'spawn', heli = 'point', heliSpawn = 'spawn',
+    evidence = 'point', garage = 'point', garageSpawn = 'spawn', cars = 'point', carsSpawn = 'spawn',
 }
 -- these can also be removed from a station
 MEC.SPOT_OPTIONAL = { cloakroom = true, locker = true, armory = true, forms = true, inbox = true, evidence = true }
@@ -20,7 +20,7 @@ for name, s in pairs(Config.stations) do
     local d = {}
     for _, kind in ipairs(MEC.POINTS) do d[kind] = s[kind] end
     d.garage = s.garage and { coords = s.garage.coords, spawn = s.garage.spawn }
-    d.heli = s.heli and { coords = s.heli.coords, spawn = s.heli.spawn }
+    d.cars = s.cars and { coords = s.cars.coords, spawn = s.cars.spawn }
     DEFAULTS[name] = d
 end
 
@@ -42,7 +42,7 @@ function MEC.applySpots(saved)
         local d = DEFAULTS[name]
         for _, kind in ipairs(MEC.POINTS) do st[kind] = d[kind] end
         st.garage = d.garage and { coords = d.garage.coords, spawn = d.garage.spawn } or nil
-        st.heli = d.heli and { coords = d.heli.coords, spawn = d.heli.spawn } or nil
+        st.cars = d.cars and { coords = d.cars.coords, spawn = d.cars.spawn } or nil
         local s = type(saved[name]) == 'table' and saved[name] or nil
         if s then
             for _, kind in ipairs(MEC.POINTS) do
@@ -52,7 +52,7 @@ function MEC.applySpots(saved)
                     st[kind] = point(s[kind]) or st[kind]
                 end
             end
-            for _, kind in ipairs({ 'garage', 'heli' }) do
+            for _, kind in ipairs({ 'garage', 'cars' }) do
                 local c, sp = point(s[kind]), spawn(s[kind .. 'Spawn'])
                 if c or sp then
                     st[kind] = st[kind] or {}
