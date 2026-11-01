@@ -1,7 +1,7 @@
 EX_Tii Mechanic (delivery A — the job)
 ======================================
 
-The workshop (LS Customs, Burton)
+The workshop (Benny's Original Motor Works, Strawberry — like the video)
 - Spots with a white circle: clock in terminal, cloakroom (overalls the manager designs), personal locker,
   the tool cabinet (الأدوات: repair kits, cleaning kits, wrench, flashlight — per rank, from Config.armory),
   the public forms desk, the parts shelf (رفّ القطع: a shared stash for the whole workshop), the garage

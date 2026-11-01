@@ -24,17 +24,18 @@ Config.offDutyOnLogin = true      -- mechanics always start a session off duty (
 --   garage    = the service units garage: tow trucks, flatbeds, vans (spawn = where the vehicle appears)
 --   cars      = the car garage: the workshop's cars (like the video: one garage for cars, one for service units)
 Config.stations = {
-    burton = {
-        label = 'ورشة بيرتون',
-        duty = vec3(-324.90, -131.10, 39.01),
-        cloakroom = vec3(-321.80, -143.70, 39.01),
-        locker = vec3(-318.40, -141.10, 39.01),
-        armory = vec3(-343.70, -141.30, 39.01),
-        forms = vec3(-330.20, -144.40, 39.01),
-        evidence = vec3(-346.90, -134.60, 39.01),
-        garage = { coords = vec3(-355.60, -119.60, 38.70), spawn = vec4(-355.60, -119.60, 38.70, 70.0) },
-        -- not checked in game yet: move it with /mechspots → مرآب السيارات
-        cars = { coords = vec3(-370.20, -108.30, 38.68), spawn = vec4(-370.20, -108.30, 38.68, 70.0) },
+    -- Benny's Original Motor Works, Strawberry (the workshop in the video). The spots are a first
+    -- guess (not checked in game): stand where each one belongs and use /mechspots to place it.
+    bennys = {
+        label = 'ورشة بيني',
+        duty = vec3(-208.00, -1330.50, 30.89),
+        cloakroom = vec3(-215.50, -1331.50, 30.89),
+        locker = vec3(-217.50, -1329.00, 30.89),
+        armory = vec3(-219.00, -1325.50, 30.89),
+        forms = vec3(-205.50, -1319.50, 30.89),
+        evidence = vec3(-218.50, -1321.50, 30.89),
+        garage = { coords = vec3(-190.50, -1302.00, 31.30), spawn = vec4(-190.50, -1302.00, 31.30, 90.0) },
+        cars = { coords = vec3(-190.50, -1310.00, 31.30), spawn = vec4(-190.50, -1310.00, 31.30, 90.0) },
     },
 }
 
