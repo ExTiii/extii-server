@@ -79,12 +79,12 @@ exports('AddCall', addCall)
 -- /911 <text>: for the chat (the phone's services app does the same with the number)
 lib.addCommand('911', {
     help = 'بلاغ للشرطة',
-    params = { { name = 'message', type = 'string', help = 'ماذا يحدث؟' } },
+    params = { { name = 'message', type = 'longString', help = 'ماذا يحدث؟' } },
 }, function(source, args, raw)
     local player = getPlayer(source)
     local ped = pedOf(source)
     if not player or not ped then return end
-    local text = cleanText(type(raw) == 'string' and raw:gsub('^/911%s*', '') or args.message, D.textLength)
+    local text = cleanText(type(raw) == 'string' and raw:gsub('^/?911%s*', '') or args.message, D.textLength)
     if not text then return notify(source, 'error', 'اكتب ما يحدث: /911 سرقة في المتجر') end
     local now = os.time()
     if lastCall[source] and now - lastCall[source] < D.cooldown then

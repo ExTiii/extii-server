@@ -287,7 +287,8 @@ Config.prison = {
     spawn = vec4(1661.05, 2524.68, 45.56, 260.5),    -- the cells: where he appears
     release = vec4(1848.13, 2586.05, 45.67, 269.5),  -- outside the gate: where he walks out
     center = vec3(1693.33, 2569.51, 45.55),          -- the middle of the prison
-    radius = 230.0,                                  -- farther than this from the middle = escape
+    radius = 145.0,                                  -- farther than this from the middle = outside: straight back to the cell
+                                                     -- (the cells and yard jobs are within 100 m; the main gate is 156 m out)
     escapeSeconds = 15,                              -- that far for this long = escaped
     maxMinutes = 300,                                -- the longest sentence (the offences add up)
     workCooldown = 30,                               -- seconds between two jobs

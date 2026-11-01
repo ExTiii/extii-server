@@ -365,7 +365,8 @@ end)
 -- /unjail <id or citizenid>: the only way out before the time is up (admins)
 lib.addCommand('unjail', {
     help = 'Prison: let an inmate out now (admin only)',
-    params = { { name = 'target', type = 'string', help = 'the player id (online) or the citizen id' } },
+    -- no type: ox_lib's 'string' type refuses plain numbers, so '/unjail 2' was silently dropped
+    params = { { name = 'target', help = 'the player id (online) or the citizen id' } },
     restricted = 'group.admin',
 }, function(source, args)
     local t = tostring(args.target or '')
@@ -393,6 +394,7 @@ lib.addCommand('unjail', {
         if source > 0 then notify(source, 'success', ('أُطلق سراح %s (غير متصل)'):format(row.name)) else print(('released %s (offline)'):format(row.name)) end
         return
     end
+    lib.print.info(('[prison] /unjail %s: not in prison'):format(t))
     if source > 0 then notify(source, 'error', 'هذا الشخص ليس في السجن') else print('not in prison') end
 end)
 
