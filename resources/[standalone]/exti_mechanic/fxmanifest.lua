@@ -61,6 +61,7 @@ files {
     'html/charge.css',
     'html/fonts/*.woff2',
     'html/tablet.html',
+    'html/locked.html',
     'html/pt/*.js',
     'html/pt/tablet.css',
     'html/pt/img/map.jpg',

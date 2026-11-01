@@ -198,26 +198,26 @@
     window.addEventListener('message', (e) => {
         const msg = e.data || {};
         switch (msg.action) {
-            case 'ptablet:open': open(msg); break;
-            case 'ptablet:close': close(false); break;
-            case 'ptablet:clock': {
+            case 'mtablet:open': open(msg); break;
+            case 'mtablet:close': close(false); break;
+            case 'mtablet:clock': {
                 S.clock = msg.t || '';
                 const c = document.getElementById('pt-clock');
                 if (c) c.textContent = S.clock;
                 break;
             }
             // the camera: the tablet hides while you aim, and comes back with the photo
-            case 'ptablet:hide': host.classList.add('away'); break;
-            case 'ptablet:cameraDone':
+            case 'mtablet:hide': host.classList.add('away'); break;
+            case 'mtablet:cameraDone':
                 host.classList.remove('away');
                 if (PT.cameraDone) PT.cameraDone(msg.result);
                 break;
-            case 'ptablet:cctvDone': host.classList.remove('away'); render(); break;
-            case 'ptablet:chat':
+            case 'mtablet:cctvDone': host.classList.remove('away'); render(); break;
+            case 'mtablet:chat':
                 if (S.app === 'chat' && APPS.chat.push) APPS.chat.push(msg.chatId);
                 else badges();
                 break;
-            case 'ptablet:chatRead':
+            case 'mtablet:chatRead':
                 if (S.app === 'chat' && APPS.chat.read) APPS.chat.read(msg.chatId);
                 break;
             default: break;
