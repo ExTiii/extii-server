@@ -33,6 +33,7 @@ client_scripts {
     'client/charges.lua',
     'client/prison.lua',
     'client/cctv.lua',
+    'client/doors.lua',
 }
 
 server_scripts {
@@ -48,6 +49,7 @@ server_scripts {
     'server/prison.lua',
     'server/dispatch.lua',
     'server/cctv.lua',
+    'server/doors.lua',
     'server/records.lua',
     'server/photos.js',
 }

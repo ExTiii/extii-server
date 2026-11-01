@@ -50,6 +50,13 @@ Config.stations = {
     },
 }
 
+-- locked doors in the stations: closed to everyone; an officer of the rank below (or higher), on
+-- duty, unlocks and locks them with E. They lock themselves again after autoLock seconds.
+-- Admins move a door in game: stand next to it and type /policedoor <id>.
+Config.doors = {
+    { id = 'mrpd_armory', label = 'غرفة الأسلحة', model = 'v_ilev_arm_secdoor', coords = vec3(452.62, -982.75, 30.69), minGrade = 2, minGradeLabel = 'رقيب', autoLock = 60 },
+}
+
 -- the station icon on the map (everyone sees it)
 Config.blip = { sprite = 60, color = 29, scale = 0.8 }
 

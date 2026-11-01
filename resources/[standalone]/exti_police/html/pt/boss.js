@@ -22,7 +22,7 @@
         fired: 'فصل', hired: 'توظيف', role_changed: 'تعديل رتبة', calendar_added: 'موعد جديد',
         fine_issued: 'مخالفة', fine_paid: 'غرامة مدفوعة', offence_added: 'مخالفة جديدة', offence_changed: 'تعديل مخالفة', offence_removed: 'حذف مخالفة',
         seize: 'مصادرة أسلحة', jailed: 'سجن', released: 'إطلاق سراح', escaped: 'هروب من السجن',
-        licence_suspended: 'سحب رخصة', licence_restored: 'إرجاع رخصة', report_added: 'تقرير', report_removed: 'حذف تقرير', warrant_added: 'أمر قبض', warrant_closed: 'إغلاق أمر قبض', bolo_added: 'تعميم', bolo_closed: 'إغلاق تعميم', case_added: 'قضية', case_removed: 'حذف قضية',
+        licence_suspended: 'سحب رخصة', licence_restored: 'إرجاع رخصة', door_unlocked: 'فتح غرفة الأسلحة', door_locked: 'قفل غرفة الأسلحة', report_added: 'تقرير', report_removed: 'حذف تقرير', warrant_added: 'أمر قبض', warrant_closed: 'إغلاق أمر قبض', bolo_added: 'تعميم', bolo_closed: 'إغلاق تعميم', case_added: 'قضية', case_removed: 'حذف قضية',
     };
     const actionLabel = (a) => ACTIONS[a] || a;
 

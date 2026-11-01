@@ -28,6 +28,11 @@ end
 local function persist() SaveResourceFile(RES, FILE, json.encode(saved, { indent = true }), -1) end
 
 local function num(v) return tonumber(v) end
+-- vec3 / vec4 are their own type in the game (not tables): look at .x instead of type()
+local function isVec(v)
+    local ok, x = pcall(function() return v.x end)
+    return ok and tonumber(x) ~= nil
+end
 
 -- another resource's config.lua, read as data (no side effects: it only fills a Config table)
 local function readConfig(resource)
@@ -78,7 +83,7 @@ local function shopCameras()
     for _, s in ipairs(list) do
         local t = types[s.type]
         local c = s.clerk
-        if t and type(c) == 'table' and num(c.x) and (C.shopTypes == nil or C.shopTypes[s.type]) then
+        if t and isVec(c) and (C.shopTypes == nil or C.shopTypes[s.type]) then
             -- behind and above the clerk, looking the way he looks: the counter and the whole floor
             local h = math.rad(num(c.w) or 0.0)
             local fx, fy = -math.sin(h), math.cos(h)
@@ -100,7 +105,7 @@ local function fuelCameras()
     if not list then return out end
     for _, st in ipairs(list) do
         local center = st.center
-        if type(center) == 'table' and num(center.x) then
+        if isVec(center) then
             -- on the far side of the pumps, up on the canopy, looking back over all of them
             local far, farD = nil, 0
             for _, p in ipairs(st.pumps or {}) do
