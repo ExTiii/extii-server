@@ -30,7 +30,7 @@ local prison = {} -- the effective one
 local function build()
     prison = {
         intake = point(saved.intake) or P.intake,
-        intakeRadius = P.intakeRadius,
+        intakeRadius = (tonumber(saved.intakeRadius) or P.intakeRadius),
         spawn = spawnOf(saved.spawn) or P.spawn,
         release = spawnOf(saved.release) or P.release,
         center = P.center, radius = P.radius,
@@ -58,12 +58,13 @@ local function savePrison()
     build()
 end
 
--- /prisonspot intake | spawn | release | work <electric|clean|gym> <n> | reset
+-- /prisonspot intake | radius <m> | spawn | release | work <electric|clean|gym> <n> | reset
 lib.addCommand('prisonspot', {
     help = 'نقل نقاط السجن إلى مكانك (للإدارة)',
     params = {
-        { name = 'what', type = 'string', help = 'intake / spawn / release / work / reset' },
-        { name = 'work', type = 'string', help = 'electric / clean / gym', optional = true },
+        { name = 'what', type = 'string', help = 'intake / radius / spawn / release / work / reset' },
+        -- no type: it is a work name (electric) or, after "radius", a number of metres
+        { name = 'work', help = 'electric / clean / gym — أو حجم الدائرة بالأمتار بعد radius', optional = true },
         { name = 'n', type = 'number', help = 'رقم النقطة', optional = true },
     },
     restricted = 'group.admin',
@@ -78,6 +79,11 @@ lib.addCommand('prisonspot', {
         return notify(source, 'success', 'رجعت نقاط السجن إلى config.lua')
     elseif args.what == 'intake' or args.what == 'spawn' or args.what == 'release' then
         saved[args.what] = here
+    elseif args.what == 'radius' then
+        -- how big the handover circle at the gate is (metres)
+        local m = tonumber(args.work)
+        if not m or m < 1 or m > 30 then return notify(source, 'error', 'اكتب الحجم بالأمتار من 1 إلى 30، مثال: /prisonspot radius 8') end
+        saved.intakeRadius = math.floor(m * 10 + 0.5) / 10
     elseif args.what == 'work' then
         local w
         for _, x in ipairs(P.works) do if x.id == args.work then w = x end end
@@ -90,7 +96,7 @@ lib.addCommand('prisonspot', {
         saved.works[w.id] = saved.works[w.id] or {}
         saved.works[w.id][tostring(n)] = { x = c.x, y = c.y, z = c.z }
     else
-        return notify(source, 'error', '/prisonspot intake | spawn | release | work <electric|clean|gym> <n> | reset')
+        return notify(source, 'error', '/prisonspot intake | radius <m> | spawn | release | work <electric|clean|gym> <n> | reset')
     end
     savePrison()
     lib.print.info(('[prisonspot] %s %s %s by %s'):format(args.what, args.work or '', args.n or '', GetPlayerName(source) or source))
