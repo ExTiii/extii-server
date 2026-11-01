@@ -110,6 +110,7 @@ Config.blipGroups = {
 -- answers { label, icon, items } (or nothing when the menu should not show right now)
 Config.providers = {
     { resource = 'exti_police', export = 'RadialMenu' },
+    { resource = 'exti_mechanic', export = 'RadialMenu' },
 }
 
 Config.work = {

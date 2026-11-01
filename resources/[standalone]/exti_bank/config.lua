@@ -73,6 +73,7 @@ Config.reasons = {
 Config.societies = {
     police = 'شرطة لوس سانتوس',
     ambulance = 'مستشفى بيلبوكس',
+    mechanic = 'ورشة الميكانيكي',
 }
 
 -- "shop-<type>" from exti_shops
