@@ -110,7 +110,8 @@ POL.openFleetTrunk = openFleetTrunk
 function POL.trunkPrompt(p)
     if cache.vehicle or trunkBusy or not POL.onDuty() then return end
     local veh = lib.getClosestVehicle(p, 8.0, false)
-    if not veh or not Entity(veh).state.exti_police_fleet then return end
+    -- only real, shared vehicles (cars that exist only on this screen have no shared state)
+    if not veh or not NetworkGetEntityIsNetworked(veh) or not Entity(veh).state.exti_police_fleet then return end
     local min, max = GetModelDimensions(GetEntityModel(veh))
     local spots
     if Entity(veh).state.exti_police_air then

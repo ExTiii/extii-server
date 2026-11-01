@@ -110,7 +110,8 @@ EMS.openFleetTrunk = openFleetTrunk
 function EMS.trunkPrompt(p)
     if cache.vehicle or trunkBusy or not EMS.onDuty() then return end
     local veh = lib.getClosestVehicle(p, 8.0, false)
-    if not veh or not Entity(veh).state.exti_ems_fleet then return end
+    -- only real, shared vehicles (cars that exist only on this screen have no shared state)
+    if not veh or not NetworkGetEntityIsNetworked(veh) or not Entity(veh).state.exti_ems_fleet then return end
     local min, max = GetModelDimensions(GetEntityModel(veh))
     local spots
     if Entity(veh).state.exti_ems_air then

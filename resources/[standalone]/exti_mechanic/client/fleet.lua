@@ -106,7 +106,8 @@ MEC.openFleetTrunk = openFleetTrunk
 function MEC.trunkPrompt(p)
     if cache.vehicle or trunkBusy or not MEC.onDuty() then return end
     local veh = lib.getClosestVehicle(p, 8.0, false)
-    if not veh or not Entity(veh).state.exti_mechanic_fleet then return end
+    -- only real, shared vehicles (cars that exist only on this screen have no shared state)
+    if not veh or not NetworkGetEntityIsNetworked(veh) or not Entity(veh).state.exti_mechanic_fleet then return end
     local min, max = GetModelDimensions(GetEntityModel(veh))
     local spots = { GetOffsetFromEntityInWorldCoords(veh, 0.0, min.y - 0.35, 0.0) }
     for _, s in ipairs(spots) do
