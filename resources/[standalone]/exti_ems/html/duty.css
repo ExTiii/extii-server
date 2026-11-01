@@ -1,0 +1,90 @@
+/* ======================================================================
+   Duty terminal (clock in / out) — drag your employee card onto the sensor
+   ====================================================================== */
+#duty { position: fixed; inset: 0; z-index: 60; font-family: var(--font); user-select: none; }
+#duty, #duty * { box-sizing: border-box; }
+#duty.hidden { display: none; }
+#duty .dt-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 70% 50%, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.35)); }
+
+/* the device */
+.dt-device {
+    position: absolute; right: 5vw; top: 50%; transform: translateY(-56%);
+    width: 336px; height: 452px; border-radius: 28px; padding: 15px;
+    background: linear-gradient(165deg, #4b4b49 0%, #353533 40%, #262625 100%);
+    box-shadow: 0 34px 70px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -3px 0 rgba(0, 0, 0, 0.45), inset 2px 0 0 rgba(255, 255, 255, 0.04);
+    display: flex; flex-direction: column; gap: 14px;
+}
+.dt-device::before { /* rubber edge */
+    content: ''; position: absolute; inset: 4px; border-radius: 24px; pointer-events: none;
+    border: 1px solid rgba(0, 0, 0, 0.35); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+.dt-bezel {
+    position: relative; height: 188px; flex: none; border-radius: 14px; padding: 9px;
+    background: linear-gradient(180deg, #1c1c1b, #121211);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.dt-lcd {
+    position: relative; height: 100%; border-radius: 8px; overflow: hidden; padding: 14px 15px 12px;
+    background: radial-gradient(ellipse at 50% 35%, #15392e 0%, #0e2a22 55%, #0a1f19 100%);
+    color: #c8f1d8; direction: rtl; text-align: right;
+    text-shadow: 0 0 6px rgba(140, 255, 190, 0.28);
+    display: flex; flex-direction: column;
+}
+.dt-lcd::after { /* scan lines + glass */
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.06), transparent 38%);
+}
+.dt-l1 { font-size: 17px; font-weight: 600; line-height: 1.35; color: #e2fbe9; }
+.dt-l2 { font-size: 12.5px; line-height: 1.55; margin-top: 6px; color: #a9dcbd; }
+.dt-row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 10px; font-size: 13px; color: #bfe9cf; }
+.dt-row b { font-family: 'Consolas', 'Courier New', monospace; font-size: 22px; font-weight: 700; color: #e9fff0; direction: rtl; }
+.dt-time { margin-top: auto; font-size: 12px; color: #9fd3b4; }
+.dt-time bdi { font-family: 'Consolas', 'Courier New', monospace; }
+.dt-lcd .dt-dots::after { content: ''; animation: dtDots 1s steps(4) infinite; }
+@keyframes dtDots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+.dt-lcd.bad .dt-l1 { color: #ffd1c9; }
+.dt-lcd.bad { background: radial-gradient(ellipse at 50% 35%, #3b1d17 0%, #2a1410 60%, #1e0e0b 100%); color: #f3c9c0; text-shadow: 0 0 6px rgba(255, 150, 130, 0.25); }
+
+/* the sensor */
+.dt-pad {
+    position: relative; flex: 1; border-radius: 16px;
+    background: linear-gradient(180deg, #2a2a29, #202020);
+    box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.7), inset 0 -1px 0 rgba(255, 255, 255, 0.05), 0 1px 0 rgba(255, 255, 255, 0.05);
+    display: grid; place-items: center; transition: box-shadow 0.18s;
+}
+.dt-pad svg { width: 118px; height: 90px; opacity: 0.88; transition: transform 0.18s, opacity 0.18s; }
+.dt-led {
+    position: absolute; top: 14px; left: 16px; width: 10px; height: 10px; border-radius: 50%;
+    background: #3b3b3a; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+.dt-led.on { background: #59f29a; box-shadow: 0 0 10px #59f29a, 0 0 2px #fff inset; }
+.dt-led.err { background: #ff5b4d; box-shadow: 0 0 10px #ff5b4d; }
+.dt-led.read { animation: dtBlink 0.22s steps(2) infinite; }
+@keyframes dtBlink { 0% { background: #59f29a; box-shadow: 0 0 10px #59f29a; } 100% { background: #3b3b3a; box-shadow: none; } }
+.dt-pad.hot { box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(120, 255, 180, 0.55), 0 0 22px rgba(120, 255, 180, 0.25); }
+.dt-pad.hot svg { transform: scale(1.06); opacity: 1; }
+.dt-brand { position: absolute; bottom: 9px; left: 0; right: 0; text-align: center; font-size: 9.5px; letter-spacing: 2px; color: rgba(255, 255, 255, 0.22); font-weight: 600; }
+
+/* the employee card */
+.dt-card {
+    position: absolute; width: 312px; height: 192px; border-radius: 12px; overflow: hidden; cursor: grab;
+    background: linear-gradient(135deg, #fbfdff 0%, #eef5fb 55%, #dde9f4 100%);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+    transition: box-shadow 0.15s, transform 0.15s;
+    direction: rtl; color: #1d2a36;
+}
+.dt-card.drag { cursor: grabbing; transform: rotate(-2deg) scale(1.03); box-shadow: 0 24px 46px rgba(0, 0, 0, 0.5); transition: none; }
+.dt-card.back { transition: left 0.35s cubic-bezier(.2, .8, .2, 1), top 0.35s cubic-bezier(.2, .8, .2, 1), transform 0.2s; }
+.dt-card .city { position: absolute; left: 0; right: 0; bottom: 0; height: 70px; opacity: 0.22; }
+.dt-card .star { position: absolute; left: 92px; top: 18px; width: 120px; height: 120px; opacity: 0.6; }
+.dt-card .medic { position: absolute; left: 6px; bottom: 0; width: 104px; height: 128px; }
+.dt-card .amb { position: absolute; right: 10px; bottom: 8px; width: 112px; height: 56px; }
+.dt-card .info { position: absolute; right: 16px; top: 16px; display: grid; grid-template-columns: auto auto; column-gap: 10px; row-gap: 5px; align-items: baseline; }
+.dt-card .info i { font-style: normal; font-size: 10px; letter-spacing: 0.5px; color: #6b7c8c; font-weight: 600; }
+.dt-card .info b { font-size: 13px; font-weight: 700; color: #16222d; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.dt-card .stripe { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #d9363e, #e8545b); }
+
+.dt-hint { position: absolute; bottom: 4.5vh; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; font-size: 13px; color: rgba(255, 255, 255, 0.82); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); direction: rtl; }
+.dt-hint kbd { font-family: var(--font); font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 6px; background: rgba(20, 20, 20, 0.75); border: 1px solid rgba(255, 255, 255, 0.18); color: #fff; margin-left: 6px; }

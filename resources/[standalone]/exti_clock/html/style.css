@@ -1,0 +1,55 @@
+/* EX_Tii clock — top-left, small, gold (server design kit: kit.css) */
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+
+.clock {
+    position: fixed; top: 18px; left: 18px;
+    transform: scale(var(--s, 1)); transform-origin: top left;
+    display: flex; align-items: center; gap: 11px;
+    padding: 6px 16px 6px 6px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(24, 25, 31, 0.86), rgba(12, 13, 17, 0.8));
+    border: 1px solid rgba(232, 181, 71, 0.28);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    direction: ltr;
+    transition: opacity 0.35s ease, transform 0.35s ease, border-color 1.2s ease;
+}
+.clock.hidden { opacity: 0; transform: scale(var(--s, 1)) translateY(-8px); }
+.clock.night { border-color: rgba(150, 178, 235, 0.3); }
+
+/* the round dial: a ring that fills through the day (or the night) and the sun / moon in it */
+.dial { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+.ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 3; }
+.ring-track { stroke: rgba(255, 255, 255, 0.08); }
+.ring-fill {
+    stroke: var(--accent); stroke-linecap: round;
+    filter: drop-shadow(0 0 3px rgba(232, 181, 71, 0.55));
+    transition: stroke-dasharray 1s linear, stroke 1.2s ease;
+}
+.clock.night .ring-fill { stroke: #a9c1f2; filter: drop-shadow(0 0 3px rgba(169, 193, 242, 0.5)); }
+.sky {
+    position: absolute; inset: 6px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 35%, rgba(232, 181, 71, 0.28), rgba(232, 181, 71, 0.05) 70%);
+    color: var(--accent);
+    transition: background 1.2s ease, color 1.2s ease;
+}
+.clock.night .sky { background: radial-gradient(circle at 50% 35%, rgba(130, 160, 230, 0.26), rgba(60, 80, 140, 0.06) 70%); color: #d7e3ff; }
+.sky svg { animation: sky-in 0.6s ease both; }
+.sky .sun-rays { transform-origin: 12px 12px; animation: spin 24s linear infinite; }
+.sky .star { animation: twinkle 2.4s ease-in-out infinite; }
+.sky .star.b { animation-delay: 1.1s; }
+@keyframes sky-in { from { opacity: 0; transform: scale(0.6) rotate(-25deg); } to { opacity: 1; transform: none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes twinkle { 50% { opacity: 0.25; } }
+
+.read { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.time {
+    font-size: 21px; font-weight: 700; line-height: 1.1; color: var(--text);
+    font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.time .colon { font-style: normal; display: inline-block; margin: 0 1px; color: var(--accent); animation: blink 2s steps(1) infinite; }
+.clock.night .time .colon { color: #a9c1f2; }
+@keyframes blink { 50% { opacity: 0.25; } }
+.label { font-size: 11.5px; font-weight: 500; color: var(--muted); white-space: nowrap; text-align: left; }

@@ -1,0 +1,6 @@
+# never commit the live config: it holds the licence key and the database password
+server.cfg
+# runtime data the server writes (spots moved by admins are fine to keep; photos and caches are not)
+resources/[standalone]/exti_police/photos/
+**/node_modules/
+**/*.log

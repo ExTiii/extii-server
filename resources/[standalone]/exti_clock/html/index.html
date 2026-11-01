@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ar">
+<head>
+    <meta charset="utf-8">
+    <title>Clock</title>
+    <link rel="stylesheet" href="kit.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="kit">
+    <div id="clock" class="clock hidden">
+        <div class="dial">
+            <svg class="ring" viewBox="0 0 48 48">
+                <circle class="ring-track" cx="24" cy="24" r="21"/>
+                <circle class="ring-fill" id="ring" cx="24" cy="24" r="21"/>
+            </svg>
+            <div class="sky" id="sky"></div>
+        </div>
+        <div class="read">
+            <div class="time" id="time"><span id="hh">--</span><i class="colon">:</i><span id="mm">--</span></div>
+            <div class="label" id="label" dir="rtl"></div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

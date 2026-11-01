@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>EX_Tii Bank</title>
+    <link rel="stylesheet" href="kit.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="kit">
+    <!-- ===================== TABLET (bank branch) ===================== -->
+    <div id="tablet" class="stage hidden">
+        <div class="device">
+            <span class="cam"></span>
+            <div class="screen">
+                <aside class="side">
+                    <div class="brand">
+                        <div class="logo">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20h18"/></svg>
+                        </div>
+                        <div>
+                            <b>EX_Tii Bank</b>
+                            <small id="branch">الخدمات المصرفية</small>
+                        </div>
+                    </div>
+                    <nav class="nav" id="nav">
+                        <button data-page="home" class="active">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>
+                            <span>الرئيسية</span>
+                        </button>
+                        <button data-page="cash">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/></svg>
+                            <span>إيداع وسحب</span>
+                        </button>
+                        <button data-page="transfer">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>
+                            <span>تحويل</span>
+                        </button>
+                        <button data-page="history">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+                            <span>سجل العمليات</span>
+                        </button>
+                        <button data-page="bills">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+                            <span>الفواتير</span>
+                            <i class="nav-badge" id="billsBadge"></i>
+                        </button>
+                    </nav>
+                    <div class="me">
+                        <div class="avatar" id="avatar">م</div>
+                        <div class="me-text">
+                            <b id="meName">—</b>
+                            <small id="meAccount" dir="ltr">EX-</small>
+                        </div>
+                    </div>
+                    <button class="logout" id="closeTablet">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>
+                        <span>إنهاء الجلسة</span>
+                    </button>
+                </aside>
+
+                <main class="main">
+                    <!-- home -->
+                    <section class="page active" id="page-home">
+                        <header class="page-head">
+                            <div>
+                                <h1 id="hello">أهلًا</h1>
+                                <p id="today"></p>
+                            </div>
+                            <span class="secure"><i></i> اتصال آمن</span>
+                        </header>
+                        <div class="home-grid">
+                            <div class="card-visual">
+                                <div class="cv-top">
+                                    <span>إجمالي أموالك</span>
+                                    <svg width="34" height="24" viewBox="0 0 34 24"><circle cx="12" cy="12" r="11" fill="rgba(42,28,0,.35)"/><circle cx="22" cy="12" r="11" fill="rgba(42,28,0,.22)"/></svg>
+                                </div>
+                                <div class="cv-total" id="total" dir="ltr">$0</div>
+                                <div class="cv-chip"></div>
+                                <div class="cv-bottom">
+                                    <span id="cvName">—</span>
+                                    <span id="cvAccount" dir="ltr">EX-••••</span>
+                                </div>
+                            </div>
+                            <div class="balances">
+                                <div class="bal">
+                                    <div class="bal-icon cash"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/></svg></div>
+                                    <div><small>نقدًا معك</small><b id="cash" dir="ltr">$0</b></div>
+                                </div>
+                                <div class="bal">
+                                    <div class="bal-icon bank"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></svg></div>
+                                    <div><small>في الحساب البنكي</small><b id="bank" dir="ltr">$0</b></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="due hidden" id="due">
+                            <div class="due-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.8 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0z"/></svg></div>
+                            <div class="due-text"><b id="dueTitle">لديك فاتورة غير مدفوعة</b><small id="dueSub"></small></div>
+                            <button class="kit-btn primary" data-go="bills">عرض الفواتير</button>
+                        </div>
+                        <div class="quick">
+                            <button data-go="cash" data-mode="deposit"><span class="q-icon in">↓</span><b>إيداع</b><small>من النقد إلى الحساب</small></button>
+                            <button data-go="cash" data-mode="withdraw"><span class="q-icon out">↑</span><b>سحب</b><small>من الحساب إلى النقد</small></button>
+                            <button data-go="transfer"><span class="q-icon tr">⇄</span><b>تحويل</b><small>إلى مواطن آخر</small></button>
+                        </div>
+                        <div class="split">
+                            <div class="panel week">
+                                <div class="panel-head"><h3>آخر 7 أيام</h3></div>
+                                <div class="week-sum">
+                                    <div><small>وارد</small><b class="pos" id="weekIn" dir="ltr">+$0</b></div>
+                                    <div><small>صادر</small><b class="neg" id="weekOut" dir="ltr">−$0</b></div>
+                                </div>
+                                <div class="bars" id="bars"></div>
+                            </div>
+                            <div class="panel recent">
+                                <div class="panel-head"><h3>آخر العمليات</h3><button class="link" data-go="history">عرض الكل</button></div>
+                                <div class="tx-list" id="recent"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- deposit / withdraw -->
+                    <section class="page" id="page-cash">
+                        <header class="page-head"><div><h1>إيداع وسحب</h1><p>انقل أموالك بين النقد وحسابك البنكي</p></div></header>
+                        <div class="seg" id="cashSeg">
+                            <button data-mode="deposit" class="active">إيداع</button>
+                            <button data-mode="withdraw">سحب</button>
+                        </div>
+                        <div class="amount-box">
+                            <label id="cashLabel">المبلغ المراد إيداعه</label>
+                            <div class="amount-input"><span>$</span><input id="cashAmount" inputmode="numeric" placeholder="0" dir="ltr" autocomplete="off"></div>
+                            <div class="avail" id="cashAvail"></div>
+                            <div class="chips" id="cashChips"></div>
+                        </div>
+                        <button class="kit-btn primary big" id="cashGo">إيداع</button>
+                    </section>
+
+                    <!-- transfer -->
+                    <section class="page" id="page-transfer">
+                        <header class="page-head"><div><h1>تحويل إلى مواطن</h1><p>المستلم يجب أن يكون في المدينة الآن</p></div></header>
+                        <div class="steps">
+                            <div class="step" id="stepWho">
+                                <label>رقم المواطن (ID)</label>
+                                <div class="row">
+                                    <div class="amount-input small"><span>#</span><input id="trId" inputmode="numeric" placeholder="مثال: 12" dir="ltr" autocomplete="off"></div>
+                                    <button class="kit-btn" id="trCheck">تحقق</button>
+                                </div>
+                                <div class="who" id="trWho"></div>
+                            </div>
+                            <div class="step disabled" id="stepHow">
+                                <label>المبلغ</label>
+                                <div class="amount-input"><span>$</span><input id="trAmount" inputmode="numeric" placeholder="0" dir="ltr" autocomplete="off"></div>
+                                <div class="avail" id="trAvail"></div>
+                                <label>ملاحظة (اختياري)</label>
+                                <input class="note" id="trNote" maxlength="60" placeholder="مثال: إيجار الشهر" autocomplete="off">
+                                <button class="kit-btn primary big" id="trGo">مراجعة التحويل</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- history -->
+                    <section class="page" id="page-history">
+                        <header class="page-head"><div><h1>سجل العمليات</h1><p>كل حركة على حسابك ولماذا</p></div></header>
+                        <div class="hist-tools">
+                            <div class="kit-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="histSearch" placeholder="ابحث في العمليات…"></div>
+                            <div class="kit-chips" id="histChips">
+                                <button class="kit-chip active" data-f="all">الكل</button>
+                                <button class="kit-chip" data-f="in">وارد</button>
+                                <button class="kit-chip" data-f="out">صادر</button>
+                            </div>
+                        </div>
+                        <div class="tx-list full kit-scroll" id="history"></div>
+                    </section>
+
+                    <!-- bills -->
+                    <section class="page" id="page-bills">
+                        <header class="page-head"><div><h1>الفواتير</h1><p>ما عليك دفعه: مخالفات الشرطة وغيرها. ادفع من حسابك أو نقدًا</p></div><span class="due-total" id="billsTotal"></span></header>
+                        <div class="bills kit-scroll" id="bills"></div>
+                    </section>
+                </main>
+
+                <!-- confirm sheet -->
+                <div class="sheet-layer" id="sheet">
+                    <div class="sheet">
+                        <div class="sheet-icon">⇄</div>
+                        <h3 id="sheetTitle">تأكيد التحويل</h3>
+                        <p id="sheetText"></p>
+                        <div class="sheet-actions">
+                            <button class="kit-btn" id="sheetNo">إلغاء</button>
+                            <button class="kit-btn primary" id="sheetYes">تأكيد</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="done" id="done">
+                    <div class="done-card">
+                        <div class="done-check"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg></div>
+                        <b id="doneTitle">تمت العملية</b>
+                        <span id="doneText"></span>
+                    </div>
+                </div>
+                <div class="kit-toast" id="toast"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== ATM ===================== -->
+    <div id="atm" class="stage hidden">
+        <div class="atm">
+            <div class="atm-head">
+                <div class="atm-brand"><b>EX_Tii</b> ATM</div>
+                <span class="atm-clock" id="atmClock" dir="ltr">00:00</span>
+            </div>
+            <div class="atm-screen">
+                <div class="atm-hello">أهلًا، <b id="atmName">—</b></div>
+                <div class="atm-balance">
+                    <small>رصيدك المتاح</small>
+                    <b id="atmBank" dir="ltr">$0</b>
+                    <span>نقدًا معك: <i id="atmCash" dir="ltr">$0</i></span>
+                </div>
+                <div class="atm-tabs" id="atmTabs">
+                    <button data-mode="withdraw" class="active">سحب</button>
+                    <button data-mode="deposit">إيداع</button>
+                    <button data-mode="bills">الفواتير <i class="atm-badge" id="atmBadge"></i></button>
+                </div>
+                <div class="atm-amount"><span>$</span><b id="atmAmount" dir="ltr">0</b></div>
+                <div class="atm-quick" id="atmQuick"></div>
+                <div class="atm-bills kit-scroll" id="atmBills"></div>
+                <div class="atm-note" id="atmNote"></div>
+            </div>
+            <div class="atm-pad" id="atmPad"></div>
+            <div class="atm-actions">
+                <button class="atm-cancel" id="atmClose">إنهاء</button>
+                <button class="atm-ok" id="atmGo">تأكيد</button>
+            </div>
+            <div class="atm-slot"><span></span></div>
+            <div class="kit-toast" id="atmToast"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

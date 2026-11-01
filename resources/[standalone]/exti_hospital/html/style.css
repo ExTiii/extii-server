@@ -1,0 +1,127 @@
+/* EX_Tii hospitals — reception panel + medical report (uses the server design kit: kit.css) */
+
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+#app { position: fixed; inset: 0; display: grid; place-items: center; }
+#app.hidden { display: none; }
+#app > * { grid-area: 1 / 1; }
+#app:not(.mode-reception) #reception { display: none; }
+#app:not(.mode-report) #report { display: none; }
+
+@keyframes pop-in { from { opacity: 0; transform: translateY(14px) scale(0.975); } to { opacity: 1; transform: none; } }
+@keyframes pop-out { to { opacity: 0; transform: translateY(10px) scale(0.98); } }
+#app.closing #reception, #app.closing #report { animation: pop-out 0.18s ease-in forwards; }
+
+/* ---------- reception ---------- */
+.desk {
+    position: relative;
+    width: min(760px, 94vw);
+    background:
+        radial-gradient(700px 260px at 85% -10%, rgba(232, 181, 71, 0.10), transparent 70%),
+        radial-gradient(520px 220px at 5% 110%, rgba(255, 95, 95, 0.06), transparent 70%),
+        var(--panel);
+    animation: pop-in 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.15);
+}
+.cross-icon { width: 48px; height: 48px; border-radius: 15px; }
+
+.speech {
+    margin: 0 22px 14px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: linear-gradient(90deg, rgba(232, 181, 71, 0.10), rgba(232, 181, 71, 0.02));
+    border: 1px solid var(--accent-line);
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13.5px;
+}
+.speech b { color: var(--accent); font-weight: 600; }
+.speech-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px rgba(61, 220, 151, 0.15); flex-shrink: 0; }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 22px 14px; }
+.stat { padding: 12px 14px; border-radius: 16px; }
+.ems-line { display: flex; gap: 4px; margin-top: 8px; height: 6px; }
+.ems-line i { flex: 1; max-width: 22px; border-radius: 6px; background: var(--info); }
+.ems-line.none i { background: var(--card-3); max-width: none; }
+
+.options { display: flex; flex-direction: column; gap: 10px; padding: 0 22px 18px; }
+.option {
+    display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    transition: border-color 0.15s, transform 0.15s;
+    animation: pop-in 0.35s ease both;
+}
+.option:nth-child(2) { animation-delay: 40ms; }
+.option:nth-child(3) { animation-delay: 80ms; }
+.option:hover { border-color: var(--accent-line); }
+.option-icon {
+    width: 54px; height: 54px; border-radius: 16px;
+    display: grid; place-items: center;
+    background: var(--card-2); color: var(--accent);
+    border: 1px solid var(--line);
+}
+#optTreat .option-icon { background: linear-gradient(145deg, rgba(232, 181, 71, 0.24), rgba(232, 181, 71, 0.05)); border-color: var(--accent-line); }
+.option-title { font-size: 15.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.option-text p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+.option .kit-btn { min-width: 128px; }
+.kit-tag.free { background: rgba(61, 220, 151, 0.12); color: var(--ok); }
+.option.off { opacity: 0.6; }
+.option.off:hover { border-color: var(--line); }
+
+/* ---------- medical report ---------- */
+.report {
+    position: relative;
+    width: min(430px, 92vw);
+    border-radius: 22px;
+    overflow: hidden;
+    background: #f7f5f0;
+    color: #1b1d22;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+    animation: pop-in 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.15);
+}
+.report-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 18px;
+    background: linear-gradient(135deg, #c8343a, #9d1f27);
+    color: #fff;
+}
+.report-cross { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.16); }
+.report-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.report-head p { margin: 1px 0 0; font-size: 12.5px; opacity: 0.85; }
+.report-no { margin-inline-start: auto; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; background: rgba(0, 0, 0, 0.22); font-variant-numeric: tabular-nums; }
+
+.report-body { padding: 16px 18px 6px; }
+.report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.report-grid div { display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px; border-bottom: 1px dashed #d8d4ca; }
+.report-grid span { font-size: 11.5px; color: #7c776c; }
+.report-grid b { font-size: 14px; font-weight: 600; text-align: right; }
+
+.report-result { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: #ecfaf3; border: 1px solid #bfe9d3; }
+.report-result-top { display: flex; justify-content: space-between; align-items: baseline; }
+.report-result-top span { font-size: 12px; color: #4b6a5b; }
+.report-result-top b { font-size: 16px; color: #138a55; }
+.report-result .kit-bar { background: rgba(0, 0, 0, 0.08); }
+.report-result p { margin: 8px 0 0; font-size: 12.5px; color: #4b5560; }
+.report-result.warn { background: #fff5e6; border-color: #f6d9a8; }
+.report-result.warn .report-result-top b { color: #b46a07; }
+.report-result.bad { background: #fff0f0; border-color: #f4c2c2; }
+.report-result.bad .report-result-top b { color: #c0292f; }
+
+.report-sign { display: flex; align-items: center; justify-content: space-between; padding: 12px 2px 4px; }
+.report-sign span { font-size: 11.5px; color: #7c776c; }
+.stamp {
+    direction: ltr;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em; line-height: 1.25; text-align: center;
+    color: rgba(200, 52, 58, 0.75);
+    border: 2px solid rgba(200, 52, 58, 0.6);
+    border-radius: 50%;
+    width: 64px; height: 64px;
+    display: grid; place-items: center;
+    transform: rotate(-12deg);
+}
+
+.report-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 18px 18px; }
+.report .kit-btn:not(.primary) { background: #e9e6de; color: #2a2c31; border-color: transparent; }
+.report .kit-btn:not(.primary):hover { background: #dfdbd1; }
+.report.view-only .report-actions { grid-template-columns: 1fr; }
+.report.view-only #btnShow { display: none; }

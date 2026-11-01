@@ -1,0 +1,97 @@
+/* ======================================================================
+   EX_Tii Driving School: the screen at the instructor, the drive card, the result
+   ====================================================================== */
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+#app, #hud, #result { position: fixed; inset: 0; font-family: var(--font); direction: rtl; color: var(--text); }
+#app.hidden, #hud.hidden, #result.hidden { display: none; }
+#app *, #hud *, #result * { box-sizing: border-box; }
+#hud, #result { pointer-events: none; }
+
+.ds-shade { position: absolute; inset: 0; background: rgba(0, 0, 0, .3); }
+.ds-panel { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 760px; max-height: 86vh; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 34px 80px rgba(0, 0, 0, .6); overflow: hidden; animation: ds-in .22s ease both; }
+@keyframes ds-in { from { opacity: 0; transform: translate(-50%, -48%) scale(.98); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.ds-top { display: flex; align-items: center; gap: 14px; padding: 18px 22px 14px; border-bottom: 1px solid var(--line); }
+.ds-badge { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); flex: none; }
+.ds-title h1 { margin: 0; font-size: 19px; }
+.ds-title p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
+.ds-x { margin-right: auto; width: 36px; height: 36px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.ds-body { padding: 18px 22px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+.ds-body::-webkit-scrollbar { width: 6px; }
+.ds-body::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+
+/* the offer */
+.ds-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ds-step { display: flex; gap: 12px; padding: 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.ds-step i { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; font-style: normal; font-weight: 800; }
+.ds-step b { display: block; font-size: 14px; }
+.ds-step small { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; line-height: 1.6; }
+.ds-price { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.ds-price b { font-size: 22px; color: var(--accent); direction: ltr; }
+.ds-price small { display: block; color: var(--muted); font-size: 12px; }
+.ds-pay { display: flex; gap: 8px; }
+.ds-note { font-size: 12.5px; color: var(--muted); text-align: center; }
+.ds-state { padding: 14px 16px; border-radius: 16px; border: 1px solid; font-size: 13.5px; font-weight: 600; }
+.ds-state.ok { background: rgba(61, 220, 151, .1); border-color: rgba(61, 220, 151, .3); color: var(--ok); }
+.ds-state.bad { background: rgba(255, 95, 95, .1); border-color: rgba(255, 95, 95, .3); color: var(--bad); }
+.ds-state.warn { background: rgba(246, 169, 74, .1); border-color: rgba(246, 169, 74, .3); color: var(--warn); }
+
+/* the theory */
+.ds-qtop { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ds-qtop b { font-size: 13px; color: var(--muted); }
+.ds-timer { font-size: 15px; font-weight: 800; direction: ltr; font-variant-numeric: tabular-nums; padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); }
+.ds-timer.low { color: var(--bad); border-color: rgba(255, 95, 95, .35); }
+.ds-dots { display: flex; gap: 5px; }
+.ds-dots i { width: 22px; height: 6px; border-radius: 3px; background: var(--card-3); }
+.ds-dots i.done { background: var(--accent); }
+.ds-dots i.now { background: var(--text); }
+.ds-q { font-size: 18px; font-weight: 700; line-height: 1.6; padding: 6px 2px; }
+.ds-answers { display: grid; gap: 8px; }
+.ds-a { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); color: var(--text); font: 600 14px var(--font); text-align: right; cursor: pointer; transition: border-color .12s, background .12s; }
+.ds-a:hover { border-color: var(--line-2); }
+.ds-a.on { background: var(--accent-soft); border-color: var(--accent-line); }
+.ds-a i { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--card-2); font-style: normal; font-weight: 800; font-size: 12px; flex: none; }
+.ds-a.on i { background: var(--accent); color: var(--accent-ink); }
+.ds-nav { display: flex; justify-content: space-between; gap: 8px; }
+.ds-score { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 10px; }
+.ds-score .ring { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; font-weight: 800; direction: ltr; border: 4px solid var(--accent); color: var(--accent); }
+.ds-score.bad .ring { border-color: var(--bad); color: var(--bad); }
+.ds-score b { font-size: 18px; }
+.ds-score span { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.7; }
+
+/* the drive card */
+.hd-card { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: stretch; padding: 10px 12px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 14px 34px rgba(0, 0, 0, .45); animation: hd-in .25s ease both; }
+@keyframes hd-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translateX(-50%); } }
+.hd-box { min-width: 96px; padding: 8px 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); text-align: center; }
+.hd-box small { display: block; font-size: 10.5px; color: var(--faint); letter-spacing: .04em; }
+.hd-box b { display: block; font-size: 20px; font-weight: 800; margin-top: 2px; direction: ltr; font-variant-numeric: tabular-nums; }
+.hd-box b em { font-style: normal; font-size: 11px; color: var(--muted); margin-left: 3px; }
+.hd-box.speed b { color: var(--ok); }
+.hd-box.speed.over b { color: var(--bad); animation: hd-blink .6s steps(2) infinite; }
+@keyframes hd-blink { to { opacity: .35; } }
+.hd-sign { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #fff; border: 6px solid #e5484d; color: #111; font: 800 18px var(--font); direction: ltr; align-self: center; }
+.hd-faults i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--card-3); margin: 0 2px; }
+.hd-faults i.on { background: var(--bad); }
+.hd-hint.warn { color: #ff5f5f; font-weight: 800; font-size: 14px; }
+.hd-hint { position: absolute; top: 118px; left: 50%; transform: translateX(-50%); font-size: 12px; color: rgba(244, 243, 239, .8); text-shadow: 0 1px 3px rgba(0, 0, 0, .8); white-space: nowrap; }
+
+/* the result */
+.rs-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 30px 46px; border-radius: 22px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 30px 70px rgba(0, 0, 0, .55); animation: ds-in .25s ease both; }
+.rs-check { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); }
+.rs-card.bad .rs-check { background: rgba(255, 95, 95, .16); color: var(--bad); border: 2px solid rgba(255, 95, 95, .4); }
+.rs-card b { font-size: 19px; }
+.rs-card span { font-size: 13px; color: var(--muted); }
+
+/* the licences this school offers */
+.ds-lic { display: grid; gap: 10px; }
+.ds-licard { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); color: var(--text); font-family: var(--font); text-align: right; cursor: pointer; transition: border-color .12s, background .12s; }
+.ds-licard:hover { border-color: var(--accent-line); background: var(--card-2); }
+.ds-licard.off { opacity: .8; }
+.ds-licard i { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); flex: none; font-style: normal; }
+.ds-licard > div { flex: 1; min-width: 0; }
+.ds-licard b { display: block; font-size: 15px; }
+.ds-licard small { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
+.ds-licard .ds-pr { font-size: 18px; font-weight: 800; color: var(--accent); direction: ltr; flex: none; }
+.ds-chip { display: inline-block; margin-top: 6px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; font-style: normal; border: 1px solid; }
+.ds-chip.ok { background: rgba(61, 220, 151, .1); border-color: rgba(61, 220, 151, .3); color: var(--ok); }
+.ds-chip.bad { background: rgba(255, 95, 95, .1); border-color: rgba(255, 95, 95, .3); color: var(--bad); }
+.ds-chip.warn { background: rgba(246, 169, 74, .1); border-color: rgba(246, 169, 74, .3); color: var(--warn); }

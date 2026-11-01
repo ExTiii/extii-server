@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>Fuel</title>
+    <link rel="stylesheet" href="kit.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="kit">
+    <!-- the pump screen -->
+    <div id="app" class="hidden">
+        <div class="pump kit-panel" id="pump">
+            <header class="pump-top">
+                <div class="kit-brand">
+                    <div class="kit-brand-icon brand-icon" id="brandIcon"></div>
+                    <div class="kit-brand-text">
+                        <h1 id="title">محطة وقود</h1>
+                        <p id="station"></p>
+                    </div>
+                </div>
+                <div class="top-end">
+                    <div class="wallet">
+                        <div class="purse" id="purseCash">
+                            <span class="purse-label">نقدًا</span>
+                            <b class="purse-value" id="cash">$0</b>
+                        </div>
+                        <div class="purse" id="purseBank">
+                            <span class="purse-label">البنك</span>
+                            <b class="purse-value" id="bank">$0</b>
+                        </div>
+                    </div>
+                    <button class="kit-icon-btn" id="closeBtn" title="إغلاق (Esc)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                </div>
+            </header>
+
+            <div class="pump-body">
+                <!-- the tank -->
+                <section class="tank kit-box">
+                    <div class="car">
+                        <div class="car-name" id="carName"></div>
+                        <span class="kit-plate" id="carPlate"></span>
+                    </div>
+                    <div class="gauge">
+                        <svg viewBox="0 0 200 200" class="gauge-svg">
+                            <defs>
+                                <linearGradient id="gGold" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0" stop-color="#f6d27a"/>
+                                    <stop offset="1" stop-color="#d79c2c"/>
+                                </linearGradient>
+                                <pattern id="gStripes" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                                    <rect width="8" height="8" fill="rgba(232,181,71,0.35)"/>
+                                    <rect width="4" height="8" fill="rgba(243,200,101,0.75)"/>
+                                </pattern>
+                            </defs>
+                            <circle class="g-track" cx="100" cy="100" r="82"/>
+                            <circle class="g-add" id="gAdd" cx="100" cy="100" r="82"/>
+                            <circle class="g-now" id="gNow" cx="100" cy="100" r="82"/>
+                        </svg>
+                        <div class="gauge-text">
+                            <b id="gTarget">100%</b>
+                            <span id="gFrom">الآن 0%</span>
+                            <i class="gauge-kind" id="gKind"></i>
+                        </div>
+                    </div>
+                    <div class="tank-facts">
+                        <div><span id="capLabel">سعة الخزان</span><b id="capacity">0</b></div>
+                        <div><span>السعر</span><b id="unitPrice">$0</b></div>
+                    </div>
+                </section>
+
+                <!-- how much -->
+                <section class="amount">
+                    <div class="amount-title" id="amountTitle">كم تريد أن تعبّئ؟</div>
+                    <div class="kit-chips presets" id="presets"></div>
+
+                    <div class="slider-box kit-box">
+                        <div class="slider-top">
+                            <span id="addText">+0 لتر</span>
+                            <b id="targetText">100%</b>
+                        </div>
+                        <input type="range" id="slider" min="1" max="100" step="1" value="100">
+                        <div class="slider-scale"><span>0%</span><span>50%</span><span>100%</span></div>
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat"><span>الكمية</span><b id="units">0</b></div>
+                        <div class="stat"><span>المدة</span><b id="seconds">0</b></div>
+                        <div class="stat total"><span>المجموع</span><b id="total">$0</b></div>
+                    </div>
+
+                    <div class="pay">
+                        <button class="kit-btn primary pay-btn" id="payCash">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg>
+                            <span>ادفع نقدًا</span>
+                        </button>
+                        <button class="kit-btn pay-btn" id="payBank">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>
+                            <span>ادفع بالبطاقة</span>
+                        </button>
+                    </div>
+                    <p class="pay-note" id="payNote"></p>
+                </section>
+
+                <!-- the jerry can offer: "want a can with you?" -->
+                <section class="offer kit-box" id="offer">
+                    <div class="offer-pic"><img id="offerImg" alt=""></div>
+                    <div class="offer-text">
+                        <b>تريد جالون وقود معك؟</b>
+                        <span id="offerFacts">20 لتر · ممتلئ · للطوارئ على الطريق</span>
+                    </div>
+                    <b class="offer-price" id="offerPrice">$0</b>
+                    <div class="offer-pay">
+                        <button class="kit-btn small primary" id="offerCash">نقدًا</button>
+                        <button class="kit-btn small" id="offerBank">بالبطاقة</button>
+                    </div>
+                    <div class="offer-done" id="offerDone">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg>
+                        <span>الجالون في حقيبتك</span>
+                    </div>
+                </section>
+            </div>
+
+            <div class="kit-foot">
+                <span>إذا أوقفت المضخة قبل النهاية يُعاد لك ثمن ما لم يُعبّأ</span>
+                <span><kbd>Esc</kbd> إغلاق</span>
+            </div>
+
+            <div class="kit-toast" id="toast"></div>
+        </div>
+    </div>
+
+    <!-- a pump with no vehicle at it: the pump sells a jerry can -->
+    <div id="canApp" class="hidden">
+        <div class="can kit-panel" id="canCard">
+            <header class="can-top">
+                <div class="kit-brand">
+                    <div class="kit-brand-icon" id="canIcon"></div>
+                    <div class="kit-brand-text">
+                        <h1>جالون وقود</h1>
+                        <p id="canStation"></p>
+                    </div>
+                </div>
+                <button class="kit-icon-btn" id="canClose" title="إغلاق (Esc)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </header>
+
+            <div class="can-body">
+                <div class="can-pic"><img id="canImg" alt=""></div>
+                <div class="can-info">
+                    <div class="can-facts">
+                        <span class="kit-tag" id="canLiters">ممتلئ</span>
+                        <span class="kit-tag">19 كغ</span>
+                    </div>
+                    <p>لا توجد مركبة عند المضخة. خذ جالونًا ممتلئًا معك: اسكبه في أي مركبة بنزين، وعبّئه من أي مضخة.</p>
+                    <b class="can-price" id="canPrice">$0</b>
+                </div>
+            </div>
+
+            <div class="can-wallet">
+                <div class="purse" id="canPurseCash"><span class="purse-label">نقدًا</span><b class="purse-value" id="canCash">$0</b></div>
+                <div class="purse" id="canPurseBank"><span class="purse-label">البنك</span><b class="purse-value" id="canBank">$0</b></div>
+            </div>
+
+            <div class="pay can-pay">
+                <button class="kit-btn primary pay-btn" id="canPayCash">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg>
+                    <span>ادفع نقدًا</span>
+                </button>
+                <button class="kit-btn pay-btn" id="canPayBank">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>
+                    <span>ادفع بالبطاقة</span>
+                </button>
+            </div>
+
+            <div class="can-done">
+                <div class="can-done-check">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg>
+                </div>
+                <b>تم الشراء</b>
+                <span>الجالون في حقيبتك</span>
+            </div>
+
+            <div class="kit-toast" id="canToast"></div>
+        </div>
+    </div>
+
+    <!-- the pump running (no mouse) -->
+    <div id="live" class="live hidden">
+        <div class="live-card">
+            <div class="live-icon" id="liveIcon"></div>
+            <div class="live-main">
+                <div class="live-head">
+                    <b id="liveTitle">جارٍ التعبئة</b>
+                    <span class="live-stop" id="liveStop"><kbd>E</kbd> إيقاف</span>
+                </div>
+                <div class="live-nums">
+                    <div><b id="liveUnits">0.0</b><small id="liveUnitsOf">/ 0 لتر</small></div>
+                    <div class="live-money"><b id="liveMoney">$0</b><small id="liveMoneyOf">/ $0</small></div>
+                </div>
+                <div class="live-bar"><i id="liveBar"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

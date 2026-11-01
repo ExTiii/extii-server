@@ -1,0 +1,110 @@
+## [!] Server Listing Configuration Moved to Cfx Portal [!]
+## To configure server listing metadata, please go to https://portal.cfx.re/servers
+## The following ConVars cannot be configured in this file:
+## - sv_projectName, sv_projectDesc, sv_hostname, locale, tags
+## - banner_connecting, banner_detail, load_server_icon
+
+## You CAN edit the following:
+sv_licenseKey "<REMOVED - put the real value in your server.cfg, never in git>"
+sv_maxclients 48
+set mysql_connection_string "<REMOVED - put the real value in your server.cfg, never in git>"
+endpoint_add_tcp "0.0.0.0:30120"
+endpoint_add_udp "0.0.0.0:30120"
+
+sv_enforceGameBuild 3258
+set steam_webApiKey "<REMOVED - put the real value in your server.cfg, never in git>"
+
+# Chat Config
+set resources_useSystemChat true
+set qbx_chat:joinMessage "^2%s دخل المدينة"
+set qbx_chat:quitMessage "^1%s خرج من المدينة (%s)"
+
+# Import Voice Config
+exec voice.cfg
+
+## Qbox Config
+setr qb_locale "ar"
+setr qbx:enableBridge "true" # When true, enables the qb-core bridge for qbx_core
+set qbx:enableQueue "true" # When true, enables qbx_core's built-in queue system
+set qbx:bucketLockdownMode "inactive" # Sets the lockdown mode as inactive read here: https://docs.fivem.net/natives/?_0xA0F2201F
+set qbx:discordLink "discord.gg/qbox" # Sets the servers discord link
+set qbx:max_jobs_per_player 1 # Sets the number of jobs per player
+set qbx:max_gangs_per_player 1 # Sets the number of gangs per player
+set qbx:setjob_replaces "true" # When true, the SetJob function deletes the previous primary job of the player before setting the new one
+set qbx:setgang_replaces "true" # When true, the SetGang function deletes the previous primary gang of the player before setting the new one
+set qbx:cleanPlayerGroups "true" # When true, on server startup, the database will be checked for any groups/grades players have that are not in config files and removes them from the database if so
+set qbx:allowMethodOverrides "true" # When true, enables the ability of resources to override existing methods in the player object
+set qbx:disableOverrideWarning "false" # When true, disables warnings from resources overriding existing methods in the player object
+setr qbx:enableVehiclePersistence "false" # When true, player vehicles marked for persistence will be respawned when deleted
+setr qbx:vehiclePersistenceType "semi" # When "full", player vehicles will also be respawned after server restarts, when "semi", they will only respawn when deleted
+set qbx:acknowledge "true" # When true, disables the default service message
+setr qbx:enableGroupManagement "false" # When true, allows bosses to manage job/gang grades. Specifically the grade name.
+
+# Message displayed to players in the chat after loading in
+setr qbx:motd "<div dir='rtl' style='padding: 1rem; background-color: #141517; border: 1px solid #373a40; border-radius: 0.5rem; text-align: center;'><span style='color: #e8b547;'>أهلًا بك في EX_Tii Roleplay</span><br>اكتب <b>/guide</b> لفتح دليل اللاعب الجديد</div>"
+
+# illenium-appearance locale config
+setr illenium-appearance:locale "ar"
+
+# Renewed-Weathersync config
+setr weather_disablecd true
+
+# Import Ox Resources Config
+exec ox.cfg
+setr ox:locale "ar"
+
+# NPWD config
+set npwd:framework "qbx"
+# fill them in if you want extra phone functionality https://projecterror.dev/docs/npwd/start/installation#setting-up-camera-functionality
+set SCREENSHOT_BASIC_TOKEN "<REMOVED - put the real value in your server.cfg, never in git>"
+set NPWD_AUDIO_TOKEN "<REMOVED - put the real value in your server.cfg, never in git>"
+
+# loadscreen config
+set loadscreen:style "kit" # server look: dark + gold, same as the other screens
+setr loadscreen:externalShutdown true
+set loadscreen:primaryColor "#f1e542"
+set loadscreen:shadowColor "#1a18077f"
+# Loading screen text (Arabic)
+set loadscreen:serverMessage "أهلًا ${playerName}، مرحبًا بك في EX_Tii Roleplay"
+set loadscreen:finishingMessage "جارٍ تجهيز المدينة..."
+set loadscreen:logLine false
+set loadscreen:finishedMessage "اكتمل التحميل!"
+set loadscreen:finishedLine "ستدخل المدينة خلال لحظات..."
+
+# These resources will start by default
+ensure mapmanager
+ensure chat
+ensure spawnmanager
+ensure baseevents
+
+# Arabic letters for GTA built-in text (must start first)
+ensure support-arabic
+
+# Qbox & Extra stuff
+ensure ox_lib
+ensure qbx_core
+# EX_Tii: the third eye (ox_target) is off the server, everything works with E
+ensure [ox]
+ensure [qbx]
+ensure [standalone]
+ensure [voice]
+ensure [assets]
+
+ensure [npwd-apps]
+ensure qbx_npwd
+ensure npwd
+
+## Permissions ##
+add_principal identifier.fivem:18954370 group.admin #XT007
+add_principal identifier.license:d901206a929b58c434687f1cb8c418a27a0cf372 group.admin #XT007 (game license)
+exec permissions.cfg
+
+## Miscellaneous ##
+exec misc.cfg
+
+## Test server only: hide it from the public server list
+set sv_master1 ""
+
+## Security
+sv_pureLevel 1
+set sv_enableNetworkedSounds false

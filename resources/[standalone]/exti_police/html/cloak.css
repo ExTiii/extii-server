@@ -1,0 +1,71 @@
+/* ======================================================================
+   Cloakroom (uniforms): wear an outfit in one click; leaders add / edit / delete
+   ====================================================================== */
+#cloak { position: fixed; inset: 0; z-index: 60; font-family: var(--font); pointer-events: none; direction: rtl; }
+#cloak.hidden { display: none; }
+#cloak, #cloak * { box-sizing: border-box; }
+.ck-panel {
+    position: absolute; right: 3.2vw; top: 50%; transform: translateY(-50%); width: 340px; pointer-events: auto;
+    border-radius: 16px; padding: 16px 16px 14px;
+    background: linear-gradient(180deg, rgba(13, 24, 42, 0.95) 0%, rgba(9, 16, 29, 0.96) 55%, rgba(6, 11, 20, 0.97) 100%);
+    border: 1px solid rgba(80, 160, 255, 0.2);
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    color: #e9eef6;
+}
+.ck-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.ck-title { font-size: 21px; font-weight: 700; color: #4aa8ff; letter-spacing: 0.2px; }
+.ck-sub { font-size: 11.5px; color: #9fb3cc; margin-top: 2px; font-weight: 500; }
+.ck-x { width: 28px; height: 28px; border-radius: 7px; border: 0; background: #2f86e8; color: #fff; font-size: 16px; line-height: 28px; cursor: pointer; font-family: inherit; }
+.ck-x:hover { background: #4a98f0; }
+
+.ck-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 40px; border-radius: 9px; border: 1px solid transparent; font: 600 13.5px var(--font); cursor: pointer; transition: filter 0.12s, background 0.12s; }
+.ck-civ { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.09); color: #e6edf6; }
+.ck-civ:hover { background: rgba(255, 255, 255, 0.11); }
+.ck-new { background: #2fb36a; color: #fff; margin-top: 12px; }
+.ck-new:hover { filter: brightness(1.08); }
+.ck-btn svg { width: 15px; height: 15px; }
+
+.ck-tabs { display: flex; gap: 6px; margin: 12px 0 8px; }
+.ck-tab { flex: 1; height: 32px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.25); color: #c6d3e3; font: 600 12px var(--font); cursor: pointer; }
+.ck-tab.on { background: rgba(74, 168, 255, 0.16); border-color: rgba(74, 168, 255, 0.65); color: #fff; }
+.ck-row.other { cursor: default; }
+.ck-label { font-size: 11px; color: #9bb0c8; margin: 14px 2px 7px; font-weight: 600; }
+.ck-list { display: flex; flex-direction: column; gap: 7px; max-height: 300px; overflow-y: auto; padding-left: 2px; }
+.ck-list::-webkit-scrollbar { width: 5px; }
+.ck-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 4px; }
+.ck-list::-webkit-scrollbar-track { background: transparent; }
+.ck-row { display: flex; align-items: center; gap: 7px; min-height: 48px; padding: 6px 8px 6px 7px; border-radius: 10px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+.ck-row:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.1); }
+.ck-row.on { border-color: rgba(47, 179, 106, 0.6); background: rgba(47, 179, 106, 0.1); }
+.ck-ico { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; background: rgba(74, 168, 255, 0.12); flex: none; }
+.ck-ico svg { width: 18px; height: 18px; }
+.ck-name { flex: 1; min-width: 0; }
+.ck-name b { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ck-name i { display: block; font-style: normal; font-size: 11px; color: #95a9c2; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ck-act { width: 30px; height: 30px; border-radius: 7px; border: 0; display: grid; place-items: center; cursor: pointer; flex: none; }
+.ck-act svg { width: 15px; height: 15px; }
+.ck-edit { background: #e9b43c; color: #2a1b00; }
+.ck-del { background: #e0424b; color: #fff; }
+.ck-del.sure { width: auto; padding: 0 9px; font: 700 11.5px var(--font); }
+.ck-act:hover { filter: brightness(1.1); }
+.ck-empty { font-size: 12.5px; color: #9bb0c8; text-align: center; padding: 14px 6px; border-radius: 10px; border: 1px dashed rgba(255, 255, 255, 0.1); }
+
+/* add / edit an outfit */
+.ck-form { display: flex; flex-direction: column; gap: 12px; }
+.ck-field span { display: block; font-size: 11.5px; color: #9bb0c8; font-weight: 600; margin-bottom: 6px; }
+.ck-input { width: 100%; height: 40px; border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.35); color: #fff; padding: 0 12px; font: 500 14px var(--font); outline: none; direction: rtl; }
+.ck-input:focus { border-color: rgba(74, 168, 255, 0.65); }
+.ck-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ck-chip { height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.3); color: #c6d3e3; font: 600 12px var(--font); cursor: pointer; }
+.ck-chip.on { background: rgba(47, 179, 106, 0.18); border-color: rgba(47, 179, 106, 0.7); color: #c9f5da; }
+.ck-check { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: #dbe4f0; cursor: pointer; }
+.ck-check .box { width: 18px; height: 18px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.25); display: grid; place-items: center; background: rgba(0, 0, 0, 0.3); }
+.ck-check.on .box { background: #2fb36a; border-color: #2fb36a; }
+.ck-check.on .box::after { content: ''; width: 9px; height: 5px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); }
+.ck-note { font-size: 11.5px; color: #95a9c2; line-height: 1.6; }
+.ck-two { display: flex; gap: 8px; }
+.ck-save { background: #2fb36a; color: #fff; }
+.ck-cancel { background: rgba(255, 255, 255, 0.07); color: #eee; border-color: rgba(255, 255, 255, 0.09); }
+.ck-err { font-size: 12px; color: #ff8a8f; min-height: 16px; }
+.ck-hint { position: absolute; bottom: 4.5vh; left: 50%; transform: translateX(-50%); font-size: 13px; color: rgba(255, 255, 255, 0.82); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+.ck-hint kbd { font-family: var(--font); font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 6px; background: rgba(20, 20, 20, 0.75); border: 1px solid rgba(255, 255, 255, 0.18); color: #fff; margin-left: 6px; }

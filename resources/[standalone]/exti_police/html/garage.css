@@ -1,0 +1,83 @@
+/* ======================================================================
+   Garage (like the video): the team's vehicles, stats, park out, trunk, the vehicle shop
+   ====================================================================== */
+#garage { position: fixed; inset: 0; z-index: 60; font-family: var(--font); pointer-events: none; direction: rtl; }
+#garage.hidden { display: none; }
+#garage, #garage * { box-sizing: border-box; }
+.gr-panel {
+    position: absolute; right: 3vw; top: 50%; transform: translateY(-50%); width: 800px; max-width: 94vw; pointer-events: auto;
+    border-radius: 18px; padding: 18px 18px 16px;
+    background: linear-gradient(180deg, rgba(13, 24, 42, 0.95) 0%, rgba(9, 16, 29, 0.96) 55%, rgba(6, 11, 20, 0.97) 100%);
+    border: 1px solid rgba(80, 160, 255, 0.2);
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    color: #e9eef6;
+}
+.gr-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.gr-title { font-size: 22px; font-weight: 700; color: #4aa8ff; flex: 1; }
+.gr-title small { display: block; font-size: 11.5px; color: #9fb3cc; font-weight: 500; margin-top: 2px; }
+.gr-x { width: 30px; height: 30px; border-radius: 7px; border: 0; background: #2f86e8; color: #fff; font-size: 16px; cursor: pointer; font-family: inherit; }
+.gr-shopbtn { height: 30px; padding: 0 12px; border-radius: 7px; border: 0; background: #2fb36a; color: #fff; font: 700 12px var(--font); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.gr-shopbtn svg { width: 14px; height: 14px; }
+.gr-body { display: grid; grid-template-columns: 1fr 300px; gap: 16px; min-height: 330px; }
+
+/* the list */
+.gr-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; align-content: start; max-height: 420px; overflow-y: auto; padding-left: 4px; }
+.gr-list::-webkit-scrollbar { width: 5px; }
+.gr-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 4px; }
+.gr-card { position: relative; border-radius: 12px; padding: 10px 10px 8px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.07); cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+.gr-card:hover { background: rgba(255, 255, 255, 0.05); }
+.gr-card.sel { border-color: rgba(74, 168, 255, 0.8); background: rgba(74, 168, 255, 0.08); }
+.gr-card .top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.gr-card b { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gr-tag { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: rgba(47, 179, 106, 0.18); color: #8ff0b8; white-space: nowrap; }
+.gr-tag.out { background: rgba(232, 160, 60, 0.18); color: #f5c27b; }
+.gr-tag.mine { background: rgba(80, 160, 255, 0.18); color: #9cc8ff; }
+.gr-card .img { height: 74px; display: grid; place-items: center; margin: 4px 0; }
+.gr-card .img img { max-width: 100%; max-height: 74px; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45)); }
+.gr-card .plate { font: 700 11px 'Consolas', 'Courier New', monospace; color: #d9e3ef; letter-spacing: 1px; direction: ltr; text-align: left; }
+.gr-empty { grid-column: 1 / -1; font-size: 13px; color: #9bb0c8; text-align: center; padding: 30px 10px; border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.1); }
+
+/* the details */
+.gr-detail { border-radius: 14px; padding: 14px; background: rgba(0, 0, 0, 0.32); border: 1px solid rgba(255, 255, 255, 0.07); display: flex; flex-direction: column; }
+.gr-detail .hd { display: flex; align-items: baseline; justify-content: space-between; }
+.gr-detail .pl { font: 700 20px 'Consolas', 'Courier New', monospace; letter-spacing: 1px; direction: ltr; }
+.gr-detail .st { font-size: 11px; font-weight: 700; color: #8ff0b8; }
+.gr-detail .st.out { color: #f5c27b; }
+.gr-detail .nm { font-size: 12.5px; color: #9fb3cc; margin-top: 2px; }
+.gr-detail .big { height: 110px; display: grid; place-items: center; margin: 6px 0 4px; }
+.gr-detail .big img { max-width: 100%; max-height: 110px; object-fit: contain; filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.5)); }
+.gr-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 11.5px; color: #d5dfec; margin-bottom: 10px; }
+.gr-icons span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.gr-icons svg { width: 13px; height: 13px; flex: none; }
+.gr-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-bottom: 12px; }
+.gr-bar i { display: block; font-style: normal; font-size: 11px; color: #9fb3cc; margin-bottom: 4px; }
+.gr-bar u { display: block; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; text-decoration: none; }
+.gr-bar u s { display: block; height: 100%; border-radius: 3px; text-decoration: none; }
+.gr-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: auto; }
+.gr-btn { height: 34px; border-radius: 8px; border: 1px solid transparent; font: 700 12px var(--font); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; color: #fff; }
+.gr-btn svg { width: 14px; height: 14px; }
+.gr-btn.go { background: #2fb36a; }
+.gr-btn.sell { background: #e0424b; }
+.gr-btn.sell.sure { background: #ff2d36; }
+.gr-btn.dark { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.1); color: #eee; }
+.gr-btn.wide { grid-column: 1 / -1; }
+.gr-btn[disabled] { opacity: 0.45; cursor: default; }
+.gr-btn:not([disabled]):hover { filter: brightness(1.08); }
+.gr-note { font-size: 11.5px; color: #f5c27b; text-align: center; margin-top: 8px; min-height: 15px; }
+.gr-note.err { color: #ff8a8f; }
+
+/* the vehicle shop */
+.gr-shop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.gr-item { border-radius: 12px; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.07); display: flex; flex-direction: column; gap: 6px; }
+.gr-item b { font-size: 14px; }
+.gr-item .img { height: 86px; display: grid; place-items: center; }
+.gr-item .img img { max-width: 100%; max-height: 86px; object-fit: contain; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5)); }
+.gr-item .price { font: 700 16px var(--font); color: #8ff0b8; }
+.gr-item .mini { font-size: 11px; color: #9fb3cc; }
+.gr-bal { font-size: 12.5px; color: #d5dfec; margin: -4px 0 12px; }
+.gr-bal b { color: #8ff0b8; }
+.gr-hint { position: absolute; bottom: 4.5vh; left: 50%; transform: translateX(-50%); font-size: 13px; color: rgba(255, 255, 255, 0.82); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+.gr-hint kbd { font-family: var(--font); font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 6px; background: rgba(20, 20, 20, 0.75); border: 1px solid rgba(255, 255, 255, 0.18); color: #fff; margin-left: 6px; }
+.gr-plate { display: flex; gap: 6px; margin-top: 8px; }
+.gr-plate-in { flex: 1; min-width: 0; height: 34px; border-radius: 8px; border: 1px solid rgba(74, 168, 255, 0.5); background: rgba(0, 0, 0, 0.35); color: #fff; font: 700 15px 'Consolas', 'Courier New', monospace; letter-spacing: 2px; text-align: center; text-transform: uppercase; outline: none; direction: ltr; }
+.gr-plate .gr-btn { width: 70px; flex: none; }

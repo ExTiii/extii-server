@@ -1,0 +1,89 @@
+/* ======================================================================
+   The charge sheet (Z wheel → الشرطة → مخالفة): tick the offences, the fine goes to his bank
+   ====================================================================== */
+#charge { position: fixed; inset: 0; z-index: 62; font-family: var(--font); direction: rtl; color: var(--text); }
+#charge.hidden { display: none; }
+#charge, #charge * { box-sizing: border-box; }
+#charge .ch-shade { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.3); }
+
+.ch-panel {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 980px; height: 620px;
+    display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: 0 34px 80px rgba(0, 0, 0, 0.6); overflow: hidden; animation: ch-in .22s ease both;
+}
+@keyframes ch-in { from { opacity: 0; transform: translate(-50%, -48%) scale(.98); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+.ch-top { display: flex; align-items: center; gap: 14px; padding: 18px 22px 14px; border-bottom: 1px solid var(--line); }
+.ch-badge { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); flex: none; }
+.ch-title h1 { margin: 0; font-size: 19px; }
+.ch-title p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
+.ch-title p b { color: var(--text); font-weight: 600; }
+.ch-meta { margin-right: auto; display: flex; gap: 8px; }
+.ch-chip { display: inline-flex; flex-direction: column; gap: 2px; padding: 7px 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); min-width: 110px; }
+.ch-chip small { font-size: 10.5px; color: var(--faint); letter-spacing: .04em; }
+.ch-chip b { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.ch-chip.warn b { color: var(--warn); }
+.ch-x { width: 36px; height: 36px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--muted); display: grid; place-items: center; cursor: pointer; flex: none; }
+.ch-x:hover { color: var(--text); border-color: var(--line-2); }
+
+.ch-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 330px; }
+.ch-list { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); }
+.ch-tools { display: flex; flex-direction: column; gap: 10px; padding: 14px 18px 10px; }
+.ch-search { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); color: var(--faint); }
+.ch-search input { flex: 1; border: 0; background: transparent; color: var(--text); font: 500 13.5px var(--font); outline: none; direction: rtl; }
+.ch-search input::placeholder { color: var(--faint); }
+.ch-cats { display: flex; flex-wrap: wrap; gap: 6px; }
+.ch-cat { height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--muted); font: 600 12px var(--font); cursor: pointer; }
+.ch-cat.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-line); }
+.ch-rows { flex: 1; min-height: 0; overflow-y: auto; padding: 0 18px 16px; display: flex; flex-direction: column; gap: 6px; }
+.ch-rows::-webkit-scrollbar { width: 6px; }
+.ch-rows::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+.ch-group { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--faint); margin: 10px 2px 2px; }
+.ch-row { display: grid; grid-template-columns: 24px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 13px; background: var(--card); border: 1px solid transparent; cursor: pointer; transition: border-color .12s, background .12s; }
+.ch-row:hover { border-color: var(--line-2); }
+.ch-row.on { background: var(--accent-soft); border-color: var(--accent-line); }
+.ch-box { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--line-2); display: grid; place-items: center; color: transparent; }
+.ch-row.on .ch-box { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.ch-label { font-size: 13.5px; font-weight: 600; }
+.ch-fine { font-size: 13px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; min-width: 64px; text-align: left; direction: ltr; }
+.ch-jail { font-size: 11.5px; color: var(--muted); min-width: 64px; text-align: left; white-space: nowrap; }
+.ch-jail.none { color: var(--faint); }
+.ch-empty { padding: 40px 0; text-align: center; color: var(--faint); font-size: 13px; }
+
+.ch-side { display: flex; flex-direction: column; min-height: 0; padding: 16px 18px; gap: 12px; background: rgba(255, 255, 255, .015); }
+.ch-side h3 { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+.ch-picked { flex: 1; min-height: 60px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.ch-picked::-webkit-scrollbar { width: 5px; }
+.ch-picked::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+.ch-pick { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; padding: 6px 10px; border-radius: 10px; background: var(--card); }
+.ch-pick span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-pick b { color: var(--accent); direction: ltr; font-variant-numeric: tabular-nums; flex: none; }
+.ch-pick i { width: 18px; height: 18px; border-radius: 6px; display: grid; place-items: center; color: var(--faint); font-style: normal; cursor: pointer; flex: none; }
+.ch-pick i:hover { color: var(--bad); background: rgba(255, 95, 95, .12); }
+.ch-none { font-size: 12.5px; color: var(--faint); text-align: center; padding: 18px 0; }
+.ch-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ch-total { padding: 10px 12px; border-radius: 13px; background: var(--card); border: 1px solid var(--line); }
+.ch-total small { display: block; font-size: 11px; color: var(--faint); }
+.ch-total b { display: block; font-size: 20px; font-weight: 800; margin-top: 2px; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
+.ch-total.fine b { color: var(--accent); }
+.ch-total.jail b { font-size: 16px; color: var(--text); }
+.ch-total.jail small em { font-style: normal; color: var(--warn); }
+.ch-note { width: 100%; min-height: 64px; max-height: 90px; resize: none; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: 500 13px var(--font); outline: none; direction: rtl; }
+.ch-note:focus { border-color: var(--accent-line); }
+.ch-note::placeholder { color: var(--faint); }
+.ch-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.ch-actions.prison { grid-template-columns: 1fr 1fr; }
+.ch-actions.prison .ch-btn.primary { grid-column: 1 / -1; }
+.ch-btn { height: 44px; padding: 0 16px; border-radius: 13px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: 700 13.5px var(--font); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.ch-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.ch-btn.primary:hover { background: var(--accent-hi); }
+.ch-btn[disabled] { opacity: .45; cursor: default; }
+.ch-foot { font-size: 11.5px; color: var(--faint); text-align: center; }
+.ch-err { font-size: 12px; color: var(--bad); min-height: 16px; text-align: center; }
+
+.ch-done { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 11, 14, .78); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.ch-done.show { opacity: 1; pointer-events: auto; }
+.ch-done-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 40px; border-radius: 22px; background: var(--sheet); border: 1px solid var(--line); animation: ch-in .25s ease both; }
+.ch-done-check { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); }
+.ch-done-card b { font-size: 17px; }
+.ch-done-card span { font-size: 13px; color: var(--muted); }

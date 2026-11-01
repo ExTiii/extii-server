@@ -1,0 +1,19 @@
+/* ======================================================================
+   The prisoner's time card (top of the screen while inside)
+   ====================================================================== */
+#prison { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 40; font-family: var(--font); direction: rtl; color: var(--text); pointer-events: none; }
+#prison.hidden { display: none; }
+#prison, #prison * { box-sizing: border-box; }
+.pr-card { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; min-width: 300px; padding: 10px 14px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 14px 34px rgba(0, 0, 0, .45); animation: pr-in .25s ease both; }
+@keyframes pr-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.pr-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); }
+.pr-card.escaped .pr-icon { background: rgba(255, 95, 95, .14); color: var(--bad); border-color: rgba(255, 95, 95, .35); }
+.pr-text { min-width: 0; }
+.pr-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.pr-top b { font-size: 13px; }
+.pr-top span { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; direction: ltr; color: var(--accent); }
+.pr-card.escaped .pr-top span { color: var(--bad); }
+.pr-bar { height: 5px; border-radius: 3px; background: var(--card-2); margin-top: 6px; overflow: hidden; }
+.pr-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width .6s; }
+.pr-card.escaped .pr-bar i { background: var(--bad); }
+.pr-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }

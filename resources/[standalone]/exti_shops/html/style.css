@@ -1,0 +1,193 @@
+/* EX_Tii shops — the shop panel (uses the server design kit: kit.css) */
+
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+#app { position: fixed; inset: 0; display: grid; place-items: center; }
+#app.hidden { display: none; }
+
+.shop {
+    position: relative;
+    width: min(1060px, 94vw);
+    height: min(660px, 90vh);
+    display: flex; flex-direction: column;
+    background:
+        radial-gradient(900px 300px at 85% -10%, rgba(232, 181, 71, 0.10), transparent 70%),
+        var(--panel);
+    animation: shop-in 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.15);
+}
+@keyframes shop-in { from { opacity: 0; transform: translateY(14px) scale(0.975); } to { opacity: 1; transform: none; } }
+#app.closing .shop { animation: shop-out 0.18s ease-in forwards; }
+@keyframes shop-out { to { opacity: 0; transform: translateY(10px) scale(0.98); } }
+
+/* ---------- top ---------- */
+.shop-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 24px 12px; }
+.brand-icon { width: 48px; height: 48px; border-radius: 15px; }
+.top-end { display: flex; align-items: center; gap: 12px; }
+.wallet { display: flex; gap: 8px; }
+.purse {
+    min-width: 116px;
+    padding: 7px 14px;
+    border-radius: 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 1px;
+    transition: border-color 0.2s, background 0.2s;
+}
+.purse-label { font-size: 11.5px; color: var(--faint); }
+.purse-value { font-size: 15.5px; font-weight: 700; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
+.purse.low .purse-value { color: var(--bad); }
+.purse.bump { border-color: var(--accent-line); background: var(--accent-soft); }
+
+.clerk-line {
+    margin: 0 24px 14px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: linear-gradient(90deg, rgba(232, 181, 71, 0.10), rgba(232, 181, 71, 0.02));
+    border: 1px solid var(--accent-line);
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13.5px; color: var(--text);
+}
+.clerk-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px rgba(61, 220, 151, 0.15); flex-shrink: 0; }
+.clerk-name { color: var(--accent); font-weight: 600; }
+
+/* ---------- body ---------- */
+.shop-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 330px; gap: 16px; padding: 0 24px 24px; }
+.catalog { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.chips { padding-bottom: 2px; }
+
+.grid {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-auto-rows: max-content;
+    gap: 12px;
+    padding: 2px 2px 6px 6px;
+}
+
+.card {
+    position: relative;
+    display: flex; flex-direction: column;
+    border-radius: 20px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    transition: transform 0.18s ease, border-color 0.18s, box-shadow 0.18s;
+    animation: card-in 0.35s ease both;
+}
+.grid.calm .card { animation: none; }
+@keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.card:hover { transform: translateY(-3px); border-color: var(--accent-line); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35); }
+.card.in-cart { border-color: var(--accent-line); }
+.card.locked { opacity: 0.6; }
+.card.locked:hover { transform: none; box-shadow: none; border-color: var(--line); }
+
+.card-art {
+    position: relative;
+    height: 96px;
+    display: grid; place-items: center;
+    background:
+        radial-gradient(120px 90px at 50% 60%, rgba(232, 181, 71, 0.16), transparent 70%),
+        linear-gradient(180deg, var(--card-2), var(--card));
+}
+.card-art img { width: 68px; height: 68px; object-fit: contain; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45)); transition: transform 0.25s ease; }
+.card:hover .card-art img { transform: scale(1.07) rotate(-2deg); }
+.card-art .fallback { color: var(--accent); opacity: 0.8; }
+.card-qty {
+    position: absolute; top: 10px; left: 10px;
+    min-width: 26px; height: 26px; padding: 0 8px;
+    border-radius: 999px;
+    background: var(--accent); color: var(--accent-ink);
+    font-size: 12.5px; font-weight: 700;
+    display: grid; place-items: center;
+    transform: scale(0); transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.card.in-cart .card-qty { transform: scale(1); }
+.card-desc { font-size: 12px; line-height: 1.45; color: var(--muted); }
+.card-tag {
+    align-self: flex-start;
+    height: 22px; padding: 0 8px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255, 255, 255, 0.07); color: var(--muted);
+    border: 1px solid var(--line);
+}
+.card-tag.warn { background: rgba(246, 169, 74, 0.13); color: var(--warn); border-color: rgba(246, 169, 74, 0.3); }
+
+.card-info { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.card-name { font-size: 14px; font-weight: 600; line-height: 1.35; min-height: 36px; display: flex; flex-direction: column; }
+.name-en { font-size: 11px; font-weight: 500; color: var(--faint); text-align: right; }
+.card-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+.price { font-size: 16px; font-weight: 700; color: var(--accent); display: flex; align-items: baseline; gap: 4px; }
+.price small { font-size: 11px; color: var(--faint); font-weight: 500; }
+.add-btn {
+    height: 34px; padding: 0 12px;
+    border-radius: 11px;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid var(--accent-line) !important;
+    font-weight: 600; font-size: 13px;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+.add-btn:hover { background: var(--accent); color: var(--accent-ink); }
+.add-btn:active { transform: scale(0.95); }
+.add-btn[disabled] { opacity: 0.4; cursor: default; background: var(--accent-soft); color: var(--accent); }
+
+/* ---------- cart ---------- */
+.cart {
+    min-height: 0;
+    display: flex; flex-direction: column;
+    border-radius: 22px;
+    background: var(--sheet);
+    border: 1px solid var(--line);
+    overflow: hidden;
+}
+.cart-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 10px; }
+.cart-title { display: flex; align-items: center; gap: 8px; color: var(--accent); }
+.cart-title h2 { margin: 0; font-size: 16px; color: var(--text); }
+.cart-count { min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--card-3); color: var(--muted); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.link-btn { font-size: 12.5px; color: var(--faint) !important; }
+.link-btn:hover { color: var(--bad) !important; }
+
+.cart-list { flex: 1; min-height: 0; padding: 0 12px; display: flex; flex-direction: column; gap: 8px; }
+.cart-empty { margin: auto; text-align: center; color: var(--faint); font-size: 13px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.cart-empty svg { opacity: 0.6; }
+
+.line {
+    display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    animation: line-in 0.22s ease both;
+}
+@keyframes line-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+.line img { width: 40px; height: 40px; object-fit: contain; }
+.line-text { min-width: 0; }
+.line-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.line-sum { font-size: 12px; color: var(--muted); direction: ltr; text-align: right; }
+.stepper { display: flex; align-items: center; gap: 2px; background: var(--card-2); border-radius: 10px; padding: 2px; }
+.stepper button { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; color: var(--muted); font-size: 16px; line-height: 1; }
+.stepper button:hover { background: var(--card-3); color: var(--text); }
+.stepper button[disabled] { opacity: 0.35; cursor: default; background: none; }
+.stepper span { min-width: 26px; text-align: center; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.cart-foot { padding: 14px 16px 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; background: linear-gradient(180deg, transparent, rgba(232, 181, 71, 0.04)); }
+.total-row { display: flex; align-items: baseline; justify-content: space-between; }
+.total-row span { color: var(--muted); font-size: 13.5px; }
+.total-row b { font-size: 26px; font-weight: 700; direction: ltr; font-variant-numeric: tabular-nums; transition: color 0.2s; }
+.total-row b.pulse { animation: pulse 0.35s ease; }
+@keyframes pulse { 50% { transform: scale(1.08); color: var(--accent); } }
+.pay { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pay-btn { height: 48px; font-size: 14px; }
+.pay-btn.loading { pointer-events: none; opacity: 0.75; }
+.pay-note { margin: 0; min-height: 16px; font-size: 12px; color: var(--faint); text-align: center; }
+.pay-note.bad { color: var(--bad); }
+
+/* ---------- success receipt ---------- */
+.receipt { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(6, 7, 10, 0.55); opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 30; }
+.receipt.show { opacity: 1; }
+.receipt-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 26px 34px; border-radius: 24px; background: var(--sheet); border: 1px solid var(--accent-line); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); transform: scale(0.9); transition: transform 0.25s cubic-bezier(0.3, 1.5, 0.5, 1); }
+.receipt.show .receipt-card { transform: scale(1); }
+.receipt-check { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 8px var(--accent-soft); margin-bottom: 6px; }
+.receipt-card b { font-size: 18px; }
+.receipt-card span { color: var(--muted); font-size: 13px; direction: rtl; }

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>EMS</title>
+    <link rel="stylesheet" href="kit.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="treat.css">
+    <link rel="stylesheet" href="duty.css">
+    <link rel="stylesheet" href="cloak.css">
+    <link rel="stylesheet" href="garage.css">
+</head>
+<body class="kit">
+    <!-- the rugged tablet on the right side of the screen -->
+    <div id="root" class="hidden">
+        <div class="device" id="device">
+            <div class="shell"></div>
+            <div class="bump tl"></div><div class="bump tr"></div><div class="bump bl"></div><div class="bump br"></div>
+            <div class="ridge top"></div><div class="ridge bottom"></div>
+            <div class="ridge tl"></div><div class="ridge tr"></div><div class="ridge bl"></div><div class="ridge br"></div>
+            <div class="ridge l"></div><div class="ridge r"></div>
+            <div class="side-btn" style="left: 260px; width: 70px;"></div>
+            <div class="side-btn" style="left: 350px; width: 44px;"></div>
+            <div class="bezel">
+                <div class="cam"></div>
+                <div class="screen" id="screen"><div class="os" id="os"></div></div>
+                <div class="glass"></div>
+                <div class="homebar"></div>
+            </div>
+        </div>
+    </div>
+    <!-- the treatment mode (full screen, the camera over the patient) -->
+    <div id="treat" class="kit hidden"></div>
+    <!-- starting the shift (like the video): the clock in terminal, the cloakroom, the garage -->
+    <div id="duty" class="hidden"></div>
+    <div id="cloak" class="hidden"></div>
+    <div id="garage" class="hidden"></div>
+    <script src="app.js"></script>
+    <script src="treat.js"></script>
+    <script src="duty.js"></script>
+    <script src="cloak.js"></script>
+    <script src="garage.js"></script>
+</body>
+</html>

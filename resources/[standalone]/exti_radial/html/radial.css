@@ -1,0 +1,68 @@
+/* EX_Tii radial menu (the Z wheel). Sizes are in vh so it looks the same on every screen. */
+@font-face { font-family: 'Plex'; src: url('fonts/plex-arabic-600.woff2') format('woff2'); font-weight: 600; }
+@font-face { font-family: 'Plex'; src: url('fonts/plex-arabic-700.woff2') format('woff2'); font-weight: 700; }
+@font-face { font-family: 'Plex'; src: url('fonts/plex-latin-700.woff2') format('woff2'); font-weight: 700; unicode-range: U+0000-00FF; }
+
+:root {
+    --R: 23vh;        /* outer edge of the slices */
+    --cx: 64vw;       /* the wheel sits right of the middle, like the video */
+    --cy: 50vh;
+    --dark: rgba(16, 17, 19, 0.66);
+    --dark-hover: rgba(16, 17, 19, 0.86);
+    --white: #f3f3f1;
+    --ink: #17181a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; font-family: 'Plex', sans-serif; user-select: none; }
+
+.wheel {
+    position: absolute;
+    left: var(--cx); top: var(--cy);
+    width: calc(var(--R) * 2); height: calc(var(--R) * 2);
+    transform: translate(-50%, -50%) scale(0.86);
+    opacity: 0;
+    transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.14s ease;
+    pointer-events: none;
+}
+.wheel.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+.wheel.pulse svg { animation: pulse 0.18s ease; }
+@keyframes pulse { from { transform: scale(0.93); opacity: 0.6; } to { transform: scale(1); opacity: 1; } }
+
+/* the ring behind the slices (no backdrop blur: the game's browser paints that as a black box) */
+.frost {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle, transparent 38%, rgba(16, 17, 19, 0.18) 38.5%, rgba(16, 17, 19, 0.18) 99%, transparent 100%);
+}
+svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+.slice { fill: var(--dark); transition: fill 0.08s ease; }
+.slice.on { fill: var(--white); }
+.slice.off { fill: rgba(16, 17, 19, 0.4); }
+.mark { fill: none; stroke: var(--ink); stroke-width: 4.5; stroke-linecap: round; }
+.icon { fill: var(--white); pointer-events: none; }
+.icon.on { fill: var(--ink); }
+.label { fill: var(--white); font-family: 'Plex', sans-serif; font-weight: 700; font-size: 16px; text-anchor: middle; pointer-events: none; letter-spacing: 0.2px; }
+.label.on { fill: var(--ink); }
+.label.dim, .icon.dim { opacity: 0.45; }
+.ring { fill: none; stroke: rgba(255, 255, 255, 0.8); stroke-width: 2.4; }
+.center { fill: var(--dark-hover); transition: fill 0.08s ease; }
+.center.on { fill: rgba(40, 42, 46, 0.92); }
+.ctext { fill: var(--white); font-family: 'Plex', sans-serif; font-weight: 700; font-size: 21px; text-anchor: middle; pointer-events: none; }
+
+/* the mouse hints under the wheel */
+.hints {
+    position: absolute; left: 50%; top: calc(100% + 1.6vh); transform: translateX(-50%);
+    display: flex; align-items: center; gap: 1.2vh; white-space: nowrap;
+}
+.hint {
+    display: inline-flex; align-items: center; gap: 0.8vh;
+    background: rgba(16, 17, 19, 0.82); color: var(--white);
+    padding: 0.9vh 1.5vh; border-radius: 0.8vh; font-weight: 700; font-size: 1.75vh;
+    box-shadow: 0 0.4vh 1.4vh rgba(0, 0, 0, 0.35);
+}
+.slash { color: rgba(255, 255, 255, 0.85); font-weight: 700; font-size: 2vh; text-shadow: 0 0.2vh 0.6vh rgba(0, 0, 0, 0.6); }
+.mouse { position: relative; display: inline-block; width: 1.7vh; height: 2.5vh; border: 0.22vh solid var(--white); border-radius: 0.9vh 0.9vh 1vh 1vh; }
+.mouse::before { content: ''; position: absolute; top: 0; width: 46%; height: 42%; background: var(--white); }
+.mouse.l::before { left: 0; border-radius: 0.7vh 0 0.3vh 0; }
+.mouse.r::before { right: 0; border-radius: 0 0.7vh 0 0.3vh; }

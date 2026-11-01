@@ -1,0 +1,24 @@
+/* ======================================================================
+   The CCTV overlay (while looking through a camera from the tablet)
+   ====================================================================== */
+#cctv { position: fixed; inset: 0; z-index: 45; font-family: var(--font); direction: rtl; color: #e8f1ff; pointer-events: none; }
+#cctv.hidden { display: none; }
+#cctv, #cctv * { box-sizing: border-box; }
+.cc-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .55) 100%); }
+.cc-frame { position: absolute; inset: 28px; border: 2px solid rgba(232, 240, 255, .35); border-radius: 6px; }
+.cc-frame::before, .cc-frame::after { content: ''; position: absolute; width: 28px; height: 28px; border: 3px solid rgba(232, 240, 255, .8); }
+.cc-frame::before { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
+.cc-frame::after { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
+.cc-top { position: absolute; top: 44px; right: 48px; display: flex; align-items: center; gap: 14px; }
+.cc-rec { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; letter-spacing: .12em; font-size: 14px; color: #ff5a5a; }
+.cc-rec i { width: 12px; height: 12px; border-radius: 50%; background: #ff3b3b; box-shadow: 0 0 12px #ff3b3b; animation: cc-blink 1s steps(2) infinite; }
+@keyframes cc-blink { to { opacity: .15; } }
+.cc-cam { font-size: 15px; font-weight: 700; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+.cc-cam small { display: block; font-size: 12px; font-weight: 500; color: rgba(232, 240, 255, .75); }
+.cc-topleft { position: absolute; top: 44px; left: 48px; text-align: left; font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); direction: ltr; }
+.cc-topleft b { display: block; font-size: 18px; }
+.cc-topleft span { font-size: 12px; color: rgba(232, 240, 255, .75); }
+.cc-bottom { position: absolute; bottom: 44px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+.cc-key { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 10px; background: rgba(8, 12, 20, .72); border: 1px solid rgba(232, 240, 255, .18); font-size: 12px; }
+.cc-key kbd { font: 700 11px var(--font); padding: 2px 7px; border-radius: 6px; background: rgba(232, 240, 255, .14); border: 1px solid rgba(232, 240, 255, .25); direction: ltr; }
+.cc-id { position: absolute; bottom: 44px; right: 48px; font-size: 12px; letter-spacing: .1em; color: rgba(232, 240, 255, .7); direction: ltr; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
