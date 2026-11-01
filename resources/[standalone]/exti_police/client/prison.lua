@@ -115,15 +115,13 @@ local function insideLoop()
         while jailed do
             local p = GetEntityCoords(cache.ped)
             local outside = prison and #(p - toVec3(prison.center)) > (prison.radius or P.radius)
-            if outside and not jailed.escaped then
-                awaySince = awaySince or GetGameTimer()
-                if GetGameTimer() - awaySince > P.escapeSeconds * 1000 then
-                    TriggerServerEvent('exti_police:server:prisonAway', true)
-                    awaySince = nil
-                end
-            elseif not outside then
-                awaySince = nil
-                if jailed.escaped then TriggerServerEvent('exti_police:server:prisonAway', false) end
+            -- prison is prison: outside the grounds (walked, brought, teleported) = back in the cell now
+            if outside and not teleporting and not IsEntityDead(cache.ped) then
+                jailed.escaped = false
+                local sp = prison and prison.spawn or P.spawn
+                teleport(sp, sp.w)
+                TriggerServerEvent('exti_police:server:prisonAway', true)
+                POL.notify('error', 'لا يمكنك مغادرة السجن قبل انتهاء مدتك')
             end
             hud(true)
             Wait(1000)
@@ -180,7 +178,7 @@ RegisterNetEvent('exti_police:client:released', function(why)
     local out = prison and prison.release or P.release
     teleport(out, out.w)
     ownClothes()
-    POL.notify('success', why == 'officer' and 'أطلقت الشرطة سراحك' or 'انتهت مدتك: أنت حر')
+    POL.notify('success', why == 'admin' and 'أطلقت الإدارة سراحك' or why == 'officer' and 'أطلقت الشرطة سراحك' or 'انتهت مدتك: أنت حر')
 end)
 
 -- a new body (respawn) keeps the uniform

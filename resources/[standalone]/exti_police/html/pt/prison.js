@@ -27,7 +27,7 @@
             ${rows.map((x) => `<tr><td><b>${esc(x.name)}</b></td><td class="ltr">${x.minutes} د</td><td class="ltr">${clock(x.remaining)}</td>
                 <td>${x.escaped ? '<em class="pt-tag red">هارب</em>' : x.online ? '<em class="pt-tag green">في السجن</em>' : '<em class="pt-tag grey">خارج المدينة</em>'}</td>
                 <td>${esc(x.officer || '')}</td><td class="ltr">${esc(fmtStamp(x.started))}</td>
-                <td class="pt-acts"><button class="pt-mini green" data-act="prisonRelease" data-cid="${esc(x.cid)}" data-name="${esc(x.name)}">${I('check', 13, 2.4)} إطلاق سراح</button><button class="pt-mini" data-act="prisonLocker" data-cid="${esc(x.cid)}" title="أغراضه">${I('archive', 13, 2)}</button></td></tr>`).join('')}
+                <td class="pt-acts"><button class="pt-mini" data-act="prisonLocker" data-cid="${esc(x.cid)}" title="أغراضه">${I('archive', 13, 2)}</button></td></tr>`).join('')}
             </tbody></table></div>`;
         return `<div class="pt-appwin">${PT.head('السجن', 'بولينغبروك', PT.metaBox('السجناء', String(all.length)), escaped ? `<em class="pt-tag red">${escaped} هارب</em>` : '')}
             <div class="pt-abody pad">

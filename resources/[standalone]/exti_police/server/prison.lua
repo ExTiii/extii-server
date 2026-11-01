@@ -243,7 +243,7 @@ local function release(src, why)
     setJailBags(src, false)
     if isDown(src) then pendingReturn[src] = inmate.cid else returnItems(src, inmate.cid) end
     TriggerClientEvent('exti_police:client:released', src, why or 'time')
-    POL.log(nil, 'released', ('%s (%s)'):format(inmate.name, why == 'officer' and 'إطلاق سراح من الشرطة' or 'انتهت المدة'))
+    POL.log(nil, 'released', ('%s (%s)'):format(inmate.name, why == 'admin' and 'إطلاق سراح من الإدارة' or 'انتهت المدة'))
     return true
 end
 
@@ -262,7 +262,7 @@ local function restore(src, player)
         returnItems(src, cid)
         return
     end
-    inmates[src] = { cid = cid, name = row.name, remaining = tonumber(row.remaining), minutes = tonumber(row.minutes), escaped = tonumber(row.escaped) == 1, lastTick = os.time(), lastWork = 0 }
+    inmates[src] = { cid = cid, name = row.name, remaining = tonumber(row.remaining), minutes = tonumber(row.minutes), escaped = false, lastTick = os.time(), lastWork = 0 }
     setJailBags(src, true)
     SetTimeout(3000, function() if inmates[src] then tellClient(src, inmates[src]) end end)
 end
@@ -321,62 +321,79 @@ local function distanceFromCenter(src)
     return #(GetEntityCoords(ped) - prison.center)
 end
 
-local function markEscaped(src, inmate)
-    if inmate.escaped then return end
-    inmate.escaped = true
-    inmate.away = 0
-    save(src, inmate)
-    tellClient(src, inmate)
-    copsTold(('هروب من السجن: %s'):format(inmate.name))
-    POL.log(nil, 'escaped', inmate.name)
-    lib.print.warn(('[prison] %s (%s) escaped'):format(inmate.name, inmate.cid))
-end
-
-local function markBack(src, inmate)
-    if not inmate.escaped then return end
+-- prison is prison: nobody gets out before the time is up (walking out, an admin "bring", a teleport,
+-- a car...). Outside the grounds = straight back to the cells. Only the time or /unjail (admin) frees.
+local function sendBack(src, inmate)
+    local ped = pedOf(src)
+    if not ped then return end
+    local sp = prison.spawn
+    SetEntityCoords(ped, sp.x, sp.y, sp.z, false, false, false, false)
+    SetEntityHeading(ped, sp.w or 0.0)
     inmate.escaped = false
-    inmate.away = 0
-    inmate.lastTick = os.time()
-    save(src, inmate)
-    tellClient(src, inmate)
+    tellClient(src, inmate) -- the game puts him in the cell too, in the uniform
+    local now = os.time()
+    if not inmate.lastPulled or now - inmate.lastPulled > 60 then
+        POL.log(nil, 'escaped', ('%s (أُعيد إلى الزنزانة)'):format(inmate.name))
+        lib.print.warn(('[prison] %s (%s) was outside the prison: sent back to the cells'):format(inmate.name, inmate.cid))
+    end
+    inmate.lastPulled = now
 end
 
--- the clock: once a second for everyone inside (not while escaped). The server also looks where
--- everyone is (every 5 s): a game that never says "I am outside" still counts as escaped.
+-- the clock: once a second for everyone inside (it never stops). Every second the server also looks
+-- where everyone is: outside the grounds = back in the cell.
 CreateThread(function()
-    local tick = 0
     while true do
         Wait(1000)
         local now = os.time()
-        tick = tick + 1
-        local done, escaped, back = {}, {}, {}
+        local done, outside = {}, {}
         for src, inmate in pairs(inmates) do
-            if not inmate.escaped then
-                inmate.remaining = inmate.remaining - (now - inmate.lastTick)
-                inmate.lastTick = now
-                if inmate.remaining <= 0 then
-                    done[#done + 1] = src
-                elseif tick % 30 == 0 then
-                    save(src, inmate)
-                end
+            inmate.escaped = false
+            inmate.remaining = inmate.remaining - (now - inmate.lastTick)
+            inmate.lastTick = now
+            if inmate.remaining <= 0 then
+                done[#done + 1] = src
             else
-                inmate.lastTick = now
-            end
-            if tick % 5 == 0 and pedOf(src) then
-                local outside = distanceFromCenter(src) > prison.radius
-                if outside and not inmate.escaped then
-                    inmate.away = (inmate.away or 0) + 5
-                    if inmate.away >= P.escapeSeconds then escaped[#escaped + 1] = src end
-                elseif not outside then
-                    inmate.away = 0
-                    if inmate.escaped then back[#back + 1] = src end
-                end
+                if now % 30 == 0 then save(src, inmate) end
+                if pedOf(src) and not isDown(src) and distanceFromCenter(src) > prison.radius then outside[#outside + 1] = src end
             end
         end
-        for _, src in ipairs(escaped) do if inmates[src] then markEscaped(src, inmates[src]) end end
-        for _, src in ipairs(back) do if inmates[src] then markBack(src, inmates[src]) end end
+        for _, src in ipairs(outside) do if inmates[src] then sendBack(src, inmates[src]) end end
         for _, src in ipairs(done) do if inmates[src] then release(src, 'time') end end
     end
+end)
+
+-- /unjail <id or citizenid>: the only way out before the time is up (admins)
+lib.addCommand('unjail', {
+    help = 'Prison: let an inmate out now (admin only)',
+    params = { { name = 'target', type = 'string', help = 'the player id (online) or the citizen id' } },
+    restricted = 'group.admin',
+}, function(source, args)
+    local t = tostring(args.target or '')
+    local id = math.tointeger(tonumber(t))
+    if id and inmates[id] then
+        local name = inmates[id].name
+        release(id, 'admin')
+        lib.print.info(('[prison] %s used /unjail on %s'):format(source == 0 and 'console' or (GetPlayerName(source) or source), name))
+        if source > 0 then notify(source, 'success', ('أُطلق سراح %s'):format(name)) else print(('released %s'):format(name)) end
+        return
+    end
+    local cid = t:upper()
+    for src, inmate in pairs(inmates) do
+        if inmate.cid == cid then
+            release(src, 'admin')
+            if source > 0 then notify(source, 'success', ('أُطلق سراح %s'):format(inmate.name)) else print(('released %s'):format(inmate.name)) end
+            return
+        end
+    end
+    local row = MySQL.single.await('SELECT `name` FROM `exti_police_prison` WHERE `citizenid` = ?', { cid })
+    if row then
+        -- offline: he walks out with his things the next time he comes into the city
+        MySQL.query.await('DELETE FROM `exti_police_prison` WHERE `citizenid` = ?', { cid })
+        POL.log(nil, 'released', ('%s (إطلاق سراح من الإدارة)'):format(row.name))
+        if source > 0 then notify(source, 'success', ('أُطلق سراح %s (غير متصل)'):format(row.name)) else print(('released %s (offline)'):format(row.name)) end
+        return
+    end
+    if source > 0 then notify(source, 'error', 'هذا الشخص ليس في السجن') else print('not in prison') end
 end)
 
 ---------------------------------------------------------------------------
@@ -410,13 +427,7 @@ RegisterNetEvent('exti_police:server:prisonAway', function(outside)
     local src = source
     local inmate = inmates[src]
     if not inmate then return end
-    if outside then
-        if distanceFromCenter(src) < prison.radius then return end
-        markEscaped(src, inmate)
-    else
-        if distanceFromCenter(src) > prison.radius then return end
-        markBack(src, inmate)
-    end
+    if outside and distanceFromCenter(src) > prison.radius and not isDown(src) then sendBack(src, inmate) end
 end)
 
 lib.callback.register('exti_police:server:prisonStatus', function(source)
@@ -468,6 +479,8 @@ cb('prisonList', function(source)
 end)
 
 cb('prisonRelease', function(source, cid)
+    -- only an admin (/unjail) lets someone out early now
+    do return false, 'admin_only' end
     local player = getPlayer(source)
     if not onDuty(player) then return false, 'off_duty' end
     if type(cid) ~= 'string' then return false, 'failed' end
