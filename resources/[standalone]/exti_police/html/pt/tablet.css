@@ -571,12 +571,14 @@ select.pt-in { padding: 0 10px; }
 .pt-logf .pt-in { width: 136px; }
 
 /* the CCTV list */
-.pt-cams { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
-.pt-cam { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; text-align: right; padding: 12px 14px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); color: var(--text); transition: border-color .15s, transform .15s; }
-.pt-cam:hover { border-color: var(--acc-line); transform: translateY(-1px); }
-.pt-cam > i { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: rgba(52, 213, 143, 0.12); color: var(--ok); font-style: normal; }
-.pt-cam b { display: block; font-size: 13.5px; }
-.pt-cam small { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+/* CCTV cards (.pt-cam is the tablet frame's camera dot: different class on purpose) */
+.pt-cctvs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 8px 0 14px; }
+.pt-cctv { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; text-align: right; padding: 11px 13px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); color: var(--text); font-family: inherit; cursor: pointer; transition: border-color .15s, transform .15s; min-width: 0; }
+.pt-cctv:hover { border-color: var(--acc-line); transform: translateY(-1px); }
+.pt-cctv > i { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: rgba(52, 213, 143, 0.12); color: var(--ok); font-style: normal; flex: none; }
+.pt-cctv > span { min-width: 0; }
+.pt-cctv b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-cctv small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; direction: rtl; }
 
 /* the records */
 .pt-ta { width: 100%; min-height: 120px; flex: 1; resize: none; padding: 10px 12px; border-radius: 10px; background: var(--card-2); border: 1px solid var(--line-2); color: var(--text); font: inherit; font-size: 13px; line-height: 1.7; outline: 0; direction: rtl; }

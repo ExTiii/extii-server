@@ -309,26 +309,24 @@ Config.dispatch = {
     labels = { phone = 'بلاغ هاتفي', chat = 'بلاغ 911', alarm = 'إنذار' },
 }
 
--- CCTV: the cameras the tablet can look through (الكاميرات). coords = where the camera hangs,
--- rot = pitch / roll / yaw it starts with. Admins aim their own view and type /cctvspot <n> to move one.
+-- CCTV (الكاميرات): the tablet looks through them. The list builds itself: one camera in every
+-- shop and bank (behind the counter, exti_shops), one over the pumps of every gas station
+-- (exti_fuel), plus the extra ones below, plus what admins add in game with /cctvadd.
+-- Fix a bad angle in game: aim your own view, type /cctvspot <n> (the number from the tablet).
 Config.cctv = {
     maxTurn = 70,        -- how far left / right the officer may turn a camera (degrees)
     maxTilt = 35,        -- up / down
     fov = { 25, 75 },    -- zoom range (the mouse wheel)
+    -- shops and banks: the camera hangs this far behind the clerk, this high over his feet, tilted down
+    shopBack = 1.6, shopHeight = 2.3, shopPitch = -22.0,
+    shopTypes = nil,     -- nil = every store type; or { general = true, bank = true, fuel = true, ... }
+    -- gas stations: on the far side of the pumps, this high, looking back over them
+    fuelDistance = 11.0, fuelHeight = 5.5, fuelPitch = -28.0,
+    -- the extra cameras: coords = where it hangs, rot = pitch / roll / yaw it starts with
     cameras = {
-        { label = 'بنك ليجن سكوير', area = 'ليجن سكوير', coords = vec3(146.8, -1046.7, 33.8), rot = vec3(-22.0, 0.0, 160.0) },
-        { label = 'بنك باسيفيك', area = 'وسط المدينة', coords = vec3(243.0, 223.5, 110.5), rot = vec3(-20.0, 0.0, 70.0) },
-        { label = 'بنك هاويك', area = 'هاويك', coords = vec3(309.0, -283.0, 58.0), rot = vec3(-22.0, 0.0, 250.0) },
-        { label = 'بنك ديل بيرو', area = 'ديل بيرو', coords = vec3(-1209.0, -335.0, 41.5), rot = vec3(-22.0, 0.0, 120.0) },
-        { label = 'بنك الطريق 68', area = 'الصحراء', coords = vec3(1172.0, 2711.0, 42.0), rot = vec3(-20.0, 0.0, 180.0) },
-        { label = 'بنك باليتو', area = 'باليتو باي', coords = vec3(-108.0, 6464.0, 35.5), rot = vec3(-20.0, 0.0, 300.0) },
-        { label = 'مجوهرات فانجيليكو', area = 'روكفورد هيلز', coords = vec3(-623.0, -230.0, 42.0), rot = vec3(-22.0, 0.0, 215.0) },
-        { label = 'متجر 24/7 ستروبيري', area = 'ستروبيري', coords = vec3(29.0, -1340.0, 33.5), rot = vec3(-20.0, 0.0, 70.0) },
-        { label = 'متجر 24/7 كلينتون', area = 'فاينوود', coords = vec3(380.0, 331.0, 107.5), rot = vec3(-20.0, 0.0, 200.0) },
-        { label = 'متجر 24/7 غروف ستريت', area = 'غروف ستريت', coords = vec3(1140.0, -978.0, 50.0), rot = vec3(-20.0, 0.0, 300.0) },
-        { label = 'مركز شرطة ميشن رو (المدخل)', area = 'ميشن رو', coords = vec3(434.0, -979.0, 35.0), rot = vec3(-25.0, 0.0, 180.0) },
-        { label = 'مستشفى بيلبوكس (المدخل)', area = 'بيلبوكس هيل', coords = vec3(306.0, -590.0, 47.5), rot = vec3(-22.0, 0.0, 70.0) },
-        { label = 'شارع فاينوود', area = 'فاينوود', coords = vec3(228.0, 165.0, 108.5), rot = vec3(-20.0, 0.0, 250.0) },
-        { label = 'ليجن سكوير (الساحة)', area = 'ليجن سكوير', coords = vec3(196.0, -935.0, 36.0), rot = vec3(-25.0, 0.0, 60.0) },
+        { label = 'مركز شرطة ميشن رو · المدخل', area = 'ميشن رو', kind = 'city', coords = vec3(434.0, -979.0, 35.0), rot = vec3(-25.0, 0.0, 180.0) },
+        { label = 'مستشفى بيلبوكس · المدخل', area = 'بيلبوكس هيل', kind = 'city', coords = vec3(306.0, -590.0, 47.5), rot = vec3(-22.0, 0.0, 70.0) },
+        { label = 'سجن بولينغبروك · البوابة', area = 'بولينغبروك', kind = 'city', coords = vec3(1845.0, 2595.0, 50.0), rot = vec3(-28.0, 0.0, 200.0) },
+        { label = 'مجوهرات فانجيليكو', area = 'روكفورد هيلز', kind = 'city', coords = vec3(-623.0, -230.0, 42.0), rot = vec3(-22.0, 0.0, 215.0) },
     },
 }

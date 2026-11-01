@@ -20,9 +20,19 @@
         let body;
         if (v.list == null) body = '<div class="pt-empty"><span class="pt-spin"></span><p>جارٍ التحميل…</p></div>';
         else if (!rows.length) body = '<p class="pt-mute pad">لا توجد كاميرا بهذا الاسم.</p>';
-        else body = `<div class="pt-cams">${rows.map((c) => `<button class="pt-cam" data-act="cctvOpen" data-id="${c.id}">
-            <i>${I('video', 20, 2)}</i><span><b>${esc(c.label)}</b><small>${esc(c.area || '')} · CAM ${String(c.id).padStart(2, '0')}</small></span>
-            <em class="pt-tag green">متصلة</em></button>`).join('')}</div>`;
+        else {
+            // grouped by kind: the city's own cameras, banks, shops, gas stations, the admins' extras
+            const KIND = { city: ['المدينة', 'building'], bank: ['البنوك', 'landmark'], shop: ['المتاجر', 'store'], fuel: ['محطات الوقود', 'gas-pump'], custom: ['كاميرات إضافية', 'video'] };
+            const order = ['city', 'bank', 'shop', 'fuel', 'custom'];
+            body = order.map((k) => {
+                const list = rows.filter((c) => (c.kind || 'city') === k);
+                if (!list.length) return '';
+                const [title, icon] = KIND[k];
+                return `<h4 class="pt-h4">${title} <span class="pt-mute">(${list.length})</span></h4><div class="pt-cctvs">${list.map((c) => `<button class="pt-cctv" data-act="cctvOpen" data-id="${c.id}">
+                    <i>${I(icon, 18, 2)}</i><span><b>${esc(c.label)}</b><small>CAM ${String(c.id).padStart(2, '0')}${c.area ? ' · ' + esc(c.area) : ''}</small></span>
+                    <em class="pt-tag green">متصلة</em></button>`).join('')}</div>`;
+            }).join('');
+        }
         return `<div class="pt-appwin">${PT.head('المراقبة', 'الكاميرات', PT.metaBox('الكاميرات', String(all.length)))}
             <div class="pt-abody pad">
                 <div class="pt-logtop"><h2 class="pt-bh">كاميرات المدينة</h2>

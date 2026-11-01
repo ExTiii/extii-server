@@ -92,10 +92,10 @@ end
 POL.cctvViewing = function() return viewing end
 
 -- /cctvspot n (admins): the server asks for your camera's place and angle
-RegisterNetEvent('exti_police:client:cctvAsk', function(n)
+RegisterNetEvent('exti_police:client:cctvAsk', function(n, label)
     local pos = GetGameplayCamCoord()
     local rot = GetGameplayCamRot(2)
-    TriggerServerEvent('exti_police:server:cctvPlace', n, { x = pos.x, y = pos.y, z = pos.z }, { x = rot.x, y = rot.y, z = rot.z })
+    TriggerServerEvent('exti_police:server:cctvPlace', n, { x = pos.x, y = pos.y, z = pos.z }, { x = rot.x, y = rot.y, z = rot.z }, label)
 end)
 
 AddEventHandler('onResourceStop', function(resource)
