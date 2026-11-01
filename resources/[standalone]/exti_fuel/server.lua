@@ -602,3 +602,8 @@ exports('SetFuel', function(vehicle, level)
     setFuel(vehicle, level)
     return true
 end)
+
+--- Stations() -> the gas stations with their pumps (the police CCTV builds its camera list from them)
+exports('Stations', function()
+    return Config.stations
+end)

@@ -47,12 +47,35 @@ local function yawTowards(from, to)
     return math.deg(math.atan(-dx, dy))
 end
 
+-- the places: from the running resource (export) when it is up, else from its config file
+local function stores()
+    if GetResourceState('exti_shops') == 'started' then
+        local ok, list, types = pcall(function() return exports.exti_shops:Stores() end)
+        if ok and type(list) == 'table' then return list, types end
+    end
+    local ok, cfg = pcall(readConfig, 'exti_shops')
+    if ok and type(cfg) == 'table' and type(cfg.stores) == 'table' then return cfg.stores, cfg.types end
+    lib.print.warn('[cctv] could not read the shops (exti_shops): no shop / bank cameras')
+    return nil
+end
+
+local function stations()
+    if GetResourceState('exti_fuel') == 'started' then
+        local ok, list = pcall(function() return exports.exti_fuel:Stations() end)
+        if ok and type(list) == 'table' then return list end
+    end
+    local ok, cfg = pcall(readConfig, 'exti_fuel')
+    if ok and type(cfg) == 'table' and type(cfg.stations) == 'table' then return cfg.stations end
+    lib.print.warn('[cctv] could not read the gas stations (exti_fuel): no pump cameras')
+    return nil
+end
+
 local function shopCameras()
     local out = {}
-    local ok, cfg = pcall(readConfig, 'exti_shops')
-    if not ok or type(cfg) ~= 'table' or type(cfg.stores) ~= 'table' then return out end
-    local types = type(cfg.types) == 'table' and cfg.types or {}
-    for _, s in ipairs(cfg.stores) do
+    local list, typesList = stores()
+    if not list then return out end
+    local types = type(typesList) == 'table' and typesList or {}
+    for _, s in ipairs(list) do
         local t = types[s.type]
         local c = s.clerk
         if t and type(c) == 'table' and num(c.x) and (C.shopTypes == nil or C.shopTypes[s.type]) then
@@ -73,9 +96,9 @@ end
 
 local function fuelCameras()
     local out = {}
-    local ok, cfg = pcall(readConfig, 'exti_fuel')
-    if not ok or type(cfg) ~= 'table' or type(cfg.stations) ~= 'table' then return out end
-    for _, st in ipairs(cfg.stations) do
+    local list = stations()
+    if not list then return out end
+    for _, st in ipairs(list) do
         local center = st.center
         if type(center) == 'table' and num(center.x) then
             -- on the far side of the pumps, up on the canopy, looking back over all of them
@@ -126,11 +149,13 @@ local function build()
     lib.print.info(('[cctv] %d cameras'):format(#cameras))
 end
 -- exti_shops / exti_fuel may start after us
+build()
 CreateThread(function()
-    Wait(2000)
+    Wait(3000)
+    build()
+    Wait(15000)
     build()
 end)
-build()
 AddEventHandler('onResourceStart', function(res)
     if res == 'exti_shops' or res == 'exti_fuel' then SetTimeout(1000, build) end
 end)

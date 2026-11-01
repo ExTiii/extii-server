@@ -218,3 +218,8 @@ end)
 AddEventHandler('playerDropped', function()
     busy[source] = nil
 end)
+
+--- Stores() -> stores, types : the places and their kinds (the police CCTV builds its camera list from them)
+exports('Stores', function()
+    return Config.stores, Config.types
+end)
