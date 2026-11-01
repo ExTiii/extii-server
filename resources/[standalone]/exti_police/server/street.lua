@@ -283,6 +283,83 @@ POL.withInventory(function()
     exports.ox_inventory:RegisterStash(S.seized.id, S.seized.label, S.seized.slots, S.seized.weight, nil, POL.NOONE)
 end, 'the seized items room')
 
+---------------------------------------------------------------------------
+-- no stealing with the badge:
+--  * anything an officer takes out of a citizen's bag (a search) goes to the seized items room, never
+--    into his own pockets, a car, a stash or the ground; it is written in the log
+--  * an officer cannot drop his own item ON a citizen's item (a swap would hand him the citizen's)
+--  * only the chief takes things out of the seized items room (logged); every officer can put in
+---------------------------------------------------------------------------
+local function itemText(slot, count)
+    return ('%dx %s'):format(count or (slot and slot.count) or 1, slot and (slot.label or slot.name) or '?')
+end
+
+local function toSeized(copSrc, fromSrc, slot, count)
+    count = math.max(1, math.floor(tonumber(count) or slot.count or 1))
+    local okR, removed = pcall(function()
+        return exports.ox_inventory:RemoveItem(fromSrc, slot.name, count, nil, slot.slot)
+    end)
+    if not okR or not removed then return notify(copSrc, 'error', 'تعذّر نقل الغرض، حاول مرة أخرى') end
+    local okA, added = pcall(function()
+        return exports.ox_inventory:AddItem(S.seized.id, slot.name, count, slot.metadata)
+    end)
+    if not okA or not added then
+        -- the room is full: back into the citizen's bag
+        pcall(function() exports.ox_inventory:AddItem(fromSrc, slot.name, count, slot.metadata) end)
+        return notify(copSrc, 'error', 'غرفة المصادرات ممتلئة')
+    end
+    local target = getPlayer(fromSrc)
+    local what = itemText(slot, count)
+    POL.log(copSrc, 'seize', ('%s: %s'):format(target and POL.nameOf(target) or fromSrc, what))
+    lib.logger(copSrc, 'police', ('searched player %d: %s went to the seized room'):format(fromSrc, what))
+    notify(copSrc, 'inform', ('أُرسل إلى غرفة المصادرات: %s'):format(what))
+    notify(fromSrc, 'inform', ('صادرت الشرطة منك: %s'):format(what))
+end
+
+POL.withInventory(function()
+    exports.ox_inventory:registerHook('swapItems', function(p)
+        local src = tonumber(p.source)
+        if not src then return true end
+        if p.fromInventory == p.toInventory then return true end -- tidying one bag
+        local player = getPlayer(src)
+        if not player or not POL.isCop(player) then return true end
+
+        -- out of another player's bag (a search): to the seized room instead
+        local fromId = p.fromType == 'player' and tonumber(p.fromInventory) or nil
+        if fromId and fromId ~= src and type(p.fromSlot) == 'table' and p.fromSlot.name then
+            local slot = { name = p.fromSlot.name, slot = p.fromSlot.slot, count = p.fromSlot.count, metadata = p.fromSlot.metadata, label = p.fromSlot.label }
+            local count = tonumber(p.count) or slot.count
+            SetTimeout(0, function() toSeized(src, fromId, slot, count) end)
+            return false
+        end
+
+        -- my item dropped onto a citizen's item: that swap would give me his
+        local toId = p.toType == 'player' and tonumber(p.toInventory) or nil
+        if toId and toId ~= src and p.action == 'swap' then
+            notify(src, 'error', 'ضع الغرض في خانة فارغة')
+            return false
+        end
+
+        -- the seized items room: everyone puts in, only the chief takes out
+        if p.fromInventory == S.seized.id then
+            if not POL.isBoss(player) then
+                notify(src, 'error', 'فقط قائد الشرطة يأخذ من غرفة المصادرات')
+                return false
+            end
+            local what = type(p.fromSlot) == 'table' and itemText(p.fromSlot, tonumber(p.count)) or '?'
+            POL.log(src, 'seized_taken', what)
+            lib.logger(src, 'police', ('took %s from the seized room'):format(what))
+            return true
+        end
+        if p.toInventory == S.seized.id and p.action == 'swap' and not POL.isBoss(player) then
+            -- a swap would take the room's item out
+            notify(src, 'error', 'ضع الغرض في خانة فارغة')
+            return false
+        end
+        return true
+    end, {})
+end, 'the search and seized room rules')
+
 lib.callback.register('exti_police:server:openSeized', function(source, station)
     local player = getPlayer(source)
     local st = POL.stationOf(station)
