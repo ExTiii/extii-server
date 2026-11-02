@@ -320,6 +320,14 @@ local function points()
                                 label = mine and '[E] ادخل المقر' or (GC.isCop and GC.isCop() and '[E] الباب (اطرق / اقتحم)' or '[E] اطرق الباب') }
             list[#list + 1] = { kind = 'door_in', gang = name, pos = v3(set.door_in), label = '[E] اخرج' }
         end
+        -- real doors (locked for everyone but the gang)
+        for i, d in ipairs(set.doors or {}) do
+            local mine = my and my.name == name
+            local open = GC.realDoorOpen and GC.realDoorOpen(name, i)
+            local label = mine and (open and '[E] اقفل الباب' or '[E] افتح الباب')
+                or (not open and (GC.isCop and GC.isCop() and '[E] باب مقفل (اطرق / اقتحم)' or '[E] باب مقفل (اطرق)')) or nil
+            if label then list[#list + 1] = { kind = 'rdoor', gang = name, i = i, pos = v3(d), label = label, reach = 2.0 } end
+        end
     end
     for i, c in ipairs(spots.collect and spots.collect.crates or {}) do list[#list + 1] = { kind = 'crate', i = i, pos = v3(c) } end
     if spots.fence then list[#list + 1] = { kind = 'fence', pos = v3(spots.fence) } end
@@ -343,8 +351,8 @@ CreateThread(function()
             for _, pt in ipairs(points()) do
                 local d = #(here - pt.pos)
                 if d < 12.0 then sleep = 0 end
-                if d < (pt.kind == 'crate' and 1.8 or 1.5) and d < bestD then best, bestD = pt, d end
-                if d < 12.0 and pt.kind ~= 'crate' and pt.kind ~= 'fence' then
+                if d < (pt.reach or (pt.kind == 'crate' and 1.8 or 1.5)) and d < bestD then best, bestD = pt, d end
+                if d < 12.0 and pt.kind ~= 'crate' and pt.kind ~= 'fence' and pt.kind ~= 'rdoor' then
                     DrawMarker(20, pt.pos.x, pt.pos.y, pt.pos.z - 0.55, 0, 0, 0, 0, 180.0, 0, 0.32, 0.32, 0.22, 232, 181, 71, 140, true, true, 2, false, nil, nil, false)
                 end
             end
@@ -361,7 +369,8 @@ CreateThread(function()
             elseif k == 'crate' then doCrate(best.i)
             elseif k == 'fence' then doFence()
             elseif k == 'door_out' then GC.doorOut(best.gang)
-            elseif k == 'door_in' then GC.doorIn(best.gang) end
+            elseif k == 'door_in' then GC.doorIn(best.gang)
+            elseif k == 'rdoor' then GC.realDoor(best.gang, best.i) end
             busy = false
         end
         Wait(sleep)
@@ -385,6 +394,16 @@ RegisterNetEvent('exti_gangs:client:spotsMenu', function(gangList)
                 sub[#sub + 1] = { title = KIND_LABEL[kind] .. ' هنا', icon = 'location-dot', onSelect = function() save('hq', g.name, kind) end }
             end
         end
+        sub[#sub + 1] = { title = 'باب حقيقي: انظر إليه ثم اختر هذا', description = 'يُقفل للجميع إلا العصابة (الباب المزدوج: كل جهة على حدة)', icon = 'door-closed', onSelect = function()
+            local model, c = GC.aimDoor()
+            if not model then return notify('انظر مباشرة إلى الباب (من مسافة قريبة) ثم اختر', 'error') end
+            local ok, n = lib.callback.await('exti_gangs:server:realDoorAdd', false, g.name, model, c)
+            notify(ok and ('أُضيف الباب رقم %d: مقفل الآن'):format(n) or (n == 'max' and 'الحد 8 أبواب' or n == 'dupe' and 'هذا الباب مضاف من قبل' or 'لم يُضف'), ok and 'success' or 'error')
+        end }
+        sub[#sub + 1] = { title = 'امسح الأبواب الحقيقية لهذا المقر', icon = 'door-open', onSelect = function()
+            local ok = lib.callback.await('exti_gangs:server:realDoorClear', false, g.name)
+            notify(ok and 'مُسحت الأبواب' or 'لم يُمسح', ok and 'success' or 'error')
+        end }
         sub[#sub + 1] = { title = 'امسح كل أماكن هذا المقر', icon = 'trash', onSelect = function() save('hq_clear', g.name, nil, 'مُسح') end }
         lib.registerContext({ id = 'exti_gs_' .. g.name, title = g.label, menu = 'exti_gs_main', options = sub })
         opts[#opts + 1] = { title = ('مقر %s'):format(g.label), description = C.types[g.type] and C.types[g.type].label or g.type, menu = 'exti_gs_' .. g.name, icon = 'house' }

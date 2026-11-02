@@ -483,4 +483,39 @@ check(CB.door(22, 'chopz', 'enter') == true, 'the door stays open to the police 
 at(20, vec3(205, 0, 0))
 check(CB.door(20, 'chopz', 'exit') == true, 'anyone inside can walk out')
 
+-- real doors
+at(1, vec3(300, 50, 0))
+check(CB.realDoorAdd(2, 'chopz', 12345, { x = 300, y = 51, z = 0 }) == false, 'only admins add real doors')
+local okA, nA = CB.realDoorAdd(1, 'chopz', 12345, { x = 300, y = 51, z = 0 })
+check(okA and nA == 1 and GANG.spots.hq.chopz.doors[1].model == 12345, 'the admin adds a real door (locked)')
+check(select(2, CB.realDoorAdd(1, 'chopz', 12345, { x = 300, y = 51, z = 0 })) == 'dupe', 'the same door twice is refused')
+local locks = function() return GlobalState['exti_gangs:locks'] or {} end
+local function isOpenT() return locks().chopz ~= nil and locks().chopz[1] == false end
+check(not isOpenT(), 'it starts locked')
+local stranger = addPlayer(30, 'CS30', 'Str'); at(30, vec3(300, 51.5, 0))
+check(select(2, CB.realDoor(30, 'chopz', 1, 'toggle')) == 'notmember' and not isOpenT(), 'a stranger can not open it')
+at(10, vec3(300, 52, 0))
+local okT, op = CB.realDoor(10, 'chopz', 1, 'toggle')
+check(okT and op == true and isOpenT(), 'a member opens it with E')
+CB.realDoor(10, 'chopz', 1, 'toggle')
+check(not isOpenT(), 'and locks it again')
+at(10, vec3(320, 51, 0))
+local evN = #clientEvents
+check(CB.realDoor(30, 'chopz', 1, 'knock') == true, 'the stranger knocks')
+local kid2
+for i = evN + 1, #clientEvents do local e = clientEvents[i]; if e.name == 'exti_gangs:client:knock' and e.src == 10 then kid2 = e.args[1] end end
+check(kid2 ~= nil, 'a member close by hears it')
+fireNet('exti_gangs:server:knockAnswer', 10, kid2, true)
+check(isOpenT(), 'the member answers: the door opens for him')
+CB.realDoor(10, 'chopz', 1, 'toggle'); at(10, vec3(300, 52, 0)); CB.realDoor(10, 'chopz', 1, 'toggle')
+check(not isOpenT(), '(locked again)')
+local cop3 = addPlayer(31, 'CP31', 'Cop3'); cop3.PlayerData.job = { name = 'police', onduty = true }; at(31, vec3(300, 51, 0))
+check(select(2, CB.realDoor(31, 'chopz', 1, 'toggle')) == 'notmember', 'the police can not just open it')
+local okRB = CB.realDoor(31, 'chopz', 1, 'breachBegin')
+check(okRB and CB.realDoor(31, 'chopz', 1, 'breachFinish') == false, 'a breach can not be skipped')
+CB.realDoor(31, 'chopz', 1, 'breachBegin'); advance(11)
+check(CB.realDoor(31, 'chopz', 1, 'breachFinish') == true and isOpenT(), 'after 10 s the police break it open')
+at(30, vec3(900, 0, 0))
+check(select(2, CB.realDoor(30, 'chopz', 1, 'knock')) == 'far', 'nothing from far away')
+
 print(('\n%d passed, %d failed'):format(passes, fails))

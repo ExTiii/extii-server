@@ -19,6 +19,16 @@ do
             if type(gang) == 'string' and type(set) == 'table' then
                 spots.hq[gang] = {}
                 for k, v in pairs(set) do if KINDS[k] then spots.hq[gang][k] = pos4(v) end end
+                -- real doors: { x, y, z, model }
+                if type(set.doors) == 'table' then
+                    local list = {}
+                    for _, d in ipairs(set.doors) do
+                        local p = pos4(d)
+                        local mdl = math.tointeger(tonumber(d.model))
+                        if p and mdl and #list < C.realDoor.max then p.model = mdl; list[#list + 1] = p end
+                    end
+                    if #list > 0 then spots.hq[gang].doors = list end
+                end
             end
         end
         for _, c in ipairs(type(data.collect) == 'table' and type(data.collect.crates) == 'table' and data.collect.crates or {}) do
@@ -34,6 +44,7 @@ local function publish()
     SaveResourceFile(GetCurrentResourceName(), FILE, json.encode(spots, { indent = true }), -1)
 end
 GlobalState['exti_gangs:spots'] = spots
+GANG.publishSpots = publish
 
 function GANG.spot(g, kind)
     local set = spots.hq[g.name]

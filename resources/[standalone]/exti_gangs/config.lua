@@ -122,6 +122,15 @@ C.door = {
     insideRange = 80.0,                   -- further than this from the inside door = he isn't inside any more
 }
 
+-- Real doors (a house that has its own door: Michael's, Franklin's, a garage door, a back door).
+-- Locked for everyone. A gang member opens it with [E]; it locks itself again. Others knock; police breach.
+C.realDoor = {
+    max = 8,               -- doors per HQ (double doors = 2: aim at each side)
+    reach = 2.5,
+    autoLock = 10,         -- seconds open, then it locks again by itself
+    knockRange = 40.0,     -- members this close to the door hear a knock
+}
+
 -- The luxury houses on the map (for /gangspots -> "luxury houses": takes you inside to look)
 C.houses = {
     { label = '3655 Wild Oats Drive',            coords = vec3(-169.29, 486.49, 137.44) },
