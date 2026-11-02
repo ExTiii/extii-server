@@ -589,6 +589,7 @@ lib.callback.register('exti_gangs:server:settings', function(source, s)
         if #tag >= 2 then g.tag = tag end
     end
     saveGang(g)
+    if GANG.publishTurf then GANG.publishTurf() end   -- the tags on the walls show the new tag / colour
     log(g, GANG.charName(p), 'settings', g.type == 'wash'
         and ('أجر القطعة $%d · نسبة الغسيل %d%% · التسليم %s'):format(st.partPay, st.washCut, st.deposits and 'مفتوح' or 'مقفل')
         or ('أجر القطعة $%d · السارق %d%% · المفكك %d%% · التسليم %s'):format(st.partPay, st.thiefCut, st.chopperCut, st.deposits and 'مفتوح' or 'مقفل'))
@@ -681,6 +682,7 @@ lib.callback.register('exti_gangs:server:laptop', function(source)
     if m.rank == 3 then data.settings = g.settings end
     if g.type == 'chop' and GANG.chopView then data.chop = GANG.chopView(g, m) end
     if g.type == 'wash' and GANG.washView then data.wash = GANG.washView(g, m) end
+    if GANG.turfView then data.turf = GANG.turfView(g) end
     return data
 end)
 

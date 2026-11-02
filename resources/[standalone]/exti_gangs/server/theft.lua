@@ -34,6 +34,8 @@ local function isNight()
     return h >= T.nightFrom and h < T.nightTo
 end
 
+GANG.nightNow = isNight
+
 local function trim(s) return (tostring(s or ''):gsub('^%s+', ''):gsub('%s+$', '')) end
 local function plateOf(veh) return trim(GetVehicleNumberPlateText(veh)):upper() end
 local function halfPlate(plate)

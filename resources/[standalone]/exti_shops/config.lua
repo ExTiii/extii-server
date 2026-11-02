@@ -80,6 +80,9 @@ Config.types = {
             { name = 'screwdriverset', price = 120, category = 'tools', max = 2 },
             { name = 'binoculars', price = 250, category = 'tools', max = 1 },
             { name = 'lighter', price = 15, category = 'tools', max = 3 },
+            -- EX_Tii gangs: turf graffiti
+            { name = 'spray_can', price = 150, category = 'tools', max = 5 },
+            { name = 'scrub_brush', price = 40, category = 'tools', max = 2, metadata = { uses = 3, description = 'استعمالات متبقية: 3' } },
         },
     },
 

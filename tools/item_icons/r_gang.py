@@ -67,3 +67,35 @@ def wash_supplies():
         objs.append(K.box((0.36, 0.17, 0.07), (0.5, -0.2, z), note_m, bevel=0.004, rot=(0, 0, rad(-8 + i * 6))))
         objs.append(K.box((0.07, 0.175, 0.074), (0.5, -0.2, z), band_m, bevel=0.002, rot=(0, 0, rad(-8 + i * 6))))
     return objs, {'el': 22}
+
+@item
+def spray_can():
+    # a spray paint can with a red cap and a little paint on the floor
+    body_m = K.mat('can_body', (0.06, 0.06, 0.07), rough=0.25, metal=0.6, coat=0.5)
+    prof = [(0, 0), (0.15, 0), (0.16, 0.015), (0.16, 0.6), (0.145, 0.66), (0.1, 0.7), (0.05, 0.72), (0, 0.72)]
+    can = K.lathe(prof, body_m)
+    rim = K.lathe([(0.0, 0.69), (0.065, 0.69), (0.065, 0.73), (0.0, 0.73)], K.steel())
+    cap = K.lathe([(0, 0.72), (0.04, 0.72), (0.04, 0.8), (0, 0.8)], K.plastic((0.85, 0.06, 0.05), 0.3))
+    nozzle = K.box((0.03, 0.03, 0.025), (0.035, 0.0, 0.79), K.plastic((0.9, 0.9, 0.9), 0.4))
+    def dr(d, im):
+        d.rectangle((0, 0, 1200, 360), fill=(230, 40, 40, 255))
+        for i, c in enumerate([(255, 200, 0, 255), (30, 140, 255, 255), (40, 200, 90, 255)]):
+            d.ellipse((160 + i * 330, 40, 420 + i * 330, 300), fill=c)
+        K.center_text(d, 1200, 110, 'SPRAY', K.font(130, K.FONT_C), (255, 255, 255, 255))
+    lab = K.wrap(K.label_img('spraylab', 1200, 360, (0, 0, 0, 0), dr), 0.1615, 0.3, 0.32, rough=0.3, coat=0.5, face=43)
+    splat = K.cyl(0.13, 0.002, (0.25, -0.12, 0.001), K.mat('splat', (0.85, 0.06, 0.05), rough=0.2, coat=0.6))
+    return [can, rim, cap, nozzle, lab, splat], {'el': 22}
+
+@item
+def scrub_brush():
+    # a wooden scrub brush with stiff bristles and a soapy sponge
+    wood = K.mat('wood_b', (0.55, 0.36, 0.2), rough=0.6, bump=0.3, bump_scale=200)
+    base = K.box((0.5, 0.2, 0.07), (0, 0, 0.12), wood, bevel=0.03)
+    handle = K.box((0.34, 0.08, 0.06), (-0.02, 0, 0.2), wood, bevel=0.025)
+    objs = [base, handle]
+    br = K.mat('bristle', (0.92, 0.85, 0.6), rough=0.8)
+    for ix in range(9):
+        for iy in range(3):
+            objs.append(K.cyl(0.012, 0.09, (-0.21 + ix * 0.052, -0.06 + iy * 0.06, 0.045), br, verts=12))
+    sponge = K.box((0.26, 0.16, 0.09), (0.34, -0.2, 0.045), K.mat('sponge', (0.95, 0.85, 0.1), rough=0.95, bump=0.6, bump_scale=600), bevel=0.02)
+    return objs + [sponge], {'el': 30}

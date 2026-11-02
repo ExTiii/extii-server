@@ -114,6 +114,22 @@ C.wash = {
     tipDelay = { 60, 240 },                   -- seconds after the batch (so it isn't a live alarm)
 }
 
+-- ------------------------------------------------------------------ Turf & graffiti
+-- Zones are drawn by an admin in game (/turfzone). A gang member sprays the gang's tag on a wall in a
+-- zone (spray can from the tools shop). The gang with the most tags owns the zone.
+C.turf = {
+    maxPerZone = 5,
+    minGap = 3.0,            -- metres between two tags
+    spraySeconds = 20,
+    scrubSeconds = 15,
+    cooldown = 600,          -- per player between two tags
+    brushUses = 3,
+    repPerZoneHour = 10,
+    maxPoints = 20,          -- corners per zone
+    tagSize = { 2.2, 1.1 },  -- metres on the wall
+    drawDistance = 45.0,
+}
+
 -- ------------------------------------------------------------------ car theft -> police
 -- Every lockpick / hotwire / key search / carjack (the car keys script) and every car really stolen.
 -- Player cars, police cars and fast cars always alert. Normal cars: a chance (lower at night).

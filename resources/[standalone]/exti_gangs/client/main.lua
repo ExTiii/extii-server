@@ -336,6 +336,8 @@ local function points()
     if my and my.type == 'wash' and my.rank >= 1 and spots.hq and spots.hq[my.name] and spots.hq[my.name].washer then
         list[#list + 1] = { kind = 'washer', pos = v3(spots.hq[my.name].washer), label = '[E] آلة الغسيل' }
     end
+    -- the police clean graffiti
+    if GC.turfPoints then for _, pt in ipairs(GC.turfPoints()) do list[#list + 1] = pt end end
     for i, c in ipairs(spots.collect and spots.collect.crates or {}) do list[#list + 1] = { kind = 'crate', i = i, pos = v3(c) } end
     if spots.fence then list[#list + 1] = { kind = 'fence', pos = v3(spots.fence) } end
     return list
@@ -359,7 +361,7 @@ CreateThread(function()
                 local d = #(here - pt.pos)
                 if d < 12.0 then sleep = 0 end
                 if d < (pt.reach or (pt.kind == 'crate' and 1.8 or 1.5)) and d < bestD then best, bestD = pt, d end
-                if d < 12.0 and pt.kind ~= 'crate' and pt.kind ~= 'fence' and pt.kind ~= 'rdoor' then
+                if d < 12.0 and pt.kind ~= 'crate' and pt.kind ~= 'fence' and pt.kind ~= 'rdoor' and pt.kind ~= 'tag' then
                     DrawMarker(20, pt.pos.x, pt.pos.y, pt.pos.z - 0.55, 0, 0, 0, 0, 180.0, 0, 0.32, 0.32, 0.22, 232, 181, 71, 140, true, true, 2, false, nil, nil, false)
                 end
             end
@@ -379,7 +381,8 @@ CreateThread(function()
             elseif k == 'door_in' then GC.doorIn(best.gang)
             elseif k == 'rdoor' then GC.realDoor(best.gang, best.i)
             elseif k == 'dropbox' then GC.dropBox(best.gang)
-            elseif k == 'washer' then GC.washer() end
+            elseif k == 'washer' then GC.washer()
+            elseif k == 'tag' then GC.scrubTag(best.tag) end
             busy = false
         end
         Wait(sleep)

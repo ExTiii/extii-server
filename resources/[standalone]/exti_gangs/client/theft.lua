@@ -25,6 +25,7 @@ local function witnessSaw()
     return false
 end
 lib.callback.register('exti_gangs:client:witness', function() return witnessSaw() end)
+GC.witnessSaw = witnessSaw
 
 -- from the car keys script (a local event: nothing outside this game can send it)
 AddEventHandler('exti_gangs:client:theftAttempt', function(crime, vehicle)

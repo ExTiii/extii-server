@@ -1042,6 +1042,22 @@ return {
         description = 'لا تأتي إلا من ورشة التفكيك. مطلوبة لعمليات السطو الكبيرة',
     },
 
+    -- EX_Tii gangs: turf graffiti (tools shop). One can = one tag; the brush scrubs 3 rival tags
+    ['spray_can'] = {
+        label = 'علبة رش',
+        weight = 400,
+        description = 'لرسم علامة عصابتك على جدار في منطقة نفوذ (علامة واحدة)',
+        client = { export = 'exti_gangs.useSpray' },
+    },
+
+    ['scrub_brush'] = {
+        label = 'فرشاة تنظيف',
+        weight = 300,
+        stack = false,
+        description = 'تمسح علامة عصابة أخرى من الجدار (3 استعمالات)',
+        client = { export = 'exti_gangs.useBrush' },
+    },
+
     -- EX_Tii gangs: the Money Wash's part (from the shared collection point): 1 per $1,000 washed
     ['wash_supplies'] = {
         label = 'مواد غسيل (Wash Supplies)',

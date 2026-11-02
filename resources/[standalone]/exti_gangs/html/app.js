@@ -68,6 +68,7 @@
         if (D.me.rank >= 1) t.push({ id: 'members', label: 'الأعضاء', icon: I.users });
         if (D.chop) t.push({ id: 'prod', label: 'ورشة التفكيك', icon: I.wrench });
         if (D.wash) t.push({ id: 'prod', label: 'غسيل الأموال', icon: I.wrench });
+        if (D.turf) t.push({ id: 'turf', label: 'النفوذ', icon: I.star });
         t.push({ id: 'rep', label: 'السمعة', icon: I.star });
         if (D.me.rank === 3) t.push({ id: 'settings', label: 'الإعدادات', icon: I.gear });
         if (D.me.rank >= 2) t.push({ id: 'logs', label: 'السجل', icon: I.list });
@@ -189,6 +190,18 @@
         return h;
     }
 
+    // ------------------------------------------------------------------ turf
+    function turfTab() {
+        const t = D.turf;
+        let h = `<div class="h2">مناطق النفوذ <small>العصابة صاحبة أكثر العلامات في المنطقة تملكها · +سمعة كل ساعة</small></div>
+            <div class="grid g2"><div class="card"><div class="k">مناطقكم</div><div class="v gc">${t.owned}</div></div>
+            <div class="card"><div class="k">سمعة كل ساعة</div><div class="v">+${t.repPerHour}</div></div></div>`;
+        h += `<table class="table sect"><tr><th>المنطقة</th><th>صاحبها</th><th>علاماتكم</th><th>كل العلامات</th></tr>
+            ${(t.zones || []).map((z) => `<tr><td><b>${esc(z.name)}</b></td><td>${z.owner ? `<span class="dot" style="background:${esc(z.color || '#888')}"></span> ${esc(z.owner)}${z.mine ? ' (أنتم)' : ''}` : '<span style="color:var(--mute)">لا أحد</span>'}</td><td>${z.myTags}</td><td>${z.total} / ${z.max}</td></tr>`).join('') || '<tr><td colspan="4">لا توجد مناطق بعد</td></tr>'}</table>
+            <div class="alert info sect">علبة رش من متجر العدد = علامة واحدة (20 ثانية). فرشاة التنظيف تمسح علامات العصابات الأخرى (3 مرات). الشرطة تنظّف أي علامة.</div>`;
+        return h;
+    }
+
     // ------------------------------------------------------------------ rep
     function rep() {
         const r = D.rep;
@@ -227,7 +240,7 @@
         bank_deposit: 'إيداع', bank_withdraw: 'سحب', rent_paid: 'دفع الإيجار', rent_unpaid: 'إيجار غير مدفوع', joined: 'انضمام', left: 'مغادرة', kick: 'طرد', promote: 'ترقية',
         demote: 'تخفيض', leader_transfer: 'نقل الزعامة', leader_auto: 'زعامة تلقائية', settings: 'الإعدادات', stash_take: 'أخذ من المخزن', outfit_saved: 'زي العصابة',
         rep_level: 'مستوى سمعة', gang_created: 'إنشاء العصابة', wash: 'غسيل دفعة', wash_start: 'بدء غسيل', wash_drop: 'طلب غسيل', wash_collect: 'استلام نظيف',
-        wash_cancel: 'إلغاء طلب', wash_cancel_batch: 'إيقاف الغسيل', door_breach_start: 'محاولة اقتحام', door_breached: 'اقتحام', stolen_report: 'بلاغ سرقة' };
+        wash_cancel: 'إلغاء طلب', turf_tag: 'علامة نفوذ', turf_scrub: 'مسح علامة', turf_scrubbed: 'مُسحت علامتنا', wash_cancel_batch: 'إيقاف الغسيل', door_breach_start: 'محاولة اقتحام', door_breached: 'اقتحام', stolen_report: 'بلاغ سرقة' };
     function logs() {
         return `<div class="h2">السجل <small>آخر 100 عملية</small></div><div class="card" style="padding:4px 4px">${(D.logs || []).map((l) =>
             `<div class="log"><span class="t">${dt(l.created)}</span><span class="a">${esc(ACTION[l.action] || l.action)}</span><span><b>${esc(l.actor)}</b> ${esc(l.details || '')}</span></div>`).join('') || '<div class="log">لا شيء بعد</div>'}</div>`;
@@ -236,7 +249,7 @@
     // ------------------------------------------------------------------ render + clicks
     function render() {
         if (!D) return;
-        const body = tab === 'members' ? members() : tab === 'prod' ? (D.wash ? washTab() : prod()) : tab === 'rep' ? rep() : tab === 'settings' ? settings() : tab === 'logs' ? logs() : home();
+        const body = tab === 'members' ? members() : tab === 'prod' ? (D.wash ? washTab() : prod()) : tab === 'rep' ? rep() : tab === 'turf' ? turfTab() : tab === 'settings' ? settings() : tab === 'logs' ? logs() : home();
         const scroll = $('.main', lap) ? $('.main', lap).scrollTop : 0;
         lap.innerHTML = shell(body);
         $('.main', lap).scrollTop = scroll;

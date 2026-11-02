@@ -52,6 +52,8 @@ local function fireNet(name, src, ...) source = src; for _, f in ipairs(netHandl
 -- MySQL (rows kept only where the code reads them back)
 local leftRows = {}
 BOLOS, UPD, CALLS = {}, {}, {}
+META = {}
+TAGS_DB = {}
 MySQL = {
     ready = function(f) READIES = READIES or {}; READIES[#READIES + 1] = f end,
     query = setmetatable({ await = function(q, p)
@@ -75,6 +77,10 @@ MySQL.query = setmetatable({ await = q.await }, getmetatable(q))
 -- a small in-memory exti_gang_wash table
 WASH = {}
 local function W_(q, p)
+    if q:find('exti_gang_tags') then
+        if q:find('INSERT') then TAGS_DB[#TAGS_DB + 1] = p; return true, #TAGS_DB end
+        return true, {}
+    end
     if not q:find('exti_gang_wash') then return nil end
     if q:find('^%s*CREATE') then return true, {} end
     if q:find('WHERE `washing` > 0') then for _, r in ipairs(WASH) do if r.washing > 0 then r.left = r.left + r.washing; r.washing = 0; r.closed = 0 end end return true, 1 end
@@ -168,6 +174,8 @@ local EXP_INDEX = function(_, res)
         GetInventoryItems = function(_, id) local out = {}; for k, v in pairs(invOf(id)) do out[#out + 1] = { name = k, count = v } end return out end,
         ClearInventory = function(_, id) inv[id] = {} end,
         registerHook = function(_, name, fn, opts) hooks[name] = fn end,
+        GetSlotWithItem = function(_, id, item) local n = invOf(id)[item] or 0; if n < 1 then return nil end return { slot = 1, metadata = (META[id] or {})[item] } end,
+        SetMetadata = function(_, id, slot, meta) META[id] = META[id] or {}; META[id].scrub_brush = meta end,
     } end
     if res == 'qbx_vehicles' then return {
         GetVehicleIdByPlate = function(_, plate) for k, o in pairs(ownedByPlate) do if k:gsub('%s+$', ''):upper() == tostring(plate):gsub('%s+$', ''):upper() then return o.id end end end,
@@ -198,6 +206,7 @@ dofile(RES .. 'server/chop.lua')
 dofile(RES .. 'server/theft.lua')
 dofile(RES .. 'server/door.lua')
 dofile(RES .. 'server/wash.lua')
+dofile(RES .. 'server/turf.lua')
 for _, f in ipairs(READIES) do f() end
 
 -- ---------------------------------------------------------------- tests
@@ -621,5 +630,73 @@ GANG.addDaily('g', 'cleaners', 'washed', 40000 - GANG.getDaily('g', 'cleaners', 
 advance(200)
 check(select(2, CB.washBegin(42)) == 'daily', 'the daily wash cap stops the machine')
 check(CB.settings(40, { washCut = 50 }) == true and wg.settings.washCut == 35, 'the leader can not set the cut above 35%')
+
+-- ---------------------------------------------------------------- Turf & graffiti
+local square = { { x = 1000, y = 1000, z = 0 }, { x = 1100, y = 1000, z = 0 }, { x = 1100, y = 1100, z = 0 }, { x = 1000, y = 1100, z = 0 } }
+check(CB.zoneSave(2, 'Grove', square) == false, 'only admins draw zones')
+local okZ, zid = CB.zoneSave(1, 'Grove', square)
+check(okZ and GlobalState['exti_gangs:turf'].zones[1].name == 'Grove', 'the admin draws a zone (4 corners)')
+check(GANG.zoneAt({ x = 1050, y = 1050 }) ~= nil and GANG.zoneAt({ x = 900, y = 1050 }) == nil, 'inside / outside the zone')
+local A1 = addPlayer(50, 'CA50', 'Ace'); at(50, vec3(1050, 1050, 0))
+local nrm = { x = 1, y = 0, z = 0 }
+check(select(2, CB.tagBegin(50, { x = 1051, y = 1050, z = 1 }, nrm)) == 'nogang', 'not in a gang: no tags')
+-- a Chopz member (src 10); the wash gang leader src 40
+at(10, vec3(1050, 1050, 0))
+check(select(2, CB.tagBegin(10, { x = 1051, y = 1050, z = 1 }, { x = 0, y = 0, z = 1 })) == 'wall', 'a floor is not a wall')
+check(select(2, CB.tagBegin(10, { x = 1051, y = 1050, z = 1 }, nrm)) == 'nocan', 'no spray can')
+invOf(10).spray_can = 3
+local okT1, ti = CB.tagBegin(10, { x = 1051, y = 1050, z = 1 }, nrm)
+check(okT1 and ti.seconds == 20, 'he starts spraying (20 s)')
+check(CB.tagFinish(10, ti.token) == false, 'a tag can not be skipped')
+local nc0 = #CALLS
+local _, ti2 = CB.tagBegin(10, { x = 1051, y = 1050, z = 1 }, nrm); advance(21)
+local okT3, tr3 = CB.tagFinish(10, ti2.token, true)
+check(okT3 and tr3.owner and inv[10].spray_can == 2, 'the tag is on the wall: Chopz owns Grove, one can used')
+check(#CALLS == nc0 + 1 and CALLS[#CALLS].label == 'كتابة على الجدران', 'a witness saw it: the police get a call')
+check(GlobalState['exti_gangs:turf'].zones[1].owner == 'chopz' and #GlobalState['exti_gangs:turf'].tags == 1, 'everyone sees the tag and the owner')
+at(10, vec3(1060, 1050, 0)); local _, ti4 = CB.tagBegin(10, { x = 1061, y = 1050, z = 1 }, nrm)
+check(ti4 == 'cooldown', '10 min between two tags')
+-- the wash gang takes it back: 2 tags beat 1
+local okW1 = CB.setRank(40, 'CW42', 1)
+at(40, vec3(1070, 1050, 0)); at(42, vec3(1080, 1050, 0))
+invOf(40).spray_can = 1; invOf(42).spray_can = 1
+local _, a1 = CB.tagBegin(40, { x = 1071, y = 1050, z = 1 }, nrm); local _, a2 = CB.tagBegin(42, { x = 1081, y = 1050, z = 1 }, nrm)
+advance(21)
+CB.tagFinish(40, a1.token); local evN = #clientEvents
+CB.tagFinish(42, a2.token)
+check(GlobalState['exti_gangs:turf'].zones[1].owner == 'cleaners', 'two Clean Co tags beat one: they own Grove now')
+local warned = false
+for i = 1, #clientEvents do local e = clientEvents[i]; if e.name == 'ox_lib:notify' and e.src == 10 and (e.args[1].description or ''):find('Grove') then warned = true end end
+check(warned, 'Chopz members are told a rival sprayed in their turf')
+-- scrubbing
+local chopTag
+for _, t in ipairs(GlobalState['exti_gangs:turf'].tags) do if t.gang == 'chopz' then chopTag = t.id end end
+local washTag
+for _, t in ipairs(GlobalState['exti_gangs:turf'].tags) do if t.gang == 'cleaners' and math.abs(t.x - 1071) < 0.1 then washTag = t.id end end
+at(40, vec3(1072, 1050, 0))
+check(select(2, CB.scrubBegin(40, washTag)) == 'own' or select(2, CB.scrubBegin(40, washTag)) == 'far', 'you can not scrub your own tag')
+at(10, vec3(1071, 1050, 0))
+check(select(2, CB.scrubBegin(10, washTag)) == 'nobrush', 'scrubbing needs a brush')
+invOf(10).scrub_brush = 1; META[10] = { scrub_brush = { uses = 3 } }
+local okS, si = CB.scrubBegin(10, washTag); advance(16)
+check(okS and CB.scrubFinish(10, si.token) == true and META[10].scrub_brush.uses == 2, 'Chopz scrubs a Clean Co tag (brush: 2 uses left)')
+check(GlobalState['exti_gangs:turf'].zones[1].owner == 'cleaners' or GlobalState['exti_gangs:turf'].zones[1].owner == 'chopz', 'one each: a tie keeps the owner it had')
+-- the police clean any tag with no brush
+local cop9 = addPlayer(60, 'CP60', 'CopT'); cop9.PlayerData.job = { name = 'police', onduty = true }; at(60, vec3(1051, 1050, 0))
+local okC, ci = CB.scrubBegin(60, chopTag); advance(16)
+check(okC and ci.cop and CB.scrubFinish(60, ci.token) == true, 'the police clean a tag without a brush')
+check(#GlobalState['exti_gangs:turf'].tags == 1, 'one tag left in Grove')
+-- 5 tags max
+local count = #GlobalState['exti_gangs:turf'].tags
+for i = 1, 6 do local pl = addPlayer(70 + i, 'CT' .. i, 'T' .. i); at(40, vec3(1000, 0, 0)); at(70 + i, vec3(1000, 0, 0)); CB.invite(40, 70 + i); fireNet('exti_gangs:server:inviteAnswer', 70 + i, true) end
+local full = nil
+for i = 1, 6 do
+    at(70 + i, vec3(1000 + i * 10, 1090, 0)); invOf(70 + i).spray_can = 1
+    local o, b = CB.tagBegin(70 + i, { x = 1001 + i * 10, y = 1090, z = 1 }, nrm)
+    if o then advance(21); CB.tagFinish(70 + i, b.token) else full = b end
+end
+check(full == 'full' and #GlobalState['exti_gangs:turf'].tags == 5, 'a zone holds 5 tags at most')
+local okDel = CB.zoneDelete(1, zid)
+check(okDel and #GlobalState['exti_gangs:turf'].zones == 0 and #GlobalState['exti_gangs:turf'].tags == 0, 'deleting a zone removes its tags')
 
 print(('\n%d passed, %d failed'):format(passes, fails))

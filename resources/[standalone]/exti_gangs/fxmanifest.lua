@@ -20,6 +20,7 @@ client_scripts {
     'client/theft.lua',
     'client/door.lua',
     'client/wash.lua',
+    'client/turf.lua',
 }
 
 server_scripts {
@@ -31,6 +32,7 @@ server_scripts {
     'server/theft.lua',
     'server/door.lua',
     'server/wash.lua',
+    'server/turf.lua',
 }
 
 ui_page 'html/index.html'
@@ -42,6 +44,7 @@ files {
     'html/app.js',
     'html/chop.js',
     'html/fonts/*.woff2',
+    'html/tag.html',
 }
 
 dependencies {
