@@ -49,6 +49,10 @@ const ICON = {
     bolt: (s) => svg('<path d="M13.5 3L5 13.5h6l-1.5 7.5L18 10.5h-6z"/>', s),
     dive: (s) => svg('<rect x="4" y="7" width="16" height="9" rx="4.5"/><path d="M12 7v9"/><circle cx="8" cy="11.5" r="1.5"/><circle cx="16" cy="11.5" r="1.5"/><path d="M20 11.5h1.5V4"/>', s),
     oil: (s) => svg('<path d="M12 3.5s-5.5 6.5-5.5 10.5a5.5 5.5 0 0 0 11 0C17.5 10 12 3.5 12 3.5z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/>', s),
+    chicken: (s) => svg('<path d="M8 20h8"/><path d="M12 20v-3"/><path d="M6.5 13.5C5 10 7 6.5 10.5 6.5c.4-1.8 1.8-3 3.3-3 1 0 1.7.8 1.7 1.8 0 .6-.2 1-.5 1.4 2.4 1 3.5 3.3 3.5 5.8 0 3-2.6 5.5-6.5 5.5-2.2 0-4.2-1-5.5-3.5z"/><path d="M18.5 9.5l2 .8-2 1"/><circle cx="15" cy="9" r=".9" fill="currentColor"/>', s),
+    grapes: (s) => svg('<path d="M12 3.5v3M12 5c2-1.8 4.3-1.8 5.5-.5"/><circle cx="9.5" cy="9.5" r="2.2"/><circle cx="14.5" cy="9.5" r="2.2"/><circle cx="12" cy="13.3" r="2.2"/><circle cx="7.6" cy="13.3" r="2.2"/><circle cx="16.4" cy="13.3" r="2.2"/><circle cx="9.8" cy="17.2" r="2.2"/><circle cx="14.2" cy="17.2" r="2.2"/>', s),
+    wheat: (s) => svg('<path d="M12 21V8"/><path d="M12 8c-2.5-.5-3.5-2.5-3.5-4.5 2.5.5 3.5 2.5 3.5 4.5zM12 8c2.5-.5 3.5-2.5 3.5-4.5-2.5.5-3.5 2.5-3.5 4.5z"/><path d="M12 13c-2.5-.5-3.5-2.5-3.5-4.5 2.5.5 3.5 2.5 3.5 4.5zM12 13c2.5-.5 3.5-2.5 3.5-4.5-2.5.5-3.5 2.5-3.5 4.5z"/><path d="M12 18c-2.5-.5-3.5-2.5-3.5-4.5 2.5.5 3.5 2.5 3.5 4.5zM12 18c2.5-.5 3.5-2.5 3.5-4.5-2.5.5-3.5 2.5-3.5 4.5z"/>', s),
+    spool: (s) => svg('<rect x="6" y="3.5" width="12" height="3" rx="1"/><rect x="6" y="17.5" width="12" height="3" rx="1"/><path d="M8 6.5v11M16 6.5v11"/><path d="M8 9l8 2M8 12l8 2M8 15l8-1"/><path d="M16 14c2 .5 3.5 2 4 4.5"/>', s),
     lock: (s) => svg('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>', s),
     medic: (s) => svg('<path d="M10 3.5h4v4.6l4-2.3 2 3.5-4 2.3 4 2.2-2 3.5-4-2.3v4.5h-4v-4.5l-4 2.3-2-3.5 4-2.2-4-2.3 2-3.5 4 2.3Z"/>', s),
 };
@@ -330,7 +334,7 @@ function jobDetails(job) {
         </div>
 
         <div class="box">
-            <div class="box-title"><span>${ICON.route(16)} كيف تعمل</span><small>كل جولة ${job.perRound} ${esc(job.taskWord[job.perRound > 2 && job.perRound < 11 ? 1 : 0])} · حوالي 10 دقائق</small></div>
+            <div class="box-title"><span>${ICON.route(16)} كيف تعمل</span><small>كل جولة ${job.perRound} ${esc(job.taskWord[job.perRound > 2 && job.perRound < 11 ? 1 : 0])} · حوالي ${job.roundMinutes || 10} دقيقة</small></div>
             <div class="steps">${steps}</div>
             ${job.extra ? `<div class="extra">${ICON.info(16)}<span>${esc(job.extra)}</span></div>` : ''}
         </div>

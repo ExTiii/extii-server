@@ -341,12 +341,22 @@ CreateThread(function()
     end
 end)
 
+-- EX_Tii: a supervisor was moved (/jobspots): he stands again in his new place
+local refreshHqBlip -- defined below
+AddEventHandler('exti_jobs:client:respawnSupervisors', function()
+    for name, ped in pairs(supervisors) do
+        if DoesEntityExist(ped) then DeletePed(ped) end
+        supervisors[name] = nil
+    end
+    if refreshHqBlip then refreshHqBlip() end
+end)
+
 ---------------------------------------------------------------------------
 -- my job's HQ: the blip on the map and the gold circle in front of the supervisor
 ---------------------------------------------------------------------------
 local hqBlip, vehicleBlip = nil, nil
 
-local function refreshHqBlip()
+refreshHqBlip = function()
     EXJ.removeBlip(hqBlip)
     hqBlip = nil
     local job = config.jobs[EXJ.myJob() or '']
@@ -566,6 +576,7 @@ local ERR = {
     spawn = 'تعذّر إخراج المركبة، حاول مرة أخرى',
     vehicle = 'أحضر مركبة العمل إلى المقر أولًا',
     loaded = 'أنزل المركبة من الشاحنة أولًا',
+    cargo = 'أفرغ صندوق الشاحنة أولًا، كل ما يبقى فيه يضيع مع الشاحنة',
     failed = 'حدث خطأ، حاول مرة أخرى',
 }
 EXJ.errors = ERR
@@ -617,7 +628,9 @@ RegisterNUICallback('refresh', function(data, cb)
 end)
 
 RegisterNUICallback('startShift', function(data, cb)
-    local ok, result = lib.callback.await('exti_jobs:server:startShift', false, data and data.job)
+    -- level jobs: the truck comes on the road next to the supervisor (when no spot was set with /jobspots)
+    local road = data and EXJ.roadSpot and EXJ.roadSpot(data.job) or nil
+    local ok, result = lib.callback.await('exti_jobs:server:startShift', false, data and data.job, road)
     if not ok then return cb({ ok = false, error = ERR[result] or ERR.failed }) end
     cb({ ok = true })
     closePanel()

@@ -5,7 +5,7 @@ use_experimental_fxv2_oal 'yes'
 
 name 'exti_jobs'
 author 'EX_Tii Roleplay'
-description 'EX_Tii jobs: job center tablet, HQs with supervisors, tow / garbage / delivery'
+description 'EX_Tii jobs: job center tablet, HQs with supervisors, tow / garbage / delivery, level jobs (chicken, raisins)'
 version '1.0.0'
 
 shared_scripts {
@@ -23,6 +23,7 @@ client_scripts {
     'client/garbage.lua',
     'client/delivery.lua',
     'client/tow.lua',
+    'client/chain.lua',
 }
 
 server_scripts {
@@ -33,6 +34,8 @@ ui_page 'html/index.html'
 
 files {
     'config/shared.lua',
+    'config/spots.lua',
+    'html/items/*.png',
     'html/index.html',
     'html/style.css',
     'html/kit.css',
@@ -44,4 +47,5 @@ files {
 dependencies {
     'ox_lib',
     'qbx_core',
+    'ox_inventory',
 }

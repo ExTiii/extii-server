@@ -957,4 +957,61 @@ return {
         weight = 25000,
         client = { image = 'nui://exti_mechanic/html/items/engine_crate.png' },
     },
+
+    -- EX_Tii level jobs (exti_jobs): chicken, raisins
+    ['live_chicken'] = {
+        label = 'دجاجة حية (Live Chicken)',
+        weight = 800,
+        description = 'تصطادها في مزرعة الدواجن، وتُذبح عند طاولة الذبح',
+        client = { image = 'nui://exti_jobs/html/items/live_chicken.png' },
+    },
+
+    ['slaughtered_chicken'] = {
+        label = 'دجاجة مذبوحة (Slaughtered Chicken)',
+        weight = 600,
+        description = 'كل 5 مع صينية تغليف تصبح صينية دجاج معبأ',
+        client = { image = 'nui://exti_jobs/html/items/slaughtered_chicken.png' },
+    },
+
+    ['packed_chicken'] = {
+        label = 'صينية دجاج معبأ (Packed Chicken)',
+        weight = 3000,
+        description = 'تُباع لتاجر الجملة في ليتل سول',
+        client = { image = 'nui://exti_jobs/html/items/packed_chicken.png' },
+    },
+
+    ['packing_tray'] = {
+        label = 'صينية تغليف (Packing Tray)',
+        weight = 100,
+        description = 'لوظيفة الدواجن: صينية لكل 5 دجاجات',
+        client = { image = 'nui://exti_jobs/html/items/packing_tray.png' },
+    },
+
+    ['grape_bunch'] = {
+        label = 'عنقود عنب (Grape Bunch)',
+        weight = 200,
+        description = 'تقطفه من كروم مارلو، ويجفّف عند المناشر',
+        client = { image = 'nui://exti_jobs/html/items/grape_bunch.png' },
+    },
+
+    ['raisins'] = {
+        label = 'زبيب (Raisins)',
+        weight = 120,
+        description = 'كل 5 مع كرتونة فارغة تصبح كرتونة زبيب',
+        client = { image = 'nui://exti_jobs/html/items/raisins.png' },
+    },
+
+    ['raisin_box'] = {
+        label = 'كرتونة زبيب (Raisin Box)',
+        weight = 700,
+        description = 'تُباع لتاجر الجملة في ليتل سول',
+        client = { image = 'nui://exti_jobs/html/items/raisin_box.png' },
+    },
+
+    ['empty_carton'] = {
+        label = 'كرتونة فارغة (Empty Carton)',
+        weight = 150,
+        description = 'لوظيفة الزبيب: كرتونة لكل 5 زبيب',
+        client = { image = 'nui://exti_jobs/html/items/empty_carton.png' },
+    },
 }

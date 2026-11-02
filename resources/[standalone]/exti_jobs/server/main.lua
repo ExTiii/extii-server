@@ -8,6 +8,22 @@
 -- =====================================================================
 local config = require 'config.shared'
 local stops = require 'config.stops'
+local spots = require 'config.spots'
+
+-- EX_Tii: places moved in game with /jobspots (data/spots.json), shared with every game
+local SPOTS_FILE = 'data/spots.json'
+local spotOverrides = {}
+do
+    local raw = LoadResourceFile(GetCurrentResourceName(), SPOTS_FILE)
+    local ok, data = pcall(json.decode, raw or '')
+    spotOverrides = ok and type(data) == 'table' and data or {}
+    -- a hand-edited file: only tables per job are kept
+    for k, v in pairs(spotOverrides) do
+        if type(k) ~= 'string' or type(v) ~= 'table' or not (config.jobs[k] and config.jobs[k].chain) then spotOverrides[k] = nil end
+    end
+end
+spots.apply(config, spotOverrides)
+GlobalState['exti_jobs:spots'] = spotOverrides
 
 local shifts = {}      -- [source] = shift
 local busy = {}        -- [source] = true while a request is running
@@ -277,6 +293,10 @@ local function roundView(shift)
     local r = shift.round
     if not r then return nil end
     local view = { n = r.n, stage = r.stage, index = r.index, total = r.total }
+    if r.stage == 'chain' then
+        view.sold = shift.sold or 0
+        return view
+    end
     if shift.job == 'tow' then
         view.mission = shift.mission and { coords = shift.mission.coords, model = shift.mission.model, netId = shift.mission.netId } or nil
     else
@@ -303,6 +323,10 @@ end
 local function newRound(src, shift, from)
     shift.roundCount = (shift.roundCount or 0) + 1
     local job = shift.job
+    if config.jobs[job] and config.jobs[job].chain then
+        shift.round = { n = shift.roundCount, stage = 'chain', index = 1, total = config.jobs[job].perRound }
+        return
+    end
     if job == 'garbage' then
         local route = garbageRoute(from)
         shift.round = { n = shift.roundCount, stage = 'stops', stops = route, index = 1, total = #route, bagsDone = 0, lastAt = os.time(), lastPos = from }
@@ -314,10 +338,17 @@ local function newRound(src, shift, from)
     end
 end
 
+local lastBonus = {} -- [citizenid] = os.time() of the last return bonus of a level job
 local function returnBonus(shift, veh)
     local b = config.returnBonus
     local amount = math.min(b.base + b.perRound * shift.rounds, b.max)
     if shift.rounds == 0 then return 0 end -- EX_Tii: only after a whole round (no end-and-restart farming)
+    -- EX_Tii level jobs: only after a real shift (at least one round's time), and once an hour
+    local job = config.jobs[shift.job]
+    if job and job.chain then
+        if os.time() - shift.startedAt < (job.roundMinutes or 15) * 60 then return 0 end
+        if lastBonus[shift.cid] and os.time() - lastBonus[shift.cid] < 3600 then return 0 end
+    end
     local condition = 1.0
     if veh then
         local body = GetVehicleBodyHealth(veh)
@@ -349,6 +380,24 @@ local function dropShift(src, refund)
         end
     end
     TriggerClientEvent('exti_jobs:client:shiftEnded', src)
+end
+
+-- the work vehicle is back at the HQ (level jobs: also where it was picked up, on the road by the HQ)
+local function vehicleAtHq(shift, job, veh)
+    if not veh then return false end
+    local pos = GetEntityCoords(veh)
+    if #(pos - job.hq.returnPoint) <= job.hq.returnRadius then return true end
+    return shift and shift.home ~= nil and #(pos - shift.home) <= 30.0 or false
+end
+
+-- something left in the trunk / glovebox of a work vehicle (it would go with the vehicle)
+local function cargoIn(veh)
+    local plate = (GetVehicleNumberPlateText(veh) or ''):gsub('^%s+', ''):gsub('%s+$', '')
+    for _, kind in ipairs({ 'trunk', 'glove' }) do
+        local ok, items = pcall(function() return exports.ox_inventory:GetInventoryItems(kind .. plate) end)
+        if ok and type(items) == 'table' and next(items) then return true end
+    end
+    return false
 end
 
 local function findSpawn(job)
@@ -409,6 +458,7 @@ local function jobView(player, name)
         levelNames = config.levelNames,
         levelBonus = config.levelBonus,
         minLevel = job.minLevel or 1,
+        roundMinutes = job.roundMinutes,
     }
 end
 
@@ -516,7 +566,7 @@ lib.callback.register('exti_jobs:server:hq', function(source, name)
             minutes = math.floor((os.time() - shift.startedAt) / 60),
             round = roundView(shift),
             hasVehicle = veh ~= nil,
-            vehicleHere = veh ~= nil and #(GetEntityCoords(veh) - job.hq.returnPoint) <= job.hq.returnRadius,
+            vehicleHere = vehicleAtHq(shift, job, veh),
             bonus = returnBonus(shift, veh),
             deposit = shift.deposit,
         }
@@ -524,7 +574,22 @@ lib.callback.register('exti_jobs:server:hq', function(source, name)
     return view
 end)
 
-lib.callback.register('exti_jobs:server:startShift', function(source, name)
+-- EX_Tii: a road spot the game found next to the supervisor (level jobs without a set vehicle spot)
+local function roadSpawn(job, spot)
+    if type(spot) ~= 'vector4' and type(spot) ~= 'table' then return nil end
+    local x, y, z, h = tonumber(spot.x), tonumber(spot.y), tonumber(spot.z), tonumber(spot.w) or 0.0
+    for _, v in pairs({ x or false, y or false, z or false, h or false }) do
+        if not v or v ~= v or math.abs(v) > 20000 then return nil end
+    end
+    local here = vec3(x, y, z)
+    if not (#(here - job.hq.supervisor.coords.xyz) <= 150.0) then return nil end
+    for _, veh in ipairs(GetAllVehicles()) do
+        if #(GetEntityCoords(veh) - here) < 4.0 then return nil end
+    end
+    return vec4(x, y, z, h)
+end
+
+lib.callback.register('exti_jobs:server:startShift', function(source, name, road)
     local player = getPlayer(source)
     if not player or busy[source] or type(name) ~= 'string' then return false, 'failed' end
     local job = config.jobs[name]
@@ -537,7 +602,7 @@ lib.callback.register('exti_jobs:server:startShift', function(source, name)
         or (player.PlayerData.money.bank or 0) >= config.deposit and 'bank' or nil
     if not method then return false, 'money' end
 
-    local spot = findSpawn(job)
+    local spot = findSpawn(job) or (job.chain and roadSpawn(job, road))
     if not spot then return false, 'spot' end
 
     busy[source] = true
@@ -552,8 +617,8 @@ lib.callback.register('exti_jobs:server:startShift', function(source, name)
         return false, 'spawn'
     end
 
-    -- EX_Tii: the player left while the vehicle was being made
-    if not GetPlayerName(source) or not getPlayer(source) then
+    -- EX_Tii: the player left (or changed job) while the vehicle was being made
+    if not GetPlayerName(source) or not getPlayer(source) or jobName(getPlayer(source)) ~= name then
         DeleteEntity(veh)
         pcall(function() exports.qbx_core:AddMoney(player.PlayerData.citizenid, method, config.deposit, 'job-vehicle-deposit-refund') end)
         return false, 'spawn'
@@ -575,6 +640,8 @@ lib.callback.register('exti_jobs:server:startShift', function(source, name)
         tasks = 0,
         earned = 0,
         startedAt = os.time(),
+        home = job.chain and spot.xyz or nil,
+        lastAct = job.chain and GetGameTimer() or nil,
     }
     shifts[source] = shift
     newRound(source, shift, job.hq.returnPoint)
@@ -591,8 +658,9 @@ lib.callback.register('exti_jobs:server:endShift', function(source, withoutVehic
     if shift.load then return false, 'loaded' end
 
     local veh = vehicleOf(shift)
-    local here = veh and #(GetEntityCoords(veh) - job.hq.returnPoint) <= job.hq.returnRadius
+    local here = vehicleAtHq(shift, job, veh)
     if veh and not here and not withoutVehicle then return false, 'vehicle' end
+    if veh and job.chain and cargoIn(veh) then return false, 'cargo' end
 
     local refund, bonus = 0, 0
     if here then
@@ -605,6 +673,7 @@ lib.callback.register('exti_jobs:server:endShift', function(source, withoutVehic
     if veh then DeleteEntity(veh) end
     if refund > 0 then player.Functions.AddMoney('bank', refund, 'job-vehicle-deposit-refund') end
     if bonus > 0 then
+        if job.chain then lastBonus[shift.cid] = os.time() end
         player.Functions.AddMoney('bank', bonus, 'job-return-bonus')
         shift.earned = shift.earned + bonus
     end
@@ -943,6 +1012,278 @@ lib.callback.register('exti_jobs:server:towDeliver', function(source, netId)
 end)
 
 ---------------------------------------------------------------------------
+-- EX_Tii level jobs (chicken, raisins, ...): collect -> process -> sell with real items.
+-- The game only asks "I did this step here"; everything is checked here: the job, the shift, the
+-- spot, the time the work takes, the items and supplies in the pockets, the buyer's limit.
+---------------------------------------------------------------------------
+local ox = exports.ox_inventory
+local sold = {}        -- [citizenid:job] = { os.time() of every batch sold in the last hour }
+local spotRest = {}    -- [citizenid:job:step:spot] = os.time() the spot gives again
+
+local weights = {}
+local function weightOf(item)
+    if weights[item] then return weights[item] end
+    local ok, data = pcall(function() return ox:Items(item) end)
+    weights[item] = ok and type(data) == 'table' and tonumber(data.weight) or 0
+    return weights[item]
+end
+
+local function countOf(src, item)
+    return tonumber(ox:Search(src, 'count', item)) or 0
+end
+
+local function soldLastHour(key)
+    if not sold[key] then
+        local ok, data = pcall(json.decode, GetResourceKvpString('sold:' .. key) or '')
+        sold[key] = ok and type(data) == 'table' and data or {}
+    end
+    local now, keep = os.time(), {}
+    for _, t in ipairs(sold[key]) do
+        if type(t) == 'number' and now - t < 3600 then keep[#keep + 1] = t end
+    end
+    sold[key] = keep
+    return keep
+end
+
+local function saveSold(key)
+    SetResourceKvp('sold:' .. key, json.encode(sold[key] or {}))
+end
+
+-- the buyer counts per person: the game licence (alt characters share it), else the character
+local function sellerKey(src, shift)
+    local lic = GetPlayerIdentifierByType(src, 'license')
+    return (lic and lic:gsub('^license:', '') or shift.cid) .. ':' .. shift.job
+end
+
+-- every level job is a real job in the city (also written in qbx_core/shared/jobs.lua)
+CreateThread(function()
+    Wait(1200)
+    for name, job in pairs(config.jobs) do
+        if job.chain and not exports.qbx_core:GetJob(name) then
+            exports.qbx_core:CreateJob(name, {
+                label = job.label, defaultDuty = true, offDutyPay = false,
+                grades = { [0] = { name = job.label, payment = 50 } },
+            })
+        end
+    end
+end)
+
+local function chainAct(source, stepIndex, spotIndex)
+    local shift = shifts[source]
+    if not shift then return false, 'noshift' end
+    local job = config.jobs[shift.job]
+    local player = getPlayer(source)
+    if not job or not job.chain or not player or jobName(player) ~= shift.job then return false, 'noshift' end
+    if math.type(stepIndex) ~= 'integer' then return false, 'failed' end
+    local step = job.chain[stepIndex]
+    if not step then return false, 'failed' end
+
+    local spot
+    if step.kind == 'collect' then
+        if math.type(spotIndex) ~= 'integer' then return false, 'failed' end
+        spot = step.spots[spotIndex]
+    else
+        spot = step.spot
+    end
+    if not spot then return false, 'failed' end
+
+    local here, ped = pedCoords(source)
+    if not here or flat(here, spot) > 3.0 or math.abs(here.z - spot.z) > 4.0 then return false, 'far' end
+    if GetVehiclePedIsIn(ped, false) ~= 0 then return false, 'far' end
+
+    -- nobody works faster than the animation (the progress bar + the skill check)
+    local nowMs = GetGameTimer()
+    if shift.lastAct and nowMs - shift.lastAct < math.floor(step.time * 0.85) then return false, 'fast' end
+
+    local cid = shift.cid
+    if step.kind == 'collect' then
+        local restKey = ('%s:%s:%d:%d'):format(cid, shift.job, stepIndex, spotIndex)
+        local now = os.time()
+        if spotRest[restKey] and spotRest[restKey] > now then return false, 'rest', spotRest[restKey] - now end
+        local have = countOf(source, step.give.item)
+        if have >= step.cap then return false, 'cap', step.cap end
+        local n = math.min(math.random(step.give.min, step.give.max), step.cap - have)
+        if not ox:CanCarryItem(source, step.give.item, n) then return false, 'full' end
+        if not ox:AddItem(source, step.give.item, n) then return false, 'full' end
+        spotRest[restKey] = now + step.rest
+        shift.lastAct = nowMs
+        return true, { got = n, item = step.give.item, rest = step.rest }
+    end
+
+    if step.kind == 'process' then
+        for item, need in pairs(step.take) do
+            local have = countOf(source, item)
+            if have < need then return false, 'missing', item, need, have end
+        end
+        -- the batch must fit in the pockets before anything is taken (so nothing can ever be lost)
+        local net = 0
+        for item, n in pairs(step.give) do net = net + weightOf(item) * n end
+        for item, n in pairs(step.take) do net = net - weightOf(item) * n end
+        if net > 0 and not ox:CanCarryWeight(source, net) then return false, 'full' end
+        local removed = {}
+        for item, need in pairs(step.take) do
+            if ox:RemoveItem(source, item, need) then
+                removed[#removed + 1] = { item, need }
+            else
+                for _, r in ipairs(removed) do ox:AddItem(source, r[1], r[2]) end
+                return false, 'missing', item, need, 0
+            end
+        end
+        local given = {}
+        for item, count in pairs(step.give) do
+            if ox:AddItem(source, item, count) then
+                given[#given + 1] = { item, count }
+            else
+                -- the pockets are full: everything goes back as it was
+                for _, g in ipairs(given) do ox:RemoveItem(source, g[1], g[2]) end
+                for _, r in ipairs(removed) do ox:AddItem(source, r[1], r[2]) end
+                return false, 'full'
+            end
+        end
+        shift.lastAct = nowMs
+        return true, { done = true }
+    end
+
+    if step.kind == 'sell' then
+        local key = sellerKey(source, shift)
+        local list = soldLastHour(key)
+        if #list >= step.perHour then
+            local wait = math.max(1, math.ceil((3600 - (os.time() - list[1])) / 60))
+            return false, 'hourcap', wait
+        end
+        for item, need in pairs(step.take) do
+            local have = countOf(source, item)
+            if have < need then return false, 'missing', item, need, have end
+        end
+        local taken = {}
+        for item, need in pairs(step.take) do
+            if ox:RemoveItem(source, item, need) then
+                taken[#taken + 1] = { item, need }
+            else
+                for _, t in ipairs(taken) do ox:AddItem(source, t[1], t[2]) end
+                return false, 'missing', item, need, 0
+            end
+        end
+        list[#list + 1] = os.time()
+        saveSold(key)
+        shift.lastAct = nowMs
+        local paid = payTask(source, shift, step.price, 'job-' .. shift.job)
+        shift.sold = (shift.sold or 0) + 1
+        if shift.sold % job.perRound == 0 then shift.rounds = shift.rounds + 1 end
+        lib.logger(source, 'jobs', ('sold %s for %d$'):format(shift.job, paid))
+        return true, { paid = paid, left = step.perHour - #list, round = roundView(shift) }
+    end
+    return false, 'failed'
+end
+
+lib.callback.register('exti_jobs:server:chainAct', function(source, stepIndex, spotIndex)
+    if busy[source] then return false, 'fast' end
+    busy[source] = true
+    local ok, a, b, c, d, e = pcall(chainAct, source, stepIndex, spotIndex)
+    busy[source] = nil
+    if not ok then
+        lib.print.error(('chainAct failed for %s: %s'):format(source, a))
+        return false, 'failed'
+    end
+    return a, b, c, d, e
+end)
+
+-- the buyer's limit (shown in the game before you drive all the way)
+lib.callback.register('exti_jobs:server:chainInfo', function(source)
+    local shift = shifts[source]
+    local job = shift and config.jobs[shift.job]
+    if not job or not job.chain then return nil end
+    local sellStep
+    for _, st in ipairs(job.chain) do if st.kind == 'sell' then sellStep = st end end
+    local list = soldLastHour(sellerKey(source, shift))
+    return { sold = #list, perHour = sellStep and sellStep.perHour or 0 }
+end)
+
+---------------------------------------------------------------------------
+-- admins: /jobspots moves the places of the level jobs (saved in data/spots.json)
+---------------------------------------------------------------------------
+local function isAdmin(src)
+    return IsPlayerAceAllowed(src, 'command') or exports.qbx_core:HasPermission(src, 'admin')
+end
+
+local function round2(n) return math.floor(n * 100 + 0.5) / 100 end
+
+lib.callback.register('exti_jobs:server:spotSave', function(source, name, what, stepId, action)
+    if not isAdmin(source) then return false, 'admin' end
+    local job = type(name) == 'string' and config.jobs[name]
+    if not job or not job.chain then return false, 'failed' end
+    local here, ped = pedCoords(source)
+    if not here then return false, 'failed' end
+    local h = round2(GetEntityHeading(ped))
+    local p3 = { round2(here.x), round2(here.y), round2(here.z) }
+    local p4 = { p3[1], p3[2], p3[3], h }
+
+    if what ~= 'supervisor' and what ~= 'vehicle' and what ~= 'reset' and what ~= 'step' then return false, 'failed' end
+    local o = type(spotOverrides[name]) == 'table' and spotOverrides[name] or {}
+    spotOverrides[name] = o
+    if what == 'supervisor' then
+        o.supervisor = p4
+    elseif what == 'vehicle' then
+        local veh = GetVehiclePedIsIn(ped, false)
+        if veh ~= 0 then
+            local vp = GetEntityCoords(veh)
+            o.vehicle = { round2(vp.x), round2(vp.y), round2(vp.z), round2(GetEntityHeading(veh)) }
+        else
+            o.vehicle = p4
+        end
+    elseif what == 'reset' then
+        spotOverrides[name] = nil
+    elseif what == 'step' then
+        local step = type(stepId) == 'string' and spots.step(job, stepId)
+        if not step then return false, 'failed' end
+        o.steps = type(o.steps) == 'table' and o.steps or {}
+        local so = type(o.steps[stepId]) == 'table' and o.steps[stepId] or {}
+        o.steps[stepId] = so
+        if step.kind == 'collect' then
+            -- start from the spots in use (the defaults the first time)
+            if type(so.spots) ~= 'table' then
+                so.spots = {}
+                for _, v in ipairs(step.spots) do so.spots[#so.spots + 1] = { round2(v.x), round2(v.y), round2(v.z) } end
+            end
+            if action == 'add' then
+                if #so.spots >= 40 then return false, 'many' end
+                so.spots[#so.spots + 1] = p3
+            elseif action == 'remove' then
+                local best, bestD
+                for i, v in ipairs(so.spots) do
+                    local sv = spots.v3(v)
+                    local d = sv and #(sv - here) or 1e9
+                    if not bestD or d < bestD then best, bestD = i, d end
+                end
+                if not best or bestD > 6.0 then return false, 'nospot' end
+                if #so.spots <= 1 then return false, 'last' end
+                table.remove(so.spots, best)
+            elseif action == 'clear' then
+                so.spots = { p3 }
+            else
+                return false, 'failed'
+            end
+        elseif action == 'ped' then
+            so.ped = p4
+        elseif action == 'noped' then
+            so.ped = nil
+        elseif action == 'move' then
+            so.spot = p3
+        else
+            return false, 'failed'
+        end
+    else
+        return false, 'failed'
+    end
+
+    SaveResourceFile(GetCurrentResourceName(), SPOTS_FILE, json.encode(spotOverrides, { indent = true }), -1)
+    spots.apply(config, spotOverrides)
+    GlobalState['exti_jobs:spots'] = spotOverrides
+    lib.logger(source, 'jobs', ('moved %s %s %s %s'):format(name, what, tostring(stepId), tostring(action)))
+    return true
+end)
+
+---------------------------------------------------------------------------
 -- clean up
 ---------------------------------------------------------------------------
 -- the job changed (left it, admin, another script): the shift ends, the deposit comes back
@@ -958,7 +1299,7 @@ local function leftCity(src)
     if not shift then return end
     local veh = vehicleOf(shift)
     local job = config.jobs[shift.job]
-    local atHq = veh and #(GetEntityCoords(veh) - job.hq.returnPoint) <= job.hq.returnRadius
+    local atHq = vehicleAtHq(shift, job, veh)
     dropShift(src, atHq)
 end
 
