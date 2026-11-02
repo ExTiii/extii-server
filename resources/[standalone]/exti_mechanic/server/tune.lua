@@ -800,6 +800,7 @@ lib.callback.register('exti_mechanic:server:tuneDone', function(source, success)
     end
     saveLines(o)
     MEC.log(source, 'tune_installed', ('#%d · %s · %s'):format(o.id, o.plate, l.label))
+    MEC.xp(source, 20, 'تركيب تعديل', ('tune:%d:%d'):format(o.id, p.idx))
     lib.logger(source, 'mechanic', ('installed "%s" on %s (order #%d)'):format(l.label, o.plate, o.id))
     local left = 0
     for _, x in ipairs(o.lines) do if not x.done then left = left + 1 end end
@@ -886,6 +887,7 @@ lib.callback.register('exti_mechanic:server:nitroDone', function(source, success
     MySQL.insert('INSERT INTO `exti_mechanic_service` (`plate`, `at`, `citizenid`, `name`, `what`, `km`) VALUES (?, ?, ?, ?, ?, ?)',
         { p.plate, os.time(), player.PlayerData.citizenid, nameOf(player), 'تعبئة النيترو', nil })
     MEC.log(source, 'nitro_refill', p.plate)
+    MEC.xp(source, 10, 'تعبئة نيترو', ('nitro:%s'):format(p.plate))
     return { amt = 100 }
 end)
 

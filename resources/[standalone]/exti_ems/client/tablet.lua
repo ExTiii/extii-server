@@ -617,6 +617,19 @@ RegisterNUICallback('fire', function(data, cb)
     if ok then sendTablet() end
 end)
 
+-- the chief: job applications (hire / reject)
+RegisterNUICallback('appHire', function(data, cb)
+    local ok, err = lib.callback.await('exti_ems:server:appHire', false, tonumber(data and data.id))
+    cb({ ok = ok and true or false, error = not ok and (EMS.ERRORS[err] or EMS.ERRORS.failed) or nil })
+    if ok then sendTablet() end
+end)
+
+RegisterNUICallback('appReject', function(data, cb)
+    local ok, err = lib.callback.await('exti_ems:server:appReject', false, tonumber(data and data.id))
+    cb({ ok = ok and true or false, error = not ok and (EMS.ERRORS[err] or EMS.ERRORS.failed) or nil })
+    if ok then sendTablet() end
+end)
+
 RegisterNUICallback('quit', function(_, cb)
     local ok = lib.callback.await('exti_ems:server:quit', false)
     cb({ ok = ok and true or false })

@@ -36,6 +36,20 @@ const ICON = {
     user: (s) => svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/>', s),
     door: (s) => svg('<path d="M13 4h5.5v16H13"/><path d="M4 12h10M10 8l4 4-4 4"/>', s),
     warn: (s) => svg('<path d="M12 4l9 15.5H3z"/><path d="M12 10v4.5M12 17.5h.01"/>', s),
+    fish: (s) => svg('<path d="M3 12c3-4.5 7-6 11-6 3 0 5.5 2 7 6-1.5 4-4 6-7 6-4 0-8-1.5-11-6z"/><path d="M3 12l-1-3.5M3 12l-1 3.5"/><circle cx="16.5" cy="10.5" r="1" fill="currentColor"/>', s),
+    hotdog: (s) => svg('<path d="M4 14.5c0-2 1.5-3.5 3.5-3.5h9c2 0 3.5 1.5 3.5 3.5S18.5 18 16.5 18h-9C5.5 18 4 16.5 4 14.5z"/><path d="M5.5 11.5C5.5 8 8 6 12 6s6.5 2 6.5 5.5"/><path d="M8 14.5c1-.8 2-.8 3 0s2 .8 3 0 2-.8 3 0"/>', s),
+    window: (s) => svg('<rect x="4" y="3.5" width="16" height="17" rx="1.5"/><path d="M12 3.5v17M4 12h16"/><path d="M14.5 6.5l3 3"/>', s),
+    pizza: (s) => svg('<path d="M12 21L3.5 6.5C8.5 3 15.5 3 20.5 6.5z"/><path d="M5 9c4-2 10-2 14 0"/><circle cx="10" cy="12" r="1.1" fill="currentColor"/><circle cx="14" cy="14.5" r="1.1" fill="currentColor"/><circle cx="12" cy="17.5" r="1" fill="currentColor"/>', s),
+    leaf: (s) => svg('<path d="M5 19c0-8 5-13 15-14-1 10-6 15-14 15"/><path d="M5 19l8-8"/>', s),
+    bus: (s) => svg('<rect x="4" y="3.5" width="16" height="14" rx="2.5"/><path d="M4 10.5h16M8 3.5v7M16 3.5v7"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/>', s),
+    tree: (s) => svg('<path d="M12 3l6 8h-3.5l4.5 6H5l4.5-6H6z"/><path d="M12 17v4"/>', s),
+    pickaxe: (s) => svg('<path d="M4 7.5C8 3.5 14 3 19.5 5"/><path d="M14 9L4.5 19.5"/><path d="M12.5 6.5l5 5"/>', s),
+    recycle: (s) => svg('<path d="M7 19H4.5l3.5-6"/><path d="M9.5 6.5L12 3l3 5"/><path d="M17 13l3 5.5-3 .5"/><path d="M6.5 13L4 17.5M14 8.5l2.5-1M10 19h8.5"/>', s),
+    truck: (s) => svg('<path d="M2.5 16V6h11v10"/><path d="M13.5 9h4l3.5 4v3h-7.5"/><circle cx="6.5" cy="17" r="1.8"/><circle cx="17" cy="17" r="1.8"/>', s),
+    bolt: (s) => svg('<path d="M13.5 3L5 13.5h6l-1.5 7.5L18 10.5h-6z"/>', s),
+    dive: (s) => svg('<rect x="4" y="7" width="16" height="9" rx="4.5"/><path d="M12 7v9"/><circle cx="8" cy="11.5" r="1.5"/><circle cx="16" cy="11.5" r="1.5"/><path d="M20 11.5h1.5V4"/>', s),
+    oil: (s) => svg('<path d="M12 3.5s-5.5 6.5-5.5 10.5a5.5 5.5 0 0 0 11 0C17.5 10 12 3.5 12 3.5z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/>', s),
+    lock: (s) => svg('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>', s),
     medic: (s) => svg('<path d="M10 3.5h4v4.6l4-2.3 2 3.5-4 2.3 4 2.2-2 3.5-4-2.3v4.5h-4v-4.5l-4 2.3-2-3.5 4-2.2-4-2.3 2-3.5 4 2.3Z"/>', s),
 };
 const jobIcon = (name, s) => (ICON[name] || ICON.briefcase)(s);
@@ -125,6 +139,7 @@ function headerCenter() {
             </div>
         </div>
         <div class="top-side">
+            ${meLevel()}
             <div class="tabs" role="tablist">
                 <button class="tab ${state.tab === 'jobs' ? 'active' : ''}" data-act="tab" data-tab="jobs">${ICON.briefcase(16)} الوظائف</button>
                 <button class="tab ${state.tab === 'docs' ? 'active' : ''}" data-act="tab" data-tab="docs">${ICON.id(16)} الوثائق</button>
@@ -134,17 +149,67 @@ function headerCenter() {
     </header>`;
 }
 
+// the player level (exti_level)
+const myLevel = () => (state.data.me && state.data.me.level) || 1;
+const lockedFor = (job) => (job.minLevel || 1) > myLevel();
+const num = (n) => Math.round(Number(n) || 0).toLocaleString('en-US');
+
+function meLevel() {
+    const me = state.data.me || { level: 1, cur: 0, need: 1, pct: 0 };
+    return `<div class="me-level" title="الخبرة تأتي من العمل فقط">
+        <span class="me-num">${me.level}</span>
+        <span class="me-text"><b>المستوى ${me.level}</b><u><s style="width:${Math.max(2, Math.min(100, me.pct || 0))}%"></s></u>
+        <small>${me.max ? 'أعلى مستوى' : `<bdi dir="ltr">${num(me.cur)} / ${num(me.need)} XP</bdi>`}</small></span>
+    </div>`;
+}
+
 function jobCard(job) {
     const isCurrent = state.data.current === job.name;
+    const locked = lockedFor(job);
+    const tag = job.soon ? `<span class="badge soon">قريبًا</span>` : '';
     return `
-    <button class="job-card ${job.name === selectedJob().name ? 'active' : ''}" data-act="select" data-job="${esc(job.name)}">
-        <span class="job-icon">${jobIcon(job.icon, 24)}</span>
+    <button class="job-card ${job.name === selectedJob().name ? 'active' : ''} ${locked ? 'locked' : ''}" data-act="select" data-job="${esc(job.name)}">
+        <span class="job-icon">${jobIcon(job.icon, 24)}${locked ? `<i class="job-lock">${ICON.lock(12)}</i>` : ''}</span>
         <span class="job-main">
-            <h3>${esc(job.label)} ${isCurrent ? '<span class="badge soft">وظيفتك</span>' : ''}</h3>
-            <span>${esc(job.company)}</span>
+            <h3>${esc(job.label)} ${isCurrent ? '<span class="badge soft">وظيفتك</span>' : ''}${tag}</h3>
+            <span class="${job.minLevel > 1 ? `lvl-req${locked ? '' : ' ok'}` : ''}">${job.minLevel > 1 ? `${locked ? ICON.lock(11) : ICON.check(11)} المستوى ${job.minLevel}` : esc(job.company)}</span>
             <span class="pay">${job.team ? esc(job.payText) : `${esc(job.hourText)} في الساعة`}</span>
         </span>
     </button>`;
+}
+
+// a job with a level (not built yet: "قريبًا"): what it is, the level, the supplies
+function soonDetails(job) {
+    const locked = lockedFor(job);
+    const me = myLevel();
+    return `
+    <div class="scroll">
+        <div class="hero soon-hero">
+            <span class="soon-icon">${jobIcon(job.icon, 64)}</span>
+            ${job.soon ? `<span class="badge">قريبًا</span>` : ''}
+            <div class="hero-text">
+                <span class="company">${jobIcon(job.icon, 15)} ${esc(job.company)}</span>
+                <h2>${esc(job.label)}</h2>
+                <p>${esc(job.short)}</p>
+            </div>
+        </div>
+        <div class="facts">
+            <div class="fact"><span>${ICON.star(14)} المستوى المطلوب</span><b class="${locked ? '' : 'gold'}">المستوى ${job.minLevel}</b><small>${locked ? `مستواك ${me}، بقي ${job.minLevel - me} مستوى` : 'مستواك يكفي'}</small></div>
+            <div class="fact"><span>${ICON.cash(14)} الدخل التقريبي</span><b class="gold">${esc(job.hourText)}</b><small>في الساعة</small></div>
+            <div class="fact"><span>${ICON.list(14)} المستلزمات</span><b>${(job.supplies || []).map(esc).join('، ')}</b><small>من بقالة 24/7</small></div>
+        </div>
+        <div class="box">
+            <div class="box-title"><span>${ICON.info(16)} كيف ترفع مستواك</span></div>
+            <div class="reqs">
+                <span class="req ok">${ICON.check(15)} كل عمل حقيقي يعطيك خبرة: الوظائف، الإسعاف، الشرطة، الميكانيك</span>
+                <span class="req ok">${ICON.check(15)} الوقوف أو التجول بدون عمل لا يعطي خبرة</span>
+                <span class="req ok">${ICON.check(15)} كل وظيفة جديدة تدفع أكثر من التي قبلها</span>
+            </div>
+        </div>
+    </div>
+    <footer class="bottom">${job.soon
+        ? `<div class="bottom-note">${ICON.info(16)} هذه الوظيفة تُفتح في تحديث قادم${locked ? `، وتحتاج المستوى ${job.minLevel}` : ''}</div>`
+        : `<div class="bottom-note">${ICON.lock(16)} تحتاج المستوى ${job.minLevel}</div>`}</footer>`;
 }
 
 function levelBox(job) {
@@ -160,7 +225,7 @@ function levelBox(job) {
     }).join('');
     return `
     <div class="box">
-        <div class="box-title"><span>${ICON.star(16)} مستواك في هذه الوظيفة</span><small>${lv.tasks} ${esc(word)} أنجزتها</small></div>
+        <div class="box-title"><span>${ICON.star(16)} رتبتك في هذه الوظيفة</span><small>${lv.tasks} ${esc(word)} أنجزتها</small></div>
         <div class="level-row">
             <div class="level-now">
                 <div class="level-num">${lv.level}</div>
@@ -169,8 +234,8 @@ function levelBox(job) {
         </div>
         <div class="level-bar"><i style="width:${Math.max(3, Math.min(100, done * 100))}%"></i></div>
         <div class="level-hint">
-            <span>${isMax ? 'وصلت إلى أعلى مستوى' : `بقي ${lv.nextAt - lv.tasks} ${esc(word)} للمستوى التالي`}</span>
-            <span>${isMax ? '' : `المستوى ${lv.level + 1}: +${pct(lv.nextBonus)}`}</span>
+            <span>${isMax ? 'وصلت إلى أعلى رتبة' : `بقي ${lv.nextAt - lv.tasks} ${esc(word)} للرتبة التالية`}</span>
+            <span>${isMax ? '' : `الرتبة ${lv.level + 1}: +${pct(lv.nextBonus)}`}</span>
         </div>
         <div class="ladder">${rungs}</div>
     </div>`;
@@ -186,6 +251,7 @@ function jobActions(job) {
     }
     if (d.onShift) return `<div class="bottom-note">${ICON.warn(16)} أنهِ مناوبتك الحالية عند المشرف أولًا</div>`;
     if (!d.canSwitch) return `<div class="bottom-note">${ICON.warn(16)} أنت تعمل في ${esc(d.currentLabel)}، ولا يمكنك تغيير وظيفتك من هنا</div>`;
+    if (lockedFor(job)) return `<div class="bottom-note">${ICON.lock(16)} تحتاج المستوى ${job.minLevel} (مستواك ${myLevel()})</div>`;
     if (!d.hasLicence && !job.team) {
         return `<div class="bottom-note">${ICON.warn(16)} تحتاج إلى رخصة قيادة لهذه الوظيفة</div>
             <button class="btn primary" disabled>${ICON.briefcase(18)} التقديم على الوظيفة</button>`;
@@ -241,6 +307,7 @@ function teamDetails(job) {
 
 function jobDetails(job) {
     if (job.team) return teamDetails(job);
+    if (job.soon) return soonDetails(job);
     const d = state.data;
     const steps = job.steps.map((s) => `<div class="step"><i></i><span>${esc(s)}</span></div>`).join('');
     return `
@@ -256,7 +323,7 @@ function jobDetails(job) {
         </div>
 
         <div class="facts">
-            <div class="fact"><span>${ICON.cash(14)} الدخل التقريبي</span><b class="gold">${esc(job.hourText)}</b><small>في الساعة، في المستوى الأول</small></div>
+            <div class="fact"><span>${ICON.cash(14)} الدخل التقريبي</span><b class="gold">${esc(job.hourText)}</b><small>في الساعة، في الرتبة الأولى</small></div>
             <div class="fact"><span>${ICON.list(14)} أجر المهمة</span><b>${esc(job.payText)}</b><small>في حسابك البنكي فورًا</small></div>
             <div class="fact"><span>${ICON.key(14)} مركبة العمل</span><b>${esc(job.vehicle.label)}</b><small>تأمين ${money(job.deposit)} يُعاد إليك</small></div>
             <div class="fact"><span>${ICON.pin(14)} المقر</span><b>${esc(job.hq.label)}</b><small>${esc(job.hq.place)}</small></div>
@@ -328,8 +395,10 @@ function renderCenter() {
         ? docsView()
         : `<div class="body">
                <aside class="side">
-                   <div class="side-title">الوظائف المتاحة</div>
-                   ${d.jobs.map(jobCard).join('')}
+                   <div class="side-title">وظائف البداية</div>
+                   ${d.jobs.filter((j) => !(j.minLevel > 1)).map(jobCard).join('')}
+                   <div class="side-title">وظائف بمستوى</div>
+                   ${d.jobs.filter((j) => j.minLevel > 1).sort((a, b) => a.minLevel - b.minLevel).map(jobCard).join('')}
                    <div class="side-note">${ICON.info(16)}<span>بعد التقديم تظهر لك علامة المقر على الخريطة. اذهب إليه وتحدّث مع المشرف لتبدأ العمل.</span></div>
                </aside>
                <main class="main">${jobDetails(selectedJob())}</main>
@@ -379,7 +448,7 @@ function renderHq() {
             <div class="hero hq-hero">
                 <img src="${IMAGE_URL(job.vehicle.model)}" alt="" onerror="this.remove()" />
                 <div class="hero-text">
-                    <span class="company">${ICON.star(14)} المستوى ${job.level.level} · ${esc(job.level.name)}</span>
+                    <span class="company">${ICON.star(14)} الرتبة ${job.level.level} · ${esc(job.level.name)}</span>
                     <h2>${esc(job.label)}</h2>
                     <p>${esc(job.vehicle.label)} بانتظارك في الساحة.</p>
                 </div>
@@ -390,7 +459,7 @@ function renderHq() {
             </div>
             <div class="facts">
                 <div class="fact"><span>${ICON.list(14)} أجر المهمة</span><b>${esc(job.payText)}</b></div>
-                <div class="fact"><span>${ICON.star(14)} زيادة مستواك</span><b class="gold">+${pct(job.level.bonus)}</b></div>
+                <div class="fact"><span>${ICON.star(14)} زيادة رتبتك</span><b class="gold">+${pct(job.level.bonus)}</b></div>
                 <div class="fact"><span>${ICON.key(14)} التأمين</span><b>${money(job.deposit)}</b><small>يُعاد عند الإرجاع</small></div>
                 <div class="fact"><span>${ICON.gift(14)} مكافأة الإرجاع</span><b>حتى ${money(job.bonusMax)}</b><small>حسب جولاتك وحالة المركبة</small></div>
             </div>

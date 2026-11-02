@@ -351,6 +351,7 @@ lib.callback.register('exti_mechanic:server:repairDone', function(source, succes
     MySQL.insert('INSERT INTO `exti_mechanic_service` (`plate`, `at`, `citizenid`, `name`, `what`, `km`) VALUES (?, ?, ?, ?, ?, ?)',
         { p.plate, os.time(), player.PlayerData.citizenid, nameOf(player), ('تغيير %s'):format(c.label), math.floor(rec.km) })
     MEC.log(source, 'repair', ('%s · %s'):format(p.plate, c.label))
+    MEC.xp(source, 15, ('تغيير %s'):format(c.label), ('repair:%s:%s'):format(p.plate, p.comp))
     lib.logger(source, 'mechanic', ('replaced %s on %s'):format(p.comp, p.plate))
     return { pct = 100, label = c.label }
 end)
@@ -395,6 +396,7 @@ lib.callback.register('exti_mechanic:server:cleanDone', function(source, success
             { p.plate, os.time(), player.PlayerData.citizenid, nameOf(player), p.kind == 'wax' and 'غسيل وتلميع (واكس)' or 'غسيل', wear[p.plate] and math.floor(wear[p.plate].km) or nil })
     end
     MEC.log(source, p.kind == 'wax' and 'wax' or 'wash', p.plate or '')
+    MEC.xp(source, p.kind == 'wax' and 10 or 6, p.kind == 'wax' and 'تلميع سيارة' or 'غسيل سيارة', ('clean:%s'):format(p.plate or '?'))
     return true
 end)
 

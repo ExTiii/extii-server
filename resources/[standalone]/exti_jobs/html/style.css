@@ -225,3 +225,27 @@ html, body { width: 100%; height: 100%; margin: 0; background: transparent; over
     .docs { grid-template-columns: 1fr; }
     .side { width: 270px; }
 }
+
+/* ---------- EX_Tii level system ---------- */
+.me-level { display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 8px; border-radius: 16px; background: var(--card); border: 1px solid var(--accent-line); }
+.me-num { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-weight: 700; font-size: 16px; color: #2a1c00;
+    background: linear-gradient(160deg, #ffd659, #c9970f); direction: ltr; }
+.me-text { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
+.me-text b { font-size: 13px; }
+.me-text u { display: block; height: 6px; border-radius: 4px; background: var(--card-3); overflow: hidden; direction: rtl; }
+.me-text s { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #c9970f, #ffd659); }
+.me-text small { font-size: 11px; color: var(--muted); }
+.badge.soon { height: 22px; padding: 0 9px; font-size: 11px; background: rgba(155, 108, 240, 0.16); color: #c4a6ff; }
+.job-card.locked .job-main h3, .job-card.locked .job-main .pay { opacity: 0.6; }
+.job-icon { position: relative; }
+.job-lock { position: absolute; bottom: -4px; left: -4px; width: 20px; height: 20px; border-radius: 7px; display: grid; place-items: center;
+    background: var(--card-3); color: var(--muted); border: 1px solid var(--line-2); font-style: normal; }
+.side-title + .job-card { margin-top: 0; }
+.soon-hero { background: radial-gradient(ellipse at 22% 50%, rgba(232, 181, 71, 0.2), transparent 55%), var(--card); }
+.soon-icon { position: absolute; left: 14%; top: 50%; transform: translateY(-50%); color: var(--accent); opacity: 0.9; }
+.soon-icon svg { width: 110px; height: 110px; stroke-width: 1.4; }
+
+/* the level a job needs, on its card: icon + text on one line */
+.job-main .lvl-req { display: inline-flex; align-items: center; gap: 5px; }
+.job-main .lvl-req svg { display: inline-block; flex: none; }
+.job-main .lvl-req.ok { color: var(--green, #3ecf8e); }

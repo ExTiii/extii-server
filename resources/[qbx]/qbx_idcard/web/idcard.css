@@ -1,0 +1,228 @@
+/* EX_Tii Roleplay — identity card, server design kit.
+   Only a picture on screen: it never takes the mouse or keyboard. */
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    user-select: none;
+}
+
+.idc {
+    --card-accent: var(--accent);
+    position: fixed;
+    top: 50%;
+    right: 3vh;
+    width: 46vh;
+    direction: rtl;
+    background: var(--panel);
+    border: 1px solid var(--line-2);
+    border-radius: 2vh;
+    box-shadow: 0 2.4vh 6vh rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(3vh, -50%);
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0s linear 0.18s;
+}
+.idc::before {
+    /* the colour strip of the card type */
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 0.45vh;
+    background: linear-gradient(90deg, transparent, var(--card-accent) 30%, var(--card-accent) 70%, transparent);
+}
+.idc.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(0, -50%);
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0s;
+}
+
+/* ---------- head ---------- */
+.idc-head {
+    display: flex;
+    align-items: center;
+    gap: 1.2vh;
+    padding: 1.8vh 1.8vh 1.3vh;
+    border-bottom: 1px solid var(--line);
+}
+.idc-logo {
+    width: 4.6vh;
+    height: 4.6vh;
+    border-radius: 1.1vh;
+    border: 1px solid var(--accent-line);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.idc-titles {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+.idc-type {
+    font-size: 1.9vh;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--card-accent);
+}
+.idc-city {
+    font-size: 1.2vh;
+    font-weight: 500;
+    color: var(--muted);
+    line-height: 1.4;
+}
+.idc-en { color: var(--faint); unicode-bidi: isolate; }
+
+.idc-badge {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4vh;
+}
+.idc-badge.on { display: flex; }
+.idc-badge img { height: 4.6vh; width: auto; }
+.idc-badge span {
+    font-size: 1vh;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-radius: 0.6vh;
+    padding: 0.1vh 0.6vh;
+}
+
+/* ---------- body ---------- */
+.idc-body {
+    display: flex;
+    gap: 1.6vh;
+    padding: 1.6vh 1.8vh;
+}
+.idc-photo {
+    width: 11vh;
+    height: 13.5vh;
+    flex-shrink: 0;
+    border-radius: 1.2vh;
+    overflow: hidden;
+    border: 1px solid var(--line-2);
+    background: var(--card-2);
+    box-shadow: 0 0 0 0.25vh rgba(0, 0, 0, 0.25);
+}
+.idc-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.idc-photo img[src=''] { visibility: hidden; }
+
+.idc-fields {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1vh 1.4vh;
+    align-content: center;
+}
+.idc-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.idc-label {
+    font-size: 1.05vh;
+    font-weight: 500;
+    color: var(--muted);
+    line-height: 1.4;
+}
+.idc-value {
+    font-size: 1.45vh;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.45;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    unicode-bidi: plaintext;
+    text-align: right;
+}
+.idc-ltr { direction: ltr; unicode-bidi: isolate; }
+.idc-mono { letter-spacing: 0.08em; color: var(--accent-hi); }
+
+/* ---------- foot ---------- */
+.idc-foot {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.2vh;
+    padding: 1.1vh 1.8vh 1.5vh;
+    border-top: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.02);
+}
+.idc-sign {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.idc-signature {
+    font-size: 1.7vh;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--accent);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    unicode-bidi: plaintext;
+    padding: 0 0.5vh 0 0.6vh; /* room for the slanted letters */
+}
+.idc-hint {
+    font-size: 1.05vh;
+    color: var(--faint);
+    white-space: nowrap;
+}
+.idc-hint b {
+    font-weight: 600;
+    color: var(--muted);
+    border: 1px solid var(--line-2);
+    border-radius: 0.5vh;
+    padding: 0 0.5vh;
+    margin-right: 0.3vh;
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
+/* ---------- time left ---------- */
+.idc-timer {
+    height: 0.3vh;
+    background: rgba(255, 255, 255, 0.05);
+}
+.idc-timer span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    margin-right: 0;
+    background: var(--card-accent);
+    opacity: 0.75;
+    transform-origin: right center;
+}
+.idc-timer span.run {
+    animation-name: idc-time;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+@keyframes idc-time {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+/* EX_Tii: the owner's level (exti_level) */
+.idc-level { display: none; flex-direction: column; align-items: center; justify-content: center; min-width: 5.2vh; height: 5.2vh; padding: 0 0.6vh;
+    border-radius: 1.2vh; background: linear-gradient(160deg, #ffd659, #c9970f); color: #2a1c00; margin-inline-start: auto; margin-inline-end: 0.8vh; }
+.idc-level.on { display: flex; }
+.idc-level span { font-size: 0.9vh; font-weight: 600; line-height: 1.1; }
+.idc-level b { font-size: 2vh; font-weight: 700; line-height: 1.1; direction: ltr; }

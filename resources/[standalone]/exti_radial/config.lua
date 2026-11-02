@@ -111,6 +111,7 @@ Config.blipGroups = {
 Config.providers = {
     { resource = 'exti_police', export = 'RadialMenu' },
     { resource = 'exti_mechanic', export = 'RadialMenu' },
+    { resource = 'exti_level', export = 'RadialMenu' },   -- the player level (المستوى 12)
 }
 
 Config.work = {

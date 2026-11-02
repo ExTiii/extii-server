@@ -105,6 +105,7 @@
     $('btnTreat').onclick = () => act('treat', $('btnTreat'));
     $('btnCheckup').onclick = () => act('checkup', $('btnCheckup'));
     $('btnCall').onclick = () => act('callMedic', $('btnCall'));
+    $('btnJoin').onclick = () => post('applyEms', {});
 
     // ---------- report ----------
     function renderReport(r, canShow) {

@@ -201,3 +201,10 @@ RegisterNetEvent('npwd_city:client:serviceAlert', function(alert)
         duration = 10000,
     })
 end)
+
+---------------------------------------------------------------------
+-- المستوى (exti_level)
+---------------------------------------------------------------------
+RegisterNUICallback('level:get', function(_, cb)
+    cb(lib.callback.await('npwd_city:level:get', false) or {})
+end)

@@ -1,0 +1,35 @@
+@font-face { font-family: 'Lv Plex'; src: url('fonts/plex-arabic-500.woff2') format('woff2'); font-weight: 500; unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+@font-face { font-family: 'Lv Plex'; src: url('fonts/plex-arabic-700.woff2') format('woff2'); font-weight: 700; unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+@font-face { font-family: 'Lv Plex'; src: url('fonts/plex-latin-500.woff2') format('woff2'); font-weight: 500; unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Lv Plex'; src: url('fonts/plex-latin-700.woff2') format('woff2'); font-weight: 700; unicode-range: U+0000-00FF, U+2000-206F; }
+
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: 'Lv Plex', sans-serif; }
+
+/* the XP card: top middle of the screen */
+.lv-card { position: fixed; top: 22px; left: 50%; width: 360px; transform: translate(-50%, -130%); opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.3s; direction: rtl;
+    padding: 12px 16px 14px; border-radius: 16px; color: #f4f3ef;
+    background: linear-gradient(180deg, rgba(22, 22, 27, 0.94), rgba(12, 12, 15, 0.94)); border: 1px solid rgba(242, 194, 48, 0.35);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5); }
+.lv-card.in { transform: translate(-50%, 0); opacity: 1; }
+.lv-top { display: flex; align-items: center; gap: 12px; }
+.lv-badge { position: relative; width: 46px; height: 46px; flex: none; display: grid; place-items: center; border-radius: 13px;
+    background: linear-gradient(160deg, #ffd659, #c9970f); color: #2a1c00; font: 700 19px 'Lv Plex', sans-serif; direction: ltr;
+    box-shadow: 0 0 0 2px rgba(255, 214, 89, 0.25), 0 6px 14px rgba(201, 151, 15, 0.35); }
+.lv-titles { flex: 1; min-width: 0; }
+.lv-titles small { display: block; font-size: 11.5px; color: #c9c5bb; }
+.lv-titles b { font-size: 16px; font-weight: 700; }
+.lv-gain { font: 700 15px 'Lv Plex', sans-serif; color: #ffd659; direction: ltr; white-space: nowrap; }
+.lv-bar { margin-top: 10px; height: 9px; border-radius: 6px; background: rgba(255, 255, 255, 0.09); overflow: hidden; direction: rtl; }
+.lv-bar s { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #c9970f, #ffd659); transition: width 1.1s cubic-bezier(0.3, 0.8, 0.3, 1); }
+.lv-foot { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: #a19f99; }
+.lv-foot bdi { direction: ltr; }
+.lv-next { margin-top: 8px; padding: 6px 10px; border-radius: 9px; background: rgba(242, 194, 48, 0.08); font-size: 12px; color: #e6dcc0; }
+.lv-next b { color: #ffd659; }
+
+/* level up */
+.lv-card.up { border-color: rgba(255, 214, 89, 0.9); box-shadow: 0 0 0 1px rgba(255, 214, 89, 0.4), 0 0 40px rgba(255, 214, 89, 0.35), 0 14px 40px rgba(0, 0, 0, 0.5); }
+.lv-card.up .lv-badge { animation: lv-pop 0.9s ease-out; }
+.lv-up { margin-top: 8px; text-align: center; font: 700 14px 'Lv Plex', sans-serif; color: #ffd659; }
+.lv-up span { display: block; font-weight: 500; font-size: 12.5px; color: #f4f3ef; margin-top: 2px; }
+@keyframes lv-pop { 0% { transform: scale(0.6); } 55% { transform: scale(1.25); } 100% { transform: scale(1); } }

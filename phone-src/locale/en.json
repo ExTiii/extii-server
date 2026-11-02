@@ -447,6 +447,20 @@
         "CALL": "Call",
         "WAYPOINT_SET": "The request location is marked on your map.",
         "WAYPOINT_FAIL": "This request has expired."
+      },
+      "LEVEL": {
+        "SUBTITLE": "Your progress in the city",
+        "YOUR_LEVEL": "Your level",
+        "LEVEL_N": "Level {{n}}",
+        "MAX": "Max level",
+        "OF": "of {{max}} levels",
+        "TO_NEXT": "to level {{n}}",
+        "HOW_TITLE": "How to level up",
+        "HOW_1": "Real work gives XP: jobs, EMS, police, mechanic.",
+        "HOW_2": "Standing around or driving for fun gives no XP.",
+        "HOW_3": "Each level unlocks new jobs that pay more.",
+        "HOUR_LEFT": "You can earn {{n}} more XP this hour.",
+        "UNLOCKS": "What levels unlock"
       }
     },
     "PHOTOS": {
@@ -477,6 +491,7 @@
       "SET_WALLPAPER": "Wallpaper",
       "WALLPAPER_SET": "Photo set as your wallpaper",
       "MY_PHOTO": "My photo"
-    }
+    },
+    "APPS_LEVEL": "Level"
   }
 }

@@ -95,7 +95,7 @@ local function addTask(player, job)
     local after = levelInfo(job, skill[job])
     if after.level > before.level then
         notify(player.PlayerData.source,
-            ('ترقية! وصلت إلى المستوى %d (%s) في وظيفة %s، وأجرك الآن أعلى بنسبة %d%%'):format(
+            ('ترقية! وصلت إلى الرتبة %d (%s) في وظيفة %s، وأجرك الآن أعلى بنسبة %d%%'):format(
                 after.level, after.name, config.jobs[job].label, round(after.bonus * 100)), 'success', 9000)
     end
 end
@@ -107,6 +107,12 @@ local function payTask(src, shift, base, reason)
     local info = levelInfo(shift.job, tasksDone(player, shift.job))
     local amount = round(base * (1.0 + info.bonus))
     player.Functions.AddMoney('bank', amount, reason)
+    -- the player level (exti_level): XP for the work itself (the base pay, not the rank bonus)
+    local job = config.jobs[shift.job]
+    local xp = round(base * (job.xpRate or 0.25))
+    if xp > 0 and GetResourceState('exti_level') == 'started' then
+        pcall(function() exports.exti_level:AddXP(src, xp, job.xpText or job.label) end)
+    end
     shift.earned = shift.earned + amount
     shift.tasks = shift.tasks + 1
     addTask(player, shift.job)
@@ -356,6 +362,28 @@ local function findSpawn(job)
 end
 
 ---------------------------------------------------------------------------
+-- the player level (exti_level)
+---------------------------------------------------------------------------
+local function levelOf(src)
+    if GetResourceState('exti_level') ~= 'started' then return { level = 1, cur = 0, need = 1, pct = 0 } end
+    local ok, info = pcall(function() return exports.exti_level:Info(src) end)
+    return ok and type(info) == 'table' and info or { level = 1, cur = 0, need = 1, pct = 0 }
+end
+
+-- what each level unlocks (exti_level shows it on level up): { { level, label } }
+exports('Unlocks', function()
+    local list = {}
+    for name, job in pairs(config.jobs) do
+        if (job.minLevel or 1) > 1 then list[#list + 1] = { level = job.minLevel, label = job.label } end
+    end
+    for _, u in ipairs(config.upcoming or {}) do
+        list[#list + 1] = { level = u.minLevel, label = u.soon and (u.label .. ' (قريبًا)') or u.label }
+    end
+    table.sort(list, function(a, b) return a.level < b.level end)
+    return list
+end)
+
+---------------------------------------------------------------------------
 -- the job center tablet
 ---------------------------------------------------------------------------
 local function jobView(player, name)
@@ -380,6 +408,7 @@ local function jobView(player, name)
         level = info,
         levelNames = config.levelNames,
         levelBonus = config.levelBonus,
+        minLevel = job.minLevel or 1,
     }
 end
 
@@ -414,9 +443,15 @@ lib.callback.register('exti_jobs:server:center', function(source)
     for _, name in ipairs(config.teamOrder or {}) do
         if config.teamJobs[name] then jobs[#jobs + 1] = teamView(name) end
     end
+    -- the jobs that need a level (the ones not built yet show as "قريبًا")
+    for _, u in ipairs(config.upcoming or {}) do
+        jobs[#jobs + 1] = { name = u.name, label = u.label, company = u.company, icon = u.icon, short = u.short, hourText = u.hourText,
+            minLevel = u.minLevel, supplies = u.supplies, soon = u.soon == true }
+    end
     local jobData = player.PlayerData.job or {}
     return {
         jobs = jobs,
+        me = levelOf(source),
         current = current,
         currentLabel = config.jobs[current] and config.jobs[current].label
             or config.teamJobs and config.teamJobs[current] and config.teamJobs[current].label
@@ -432,7 +467,10 @@ end)
 
 lib.callback.register('exti_jobs:server:apply', function(source, name)
     local player = getPlayer(source)
-    local team = type(name) == 'string' and config.teamJobs and config.teamJobs[name]
+    -- team jobs only while they are listed in the job centre (EMS is hired by its chief now)
+    local listed = false
+    for _, t in ipairs(config.teamOrder or {}) do if t == name then listed = true end end
+    local team = listed and type(name) == 'string' and config.teamJobs and config.teamJobs[name]
     if not player or type(name) ~= 'string' or not (config.jobs[name] or team) then return false, 'failed' end
     if not nearJobCenter(source) then return false, 'far' end
     local current = jobName(player)
@@ -440,6 +478,7 @@ lib.callback.register('exti_jobs:server:apply', function(source, name)
     if not config.freeJobs[current] then return false, 'locked' end
     if shifts[source] then return false, 'shift' end
     if not team and not hasLicence(player) then return false, 'licence' end -- EX_Tii: team jobs don't need a driver's licence
+    if not team and (config.jobs[name].minLevel or 1) > levelOf(source).level then return false, 'level' end
     player.Functions.SetJob(name, 0)
     lib.logger(source, 'jobs', ('took the job %s (was %s)'):format(name, current))
     return true

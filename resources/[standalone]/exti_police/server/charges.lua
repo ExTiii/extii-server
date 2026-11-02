@@ -271,6 +271,10 @@ lib.callback.register('exti_police:server:chargeIssue', function(source, targetI
     else
         notify(tid, 'warning', ('حرّر لك الشرطي %s مخالفة بقيمة $%d — ادفعها من البنك أو الصراف'):format(officer, fine))
     end
+    -- the player level (exti_level): XP for the arrest / ticket, once per suspect per 30 minutes
+    if GetResourceState('exti_level') == 'started' then
+        pcall(function() exports.exti_level:AddXP(source, wantJail and 40 or 12, wantJail and 'سجن مشتبه' or 'تحرير مخالفة', 'police:' .. cid) end)
+    end
     return { id = chargeId, fine = withBill and fine or 0, jail = wantJail and jail or 0, count = #picked, jailed = wantJail }
 end)
 

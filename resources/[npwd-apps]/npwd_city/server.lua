@@ -313,3 +313,17 @@ AddEventHandler('playerDropped', function()
     lastTransfer[source] = nil
     lastService[source] = nil
 end)
+
+---------------------------------------------------------------------
+-- المستوى (exti_level): the level, the bar, what the levels unlock (exti_jobs)
+---------------------------------------------------------------------
+lib.callback.register('npwd_city:level:get', function(source)
+    if GetResourceState('exti_level') ~= 'started' then return nil end
+    local ok, info = pcall(function() return exports.exti_level:Status(source) end)
+    if not ok or type(info) ~= 'table' then return nil end
+    if GetResourceState('exti_jobs') == 'started' then
+        local okU, unlocks = pcall(function() return exports.exti_jobs:Unlocks() end)
+        info.unlocks = okU and unlocks or {}
+    end
+    return info
+end)

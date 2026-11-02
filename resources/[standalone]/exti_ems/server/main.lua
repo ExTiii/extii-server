@@ -323,6 +323,10 @@ local function pay(src, player, kind, patient)
     player.Functions.SetMetaData('emsstats', s)
     local shift = shifts[src]
     if shift then shift.earned = shift.earned + amount end
+    -- the player level (exti_level): XP for the patient (the pay cooldown above already stops farming)
+    if GetResourceState('exti_level') == 'started' then
+        pcall(function() exports.exti_level:AddXP(src, kind == 'revive' and 30 or 15, kind == 'revive' and 'إنعاش مريض' or 'علاج مصاب') end)
+    end
     return amount
 end
 
@@ -425,6 +429,7 @@ lib.callback.register('exti_ems:server:tablet', function(source)
         ranks = ranks,
         calls = job.onduty and callsView(source) or {},
         team = teamView(source, player),
+        applications = job.isboss and EMS_applicationsView and EMS_applicationsView() or nil, -- (defined further down)
         now = os.time(),
     }
 end)
@@ -483,6 +488,114 @@ lib.callback.register('exti_ems:server:quit', function(source)
     if not isMedic(player) then return false end
     player.Functions.SetJob('unemployed', 0)
     return true
+end)
+
+---------------------------------------------------------------------------
+-- joining EMS (like police and mechanic): a citizen fills the job application at the hospital
+-- reception (exti_hospital), the EMS chief reads it on the tablet and hires or rejects
+---------------------------------------------------------------------------
+local APP = Config.applications or {}
+-- the jobs someone may leave to become a medic (team jobs like police or mechanic can't)
+local FREE_JOBS = APP.freeJobs or { unemployed = true, tow = true, garbage = true, delivery = true, taxi = true, bus = true, trucker = true, reporter = true, vineyard = true }
+
+CreateThread(function()
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `exti_ems_applications` (
+        `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        `citizenid` VARCHAR(50) NOT NULL,
+        `name` VARCHAR(80) NULL,
+        `phone` VARCHAR(20) NULL,
+        `answers` LONGTEXT NULL,
+        `created` INT NOT NULL,
+        `status` VARCHAR(12) NOT NULL DEFAULT 'open',
+        `handled_by` VARCHAR(80) NULL,
+        `handled` INT NULL,
+        INDEX `status` (`status`),
+        INDEX `cid` (`citizenid`)
+    ) DEFAULT CHARSET=utf8mb4]])
+end)
+
+local function clean(s, max)
+    if type(s) ~= 'string' then return '' end
+    s = s:gsub('[%c<>]', ' '):gsub('^%s+', ''):gsub('%s+$', '')
+    if utf8.len(s) and utf8.len(s) > max then s = s:sub(1, utf8.offset(s, max + 1) - 1) end
+    return s
+end
+
+local function jobOfCid(cid)
+    local online = exports.qbx_core:GetPlayerByCitizenId(cid)
+    if online then return online.PlayerData.job and online.PlayerData.job.name, online end
+    local ok, off = pcall(function() return exports.qbx_core:GetOfflinePlayer(cid) end)
+    return ok and off and off.PlayerData.job and off.PlayerData.job.name or nil, nil
+end
+
+-- a citizen applies (from the hospital reception)
+lib.callback.register('exti_ems:server:apply', function(source, data)
+    local player = getPlayer(source)
+    if not player or type(data) ~= 'table' then return false, 'failed' end
+    if isMedic(player) then return false, 'already' end
+    local cid = player.PlayerData.citizenid
+    local open = MySQL.scalar.await("SELECT COUNT(*) FROM `exti_ems_applications` WHERE `citizenid` = ? AND `status` = 'open'", { cid })
+    if (tonumber(open) or 0) > 0 then return false, 'pending' end
+    local lastNo = MySQL.scalar.await("SELECT MAX(`handled`) FROM `exti_ems_applications` WHERE `citizenid` = ? AND `status` = 'rejected'", { cid })
+    if lastNo and os.time() - tonumber(lastNo) < (APP.retryHours or 24) * 3600 then return false, 'wait' end
+    local answers = { experience = clean(data.experience, 300), why = clean(data.why, 400), hours = clean(data.hours, 80) }
+    if utf8.len(answers.why) and utf8.len(answers.why) < 10 then return false, 'short' end
+    MySQL.insert.await('INSERT INTO `exti_ems_applications` (`citizenid`, `name`, `phone`, `answers`, `created`) VALUES (?, ?, ?, ?, ?)',
+        { cid, nameOf(player), clean(data.phone or (player.PlayerData.charinfo and player.PlayerData.charinfo.phone) or '', 20), json.encode(answers), os.time() })
+    -- the chiefs on duty hear about it
+    for _, id in ipairs(GetPlayers()) do
+        local p = getPlayer(tonumber(id))
+        if isMedic(p) and p.PlayerData.job.isboss then notify(tonumber(id), 'inform', ('طلب توظيف جديد في الإسعاف من %s. افتح التابلت ← الإدارة'):format(nameOf(player))) end
+    end
+    lib.logger(source, 'ems', 'applied to EMS')
+    return true
+end)
+
+local function applicationsView()
+    local rows = MySQL.query.await("SELECT * FROM `exti_ems_applications` WHERE `status` = 'open' ORDER BY `id` LIMIT 30") or {}
+    local out = {}
+    for i, r in ipairs(rows) do
+        local ok, a = pcall(json.decode, r.answers or '')
+        local job, online = jobOfCid(r.citizenid)
+        out[i] = { id = r.id, citizenid = r.citizenid, name = r.name, phone = r.phone, created = r.created, answers = ok and a or {},
+            online = online ~= nil, free = job == nil or FREE_JOBS[job] == true, job = job }
+    end
+    return out
+end
+EMS_applicationsView = applicationsView
+
+local function chief(src)
+    local player = getPlayer(src)
+    if not isMedic(player) or not player.PlayerData.job.isboss then return nil end
+    return player
+end
+
+lib.callback.register('exti_ems:server:appHire', function(source, id)
+    local player = chief(source)
+    if not player then return false, 'not_boss' end
+    local row = MySQL.single.await("SELECT * FROM `exti_ems_applications` WHERE `id` = ? AND `status` = 'open'", { math.tointeger(tonumber(id)) or 0 })
+    if not row then return false, 'gone' end
+    local job, online = jobOfCid(row.citizenid)
+    if job == JOB then return false, 'already' end
+    if job and not FREE_JOBS[job] then return false, 'busy_job' end
+    local okAdd, added = pcall(function() return exports.qbx_core:AddPlayerToJob(row.citizenid, JOB, 0) end)
+    if not okAdd or added == false then return false, 'failed' end
+    pcall(function() exports.qbx_core:SetPlayerPrimaryJob(row.citizenid, JOB) end)
+    MySQL.update.await("UPDATE `exti_ems_applications` SET `status` = 'hired', `handled_by` = ?, `handled` = ? WHERE `id` = ?", { nameOf(player), os.time(), row.id })
+    if online then notify(online.PlayerData.source, 'success', 'قُبل طلبك! أصبحت مسعفًا. اذهب إلى المستشفى وابدأ الدوام من جهاز تسجيل الدخول') end
+    lib.logger(source, 'ems', ('hired %s from application #%d'):format(row.citizenid, row.id))
+    return applicationsView()
+end)
+
+lib.callback.register('exti_ems:server:appReject', function(source, id)
+    local player = chief(source)
+    if not player then return false, 'not_boss' end
+    local row = MySQL.single.await("SELECT * FROM `exti_ems_applications` WHERE `id` = ? AND `status` = 'open'", { math.tointeger(tonumber(id)) or 0 })
+    if not row then return false, 'gone' end
+    MySQL.update.await("UPDATE `exti_ems_applications` SET `status` = 'rejected', `handled_by` = ?, `handled` = ? WHERE `id` = ?", { nameOf(player), os.time(), row.id })
+    local online = exports.qbx_core:GetPlayerByCitizenId(row.citizenid)
+    if online then notify(online.PlayerData.source, 'inform', 'لم يُقبل طلبك في الإسعاف هذه المرة. تقدر تقدّم مرة أخرى بعد يوم') end
+    return applicationsView()
 end)
 
 ---------------------------------------------------------------------------

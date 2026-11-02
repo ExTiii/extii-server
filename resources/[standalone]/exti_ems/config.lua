@@ -32,6 +32,11 @@ Config.pay = {
 Config.treatBelow = 85            -- %: treating someone healthier than this is free (no pay)
 Config.payCooldown = 30           -- minutes: the same patient only pays again after this (no farming with friends)
 
+-- joining EMS: the job application at the hospital reception, the chief hires from the tablet
+Config.applications = {
+    retryHours = 24,              -- after a "no", the same person can apply again after this
+}
+
 Config.items = {
     revive = 'firstaid',          -- revive kit (إسعافات أولية), from the supply cabinet
     treat = 'gauze',              -- gauze, from the supply cabinet or the pharmacy

@@ -211,10 +211,32 @@
             </div></div>`;
     }
 
+    // job applications (filled at the hospital reception)
+    function appsView() {
+        const apps = Array.isArray(S.data.applications) ? S.data.applications : Object.values(S.data.applications || {});
+        if (!apps.length) return `<div class="section-title"><h3>طلبات التوظيف</h3><span>لا توجد طلبات جديدة · تُقدَّم من استقبال المستشفى</span></div>`;
+        const now = S.data.now || Math.floor(Date.now() / 1000);
+        return `<div class="section-title"><h3>طلبات التوظيف</h3><span>${apps.length} طلب</span></div>
+            <div class="apps">${apps.map((a) => {
+                const ans = a.answers || {};
+                return `<div class="app-card">
+                    <div class="app-head"><div class="avatar">${esc(initials(a.name))}</div>
+                        <div class="person-main"><b>${esc(a.name)}</b><span class="kit-status ${a.online ? 'info' : ''}">${a.online ? 'متصل' : 'غير متصل'}</span> <small>${esc(ago(now - a.created))}${a.phone ? ` · ${esc(a.phone)}` : ''}</small></div></div>
+                    ${ans.why ? `<p><b>لماذا الإسعاف:</b> ${esc(ans.why)}</p>` : ''}
+                    ${ans.experience ? `<p><b>الخبرة:</b> ${esc(ans.experience)}</p>` : ''}
+                    ${ans.hours ? `<p><b>الأوقات:</b> ${esc(ans.hours)}</p>` : ''}
+                    ${a.free ? '' : `<p class="app-warn">يعمل الآن في وظيفة فريق أخرى، يجب أن يتركها قبل التوظيف</p>`}
+                    <div class="app-acts">
+                        <button class="kit-btn small" data-apphire="${a.id}" data-name="${esc(a.name)}" ${a.free ? '' : 'disabled'}>توظيف كمستجد</button>
+                        <button class="kit-btn danger small" data-appno="${a.id}" data-name="${esc(a.name)}">رفض</button>
+                    </div></div>`;
+            }).join('')}</div>`;
+    }
+
     function bossView() {
         const d = S.data;
         const myGrade = d.me.grade;
-        return `<div class="section-title"><h3>طاقم الإسعاف</h3><span>${d.team.length} عضو · الانضمام من مركز التوظيف</span></div>
+        return appsView() + `<div class="section-title"><h3>طاقم الإسعاف</h3><span>${d.team.length} عضو · التوظيف من طلبات التوظيف أعلاه</span></div>
             <div class="staff">${d.team.map((m) => {
                 const locked = m.me || m.grade >= myGrade;
                 const options = d.ranks.filter((r) => r.grade < myGrade || r.grade === m.grade).map((r) => `<option value="${r.grade}" ${r.grade === m.grade ? 'selected' : ''}>${esc(r.name)}</option>`).join('');
@@ -666,13 +688,25 @@
             };
         });
         os.querySelectorAll('[data-fire]').forEach((b) => {
-            b.onclick = () => confirmSheet(`إنهاء خدمة ${b.dataset.name}؟`, 'يصبح بلا وظيفة، ويستطيع التقديم مجددًا من مركز التوظيف.', 'إنهاء الخدمة', async () => {
+            b.onclick = () => confirmSheet(`إنهاء خدمة ${b.dataset.name}؟`, 'يصبح بلا وظيفة، ويستطيع التقديم مجددًا من استقبال المستشفى.', 'إنهاء الخدمة', async () => {
                 const res = await post('fire', { citizenid: b.dataset.fire });
                 toast(res && res.ok ? 'أُنهيت خدمته' : ((res && res.error) || 'حدث خطأ'), res && res.ok ? 'success' : 'error');
             });
         });
+        os.querySelectorAll('[data-apphire]').forEach((b) => {
+            b.onclick = () => confirmSheet(`توظيف ${b.dataset.name}؟`, 'يصبح مسعفًا مستجدًا، ويبدأ الدوام من المستشفى.', 'نعم، وظّفه', async () => {
+                const res = await post('appHire', { id: Number(b.dataset.apphire) });
+                toast(res && res.ok ? 'تم التوظيف' : ((res && res.error) || 'حدث خطأ'), res && res.ok ? 'success' : 'error');
+            });
+        });
+        os.querySelectorAll('[data-appno]').forEach((b) => {
+            b.onclick = () => confirmSheet(`رفض طلب ${b.dataset.name}؟`, 'يصله إشعار، ويستطيع التقديم مجددًا بعد يوم.', 'رفض الطلب', async () => {
+                const res = await post('appReject', { id: Number(b.dataset.appno) });
+                toast(res && res.ok ? 'رُفض الطلب' : ((res && res.error) || 'حدث خطأ'), res && res.ok ? 'success' : 'error');
+            });
+        });
         const quit = os.querySelector('[data-quit]');
-        if (quit) quit.onclick = () => confirmSheet('تترك العمل في الإسعاف؟', 'تصبح بلا وظيفة، وتفقد رتبتك. تستطيع التقديم مجددًا من مركز التوظيف كمستجد.', 'نعم، أترك العمل', () => post('quit'));
+        if (quit) quit.onclick = () => confirmSheet('تترك العمل في الإسعاف؟', 'تصبح بلا وظيفة، وتفقد رتبتك. تستطيع التقديم مجددًا من استقبال المستشفى كمستجد.', 'نعم، أترك العمل', () => post('quit'));
         const ok = os.querySelector('[data-sheetok]');
         if (ok) ok.onclick = async () => { const a = sheetAction; S.sheet = null; sheetAction = null; render(); if (a) await a(); };
         const no = os.querySelector('[data-sheetno]');

@@ -99,6 +99,12 @@ CreateThread(function()
     )]])
 end)
 
+-- the player level (exti_level): XP for real work (key = what makes it "the same thing")
+function MEC.xp(src, amount, reason, key)
+    if GetResourceState('exti_level') ~= 'started' then return end
+    pcall(function() exports.exti_level:AddXP(src, amount, reason, key) end)
+end
+
 function MEC.log(src, action, content, amount, money)
     local player = src and getPlayer(src)
     MySQL.insert('INSERT INTO `exti_mechanic_logs` (`at`, `citizenid`, `name`, `action`, `content`, `amount`, `money`) VALUES (?, ?, ?, ?, ?, ?, ?)', {

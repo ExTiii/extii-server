@@ -200,3 +200,39 @@ export const MOCK_SERVICES = (): ServicesData => ({
 
 export const MOCK_SERVICE_SEND = (data: any): ServiceResult =>
   data?.service === 'police' ? { ok: true, hidden: true } : { ok: true, count: data?.service === 'taxi' ? 0 : 2 };
+
+/* ---------- level (exti_level) ---------- */
+export interface LevelUnlock {
+  level: number;
+  label: string;
+}
+
+export interface LevelData {
+  level: number;
+  cur: number;
+  need: number;
+  pct: number;
+  max?: boolean;
+  xp?: number;
+  maxLevel?: number;
+  hourLeft?: number;
+  unlocks?: LevelUnlock[];
+}
+
+export const MOCK_LEVEL = (): LevelData => ({
+  level: 12,
+  cur: 1240,
+  need: 2060,
+  pct: 60.2,
+  xp: 9240,
+  maxLevel: 300,
+  hourLeft: 900,
+  unlocks: [
+    { level: 3, label: 'صياد سمك (قريبًا)' },
+    { level: 8, label: 'بائع نقانق (قريبًا)' },
+    { level: 15, label: 'منظف نوافذ (قريبًا)' },
+    { level: 22, label: 'عامل بيتزا (قريبًا)' },
+    { level: 30, label: 'مزارع (قريبًا)' },
+    { level: 40, label: 'سائق حافلة (قريبًا)' },
+  ],
+});

@@ -22,9 +22,42 @@ return {
     -- the order on the tablet
     order = { 'delivery', 'garbage', 'tow' },
 
+    -- EX_Tii level system (exti_level): the starter jobs above need no level. These jobs need a level
+    -- and supplies from the 24/7 store; they are being built one phase at a time (soon = shown as
+    -- "قريبًا" in the job centre until its update arrives). minLevel = the player level needed.
+    upcoming = {
+        { name = 'fishing', label = 'صياد سمك', company = 'سوق السمك في لوس سانتوس', icon = 'fish', minLevel = 3, hourText = '2,700$',
+          short = 'اصطد السمك من الرصيف أو بالقارب وبِعه في سوق السمك. كل نوع بسعر.', supplies = { 'صنارة', 'طُعم' }, soon = true },
+        { name = 'hotdog', label = 'بائع نقانق', company = 'عربات شانكي للنقانق', icon = 'hotdog', minLevel = 8, hourText = '2,900$',
+          short = 'جهّز العربة وقدّم النقانق للزبائن في الشوارع المزدحمة.', supplies = { 'نقانق', 'خبز', 'صلصة' }, soon = true },
+        { name = 'windows', label = 'منظف نوافذ', company = 'بُرج كلين', icon = 'window', minLevel = 15, hourText = '3,100$',
+          short = 'نظّف واجهات الأبراج من المنصة المعلّقة.', supplies = { 'ممسحة زجاج', 'صابون زجاج' }, soon = true },
+        { name = 'pizza', label = 'عامل بيتزا', company = 'بيتزا ذيس', icon = 'pizza', minLevel = 22, hourText = '3,300$',
+          short = 'اخبز البيتزا في المطعم ثم أوصلها بالدراجة ساخنة.', supplies = { 'عجينة', 'جبن' }, soon = true },
+        { name = 'farming', label = 'مزارع', company = 'مزارع غريبسيد', icon = 'leaf', minLevel = 30, hourText = '3,500$',
+          short = 'ازرع واسقِ واحصد المحصول وبِعه.', supplies = { 'بذور', 'سماد' }, soon = true },
+        { name = 'bus', label = 'سائق حافلة', company = 'حافلات لوس سانتوس', icon = 'bus', minLevel = 40, hourText = '3,700$',
+          short = 'قُد الحافلة على خطوط المدينة وأوصل الركاب.', supplies = { 'لفة تذاكر' }, soon = true },
+        { name = 'lumber', label = 'حطّاب', company = 'منشرة بوليتو', icon = 'tree', minLevel = 55, hourText = '4,000$',
+          short = 'اقطع الأشجار وحمّل الجذوع وأوصلها إلى المنشرة.', supplies = { 'فأس', 'قفازات' }, soon = true },
+        { name = 'mining', label = 'عامل منجم', company = 'منجم ديفيس كوارتز', icon = 'pickaxe', minLevel = 70, hourText = '4,300$',
+          short = 'احفر الصخور، اصهر الخام وبِع المعادن.', supplies = { 'معول', 'بطاريات مصباح الرأس' }, soon = true },
+        { name = 'recycling', label = 'عامل إعادة التدوير', company = 'مصنع إعادة التدوير', icon = 'recycle', minLevel = 90, hourText = '4,600$',
+          short = 'افرز المواد في المصنع واكبسها وجهّزها للبيع.', supplies = { 'قفازات عمل', 'أكياس قمامة' }, soon = true },
+        { name = 'trucker', label = 'سائق شاحنة', company = 'نقل سان أندرياس', icon = 'truck', minLevel = 110, hourText = '5,000$',
+          short = 'انقل المقطورات لمسافات طويلة بين المدن.', supplies = { 'أحزمة ربط', 'مشاعل طريق' }, soon = true },
+        { name = 'electrician', label = 'كهربائي', company = 'كهرباء لوس سانتوس', icon = 'bolt', minLevel = 140, hourText = '5,400$',
+          short = 'أصلح صناديق الكهرباء المعطلة في أنحاء المدينة.', supplies = { 'لفة أسلاك', 'فيوزات' }, soon = true },
+        { name = 'scuba', label = 'غوّاص إنقاذ', company = 'إنقاذ بحري', icon = 'dive', minLevel = 175, hourText = '5,800$',
+          short = 'اغطس إلى حطام السفن وانتشل البضائع.', supplies = { 'تعبئة أكسجين', 'مصباح غوص' }, soon = true },
+        { name = 'oil', label = 'فني حقول النفط', company = 'نفط ساندي شورز', icon = 'oil', minLevel = 220, hourText = '6,200$',
+          short = 'صِن المضخات وخطوط الأنابيب في حقول النفط.', supplies = { 'حشوات', 'شحم صمامات' }, soon = true },
+    },
+
     -- EX_Tii: team jobs: you join them here, but they are run by their own script (EMS = exti_ems).
     -- You can only take one if your current job is a free one (above); you leave with "استقالة".
-    teamOrder = { 'ambulance' },
+    -- EX_Tii: EMS is no longer joined here (hiring is done by the EMS chief, like police and mechanic)
+    teamOrder = {},
     teamJobs = {
         ambulance = {
             label = 'مسعف',

@@ -108,6 +108,33 @@ RegisterNUICallback('callMedic', function(_, cb)
     end
 end)
 
+-- join EMS: the job application (the EMS chief reads it on the tablet, exti_ems)
+local APPLY_ERR = {
+    already = 'أنت مسعف بالفعل', pending = 'طلبك السابق ما زال عند قائد الإسعاف', short = 'اكتب سببًا أطول قليلًا',
+    wait = 'رُفض طلبك قبل قليل، تقدر تقدّم مرة أخرى بعد يوم', failed = 'حدث خطأ، حاول مرة أخرى',
+}
+RegisterNUICallback('applyEms', function(_, cb)
+    cb(true)
+    if not ui.open or ui.mode ~= 'reception' then return end
+    close()
+    CreateThread(function()
+        if GetResourceState('exti_ems') ~= 'started' then return lib.notify({ type = 'error', description = APPLY_ERR.failed }) end
+        local input = lib.inputDialog('طلب توظيف · الإسعاف', {
+            { type = 'input', label = 'رقم الهاتف', placeholder = 'ليتواصل معك القائد', max = 20 },
+            { type = 'textarea', label = 'لماذا تريد العمل في الإسعاف؟', required = true, min = 10, max = 400, autosize = true },
+            { type = 'textarea', label = 'خبرتك (إن وُجدت)', max = 300, autosize = true },
+            { type = 'input', label = 'الأوقات التي تلعب فيها', placeholder = 'مثلًا: كل يوم من 8 إلى 12 مساءً', max = 80 },
+        })
+        if not input then return end
+        local ok, err = lib.callback.await('exti_ems:server:apply', false, { phone = input[1], why = input[2], experience = input[3], hours = input[4] })
+        if ok then
+            lib.notify({ type = 'success', duration = 8000, description = 'أُرسل طلبك إلى قائد الإسعاف. سيصلك إشعار حين يرد عليه' })
+        else
+            lib.notify({ type = 'error', description = APPLY_ERR[err] or APPLY_ERR.failed })
+        end
+    end)
+end)
+
 -- close the reception panel when you walk away or go down
 CreateThread(function()
     while true do
