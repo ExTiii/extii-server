@@ -22,6 +22,7 @@ local function teleport(p)
     Wait(250)
     DoScreenFadeIn(350)
 end
+GC.teleport = teleport
 RegisterNetEvent('exti_gangs:client:doorTeleport', function(p) if type(p) == 'table' and p.x then teleport(p) end end)
 
 local ERR = {

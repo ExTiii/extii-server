@@ -41,7 +41,9 @@ POL.openCalls = openCalls
 
 ---@param data { kind: 'phone'|'chat'|'alarm', coords: vector3, caller?: number, text?: string, number?: string, label?: string, alert?: boolean }
 local function addCall(data)
-    if type(data) ~= 'table' or type(data.coords) ~= 'table' or not tonumber(data.coords.x) then return nil end
+    -- (a game position is a vector3, not a table: both are fine)
+    local ct = type(data) == 'table' and type(data.coords)
+    if not ct or (ct ~= 'table' and ct ~= 'vector3' and ct ~= 'vector4') or not tonumber(data.coords.x) then return nil end
     local kind = D.labels[data.kind] and data.kind or 'chat'
     local coords = vec3(data.coords.x + 0.0, data.coords.y + 0.0, (data.coords.z or 0.0) + 0.0)
     local text = cleanText(data.text, D.textLength)

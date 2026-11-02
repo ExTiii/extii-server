@@ -10,6 +10,7 @@ local knocks = {}     -- [knock id] = { src, gang, at }
 local lastKnock = {}  -- [src] = os.time()
 local breaching = {}  -- [src] = { gang, at }
 local breached = {}   -- [gang] = os.time()
+local warned = {}     -- [gang] = os.time() (the gang is told once per 30 s)
 local nextKnock = 0
 
 local function doors(name)
@@ -78,8 +79,11 @@ lib.callback.register('exti_gangs:server:door', function(source, name, action)
         if not GANG.isCopOnDuty(source) then return false, 'notcop' end
         if (breached[name] or 0) + D.breachOpen > now then inside[source] = name; return true, { open = true, to = pos(din) } end
         breaching[source] = { gang = name, at = now }
-        GANG.toGang(g, 'الشرطة تقتحم باب المقر!', 'error')
-        GANG.log(g, 'الشرطة', 'door_breach_start', '')
+        if (warned[name] or 0) + 30 <= now then
+            warned[name] = now
+            GANG.toGang(g, 'الشرطة تقتحم باب المقر!', 'error')
+            GANG.log(g, 'الشرطة', 'door_breach_start', '')
+        end
         return true, { seconds = D.breachSeconds }
 
     elseif action == 'breachFinish' then

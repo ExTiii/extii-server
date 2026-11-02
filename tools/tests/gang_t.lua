@@ -284,6 +284,13 @@ check(#CALLS == 1 and CALLS[1].label == 'سرقة سيارة' and CALLS[1].text:
 check(entityState[CAR].exti_tracker == true, 'a fast car gets the GPS tracker')
 fireNet('qbx_vehiclekeys:server:hotwiredVehicle', 3, CAR)
 check(#CALLS == 1, 'the same car again within 5 min: no second alert')
+-- spam: one player over a whole parking lot
+local before = #CALLS
+for i = 1, 8 do local v = 700 + i; entityPos[v] = vec3(131, 1, 0); entityType[v] = 2; entityModel[v] = joaat('zentorno'); advance(3); fireNet('qbx_vehiclekeys:server:hotwiredVehicle', 3, v) end
+check(#CALLS - before <= 3, 'a cheat firing theft events over 8 cars in a row: only a few alerts (' .. (#CALLS - before) .. ')')
+for i = 1, 8 do entityPos[700 + i] = nil end
+advance(61)
+CALLS = { CALLS[1] }
 local NPC = 60
 entityPos[NPC] = vec3(300, 0, 0); entityType[NPC] = 2; entityModel[NPC] = joaat('blista'); vehicleInfo[joaat('blista')] = { category = 'compacts' }
 at(3, vec3(301, 0, 0))
@@ -359,6 +366,10 @@ local nc = #CALLS
 check(nc > 0 and CALLS[nc].text:find('OWN') and CALLS[nc].text:find('%*'), 'the police get the call with half the plate: ' .. tostring(CALLS[nc] and CALLS[nc].text))
 fireNet('exti_gangs:server:reportStolen', 4, 'OWN 123', true)
 check(UPD[#UPD] and UPD[#UPD].p[1]:find('بلاغ المالك'), 'the owner confirms: the BOLO says "owner report"')
+local nu = #UPD
+fireNet('exti_gangs:server:reportStolen', 4, 'OWN 123', true)
+check(#UPD == nu, 'answering twice (or without an alarm) does nothing: no spam to the police')
+check(type(CALLS[1].coords) == 'table' and getmetatable(CALLS[1].coords) == nil, 'the call position goes as a plain table (the police script needs that)')
 local ok2 = CB.chopStart(3, PC, 6)
 for st = 1, 4 do advance(65); local _, r_ = CB.chopStage(3, st); if st == 4 then FIN2 = r_ end end
 check(ok2 and FIN2 and savedVehicle and savedVehicle.state == 2 and savedVehicle.depotPrice == FIN2.money and savedVehicle.garage == 'impoundlot', 'the player car goes to the impound, recovery fee = what the gang made')

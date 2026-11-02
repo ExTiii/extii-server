@@ -111,6 +111,19 @@ local HOW = {
 ---------------------------------------------------------------------------
 local seen = {}       -- [vehicle] = { alerted = t, rolled = t, at = t }
 local lastFrom = {}   -- [src] = os.time() (attempt events)
+local recent = {}     -- [src] = { [vehicle] = os.time() }: cars he touched in the last minute
+
+-- a cheat could fire the car keys events over a whole parking lot: a few cars a minute at most
+local function tooMany(src, veh)
+    local now = os.time()
+    local r = recent[src] or {}
+    recent[src] = r
+    local n = 0
+    for v, t in pairs(r) do if now - t > 60 then r[v] = nil elseif v ~= veh then n = n + 1 end end
+    if not r[veh] and n >= 3 then return true end
+    r[veh] = r[veh] or now
+    return false
+end
 
 local function alertPolice(veh, how, witness, police)
     if not policeUp() then return end
@@ -121,7 +134,7 @@ local function alertPolice(veh, how, witness, police)
     pcall(function()
         exports.exti_police:AddCall({
             kind = 'alarm', label = police and 'سرقة مركبة شرطة' or 'سرقة سيارة',
-            coords = GetEntityCoords(veh), text = text, number = witness and 'شاهد' or SYSTEM,
+            coords = (function() local c = GetEntityCoords(veh) return { x = c.x, y = c.y, z = c.z } end)(), text = text, number = witness and 'شاهد' or SYSTEM,
         })
     end)
 end
@@ -157,7 +170,8 @@ CreateThread(function()
         for veh, s in pairs(seen) do
             if now - (s.at or 0) > 900 or not DoesEntityExist(veh) then seen[veh] = nil end
         end
-        for src, t in pairs(lastFrom) do if now - t > 60 then lastFrom[src] = nil end end
+        for src, t in pairs(lastFrom) do if now - t > 60 then lastFrom[src] = nil; recent[src] = nil end end
+        for plate, pd in pairs(pending) do if now - pd.at > 120 then pending[plate] = nil end end
     end
 end)
 
@@ -226,12 +240,13 @@ lib.callback.register('exti_gangs:server:pullFinish', function(source, passed)
     trackerEnd(p.veh, 'pulled')
     return true
 end)
-AddEventHandler('playerDropped', function() pulling[source] = nil; lastFrom[source] = nil end)
+AddEventHandler('playerDropped', function() pulling[source] = nil; lastFrom[source] = nil; recent[source] = nil end)
 
 ---------------------------------------------------------------------------
 -- a player car: the owner's alarm + the STOLEN flag on the police tablet
 ---------------------------------------------------------------------------
 local alarmed = {}    -- [plate] = os.time() (one alarm per car per 10 min)
+local pending = {}    -- [plate] = { cid, at }: the owner may answer this alarm (once, within 60 s)
 
 local function openBolo(plate)
     return MySQL.single.await('SELECT `id`, `officer` FROM `exti_police_bolos` WHERE `plate` = ? AND `closed` IS NULL ORDER BY `id` DESC LIMIT 1', { plate })
@@ -253,11 +268,25 @@ local function ownerAlarm(veh, owned)
         end
         local os_ = GANG.srcOf(owned.citizenid)
         if os_ then
+            pending[plate] = { cid = owned.citizenid, at = os.time() }
             TriggerClientEvent('exti_gangs:client:carAlarm', os_, { plate = plate, coords = { x = where.x, y = where.y, z = where.z }, flagged = flagged,
                 blip = T.ownerBlipSeconds })
         end
     end)
 end
+
+-- an alarm nobody confirmed comes off the tablet after 30 min (the owner can still report it himself at the police)
+CreateThread(function()
+    while true do
+        Wait(300000)
+        if policeUp() then
+            pcall(function()
+                MySQL.update.await('UPDATE `exti_police_bolos` SET `closed` = ?, `closed_by` = ? WHERE `officer` = ? AND `closed` IS NULL AND `created` < ?',
+                    { os.time(), SYSTEM, SYSTEM, os.time() - 1800 })
+            end)
+        end
+    end
+end)
 
 -- the owner answers the alarm: yes = confirm it's stolen, no = it's fine (a friend), nil = no answer (stays)
 RegisterNetEvent('exti_gangs:server:reportStolen', function(plate, confirm)
@@ -269,9 +298,15 @@ RegisterNetEvent('exti_gangs:server:reportStolen', function(plate, confirm)
     local ok, vid = pcall(function() return exports.qbx_vehicles:GetVehicleIdByPlate(plate) end)
     local owned = ok and vid and exports.qbx_vehicles:GetPlayerVehicle(vid)
     if not owned or owned.citizenid ~= p.PlayerData.citizenid then return end
+    -- only an answer to a real alarm, once
+    local pd = pending[plate]
+    pending[plate] = nil
+    if not pd or pd.cid ~= owned.citizenid or os.time() - pd.at > 60 then return end
     local bolo = openBolo(plate)
     if confirm == true then
-        if bolo then
+        if bolo and bolo.officer ~= SYSTEM then
+            -- an officer's own BOLO on this plate: leave it as he wrote it
+        elseif bolo then
             MySQL.update.await('UPDATE `exti_police_bolos` SET `title` = ?, `officer` = ? WHERE `id` = ?',
                 { ('سيارة مسروقة %s (بلاغ المالك)'):format(plate), 'بلاغ مواطن', bolo.id })
         else
@@ -295,7 +330,12 @@ end)
 -- the two ways in
 ---------------------------------------------------------------------------
 -- a real theft (lockpick opened it, hotwired it, took the keys): from server/chop.lua
+local lastStolen = {}  -- [src] = os.time()
+AddEventHandler('playerDropped', function() lastStolen[source] = nil end)
 function GANG.stolen(src, veh, how, owned)
+    local now = os.time()
+    if (lastStolen[src] or 0) + 2 > now or tooMany(src, veh) then return end
+    lastStolen[src] = now
     CreateThread(function()
         if isCopOnDuty(src) then return end -- an officer opening a car for the job
         -- ask his game whether an NPC saw it (no answer in 1.5 s = nobody)
@@ -325,5 +365,6 @@ RegisterNetEvent('exti_gangs:server:theftAttempt', function(crime, netId, witnes
     local cid = GANG.cid(src)
     local owned = GANG.isOwnedBy(veh)
     if owned and owned.citizenid == cid then return end
+    if tooMany(src, veh) then return end
     maybeAlert(src, veh, HOW[crime] and crime or 'carjack', witness == true, owned)
 end)

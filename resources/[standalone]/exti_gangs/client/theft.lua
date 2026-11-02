@@ -104,25 +104,42 @@ local function pull(veh)
     pulling = false
 end
 
+-- look for a tracked car every half second; only the [E] key is read every frame
+local PULL_TEXT = '[E] انزع متتبع GPS'
+local target = nil
 CreateThread(function()
-    local shown = false
     while true do
-        local sleep = 600
+        Wait(500)
+        local found = nil
         local ped = PlayerPedId()
-        local target = nil
         if not pulling and not IsPedInAnyVehicle(ped, false) and not isCop() then
             local here = GetEntityCoords(ped)
             for _, veh in ipairs(GetGamePool('CVehicle')) do
-                if Entity(veh).state.exti_tracker and #(GetEntityCoords(veh) - here) < 3.5 then target = veh break end
+                if Entity(veh).state.exti_tracker and #(GetEntityCoords(veh) - here) < 3.5 then found = veh break end
             end
         end
-        if target then
-            sleep = 0
-            if not shown then lib.showTextUI('[E] انزع متتبع GPS', { position = 'left-center' }); shown = true end
-            if IsControlJustReleased(0, 38) then shown = false; pull(target) end
-        elseif shown then
-            lib.hideTextUI(); shown = false
+        target = found
+    end
+end)
+
+CreateThread(function()
+    local shown = false
+    while true do
+        if target and not pulling then
+            local open, text = lib.isTextUIOpen()
+            if not shown and not open then lib.showTextUI(PULL_TEXT, { position = 'left-center' }); shown = true end
+            if IsControlJustReleased(0, 38) and shown then
+                lib.hideTextUI(); shown = false
+                pull(target)
+            end
+            Wait(0)
+        else
+            if shown then
+                local open, text = lib.isTextUIOpen()
+                if open and text == PULL_TEXT then lib.hideTextUI() end
+                shown = false
+            end
+            Wait(300)
         end
-        Wait(sleep)
     end
 end)

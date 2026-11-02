@@ -256,7 +256,7 @@ local function answerPrompt(yes)
 end
 RegisterNUICallback('prompt', function(req, cb) answerPrompt(req and req.yes == true); cb(true) end)
 local function prompt(p, onAnswer)
-    if promptCb then answerPrompt(false) end
+    if promptCb then answerPrompt(nil) end -- a new prompt replaces it: counts as no answer
     promptCb = onAnswer
     SendNUIMessage({ action = 'prompt', prompt = p })
     local mine = promptCb
@@ -402,9 +402,7 @@ RegisterNetEvent('exti_gangs:client:spotsMenu', function(gangList)
     local houses = {}
     for _, h in ipairs(C.houses or {}) do
         houses[#houses + 1] = { title = h.label, icon = 'house-chimney', onSelect = function()
-            local ped = PlayerPedId()
-            RequestCollisionAtCoord(h.coords.x, h.coords.y, h.coords.z)
-            SetEntityCoords(ped, h.coords.x, h.coords.y, h.coords.z, false, false, false, false)
+            GC.teleport({ x = h.coords.x, y = h.coords.y, z = h.coords.z + 1.0, h = 0.0 })
             notify(('أنت داخل %s'):format(h.label), 'inform')
         end }
     end
