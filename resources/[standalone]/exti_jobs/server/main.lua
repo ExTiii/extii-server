@@ -1092,7 +1092,7 @@ local function chainAct(source, stepIndex, spotIndex)
         if math.type(spotIndex) ~= 'integer' then return false, 'failed' end
         spot = step.spots[spotIndex]
     else
-        spot = step.spot
+        spot = step.ped and step.ped.xyz or step.spot -- a buyer (person) stands there instead of a circle
     end
     if not spot then return false, 'failed' end
 
@@ -1226,7 +1226,8 @@ local function batchStep(source, stepIndex)
     local step = job.chain[stepIndex]
     if not step or (step.kind ~= 'batch' and step.kind ~= 'sellall') then return nil, 'failed' end
     local here, ped = pedCoords(source)
-    if not here or flat(here, step.spot) > 3.0 or math.abs(here.z - step.spot.z) > 4.0 then return nil, 'far' end
+    local at = step.ped and step.ped.xyz or step.spot -- a buyer (person) stands there instead of a circle
+    if not here or flat(here, at) > 3.0 or math.abs(here.z - at.z) > 4.0 then return nil, 'far' end
     if GetVehiclePedIsIn(ped, false) ~= 0 then return nil, 'far' end
     return shift, step, job
 end

@@ -96,6 +96,7 @@ local function nextStep()
 end
 
 local function stepCenter(step)
+    if step.ped then return step.ped.xyz end
     if step.kind ~= 'collect' then return step.spot end
     local x, y, z, n = 0.0, 0.0, 0.0, #step.spots
     for _, p in ipairs(step.spots) do x, y, z = x + p.x, y + p.y, z + p.z end
@@ -117,25 +118,55 @@ local function drawBlips(route)
 end
 
 -- the buyer at the sell place (when an admin put one there with /jobspots)
-local function removeBuyer()
-    if C.buyer and DoesEntityExist(C.buyer) then DeletePed(C.buyer) end
-    C.buyer = nil
+-- EX_Tii: the buyer of a level job is a person (no circle): walk up to him and press E.
+-- He stands there for everyone, all the time (like the supervisors). Placed with /jobspots.
+local buyers = {} -- [job .. ':' .. step id] = ped
+
+local function removeBuyer(key)
+    for k, ped in pairs(buyers) do
+        if not key or k == key then
+            if DoesEntityExist(ped) then DeletePed(ped) end
+            buyers[k] = nil
+        end
+    end
 end
 
-local function spawnBuyer(step)
-    if not step.ped or (C.buyer and DoesEntityExist(C.buyer)) then return end
-    local model = `s_m_m_linecook`
+local function spawnBuyer(key, step)
+    if buyers[key] and DoesEntityExist(buyers[key]) then return end
+    local model = joaat(step.pedModel or 's_m_m_linecook')
     if not EXJ.loadModel(model) then return end
     local p = step.ped
+    RequestCollisionAtCoord(p.x, p.y, p.z)
     local found, gz = GetGroundZFor_3dCoord(p.x, p.y, p.z + 0.6, false)
     local ped = CreatePed(0, model, p.x, p.y, found and math.abs(gz - p.z) < 3.0 and gz or p.z - 1.0, p.w, false, false)
     SetModelAsNoLongerNeeded(model)
     FreezeEntityPosition(ped, true)
     SetEntityInvincible(ped, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
+    SetPedCanRagdoll(ped, false)
     TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_CLIPBOARD', 0, true)
-    C.buyer = ped
+    buyers[key] = ped
 end
+
+CreateThread(function()
+    while true do
+        local me = GetEntityCoords(cache.ped)
+        for name, job in pairs(config.jobs) do
+            for _, st in ipairs(job.chain or {}) do
+                if st.ped then
+                    local key = name .. ':' .. st.id
+                    local d = #(me - st.ped.xyz)
+                    if d < 100.0 then spawnBuyer(key, st) elseif d > 130.0 and buyers[key] then removeBuyer(key) end
+                end
+            end
+        end
+        Wait(1500)
+    end
+end)
+
+AddEventHandler('onResourceStop', function(resource)
+    if resource == GetCurrentResourceName() then removeBuyer() end
+end)
 
 ---------------------------------------------------------------------------
 -- doing a step
@@ -330,6 +361,25 @@ local function loop()
             local prompted = false
             for i, st in ipairs(C.job.chain) do
                 local list = st.kind == 'collect' and st.spots or { st.spot }
+                if st.ped then
+                    -- the buyer: walk up to him and press E (no circle)
+                    local h = math.rad(st.ped.w)
+                    local front = vec3(st.ped.x - math.sin(h) * 1.1, st.ped.y + math.cos(h) * 1.1, st.ped.z)
+                    if #(me - front) < SHOW then sleep = 0 end
+                    if onFoot and not C.busy and not prompted and #(me.xy - front.xy) < 1.4 and math.abs(me.z - st.ped.z) < 2.5 then
+                        local text, why = promptFor(i)
+                        prompted = true
+                        if text then
+                            EXJ.prompt('chain', text)
+                            if EXJ.pressedE() then
+                                if st.kind == 'batch' or st.kind == 'sellall' then actBatch(i, st.ped.xyz) else act(i, nil, st.ped.xyz) end
+                            end
+                        else
+                            EXJ.prompt('chain', why)
+                        end
+                    end
+                    list = {}
+                end
                 for si, p in ipairs(list) do
                     local d = #(me - p)
                     if d < SHOW then
@@ -353,9 +403,6 @@ local function loop()
                         end
                     end
                 end
-                if (st.kind == 'sell' or st.kind == 'sellall') and st.ped then
-                    if #(me - st.ped.xyz) < 80.0 then spawnBuyer(st) elseif C.buyer then removeBuyer() end
-                end
             end
             if not prompted then EXJ.clearPrompt('chain') end
             Wait(sleep)
@@ -367,7 +414,6 @@ end
 
 local function stopJob()
     clearBlips()
-    removeBuyer()
     EXJ.clearPrompt('chain')
     C.name, C.job, C.routeStep, C.rest = nil, nil, nil, {}
 end
@@ -407,10 +453,8 @@ local function applySpots(value)
     spots.apply(config, value)
     -- the supervisors stand again where they should (the HQ loop puts them back)
     TriggerEvent('exti_jobs:client:respawnSupervisors')
-    if C.job then
-        removeBuyer()
-        drawBlips(nextStep())
-    end
+    removeBuyer() -- they stand again where they should (the buyer loop puts them back)
+    if C.job then drawBlips(nextStep()) end
 end
 
 AddStateBagChangeHandler('exti_jobs:spots', 'global', function(_, _, value)
@@ -472,7 +516,7 @@ local function openSpots(name)
             opts[#opts + 1] = { title = ('%s (%s): انقل الدائرة هنا'):format(st.label, st.place), icon = 'location-dot',
                 onSelect = function() save(name, 'step', st.id, 'move', 'نُقلت الدائرة إلى مكانك') end }
             if st.kind == 'sell' or st.kind == 'sellall' then
-                opts[#opts + 1] = { title = 'التاجر (شخص) يقف هنا', icon = 'user-tie', description = 'قف مكانه خلف الدائرة وانظر إلى الزبائن',
+                opts[#opts + 1] = { title = 'التاجر (شخص) يقف هنا', icon = 'user-tie', description = 'قف مكانه وانظر إلى الجهة التي يأتي منها الزبائن. لا دائرة بعدها: يمشي اللاعب إليه ويضغط E',
                     onSelect = function() save(name, 'step', st.id, 'ped', 'وُضع التاجر في مكانك') end }
             end
         end
@@ -482,7 +526,7 @@ local function openSpots(name)
     local go = {}
     go[#go + 1] = { title = 'المشرف', onSelect = function() teleport(job.hq.supervisor.coords) end }
     for _, st in ipairs(job.chain) do
-        local p = st.kind == 'collect' and st.spots[1] or st.spot
+        local p = st.kind == 'collect' and st.spots[1] or (st.ped and st.ped.xyz) or st.spot
         go[#go + 1] = { title = st.label, description = st.place, onSelect = function() teleport(p) end }
     end
     lib.registerContext({ id = 'exj_spots_go', title = 'انتقل إلى', menu = 'exj_spots', options = go })
