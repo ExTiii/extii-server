@@ -5,7 +5,7 @@
 local CERR = {
     nogang = 'ليس لك شيء هنا', rank = 'للطاقم فما فوق', far = 'اقترب أكثر', locked = 'المقر مقفل: الإيجار غير مدفوع', busy = 'الآلة مشغولة',
     cooldown = 'الآلة تبرد: انتظر', rep = 'سمعة العصابة لا تكفي لهذا بعد', daily = 'وصلتم حد اليوم', parts = 'القطع في المخزن لا تكفي',
-    bad = 'اختيار غير صحيح', nothing = 'ليس معك شيء يشتريه', notcorner = '',
+    bad = 'اختيار غير صحيح', nothing = 'ليس معك شيء يشتريه', notcorner = '', stashfull = 'مخزن العصابة ممتلئ: أفرغوه قليلًا', full = 'حقيبتك ممتلئة',
 }
 local function cfail(why, extra)
     local t = CERR[why] or 'لم ينجح'
@@ -97,7 +97,7 @@ end
 function GC.blackMarket()
     local ok, r = lib.callback.await('exti_gangs:server:blackMarket', false, true)
     if not ok then return cfail(r) end
-    if #r.offer == 0 then return GC.notify('"ما عندك شي يهمني. أنا آخذ فقط بضاعة العصابات."', 'inform', 6000) end
+    if #r.offer == 0 then return GC.notify('"ما عندك شي يهمني. آخذ فقط أسلحة العصابات بلا رقم، والذخيرة من صنّاعها."', 'inform', 6000) end
     local lines = {}
     for _, o in ipairs(r.offer) do lines[#lines + 1] = ('%s × %d · %s'):format(o.label, o.count, money(o.price * o.count)) end
     local opts = { { title = ('العرض: %s (مال غير نظيف)'):format(money(math.min(r.total, r.room))), description = table.concat(lines, '\n'), icon = 'sack-dollar', readOnly = true } }

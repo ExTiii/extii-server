@@ -313,7 +313,7 @@
             raf = requestAnimationFrame(tick);
         };
         const key = (e) => {
-            if (e.code !== 'Space' || jam) return; e.preventDefault();
+            if (e.code !== 'Space' || jam || cas.classList.contains('pressed')) return; e.preventDefault();
             die.classList.add('down'); setTimeout(() => die.classList.remove('down'), 160);
             if (Math.abs(x - W / 2) <= 22) {
                 done += 1; cnt(`${done}/${N}`); cas.classList.add('pressed'); speed += 25;
@@ -341,7 +341,7 @@
             if (!free.length) return end(true);
             cells.forEach((c) => c.classList.remove('lit'));
             const c = free[Math.floor(Math.random() * free.length)]; lit = Number(c.dataset.i); c.classList.add('lit');
-            clearTimeout(timer); timer = setTimeout(() => { c.classList.remove('lit'); area.classList.add('shake'); setTimeout(() => area.classList.remove('shake'), 300); setTimeout(next, 500); }, 1100);
+            clearTimeout(timer); timer = setTimeout(() => { c.classList.remove('lit'); lit = -1; area.classList.add('shake'); setTimeout(() => area.classList.remove('shake'), 300); timer = setTimeout(next, 500); }, 1100);
         };
         cells.forEach((c) => c.addEventListener('click', () => {
             if (Number(c.dataset.i) !== lit || c.classList.contains('full')) return;
@@ -397,9 +397,9 @@
             const i = Number(b.dataset.i);
             if (i === order[k]) {
                 b.classList.add('ok'); setTimeout(() => b.classList.remove('ok'), 200); k += 1;
-                if (k >= order.length) { round += 1; cnt(`${round}/${ROUNDS.length}`); if (round >= ROUNDS.length) return end(true); setTimeout(show, 700); }
+                if (k >= order.length) { showing = true; round += 1; cnt(`${round}/${ROUNDS.length}`); if (round >= ROUNDS.length) return end(true); setTimeout(show, 700); }
             } else {
-                area.classList.add('shake'); setTimeout(() => area.classList.remove('shake'), 300); seqEl.textContent = 'خطأ! من جديد...'; setTimeout(show, 1000);
+                showing = true; area.classList.add('shake'); setTimeout(() => area.classList.remove('shake'), 300); seqEl.textContent = 'خطأ! من جديد...'; setTimeout(show, 1000);
             }
         }));
         cnt(`0/${ROUNDS.length}`); show();

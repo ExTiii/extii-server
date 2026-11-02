@@ -62,7 +62,8 @@ function GANG.weedPotRemoved(gang, pot)
             if i < pot then list[i] = pl elseif i > pot then list[i - 1] = pl end
         end
         plants[gang] = list
-        MySQL.query('DELETE FROM `exti_gang_plants` WHERE `gang` = ?', { gang })
+        -- (wait for the delete, or it could land after the new rows and wipe them)
+        MySQL.query.await('DELETE FROM `exti_gang_plants` WHERE `gang` = ?', { gang })
         for i in pairs(list) do save(gang, i) end
     else
         plants[gang] = nil
@@ -148,6 +149,7 @@ lib.callback.register('exti_gangs:server:weedTableBegin', function(source)
     local n = math.min(WD.tableBatch, math.floor(have / WD.budsPerBag))
     if n < 1 then return false, 'nobuds' end
     if not ox:RemoveItem(stash, 'weed_bud', n * WD.budsPerBag) then return false, 'nobuds' end
+    if not ox:CanCarryItem(stash, WD.bagItem, n) then ox:AddItem(stash, 'weed_bud', n * WD.budsPerBag); return false, 'stashfull' end
     local t = { src = source, at = os.time(), stage = 0, stageAt = os.time(), n = n, token = math.random(100000, 999999) }
     tableBusy[g.name] = t
     return true, { token = t.token, bags = n, seconds = WD.tableSeconds }
@@ -163,7 +165,10 @@ lib.callback.register('exti_gangs:server:weedTableStage', function(source, token
     t.stage, t.stageAt = stage, os.time()
     if stage < 2 then return true end
     tableBusy[g.name] = nil
-    ox:AddItem(GANG.stashId(g), WD.bagItem, t.n)
+    if not ox:AddItem(GANG.stashId(g), WD.bagItem, t.n) and not ox:AddItem(source, WD.bagItem, t.n) then
+        local c = GANG.coords(source)
+        if c then ox:CustomDrop('أكياس', { { WD.bagItem, t.n } }, c) end
+    end
     GANG.addRep(g, C.rep.gain.bag * t.n, 'bag')
     GANG.log(g, GANG.charName(p), 'weed_bagged', ('%d أكياس'):format(t.n))
     return true, t.n
@@ -174,7 +179,8 @@ lib.callback.register('exti_gangs:server:weedTableStop', function(source)
         if t.src == source then
             tableBusy[name] = nil
             -- the buds come back (trimming stopped half way)
-            ox:AddItem(GANG.stashId(GANG.gangs[name]), 'weed_bud', t.n * WD.budsPerBag)
+            local stash = GANG.stashId(GANG.gangs[name])
+            if not ox:AddItem(stash, 'weed_bud', t.n * WD.budsPerBag) then ox:AddItem(source, 'weed_bud', t.n * WD.budsPerBag) end
             return true
         end
     end
@@ -225,8 +231,13 @@ lib.callback.register('exti_gangs:server:cornerSell', function(source)
     if have < 1 then corners[source] = nil; return false, 'nobags' end
     local room = CO.dailyBags - GANG.getDaily('m', cid, 'corner')
     if room < 1 then corners[source] = nil; return false, 'daily' end
+    local ped = GetPlayerPed(source)
+    if ped == 0 or GetEntityHealth(ped) <= 0 or (GetResourceState('exti_police') == 'started' and exports.exti_police:IsCuffed(source)) then
+        corners[source] = nil; return false, 'cantnow'
+    end
     local n = math.min(have, room, math.random(CO.perSale[1], CO.perSale[2]))
     local price = math.random(CO.price[1], CO.price[2])
+    if not ox:CanCarryItem(source, 'black_money', n * price) then return false, 'full' end
     if not ox:RemoveItem(source, WD.bagItem, n) then return false, 'nobags' end
     ox:AddItem(source, 'black_money', n * price)
     GANG.addDaily('m', cid, 'corner', n)

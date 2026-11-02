@@ -88,9 +88,11 @@ lib.callback.register('exti_gangs:server:craftBegin', function(source, choice, a
         s.item, s.count, s.parts, s.label = t.item, 1, t.parts, t.label
         s.seconds = WP.stageSeconds
     end
+    local stash = GANG.stashId(g)
+    -- room for what comes out (a full stash would swallow the product)
+    if not ox:CanCarryItem(stash, s.item, s.count, g.type == 'weapons' and { serial = WP.serial } or nil) then return false, 'stashfull' end
     -- the machine is taken before the stash is touched (two presses can't start two batches)
     sessions[g.name] = s
-    local stash = GANG.stashId(g)
     if (ox:GetItemCount(stash, part) or 0) < s.parts or not ox:RemoveItem(stash, part, s.parts) then
         if sessions[g.name] == s then sessions[g.name] = nil end
         return false, 'parts', s.parts
@@ -112,14 +114,23 @@ lib.callback.register('exti_gangs:server:craftStage', function(source, token, st
     -- done: the cooldown and the daily count first, then the product
     GANG.setCooldown('craft:' .. g.name, g.type == 'ammo' and AM.cooldown or WP.cooldown)
     local stash = GANG.stashId(g)
+    local function give(item, n, meta)
+        -- into the stash; if it filled up meanwhile, into his own pockets; else on the floor at his feet
+        if ox:AddItem(stash, item, n, meta) then return end
+        if ox:CanCarryItem(source, item, n, meta) and ox:AddItem(source, item, n, meta) then
+            return GANG.notify(source, 'المخزن ممتلئ: وضعتها في حقيبتك', 'inform')
+        end
+        local c = GANG.coords(source)
+        if c then ox:CustomDrop('صنع العصابة', { { item, n, meta } }, c) end
+        GANG.notify(source, 'المخزن وحقيبتك ممتلئان: وضعتها على الأرض بجانبك', 'error')
+    end
     if g.type == 'ammo' then
         GANG.addDaily('g', g.name, 'rounds', s.count)
-        ox:AddItem(stash, s.item, s.count)
+        give(s.item, s.count)
         GANG.addRep(g, C.rep.gain.ammo, 'ammo')
     else
         GANG.addDaily('g', g.name, 'guns', 1)
-        ox:AddItem(stash, s.item, 1, { serial = WP.serial, registered = false, exti_craft = g.name,
-            description = 'الرقم التسلسلي مكشوط' })
+        give(s.item, 1, { serial = WP.serial, registered = false, exti_craft = g.name, description = 'الرقم التسلسلي مكشوط' })
         GANG.addRep(g, C.rep.gain.gun, 'gun')
         if math.random() < WP.testFireTip then tip(g, 'workbench', 'إطلاق نار متكرر سُمع في هذه المنطقة (تجربة سلاح؟)') end
     end
@@ -169,26 +180,42 @@ lib.callback.register('exti_gangs:server:blackMarket', function(source, preview)
     local room = BM.dailyPerPlayer - GANG.getDaily('m', cid, 'blackmarket')
     -- what he would buy: gang ammo (any) and gang-made guns (no serial, made by a gang)
     local offer, total = {}, 0
+    -- ammo: only from an Ammo gang member, up to what his gang made today (minus what it sold here today)
+    local mg = GANG.memberOf(source)
+    local ammoRoom = 0
+    if mg and mg.type == 'ammo' then
+        ammoRoom = math.max(0, GANG.getDaily('g', mg.name, 'rounds') - GANG.getDaily('g', mg.name, 'bm_rounds'))
+    end
     for _, it in pairs(ox:GetInventoryItems(source) or {}) do
         local price = it and BM.prices[it.name]
         if price then
             local isGun = it.name:sub(1, 7) == 'WEAPON_'
-            if not isGun or (it.metadata and it.metadata.exti_craft) then
+            if isGun and it.metadata and it.metadata.exti_craft then
                 offer[#offer + 1] = { name = it.name, slot = it.slot, count = it.count, price = price, label = it.label or it.name }
                 total = total + price * it.count
+            elseif not isGun and ammoRoom > 0 then
+                local n = math.min(it.count, ammoRoom)
+                ammoRoom = ammoRoom - n
+                offer[#offer + 1] = { name = it.name, slot = it.slot, count = n, price = price, label = it.label or it.name, ammo = true }
+                total = total + price * n
             end
         end
     end
     if preview then return true, { offer = offer, total = total, room = math.max(0, room) } end
     if #offer == 0 then return false, 'nothing' end
     if room <= 0 then return false, 'daily' end
+    if not ox:CanCarryItem(source, 'black_money', math.min(total, room)) then return false, 'full' end
     selling[source] = true
-    local paid = 0
+    local paid, rounds = 0, 0
     for _, o in ipairs(offer) do
         local n = math.min(o.count, math.floor((room - paid) / o.price))
-        if n > 0 and ox:RemoveItem(source, o.name, n, nil, o.slot) then paid = paid + n * o.price end
+        if n > 0 and ox:RemoveItem(source, o.name, n, nil, o.slot) then
+            paid = paid + n * o.price
+            if o.ammo then rounds = rounds + n end
+        end
         if room - paid < 1 then break end
     end
+    if rounds > 0 and mg then GANG.addDaily('g', mg.name, 'bm_rounds', rounds) end
     if paid > 0 then
         ox:AddItem(source, 'black_money', paid)
         GANG.addDaily('m', cid, 'blackmarket', paid)

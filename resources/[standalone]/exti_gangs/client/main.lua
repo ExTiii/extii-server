@@ -370,6 +370,7 @@ local function showPrompt(text)
     shown = text
     if text then lib.showTextUI(text, { position = 'left-center' }) else lib.hideTextUI() end
 end
+GC.textUI = showPrompt   -- (one owner for the left [E] line: weed selling uses it too)
 
 CreateThread(function()
     while true do
@@ -387,7 +388,7 @@ CreateThread(function()
                 end
             end
         end
-        showPrompt(best and (best.label or LABELS[best.kind]) or nil)
+        if not GC.holdText then showPrompt(best and (best.label or LABELS[best.kind]) or nil) end
         if best and IsControlJustReleased(0, 38) then
             busy = true; showPrompt(nil)
             local k = best.kind

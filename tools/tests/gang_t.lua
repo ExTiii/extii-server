@@ -114,6 +114,7 @@ function GetPlayerPed(src) return peds[src] or 0 end
 local entityPos, entityState, entityModel, entityType, seats, frozen = {}, {}, {}, {}, {}, {}
 function GetEntityCoords(e) for s, p in pairs(peds) do if p == e then return pos[s] end end return entityPos[e] end
 function GetEntityHeading() return 0.0 end
+function GetEntityHealth() return 200 end
 function GetVehicleType(e) return (entityState[e] or {}).vtype or 'automobile' end
 function DoesEntityExist(e) return entityPos[e] ~= nil end
 function GetEntityType(e) return entityType[e] or 0 end
@@ -175,6 +176,7 @@ local EXP_INDEX = function(_, res)
         GetInventoryItems = function(_, id) local out = {}; for k, v in pairs(invOf(id)) do if v > 0 then out[#out + 1] = { name = k, count = v, slot = #out + 1, metadata = (ITEMMETA[id] or {})[k] } end end return out end,
         ClearInventory = function(_, id) inv[id] = {} end,
         registerHook = function(_, name, fn, opts) hooks[name] = fn end,
+        CustomDrop = function() DROPPED = true end,
         GetSlotWithItem = function(_, id, item) local n = invOf(id)[item] or 0; if n < 1 then return nil end return { slot = 1, metadata = (META[id] or {})[item] } end,
         SetMetadata = function(_, id, slot, meta) META[id] = META[id] or {}; META[id].scrub_brush = meta end,
     } end
@@ -183,7 +185,7 @@ local EXP_INDEX = function(_, res)
         GetPlayerVehicle = function(_, id) for _, o in pairs(ownedByPlate) do if o.id == id then return o end end end,
         SaveVehicle = function(_, veh, opts) savedVehicle = opts return true end,
     } end
-    if res == 'exti_police' then return { AddCall = function(_, d) CALLS[#CALLS + 1] = d return #CALLS end } end
+    if res == 'exti_police' then return { AddCall = function(_, d) CALLS[#CALLS + 1] = d return #CALLS end, IsCuffed = function() return false end } end
     if res == 'qbx_vehiclekeys' then return { HasKeys = function(_, src, veh) return (entityState[veh] or {}).keys == src end } end
     return {}
 end
@@ -634,6 +636,7 @@ advance(200)
 check(select(2, CB.washBegin(42)) == 'daily', 'the daily wash cap stops the machine')
 check(CB.settings(40, { washCut = 50 }) == true and wg.settings.washCut == 35, 'the leader can not set the cut above 35%')
 
+do
 -- ---------------------------------------------------------------- Turf & graffiti
 local square = { { x = 1000, y = 1000, z = 0 }, { x = 1100, y = 1000, z = 0 }, { x = 1100, y = 1100, z = 0 }, { x = 1000, y = 1100, z = 0 } }
 check(CB.zoneSave(2, 'Grove', square) == false, 'only admins draw zones')
@@ -702,6 +705,8 @@ check(full == 'full' and #GlobalState['exti_gangs:turf'].tags == 5, 'a zone hold
 local okDel = CB.zoneDelete(1, zid)
 check(okDel and #GlobalState['exti_gangs:turf'].zones == 0 and #GlobalState['exti_gangs:turf'].tags == 0, 'deleting a zone removes its tags')
 
+end
+do
 -- ---------------------------------------------------------------- Ammo
 local am = addPlayer(80, 'CM80', 'AmmoBoss')
 CMD.creategang(1, { name = 'shells', kind = 'ammo', leader = 80, label = 'Shell Co' })
@@ -740,11 +745,17 @@ local bmp = addPlayer(82, 'CB82', 'Seller'); at(82, vec3(1700, 0.5, 0))
 invOf(82)['ammo-9'] = 100
 invOf(82).WEAPON_PISTOL = 1; ITEMMETA[82] = { WEAPON_PISTOL = { serial = 'ABC123', registered = true } }
 local okP2, pv = CB.blackMarket(82, true)
-check(okP2 and pv.total == 400, 'he buys gang ammo, not a registered shop pistol (offer $400)')
+check(okP2 and pv.total == 0, 'not in an Ammo gang: he buys no ammo (police armory ammo can not be sold) and no registered pistol')
+-- the Ammo gang leader sells what his gang made today (50 rounds)
+at(80, vec3(1700, 0.5, 0)); invOf(80)['ammo-9'] = 100
+local okP3, pv3 = CB.blackMarket(80, true)
+check(okP3 and pv3.total == 200, 'an Ammo gang member: only the 50 rounds his gang made today ($200)')
+local _, paidA = CB.blackMarket(80, false)
+check(paidA == 200 and inv[80]['ammo-9'] == 50 and select(2, CB.blackMarket(80, true)).total == 0, 'sold once, the same rounds can not be sold again')
 ITEMMETA[82].WEAPON_PISTOL = { serial = 'SCRATCHED', exti_craft = 'smiths' }
 local okS2, paid = CB.blackMarket(82, false)
-check(okS2 and paid == 1600 and inv[82].black_money == 1600 and (inv[82]['ammo-9'] or 0) == 0, 'a gang pistol + 100 rounds: $1,600 dirty money')
-invOf(82)['ammo-9'] = 10000
+check(okS2 and paid == 1200 and inv[82].black_money == 1200, 'a gang-made pistol (no serial): $1,200 dirty money')
+invOf(82).WEAPON_COMPACTRIFLE = 5; ITEMMETA[82].WEAPON_COMPACTRIFLE = { exti_craft = 'smiths' }
 local _, paid2 = CB.blackMarket(82, false)
 check(GANG.getDaily('m', 'CB82', 'blackmarket') <= 15000, 'he buys at most $15,000 a day from one player')
 -- ---------------------------------------------------------------- Weed
@@ -788,4 +799,5 @@ check(okC3 and r3.bags >= 1 and inv[84].black_money == r3.money, 'he sells ' .. 
 at(84, vec3(2600, 0, 0)); advance(45)
 check(select(2, CB.cornerSell(84)) == 'moved', 'walking away stops the selling')
 
+end
 print(('\n%d passed, %d failed'):format(passes, fails))

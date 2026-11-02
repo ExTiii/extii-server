@@ -48,7 +48,7 @@ C.fence = { price = 40, model = 's_m_y_dealer_01', name = 'المصرّف' } -- 
 -- what a Crew member may take out of the stash per day (value of the items). Runners take nothing out.
 C.crewDailyTake = 10000
 C.itemValue = { black_money = 1, lockpick = 150, c4 = 2500, chop_tools = 100, wash_supplies = 100, ammo_materials = 100, gun_parts = 100,
-                gang_weed_seeds = 100, weed_bud = 30, ['weed_og-kush'] = 45, ['ammo-9'] = 4, ['ammo-45'] = 4, ['ammo-shotgun'] = 4, ['ammo-rifle'] = 4,
+                gang_weed_seeds = 100, weed_bud = 30, ['weed_og-kush'] = 45, ['ammo-9'] = 4, ['ammo-45'] = 4, ['ammo-shotgun'] = 4, ['ammo-rifle'] = 4, ['ammo-rifle2'] = 4,
                 WEAPON_SNSPISTOL = 1200, WEAPON_PISTOL = 1200, WEAPON_VINTAGEPISTOL = 1200, WEAPON_SAWNOFFSHOTGUN = 2800, WEAPON_MICROSMG = 2800,
                 WEAPON_HEAVYPISTOL = 1200, WEAPON_MINISMG = 2800, WEAPON_COMPACTRIFLE = 5500 }
 
@@ -131,6 +131,7 @@ C.ammo = {
         { item = 'ammo-shotgun', label = 'خرطوش',        rep = 1 },
         { item = 'ammo-45',      label = 'ذخيرة .45',    rep = 2 },
         { item = 'ammo-rifle',   label = 'ذخيرة بندقية', rep = 3 },
+        { item = 'ammo-rifle2',  label = 'ذخيرة بندقية مدمجة', rep = 3 },
     },
 }
 
@@ -159,7 +160,8 @@ C.weapons = {
 C.blackMarket = {
     model = 'g_m_m_armboss_01',
     dailyPerPlayer = 15000,                -- what one player can sell him per day
-    prices = { ['ammo-9'] = 4, ['ammo-45'] = 4, ['ammo-shotgun'] = 4, ['ammo-rifle'] = 4,
+    -- (ammo only from members of an Ammo gang, and only as much as that gang made today: police armory ammo can't be sold)
+    prices = { ['ammo-9'] = 4, ['ammo-45'] = 4, ['ammo-shotgun'] = 4, ['ammo-rifle'] = 4, ['ammo-rifle2'] = 4,
                WEAPON_SNSPISTOL = 1200, WEAPON_PISTOL = 1200, WEAPON_VINTAGEPISTOL = 1200, WEAPON_HEAVYPISTOL = 1200,
                WEAPON_SAWNOFFSHOTGUN = 2800, WEAPON_MICROSMG = 2800, WEAPON_MINISMG = 2800, WEAPON_COMPACTRIFLE = 5500 },
 }

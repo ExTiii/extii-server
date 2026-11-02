@@ -80,6 +80,7 @@ lib.callback.register('exti_gangs:server:spotSave', function(source, what, a, b)
     elseif what == 'hq_clear' then
         if type(a) ~= 'string' then return false end
         spots.hq[a] = nil
+        if GANG.weedPotRemoved then GANG.weedPotRemoved(a, nil) end
     elseif what == 'crate_add' then
         if #spots.collect.crates >= MAX_CRATES then return false, 'max' end
         spots.collect.crates[#spots.collect.crates + 1] = here

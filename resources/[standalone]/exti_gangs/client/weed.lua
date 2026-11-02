@@ -6,7 +6,8 @@ local WD = C.weed
 local state = GlobalState['exti_gangs:plants'] or { list = {} }
 local props = {}   -- [gang:pot] = { pot = entity, plant = entity, stage }
 
-local function now() return GetCloudTimeAsInt() end
+local offset = 0   -- server clock - this game's clock (the server sends its time with the plants)
+local function now() return GetCloudTimeAsInt() + offset end
 local function plantOf(gang, pot) return state.list and state.list[gang] and state.list[gang][tostring(pot)] end
 GC.plantOf = plantOf
 
@@ -29,7 +30,16 @@ end
 
 local function del(e) if e and DoesEntityExist(e) then DeleteEntity(e) end end
 
+local refreshing = false
+local doRefresh
 local function refreshProps()
+    if refreshing then return end   -- (the 15 s loop and a state change could both run it)
+    refreshing = true
+    local ok, err = pcall(doRefresh)
+    refreshing = false
+    if not ok then print('[exti_gangs] weed props: ' .. tostring(err)) end
+end
+doRefresh = function()
     local spots = GC.spots()
     local want = {}
     for gang, set in pairs(spots.hq or {}) do
@@ -63,7 +73,12 @@ local function refreshProps()
     end
 end
 
-AddStateBagChangeHandler('exti_gangs:plants', 'global', function(_, _, v) state = v or { list = {} }; SetTimeout(0, refreshProps) end)
+if state.now then offset = state.now - GetCloudTimeAsInt() end
+AddStateBagChangeHandler('exti_gangs:plants', 'global', function(_, _, v)
+    state = v or { list = {} }
+    if state.now then offset = state.now - GetCloudTimeAsInt() end
+    SetTimeout(0, refreshProps)
+end)
 CreateThread(function()
     Wait(3000)
     while true do refreshProps(); Wait(15000) end   -- the plants grow
@@ -78,7 +93,7 @@ local WERR = {
     noseed = 'لا توجد بذور في مخزن العصابة', empty = 'الأصيص فارغ', wet = 'التراب ما زال رطبًا', done = 'سُمّدت من قبل',
     nofert = 'ليس معك سماد نباتات', growing = 'لم تنضج بعد', stashfull = 'مخزن العصابة ممتلئ', busy = 'أحد يعمل على الطاولة',
     nobuds = 'لا توجد براعم في المخزن', nobags = 'ليس معك أكياس حشيش', daily = 'بعت ما يكفي اليوم', taken2 = 'أحد يبيع قريبًا من هنا',
-    moved = 'ابتعدت عن زاويتك: توقف البيع',
+    moved = 'ابتعدت عن زاويتك: توقف البيع', cantnow = 'لا تستطيع البيع الآن', full = 'حقيبتك ممتلئة', stashfull = 'مخزن العصابة ممتلئ',
 }
 local function wfail(why, extra)
     local t = WERR[why] or 'لم ينجح'
@@ -181,6 +196,7 @@ end
 ---------------------------------------------------------------------------
 local selling = false
 local buyer = nil
+local buyerSince = 0
 
 local function release(ped)
     if ped and DoesEntityExist(ped) then
@@ -196,7 +212,7 @@ local function stopSelling(msg)
     selling = false
     lib.callback.await('exti_gangs:server:cornerStop', false)
     release(buyer); buyer = nil
-    lib.hideTextUI()
+    if GC.holdText then GC.holdText = false; GC.textUI(nil) end
     if msg then GC.notify(msg, 'inform') end
 end
 
@@ -219,23 +235,35 @@ local function sellLoop(nextIn)
         local ped = PlayerPedId()
         local here = GetEntityCoords(ped)
         if #(here - here0) > WD.corner.radius or IsPedInAnyVehicle(ped, false) then return stopSelling(WERR.moved) end
+        if IsEntityDead(ped) or IsPedCuffed(ped) then return stopSelling('توقف البيع') end
         if not buyer and GetGameTimer() >= nextAt then
             buyer = findBuyer(here)
+            -- (an ambient ped may belong to another player's game: take control first, or skip him)
+            if buyer then
+                local t = GetGameTimer()
+                NetworkRequestControlOfEntity(buyer)
+                while not NetworkHasControlOfEntity(buyer) and GetGameTimer() - t < 1500 do Wait(50); NetworkRequestControlOfEntity(buyer) end
+                if not NetworkHasControlOfEntity(buyer) then buyer = nil end
+            end
             if buyer then
                 SetEntityAsMissionEntity(buyer, true, true)
                 ClearPedTasks(buyer)
                 TaskGoToEntity(buyer, ped, -1, 1.2, 1.4, 1073741824, 0)
+                buyerSince = GetGameTimer()
             else
                 nextAt = GetGameTimer() + 8000
             end
         end
         if buyer then
             if not DoesEntityExist(buyer) or IsPedDeadOrDying(buyer, true) then buyer = nil; nextAt = GetGameTimer() + 8000
+            elseif GetGameTimer() - buyerSince > 25000 and #(GetEntityCoords(buyer) - here) >= 2.0 then
+                release(buyer); buyer = nil; nextAt = GetGameTimer() + 8000   -- he never made it: the next one
             else
                 local d = #(GetEntityCoords(buyer) - here)
                 if d < 2.0 then
                     TaskTurnPedToFaceEntity(buyer, ped, 1500)
-                    lib.showTextUI('[E] بِع · [G] اطرده', { position = 'left-center' })
+                    GC.holdText = true
+                    GC.textUI('[E] بِع · [G] اطرده')
                     local untilT = GetGameTimer() + 12000
                     local sold = nil
                     while GetGameTimer() < untilT and selling do
@@ -243,7 +271,8 @@ local function sellLoop(nextIn)
                         if IsControlJustReleased(0, 47) then sold = false break end
                         Wait(0)
                     end
-                    lib.hideTextUI()
+                    GC.textUI(nil)
+                    GC.holdText = false
                     if sold then
                         lib.requestAnimDict('mp_common')
                         TaskPlayAnim(ped, 'mp_common', 'givetake1_a', 8.0, -8.0, 2000, 49, 0, false, false, false)
