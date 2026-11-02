@@ -92,6 +92,14 @@ end
 local veh, orig, frozen, cam = nil, nil, false, nil
 local origEngine = nil -- the engine the car has now (swap), for the sound when the menu closes
 local revving = false
+local radioWas = nil -- the station the driver had (given back when the menu closes)
+
+-- the radio off: the player's own station (the car's switch alone is not enough for the driver)
+local function radioOff(v)
+    SetVehicleRadioEnabled(v, false)
+    SetVehRadioStation(v, 'OFF')
+    SetRadioToStationName('OFF')
+end
 local view = { a = 210.0, ta = 210.0, d = 5.5, td = 5.5, h = 1.2, th = 1.2, inside = false }
 
 local function preview(k, v)
@@ -147,6 +155,7 @@ local function preview(k, v)
             SetVehicleEngineOn(v2, true, true, false)
             local t0 = GetGameTimer()
             while v2 and DoesEntityExist(v2) and GetGameTimer() - t0 < 3200 do
+                radioOff(v2) -- starting the engine starts the radio: keep it off
                 local k2 = (GetGameTimer() - t0) / 3200
                 SetVehicleCurrentRpm(v2, k2 < 0.6 and 0.2 + k2 / 0.6 * 0.8 or 1.0 - (k2 - 0.6) / 0.4 * 0.8)
                 Wait(0)
@@ -237,6 +246,8 @@ local function close(keep)
         ForceVehicleEngineAudio(veh, (origEngine and origEngine ~= 'stock') and origEngine or GetEntityArchetypeName(veh))
         SetVehicleLights(veh, 0)
         SetVehicleRadioEnabled(veh, true)
+        if radioWas and radioWas ~= '' and radioWas ~= 'OFF' then SetVehRadioStation(veh, radioWas) end
+        radioWas = nil
         if frozen then FreezeEntityPosition(veh, false) end
     end
     veh, orig, frozen = nil, nil, false
@@ -280,7 +291,9 @@ function MEC.openTune()
     veh = v
     orig = lib.getVehicleProperties(veh)
     SetVehicleEngineOn(veh, false, true, true)
-    SetVehicleRadioEnabled(veh, false) -- no radio music over the engine sounds while picking
+    -- no radio music over the engine sounds while picking
+    radioWas = GetPlayerRadioStationName()
+    radioOff(veh)
     FreezeEntityPosition(veh, true)
     frozen = true
     open = true

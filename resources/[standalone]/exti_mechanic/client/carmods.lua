@@ -197,7 +197,8 @@ lib.callback.register('exti_mechanic:client:dynoRun', function(netId)
     local result = measure(veh)
     lib.notify({ type = 'inform', description = 'الداينو يعمل… لا تتحرك' })
     FreezeEntityPosition(veh, true)
-    SetVehicleRadioEnabled(veh, false) -- hear the engine, not the radio
+    -- hear the engine, not the radio (the driver's own station is put back after)
+    local station = GetPlayerRadioStationName()
     SetVehicleEngineOn(veh, true, true, false)
     ShakeGameplayCam('ROAD_VIBRATION_SHAKE', 0.6)
     local t0 = GetGameTimer()
@@ -206,12 +207,15 @@ lib.callback.register('exti_mechanic:client:dynoRun', function(netId)
         local k = (GetGameTimer() - t0) / 8000
         local rpm = k < 0.8 and 0.2 + 0.8 * (k / 0.8) or 1.0 - (k - 0.8) / 0.2 * 0.75
         SetVehicleCurrentRpm(veh, rpm)
+        SetVehicleRadioEnabled(veh, false)
+        SetVehRadioStation(veh, 'OFF')
         if k > 0.8 and not popped then popped = true SetVehicleBoostActive(veh, true) end
         Wait(0)
     end
     SetVehicleBoostActive(veh, false)
     StopGameplayCamShaking(true)
     SetVehicleRadioEnabled(veh, true)
+    if station and station ~= '' and station ~= 'OFF' then SetVehRadioStation(veh, station) end
     FreezeEntityPosition(veh, false)
     return result
 end)
