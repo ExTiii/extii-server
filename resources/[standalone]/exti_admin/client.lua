@@ -36,10 +36,15 @@ local function teleport(c)
 end
 
 local stopSpectate   -- (below)
+local setSelf        -- (below)
 RegisterNUICallback('do', function(req, cb)
     local ok, msg, extra = lib.callback.await('exti_admin:do', false, req.action, req.data or {})
     if ok and extra then
-        if req.action == 'spectate' then CreateThread(function() state.spec = extra.id; stopSpectate = startSpectate(extra) end)
+        if req.action == 'spectate' then CreateThread(function()
+            if state.noclip then setSelf('noclip', false); Wait(100) end
+            if state.spec and stopSpectate then stopSpectate(); local t = GetGameTimer(); while state.spec and GetGameTimer() - t < 3000 do Wait(0) end end
+            state.spec = extra.id; stopSpectate = startSpectate(extra)
+        end)
         elseif extra.x then teleport(extra) end
         if extra.close or extra.x then close() end
     end
@@ -96,7 +101,7 @@ local function noclipLoop()
     if found and p.z - gz < 50.0 then SetEntityCoords(ent, p.x, p.y, gz + 0.1, false, false, false, false) end
 end
 
-local function setSelf(what, on)
+function setSelf(what, on)
     if not lib.callback.await('exti_admin:self', false, what, on) then return false end
     state[what] = on
     local ped = PlayerPedId()
@@ -129,12 +134,22 @@ RegisterNUICallback('self', function(req, cb)
         close()
         CreateThread(function()
             local ent = IsPedInAnyVehicle(ped, false) and GetVehiclePedIsIn(ped, false) or ped
+            local start = GetEntityCoords(ent)
             DoScreenFadeOut(150); Wait(160)
-            for z = 1000.0, 0.0, -25.0 do
-                SetEntityCoords(ent, c.x, c.y, z, false, false, false, false); Wait(0)
+            FreezeEntityPosition(ent, true)
+            local landed = false
+            for z = 1000.0, -100.0, -25.0 do
+                SetEntityCoords(ent, c.x, c.y, z, false, false, false, false)
+                RequestCollisionAtCoord(c.x, c.y, z); Wait(50)
                 local found, gz = GetGroundZFor_3dCoord(c.x, c.y, z, false)
-                if found then SetEntityCoords(ent, c.x, c.y, gz + 0.5, false, false, false, false); break end
+                if found then SetEntityCoords(ent, c.x, c.y, gz + 0.5, false, false, false, false); landed = true; break end
             end
+            if not landed then
+                local hz = GetHeightmapTopZForPosition(c.x, c.y)
+                if hz and hz > -100.0 then SetEntityCoords(ent, c.x, c.y, hz + 1.0, false, false, false, false)
+                else SetEntityCoords(ent, start.x, start.y, start.z, false, false, false, false) end
+            end
+            FreezeEntityPosition(ent, false)
             DoScreenFadeIn(250)
         end)
         return cb({ ok = true })
@@ -190,11 +205,12 @@ function startSpectate(t)
     CreateThread(function()
         local tp = 0
         local t0 = GetGameTimer()
+        local lastPed = 0
         while not stop do
             local pl = GetPlayerFromServerId(t.id)
             local tped = pl ~= -1 and GetPlayerPed(pl) or 0
             if tped ~= 0 and DoesEntityExist(tped) then
-                if not NetworkIsInSpectatorMode() then NetworkSetInActiveSpectatorMode(true, tped) end
+                if tped ~= lastPed or not NetworkIsInSpectatorMode() then NetworkSetInActiveSpectatorMode(true, tped); lastPed = tped end
                 local c = GetEntityCoords(tped)
                 if #(GetEntityCoords(ped) - c) > 40.0 then SetEntityCoords(ped, c.x, c.y, c.z - 15.0, false, false, false, false) end
             elseif GetGameTimer() - tp > 1500 then
@@ -205,11 +221,14 @@ function startSpectate(t)
             end
             SetTextFont(4); SetTextScale(0.36, 0.36); SetTextColour(255, 255, 255, 220); SetTextOutline()
             BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(('مراقبة #%d  ·  اضغط BACKSPACE للخروج'):format(t.id)); EndTextCommandDisplayText(0.42, 0.95)
-            if IsControlJustPressed(0, 177) then break end
+            if IsControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 177) then break end
             Wait(0)
         end
         NetworkSetInActiveSpectatorMode(false, ped)
         SetEntityCoords(ped, back.x, back.y, back.z, false, false, false, false)
+        RequestCollisionAtCoord(back.x, back.y, back.z)
+        local tw = GetGameTimer()
+        while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() - tw < 2000 do Wait(0) end
         FreezeEntityPosition(ped, false); SetEntityCollision(ped, true, true)
         if not state.invisible then SetEntityVisible(ped, true, false) end
         if not state.god then SetEntityInvincible(ped, false) end
@@ -238,7 +257,12 @@ RegisterNetEvent('exti_admin:client:moveTo', function(c)
     if GetInvokingResource() then return end
     local ped = PlayerPedId()
     local ent = IsPedInAnyVehicle(ped, false) and GetVehiclePedIsIn(ped, false) or ped
+    FreezeEntityPosition(ent, true)
     SetEntityCoords(ent, c.x, c.y, c.z, false, false, false, false)
+    RequestCollisionAtCoord(c.x, c.y, c.z)
+    local t = GetGameTimer()
+    while not HasCollisionLoadedAroundEntity(ent) and GetGameTimer() - t < 2500 do Wait(0) end
+    if not frozen then FreezeEntityPosition(ent, false) end
 end)
 RegisterNetEvent('exti_admin:client:message', function(text)
     nui('message', { text = text })

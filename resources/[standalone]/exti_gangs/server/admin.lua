@@ -58,15 +58,17 @@ exports('AdminSetMember', function(src, name, rank, actor)
     local p = GANG.player(src); if not p then return false, 'noplayer' end
     local cid = p.PlayerData.citizenid
     local m = GANG.members[cid]
-    if m and m.gang ~= name then GANG.removeMember(cid) end
     rank = math.max(0, math.min(3, math.floor(tonumber(rank) or 0)))
+    -- a leader can't be moved out (his gang would have none), nor dropped below leader in his own gang
+    if m and m.gang ~= name and GANG.gangs[m.gang] and GANG.gangs[m.gang].leader == cid then return false, 'leader' end
+    if g.leader == cid and rank < 3 then return false, 'leader' end
+    if m and m.gang ~= name then GANG.removeMember(cid, nil, true) end
     if rank == 3 then
         local old = g.leader
         g.leader = cid; GANG.saveGang(g)
         if old and old ~= cid and GANG.members[old] then GANG.setMember(old, g, 2) end
     end
     GANG.setMember(cid, g, rank, GANG.charName(p))
-    MySQL.query('DELETE FROM `exti_gang_left` WHERE `citizenid` = ?', { cid })     -- no 48 h wait for an admin move
     GANG.log(g, actor or 'الإدارة', 'admin_member', ('%s · رتبة %d'):format(GANG.charName(p), rank))
     return true
 end)
@@ -75,8 +77,7 @@ exports('AdminRemoveMember', function(cid, actor)
     local m = GANG.members[cid]; if not m then return false, 'nomember' end
     local g = ownerOf(m.gang)
     if g and g.leader == cid then return false, 'leader' end
-    GANG.removeMember(cid)
-    MySQL.query('DELETE FROM `exti_gang_left` WHERE `citizenid` = ?', { cid })
+    GANG.removeMember(cid, nil, true)      -- (no 48 h wait for an admin move)
     if g then GANG.log(g, actor or 'الإدارة', 'admin_kick', m.name or cid) end
     return true
 end)
@@ -93,9 +94,15 @@ end)
 
 -- every cooldown that names this gang or this character goes (the test button)
 exports('AdminClearCooldowns', function(name, cid)
+    if name == '' then name = nil end
+    if cid == '' then cid = nil end
+    if not name and not cid then return 0 end
     local n = 0
     for k in pairs(GANG.cooldowns) do
-        if (name and k:find(name, 1, true)) or (cid and k:find(cid, 1, true)) then
+        -- keys are "<what>:<gang or citizenid>[:...]": match that part exactly, never a piece of a word
+        local matched = false
+        for part in k:gmatch('[^:]+') do if part == name or part == cid then matched = true end end
+        if matched then
             GANG.cooldowns[k] = nil; n = n + 1
             MySQL.query('DELETE FROM `exti_gang_cooldowns` WHERE `k` = ?', { k })
         end
@@ -122,4 +129,12 @@ exports('AdminPlaces', function()
     if s.fence then out[#out + 1] = { label = 'المصرّف (Fence)', x = s.fence.x, y = s.fence.y, z = s.fence.z } end
     if s.collect.crates[1] then local c = s.collect.crates[1]; out[#out + 1] = { label = 'نقطة جمع القطع', x = c.x, y = c.y, z = c.z } end
     return out
+end)
+
+-- create / delete (the same code as /creategang and /deletegang, called directly: no console command)
+exports('AdminCreate', function(adminSrc, name, kind, leaderSrc, label)
+    return GANG.createGang(adminSrc, { name = name, kind = kind, leader = leaderSrc, label = label }) == true
+end)
+exports('AdminDelete', function(adminSrc, name)
+    return GANG.deleteGang(adminSrc, { name = name }) == true
 end)

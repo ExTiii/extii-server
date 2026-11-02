@@ -14,6 +14,7 @@
     let page = 'players', players = [], sel = null, srv = null, gangs = null, timer = null, q = '';
 
     const has = (r) => S && (S.rights['*'] || S.rights[r]);
+    const arr = (x) => (Array.isArray(x) ? x : []);      // (an empty Lua list can arrive as {})
 
     // ------------------------------------------------------------- helpers
     function toast(msg, ok = true) {
@@ -63,14 +64,14 @@
     }
     async function refresh() {
         const [p, s] = await Promise.all([fetchX('players'), fetchX('server')]);
-        if (p) players = p;
+        if (p) players = arr(p);
         if (s) {
-            srv = s;
+            srv = s; s.reports = arr(s.reports); s.resources = arr(s.resources);
             const st = document.getElementById('stat'); if (st) st.textContent = `${s.players}/${s.max} لاعب · يعمل منذ ${dur(s.uptime)}`;
             const d = document.getElementById('rdot'); if (d) { d.textContent = s.reports.length; d.classList.toggle('hidden', !s.reports.length); }
         }
         if (page === 'players') rPlayerList();
-        if (page === 'server' && !document.activeElement.matches('input,textarea')) render();
+        if (page === 'server' && !document.activeElement.matches('input,textarea') && !(val('ann') || val('rs'))) render();
     }
 
     // ------------------------------------------------------------- PLAYERS
@@ -121,7 +122,7 @@
         const fillGrades = () => { const j = (S.jobs || []).find((x) => x.name === jsel.value); gsel.innerHTML = (j ? j.grades : []).map((g) => `<option value="${g.grade}">${g.grade} · ${esc(g.label)}</option>`).join(''); };
         if (jsel) { jsel.onchange = fillGrades; fillGrades(); }
         const gs = document.getElementById('gsel');
-        if (gs) { (async () => { if (!gangs) gangs = await fetchX('gangs'); gs.innerHTML = ((gangs && gangs.gangs) || []).map((g) => `<option value="${esc(g.name)}">${esc(g.label)}</option>`).join('') || '<option value="">لا توجد عصابات</option>'; })(); }
+        if (gs) { (async () => { if (!gangs) gangs = await fetchX('gangs'); gs.innerHTML = arr(gangs && gangs.gangs).map((g) => `<option value="${esc(g.name)}">${esc(g.label)}</option>`).join('') || '<option value="">لا توجد عصابات</option>'; })(); }
         el.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { document.getElementById('mamt').value = b.dataset.m; });
         el.querySelectorAll('[data-a]').forEach((b) => b.onclick = async () => {
             const id = p.id, a = b.dataset.a;
@@ -205,9 +206,13 @@
     // ------------------------------------------------------------- GANGS
     async function rGangs(pg) {
         pg.style.overflow = 'auto';
+        const my = page;
         pg.innerHTML = '<div class="mute">...</div>';
         gangs = await fetchX('gangs');
-        const G = (gangs && gangs.gangs) || [];
+        if (page !== my) return;
+        const G = arr(gangs && gangs.gangs);
+        G.forEach((g) => { g.members = arr(g.members); });
+        if (gangs) gangs.places = arr(gangs.places);
         const types = (S.gangTypes || []).map((t) => `<option value="${t.id}">${esc(t.label)}</option>`).join('');
         const pls = players.map((p) => `<option value="${p.id}">${p.id} · ${esc(p.char || p.name)}</option>`).join('');
         pg.innerHTML = `<div class="card" style="margin-bottom:12px"><h3>عصابة جديدة</h3><div class="row"><input class="in w160 ltr" id="gn" placeholder="name (english)"><input class="in w160" id="gl" placeholder="الاسم الظاهر">
@@ -240,7 +245,10 @@
     // ------------------------------------------------------------- TEST
     async function rTest(pg) {
         pg.style.overflow = 'auto';
+        const my = page;
         if (!gangs) gangs = await fetchX('gangs');
+        if (page !== my) return;
+        if (gangs) gangs.places = arr(gangs.places);
         pg.innerHTML = `<div class="grid2">
           <div class="card"><h3>جرّب أي لعبة مصغّرة (لا يُعطى أو يُؤخذ شيء)</h3><div class="row">${S.minigames.map(([id, l]) => `<button class="btn" data-mg="${id}">${esc(l)}</button>`).join('')}</div></div>
           <div class="card"><h3>عُدد التجربة (تذهب لحقيبتك)</h3><div class="row">${S.kits.map((k, i) => `<button class="btn" data-kit="${i + 1}">${esc(k.label)}</button>`).join('')}</div>
@@ -266,11 +274,14 @@
         pg.style.overflow = 'auto';
         pg.innerHTML = `<div class="row" style="margin-bottom:10px"><input class="in w220" id="lq" placeholder="ابحث في السجل"><button class="btn" id="lgo">ابحث</button></div><div id="lt"></div>
           ${has('ban') ? '<div class="card" style="margin-top:12px"><h3>المحظورون</h3><div id="bt"></div></div>' : ''}`;
+        const my = page;
         const load = async () => {
-            const L = (await fetchX('logs', val('lq'))) || [];
+            const L = arr(await fetchX('logs', val('lq')));
+            if (page !== my || !document.getElementById('lt')) return;
             document.getElementById('lt').innerHTML = `<table><tr><th>متى</th><th>من</th><th>ماذا</th><th>على من</th><th>تفاصيل</th></tr>${L.map((l) => `<tr><td>قبل ${ago(l.at)}</td><td>${esc(l.actor)}</td><td class="ltr">${esc(l.action)}</td><td>${esc(l.target || '')}</td><td>${esc(l.details || '')}</td></tr>`).join('')}</table>`;
             if (has('ban')) {
-                const B = (await fetchX('bans')) || [];
+                const B = arr(await fetchX('bans'));
+                if (page !== my || !document.getElementById('bt')) return;
                 document.getElementById('bt').innerHTML = B.length ? `<table><tr><th>#</th><th>الاسم</th><th>السبب</th><th>حتى</th><th></th></tr>${B.map((b) => `<tr><td>${b.id}</td><td>${esc(b.name)}</td><td>${esc(b.reason)}</td><td>${b.until ? new Date(b.until * 1000).toLocaleString('en-GB') : 'دائم'}</td><td><button class="btn" data-ub="${b.id}">فك الحظر</button></td></tr>`).join('')}</table>` : '<div class="mute">لا أحد محظور</div>';
                 document.querySelectorAll('[data-ub]').forEach((x) => x.onclick = async () => { await act('unban', { ban: Number(x.dataset.ub) }, 'فك هذا الحظر؟'); load(); });
             }
@@ -282,7 +293,9 @@
     // ------------------------------------------------------------- STAFF
     async function rStaff(pg) {
         pg.style.overflow = 'auto';
-        const L = (await fetchX('staff')) || [];
+        const my = page;
+        const L = arr(await fetchX('staff'));
+        if (page !== my) return;
         pg.innerHTML = `<div class="card" style="margin-bottom:12px"><h3>أضف للطاقم (اللاعب يجب أن يكون في السيرفر)</h3><div class="row"><select class="in w220" id="sp">${players.map((p) => `<option value="${p.id}">${p.id} · ${esc(p.char || p.name)}</option>`).join('')}</select>
             <select class="in" id="sr"><option value="helper">مساعد (يساعد اللاعبين فقط)</option><option value="admin">أدمن (كل شيء إلا الطاقم والموارد)</option></select><button class="btn acc" id="sa">أضف</button></div>
             <div class="mute" style="margin-top:8px">أنت «المالك»: لك كل شيء دائمًا (من group.admin في server.cfg).</div></div>

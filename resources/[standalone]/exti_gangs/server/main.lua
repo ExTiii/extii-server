@@ -325,12 +325,13 @@ local function setMember(cid, g, rank, name)
     return m
 end
 
-local function removeMember(cid, why)
+local function removeMember(cid, why, noWait)
     local m = members[cid]
     if not m then return end
     members[cid] = nil
     MySQL.query('DELETE FROM `exti_gang_members` WHERE `citizenid` = ?', { cid })
-    MySQL.query('INSERT INTO `exti_gang_left` (`citizenid`, `left_at`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `left_at` = VALUES(`left_at`)', { cid, now() })
+    if noWait then MySQL.query('DELETE FROM `exti_gang_left` WHERE `citizenid` = ?', { cid })
+    else MySQL.query('INSERT INTO `exti_gang_left` (`citizenid`, `left_at`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `left_at` = VALUES(`left_at`)', { cid, now() }) end
     qbxRemove(cid, m.gang)
     local s = srcOf(cid)
     if s then TriggerClientEvent('exti_gangs:client:refresh', s) end
@@ -358,16 +359,7 @@ end
 ---------------------------------------------------------------------------
 local function slug(s) return (tostring(s or ''):lower():gsub('[^%w_]', ''):sub(1, 30)) end
 
-lib.addCommand('creategang', {
-    help = 'إنشاء عصابة: /creategang [الاسم] [النوع chop|wash|ammo|weapons|weed] [رقم الزعيم] [الاسم الظاهر]',
-    params = {
-        { name = 'name', type = 'string', help = 'اسم قصير بالإنجليزية (بدون مسافات)' },
-        { name = 'kind', type = 'string', help = 'chop | wash | ammo | weapons | weed' },
-        { name = 'leader', type = 'playerId', help = 'رقم الزعيم في السيرفر' },
-        { name = 'label', type = 'longString', help = 'الاسم الظاهر', optional = true },
-    },
-    restricted = 'group.admin',
-}, function(source, args)
+function GANG.createGang(source, args)
     local name, kind = slug(args.name), tostring(args.kind or ''):lower()
     if name == '' or name == 'none' then return notify(source, 'اسم غير صالح', 'error') end
     if gangs[name] then return notify(source, 'هذه العصابة موجودة', 'error') end
@@ -392,21 +384,26 @@ lib.addCommand('creategang', {
     notify(source, ('تم إنشاء العصابة %s. ضع مقرّها بالأمر /gangspots'):format(g.label), 'success')
     notify(args.leader, ('أصبحت زعيم عصابة %s (%s)'):format(g.label, C.types[kind].label), 'success', 9000)
     TriggerClientEvent('exti_gangs:client:gangsChanged', -1)
-end)
+    return true
+end
 
-lib.addCommand('deletegang', {
-    help = 'حذف عصابة (المخزن والبنك يُحذفان)',
-    params = { { name = 'name', type = 'string' } },
+lib.addCommand('creategang', {
+    help = 'إنشاء عصابة: /creategang [الاسم] [النوع chop|wash|ammo|weapons|weed] [رقم الزعيم] [الاسم الظاهر]',
+    params = {
+        { name = 'name', type = 'string', help = 'اسم قصير بالإنجليزية (بدون مسافات)' },
+        { name = 'kind', type = 'string', help = 'chop | wash | ammo | weapons | weed' },
+        { name = 'leader', type = 'playerId', help = 'رقم الزعيم في السيرفر' },
+        { name = 'label', type = 'longString', help = 'الاسم الظاهر', optional = true },
+    },
     restricted = 'group.admin',
-}, function(source, args)
+}, function(source, args) GANG.createGang(source, args) end)
+
+function GANG.deleteGang(source, args)
     local g = gangs[slug(args.name)]
     if not g then return notify(source, 'لا توجد عصابة بهذا الاسم', 'error') end
     -- (an admin removed the gang: nobody has to wait 48 h because of it)
     for cid, m in pairs(members) do
-        if m.gang == g.name then
-            removeMember(cid)
-            MySQL.query('DELETE FROM `exti_gang_left` WHERE `citizenid` = ?', { cid })
-        end
+        if m.gang == g.name then removeMember(cid, nil, true) end
     end
     MySQL.query('DELETE FROM `exti_gangs` WHERE `name` = ?', { g.name })
     gangs[g.name] = nil
@@ -415,7 +412,14 @@ lib.addCommand('deletegang', {
     log(g.name, GANG.charName(GANG.player(source)), 'gang_deleted', g.label)
     notify(source, 'تم حذف العصابة', 'success')
     TriggerClientEvent('exti_gangs:client:gangsChanged', -1)
-end)
+    return true
+end
+
+lib.addCommand('deletegang', {
+    help = 'حذف عصابة (المخزن والبنك يُحذفان)',
+    params = { { name = 'name', type = 'string' } },
+    restricted = 'group.admin',
+}, function(source, args) GANG.deleteGang(source, args) end)
 
 lib.addCommand('gangsetleader', {
     help = 'تغيير زعيم عصابة (للإدارة)',
@@ -756,4 +760,4 @@ lib.callback.register('exti_gangs:server:myGang', function(source)
     return { gangs = GANG.publicList(), mine = g and { name = g.name, type = g.type, rank = m.rank, color = g.color, tag = g.tag, label = g.label, locked = g.locked } or nil }
 end)
 
-exports('GetMember', function(src) local g, m = GANG.memberOf(src); return g and { gang = g.name, type = g.type, rank = m.rank } or nil end)
+exports('GetMember', function(src) local g, m = GANG.memberOf(src); return g and { gang = g.name, label = g.label, type = g.type, rank = m.rank } or nil end)

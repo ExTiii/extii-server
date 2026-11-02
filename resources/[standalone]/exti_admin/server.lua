@@ -35,7 +35,10 @@ end)
 ---------------------------------------------------------------------------
 local function roleOf(src)
     if src == 0 then return 'owner' end
-    if IsPlayerAceAllowed(src, 'group.admin') then return 'owner' end
+    -- the owner: whoever server.cfg makes admin (group.admin gets the "command" ace; Qbox admin permission too)
+    if IsPlayerAceAllowed(src, 'command') or IsPlayerAceAllowed(src, 'group.admin') then return 'owner' end
+    local okP, isAdmin = pcall(function() return exports.qbx_core:HasPermission(src, 'admin') end)
+    if okP and isAdmin then return 'owner' end
     local s = staff[license(src) or '']
     return s and Config.roles[s.role] and s.role or nil
 end
@@ -45,6 +48,12 @@ local function can(src, right)
     if c == '*' then return true end
     for _, v in ipairs(c) do if v == right then return true end end
     return false
+end
+local RANK = { helper = 1, admin = 2, owner = 3 }
+-- staff can't use their powers on someone of the same or higher rank (an admin can't ban another admin)
+local function outranks(src, t)
+    if t == src then return true end
+    return (RANK[roleOf(t)] or 0) < (RANK[roleOf(src)] or 0)
 end
 local function rightsOf(src)
     local r = roleOf(src); if not r then return nil end
@@ -75,11 +84,13 @@ end
 AddEventHandler('playerConnecting', function(_, _, deferrals)
     local src = source
     deferrals.defer(); Wait(0)
+    deferrals.update('EX_Tii: التحقق من الحظر...')
     local ids = {}
     for _, t in ipairs({ 'license', 'license2', 'fivem', 'discord' }) do ids[t] = GetPlayerIdentifierByType(src, t) end
-    local row = MySQL.single.await([[SELECT * FROM `exti_admin_bans` WHERE `active` = 1 AND (`until` = 0 OR `until` > ?) AND
+    local okQ, row = pcall(MySQL.single.await, [[SELECT * FROM `exti_admin_bans` WHERE `active` = 1 AND (`until` = 0 OR `until` > ?) AND
         ((`license` IS NOT NULL AND `license` = ?) OR (`license2` IS NOT NULL AND `license2` = ?) OR (`fivem` IS NOT NULL AND `fivem` = ?) OR (`discord` IS NOT NULL AND `discord` = ?)) LIMIT 1]],
         { os.time(), ids.license or '-', ids.license2 or '-', ids.fivem or '-', ids.discord or '-' })
+    if not okQ then print('[exti_admin] ban check failed: ' .. tostring(row)); return deferrals.done() end
     if row then
         local untilTxt = row['until'] == 0 and 'دائم' or os.date('%Y-%m-%d %H:%M', row['until'])
         deferrals.done(('أنت محظور من EX_Tii Roleplay.\nالسبب: %s\nحتى: %s\nرقم الحظر: %d'):format(row.reason or '-', untilTxt, row.id))
@@ -96,9 +107,15 @@ local function staffOnline()
     for _, id in ipairs(GetPlayers()) do local s = tonumber(id); if roleOf(s) and can(s, 'reports') then list[#list + 1] = s end end
     return list
 end
+local lastReport = {}
 lib.addCommand('report', { help = 'أرسل بلاغًا للإدارة', params = { { name = 'text', type = 'longString', help = 'ما المشكلة؟' } } }, function(src, args)
     local text = tostring(args.text or ''):sub(1, 300)
     if #text < 3 then return notify(src, 'اكتب ما المشكلة', 'error') end
+    if lastReport[src] and os.time() - lastReport[src] < 60 then return notify(src, 'انتظر دقيقة قبل بلاغ آخر', 'error') end
+    local open = 0
+    for _, r in pairs(reports) do if r.src == src and r.status == 'open' then open = open + 1 end end
+    if open >= 3 then return notify(src, 'لديك 3 بلاغات مفتوحة: انتظر حتى تُعالج', 'error') end
+    lastReport[src] = os.time()
     nextReport = nextReport + 1
     reports[nextReport] = { id = nextReport, src = src, name = charName(src) .. ' (' .. (GetPlayerName(src) or '') .. ')', text = text, at = os.time(), status = 'open' }
     notify(src, 'وصل بلاغك للإدارة، شكرًا', 'success')
@@ -147,7 +164,7 @@ lib.callback.register('exti_admin:players', function(src)
         list[#list + 1] = {
             id = s, name = GetPlayerName(s), char = p and charName(s) or nil, cid = pd.citizenid,
             job = pd.job and (pd.job.label .. ' · ' .. ((pd.job.grade and pd.job.grade.name) or '')) or nil, duty = pd.job and pd.job.onduty or false,
-            gang = gm and gm.label or nil, ping = GetPlayerPing(s), hp = ped ~= 0 and GetEntityHealth(ped) or 0,
+            gang = gm and (gm.label or gm.gang) or nil, ping = GetPlayerPing(s), hp = ped ~= 0 and GetEntityHealth(ped) or 0,
             cash = pd.money and pd.money.cash or 0, bank = pd.money and pd.money.bank or 0, staff = roleOf(s),
             dead = pd.metadata and (pd.metadata.isdead or pd.metadata.inlaststand) or false,
         }
@@ -224,6 +241,7 @@ A['goto'] = { 'goto', function(src, d)
 end }
 A.bring = { 'bring', function(src, d)
     local t = target(d); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     local c = GetEntityCoords(GetPlayerPed(src))
     TriggerClientEvent('exti_admin:client:moveTo', t, { x = c.x + 1.0, y = c.y, z = c.z })
     log(src, 'bring', GetPlayerName(t)); return true, 'جلبته إليك'
@@ -240,6 +258,7 @@ A.spectateFollow = { 'spectate', function(src, d)
 end }
 A.freeze = { 'freeze', function(src, d)
     local t = target(d); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     local on = d.on == true
     TriggerClientEvent('exti_admin:client:freeze', t, on)
     log(src, on and 'freeze' or 'unfreeze', GetPlayerName(t)); return true, on and 'جمّدته' or 'فككت التجميد'
@@ -261,6 +280,7 @@ A.heal = { 'heal', function(src, d)
 end }
 A.kick = { 'kick', function(src, d)
     local t = target(d); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     if roleOf(t) == 'owner' then return false, 'لا يمكن طرد المالك' end
     local reason = tostring(d.reason or 'طرد من الإدارة'):sub(1, 200)
     log(src, 'kick', GetPlayerName(t), reason)
@@ -268,6 +288,7 @@ A.kick = { 'kick', function(src, d)
 end }
 A.ban = { 'ban', function(src, d)
     local t = target(d); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     if roleOf(t) == 'owner' then return false, 'لا يمكن حظر المالك' end
     local hours = num(d.hours, 0, 24 * 365 * 5) or 0
     local reason = tostring(d.reason or 'مخالفة القوانين'):sub(1, 300)
@@ -286,16 +307,19 @@ A.unban = { 'ban', function(src, d)
 end }
 A.message = { 'message', function(src, d)
     local t = target(d); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     local text = tostring(d.text or ''):sub(1, 300); if #text < 1 then return false, 'اكتب الرسالة' end
     TriggerClientEvent('exti_admin:client:message', t, text)
     log(src, 'message', GetPlayerName(t), text); return true, 'أرسلت'
 end }
 A.money = { 'money', function(src, d)
     local t = target(d) or (d.self and src); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     local p = getPlayer(t); if not p then return false, 'اللاعب لم يختر شخصيته بعد' end
     local acc = d.account == 'bank' and 'bank' or 'cash'
     local amount = num(d.amount, -100000000, 100000000); if not amount or amount == 0 then return false, 'اكتب المبلغ' end
-    if amount > 0 then p.Functions.AddMoney(acc, amount, 'admin') else p.Functions.RemoveMoney(acc, -amount, 'admin') end
+    if amount > 0 then p.Functions.AddMoney(acc, amount, 'admin')
+    elseif not p.Functions.RemoveMoney(acc, -amount, 'admin') then return false, 'ليس معه هذا المبلغ' end
     log(src, 'money', GetPlayerName(t), ('%s %+d'):format(acc, amount)); return true, 'تم'
 end }
 A.item = { 'item', function(src, d)
@@ -309,25 +333,33 @@ A.item = { 'item', function(src, d)
 end }
 A.clearinv = { 'item', function(src, d)
     local t = target(d); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     ox:ClearInventory(t)
     log(src, 'clear_inventory', GetPlayerName(t)); return true, 'أفرغت حقيبته'
 end }
 A.inventory = { 'inventory', function(src, d)
     local t = target(d); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     ox:forceOpenInventory(src, 'player', t)
     log(src, 'inventory', GetPlayerName(t)); return true, nil, { close = true }
 end }
 A.job = { 'job', function(src, d)
     local t = target(d) or (d.self and src); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     local p = getPlayer(t); if not p then return false, 'لا شخصية' end
     local job, grade = tostring(d.job or 'unemployed'), num(d.grade, 0, 50) or 0
-    local ok = pcall(function() exports.qbx_core:SetJob(p.PlayerData.citizenid, job, grade) end)
-    if not ok then ok = pcall(function() p.Functions.SetJob(job, grade) end) end
+    local okJ, J = pcall(function() return exports.qbx_core:GetJobs() end)
+    local jd = okJ and J and J[job]
+    if not jd then return false, 'وظيفة غير معروفة' end
+    if jd.grades and not (jd.grades[grade] or jd.grades[tostring(grade)]) then return false, 'رتبة غير موجودة في هذه الوظيفة' end
+    local ok, res = pcall(function() return exports.qbx_core:SetJob(p.PlayerData.citizenid, job, grade) end)
+    if not ok or res == false then ok, res = pcall(function() return p.Functions.SetJob(job, grade) end); ok = ok and res ~= false end
     if d.duty ~= nil then pcall(function() exports.qbx_core:SetJobDuty(t, d.duty == true) end) end
     log(src, 'job', GetPlayerName(t), ('%s %d'):format(job, grade)); return ok, ok and 'غيّرت وظيفته' or 'لم ينجح'
 end }
 A.setgang = { 'gang', function(src, d)
     local t = target(d) or (d.self and src); if not t then return false, 'اللاعب غير موجود' end
+    if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     local ok, why = exports.exti_gangs:AdminSetMember(t, tostring(d.gang or ''), d.rank, GetPlayerName(src))
     if ok then log(src, 'set_gang', GetPlayerName(t), ('%s رتبة %s'):format(d.gang, tostring(d.rank))) end
     return ok, ok and 'وضعته في العصابة' or ('لم ينجح: ' .. tostring(why))
@@ -395,12 +427,12 @@ A.report = { 'reports', function(src, d)
 end }
 A.resource = { 'resource', function(src, d)
     local n = tostring(d.name or '')
-    if GetResourceState(n) == 'missing' then return false, 'غير موجود' end
+    if not n:match('^[%w_%-]+$') or GetResourceState(n) == 'missing' then return false, 'غير موجود' end
     if Config.noRestart[n] then return false, 'هذا المورد لا يُعاد تشغيله من هنا (يكسر السيرفر): استعمل Restart Server في txAdmin' end
     log(src, 'restart_resource', n)
-    ExecuteCommand('ensure ' .. n)
-    if GetResourceState(n) ~= 'started' then StopResource(n); StartResource(n) end
-    return true, 'أُعيد تشغيل ' .. n
+    if GetResourceState(n) == 'started' then StopResource(n) end
+    local ok = StartResource(n)
+    return ok and true or false, ok and ('أُعيد تشغيل ' .. n) or ('لم يبدأ ' .. n .. ': انظر الكونسول في txAdmin')
 end }
 
 -- gangs
@@ -415,6 +447,7 @@ A.gangstash = { 'gangs', function(src, d)
     return ok, ok and 'وضعته في مخزنها' or (why == 'stashfull' and 'المخزن ممتلئ' or tostring(why))
 end }
 A.gangcool = { 'gangs', function(src, d)
+    if not d.gang or d.gang == '' then return false, 'اختر عصابة' end
     local n = exports.exti_gangs:AdminClearCooldowns(tostring(d.gang or ''), nil)
     log(src, 'gang_cooldowns', d.gang, tostring(n)); return true, ('أُزيلت %d مدة انتظار'):format(n)
 end }
@@ -426,15 +459,19 @@ A.gangcreate = { 'gangs', function(src, d)
     local t = target(d); if not t then return false, 'اختر الزعيم من اللاعبين' end
     local name = tostring(d.name or ''):lower():gsub('[^%w_]', ''):sub(1, 30)
     if name == '' then return false, 'اكتب اسمًا قصيرًا بالإنجليزية' end
-    local label = tostring(d.label or name):gsub('[%c]', ''):sub(1, 60)
-    ExecuteCommand(('creategang %s %s %d %s'):format(name, tostring(d.kind or ''):gsub('[^%w]', ''), t, label))
-    log(src, 'gang_create', name, ('%s · leader %s'):format(tostring(d.kind), GetPlayerName(t))); return true, 'أرسلت الأمر (انظر القائمة)'
+    local label = tostring(d.label or ''):gsub('[%c]', ''):sub(1, 60)
+    if label == '' then label = name end
+    local kind = tostring(d.kind or ''):lower():gsub('[^%w]', '')
+    local ok = exports.exti_gangs:AdminCreate(src, name, kind, t, label)
+    if ok then log(src, 'gang_create', name, ('%s · leader %s'):format(kind, GetPlayerName(t))) end
+    return ok, ok and 'أُنشئت العصابة' or 'لم تُنشأ (انظر الرسالة)'
 end }
 A.gangdelete = { 'gangs', function(src, d)
     local name = tostring(d.gang or ''):lower():gsub('[^%w_]', '')
     if name == '' then return false end
-    ExecuteCommand('deletegang ' .. name)
-    log(src, 'gang_delete', name); return true, 'حُذفت'
+    local ok = exports.exti_gangs:AdminDelete(src, name)
+    if ok then log(src, 'gang_delete', name) end
+    return ok, ok and 'حُذفت' or 'لم تُحذف'
 end }
 
 -- tests (for me)

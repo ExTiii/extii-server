@@ -16,7 +16,7 @@ Config.roles = {
 }
 
 -- resources the tablet will NOT restart (restarting them breaks everyone)
-Config.noRestart = { qbx_core = true, oxmysql = true, ox_lib = true, ox_inventory = true, exti_admin = true, sessionmanager = true, mapmanager = true, spawnmanager = true, chat = true }
+Config.noRestart = { monitor = true, qbx_medical = true, qbx_core = true, oxmysql = true, ox_lib = true, ox_inventory = true, exti_admin = true, sessionmanager = true, mapmanager = true, spawnmanager = true, chat = true }
 
 -- the test kits (Test tab): items given to you
 Config.kits = {
