@@ -73,7 +73,8 @@
 
     function imageFor(p, cls) {
         const img = document.createElement('img');
-        img.src = IMG + p.image;
+        // (an item can name its own picture, e.g. nui://exti_jobs/html/items/grape_kit.png)
+        img.src = /^(nui|https?):\/\//.test(p.image || '') ? p.image : IMG + p.image;
         img.alt = '';
         if (cls) img.className = cls;
         img.onerror = () => {
