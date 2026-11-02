@@ -13,43 +13,14 @@ end
 CreateThread(function()
     while true do
         applyDamage()
-        SetPedSuffersCriticalHits(PlayerPedId(), false)   -- no instant headshots (a new ped after a respawn too)
+        SetPedSuffersCriticalHits(PlayerPedId(), false)   -- no instant headshots
         Wait(5000)
     end
 end)
+-- a new ped (respawn, a new model) gets it at once
+lib.onCache('ped', function(ped) SetPedSuffersCriticalHits(ped, false) end)
 
--- headshots: +50% on top of the body damage
-local FIREARM = {}
-for name in pairs(Config.damage) do
-    if name ~= 'WEAPON_UNARMED' and not name:find('KNIFE') and not name:find('BLADE') and not name:find('MACHETE') and not name:find('HATCHET')
-        and not name:find('BAT') and not name:find('CLUB') and not name:find('CROWBAR') and not name:find('HAMMER') and not name:find('WRENCH')
-        and not name:find('KNUCKLE') and not name:find('NIGHTSTICK') and not name:find('FLASHLIGHT') then
-        FIREARM[joaat(name)] = true
-    end
-end
-local HEAD = 31086
-local lastHealth = 200
-CreateThread(function()
-    while true do
-        lastHealth = GetEntityHealth(PlayerPedId())
-        Wait(0)
-    end
-end)
-AddEventHandler('gameEventTriggered', function(name, args)
-    if name ~= 'CEventNetworkEntityDamage' then return end
-    local ped = PlayerPedId()
-    if args[1] ~= ped then return end
-    local weapon = args[7]
-    if not FIREARM[weapon] then return end
-    local ok, bone = GetPedLastDamageBone(ped)
-    if not ok or bone ~= HEAD then return end
-    local now = GetEntityHealth(ped)
-    local lost = lastHealth - now
-    if lost <= 0 or now <= 0 then return end
-    local extra = math.floor(lost * (Config.headshot - 1.0) + 0.5)
-    if extra > 0 then SetEntityHealth(ped, math.max(0, now - extra)) end
-    lastHealth = math.max(0, now - extra)
-end)
+-- (the headshot +50% is done in exti_medical, which reads every hit first)
 
 -- shots fired: tell the server where (it decides about the call)
 local NOT_A_GUN = {
@@ -75,4 +46,18 @@ CreateThread(function()
             Wait(400)
         end
     end
+end)
+
+-- the light vest (Ammu-Nation): 50% armour (the heavy vest, item 'armour', is ox_inventory's own: 100%)
+exports('useLightArmour', function(data, slot)
+    local ped = PlayerPedId()
+    if GetPedArmour(ped) >= 50 then
+        return lib.notify({ description = 'درعك أقوى من هذه السترة', type = 'error', position = 'top' })
+    end
+    exports.ox_inventory:useItem(data, function(used)
+        if used then
+            SetPlayerMaxArmour(PlayerId(), 100)
+            SetPedArmour(PlayerPedId(), 50)
+        end
+    end)
 end)

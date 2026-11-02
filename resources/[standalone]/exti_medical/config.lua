@@ -196,3 +196,6 @@ Config.treat = {
     },
     wrapTurns = { gauze = 3, pressure = 4, quickclot = 2 },
 }
+
+-- EX_Tii gun rework: a bullet in the head does this much more than a body shot (0.5 = +50%)
+Config.headshotBonus = 0.5

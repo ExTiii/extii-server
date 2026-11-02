@@ -143,7 +143,7 @@ return {
 		['WEAPON_PUMPSHOTGUN'] = {
 			label = 'بندقية صيد مضخية (Pump Shotgun)',
 			weight = 3400,
-			durability = 0.1,
+			durability = 0,
 			ammoname = 'ammo-shotgun'
 		},
 		['WEAPON_REVOLVER'] = {

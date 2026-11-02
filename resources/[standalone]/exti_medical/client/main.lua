@@ -54,6 +54,18 @@ AddEventHandler('gameEventTriggered', function(name, args)
 
     local hit, bone = GetPedLastDamageBone(ped)
     ClearPedLastDamageBone(ped) -- so the next hit can't reuse this spot
+
+    -- EX_Tii gun rework: a bullet in the head does +50% (critical headshots are off: no instant one-tap).
+    -- The extra never takes him below 101 health, so a headshot alone doesn't skip the down / last stand
+    -- the game itself decides (that shot's own damage still can).
+    if hit and bone == 31086 and (kind == 'bullet' or kind == 'pellet') and damage > 0 and hp > 101 then
+        local extra = math.min(math.floor(damage * (Config.headshotBonus or 0.5) + 0.5), hp - 101)
+        if extra > 0 then
+            SetEntityHealth(ped, hp - extra)
+            damage = damage + extra
+            lastHp = hp - extra
+        end
+    end
     pending[#pending + 1] = {
         k = kind, pw = power, w = label,
         p = hit and Config.bones[bone] or nil,

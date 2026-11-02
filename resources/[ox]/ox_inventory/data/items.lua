@@ -293,9 +293,10 @@ return {
     },
 
     ['armour'] = {
-        label = 'سترة واقية من الرصاص (Bulletproof Vest)',
+        label = 'سترة واقية ثقيلة (Heavy Vest)',
         weight = 3000,
         stack = false,
+        description = 'تعطي 100% درع. تصنعها عصابة الأسلحة (والشرطة من المستودع)',
         client = {
             anim = { dict = 'clothingshirt', clip = 'try_shirt_positive_d' },
             usetime = 3500
@@ -1070,12 +1071,13 @@ return {
         description = 'من الحصاد: تُقلَّم وتُعبّأ في أكياس 2 غرام على طاولة العصابة',
     },
 
-    -- EX_Tii gun rework: the Ammu-Nation repair service (bought at the counter, never carried)
-    ['gun_repair'] = {
-        label = 'صيانة سلاح (Gun Repair)',
-        weight = 0,
-        description = 'يُصلح أكثر سلاح قانوني مستهلك معك إلى 100%',
-        client = { image = 'cleaningkit.png' },
+    -- EX_Tii gun rework: the light vest (Ammu-Nation, 1 a day). The heavy one (armour) is made by the Weapons gang.
+    ['light_armour'] = {
+        label = 'سترة خفيفة (Light Vest)',
+        weight = 1800,
+        stack = false,
+        description = 'تعطي 50% درع. السترة الثقيلة (100%) تصنعها عصابة الأسلحة',
+        client = { image = 'armor.png', export = 'exti_weapons.useLightArmour' },
     },
 
     -- EX_Tii gangs: turf graffiti (tools shop). One can = one tag; the brush scrubs 3 rival tags

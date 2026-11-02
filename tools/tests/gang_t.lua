@@ -740,11 +740,12 @@ for st = 1, 3 do advance(16); CB.craftStage(81, wi2.token, st) end
 check(inv.gang_smiths.WEAPON_PISTOL == 1 and ITEMMETA.gang_smiths.WEAPON_PISTOL.serial == 'SCRATCHED' and ITEMMETA.gang_smiths.WEAPON_PISTOL.exti_craft == 'smiths', 'the pistol is in the stash with its serial scratched off')
 GANG.addDaily('g', 'smiths', 'guns', 5); advance(200)
 check(select(2, CB.craftBegin(81, 1)) == 'daily', '6 guns a day per gang')
-local okAt, at1 = CB.craftBegin(81, 101)
+check(C.weapons.attachments[1].item == 'armour' and C.weapons.attachments[1].rep == 2, 'the heavy vest is bench choice 101 (rep 2)')
+local okAt, at1 = CB.craftBegin(81, 102)
 check(okAt and at1.label == 'كشاف سلاح', 'an attachment (flashlight) can still be made after the daily gun cap')
 for st = 1, 3 do advance(16); CB.craftStage(81, at1.token, st) end
 check(inv.gang_smiths.at_flashlight == 1, 'the flashlight attachment is in the stash')
-advance(200); check(select(2, CB.craftBegin(81, 109)) == 'rep', 'a suppressor needs rep 4')
+advance(200); check(select(2, CB.craftBegin(81, 110)) == 'rep', 'a suppressor needs rep 4')
 -- repair at the bench
 invOf(81) ; inv[81] = { WEAPON_PISTOL = 1 }; ITEMMETA[81] = { WEAPON_PISTOL = { serial = 'ABC', durability = 20 } }
 invOf('gang_smiths').gun_parts = 10
@@ -752,10 +753,15 @@ local okL, rl = CB.repairList(81)
 check(okL and #rl.list == 1 and rl.list[1].durability == 20, 'the bench lists his worn pistol (20%)')
 local okR = CB.repairBegin(81, rl.list[1].slot)
 check(okR and inv.gang_smiths.gun_parts == 7, 'repair costs 3 gun parts')
+check(select(2, CB.repairBegin(81, rl.list[1].slot)) == 'busy' and inv.gang_smiths.gun_parts == 7, 'one repair at a time (no parts taken twice)')
+check(not CB.repairFinish(81) and inv.gang_smiths.gun_parts == 10, 'finishing too early gives the parts back')
+check(CB.repairBegin(81, rl.list[1].slot) and inv.gang_smiths.gun_parts == 7, 'started again')
 advance(11)
 check(CB.repairFinish(81) and LASTMETA.durability == 100, 'the pistol is back to 100%')
 ITEMMETA[81] = { WEAPON_PISTOL = { serial = '123POL456', durability = 10 } }
 check(#select(2, CB.repairList(81)).list == 0, 'police guns are not repaired by the gang')
+inv[81] = { WEAPON_PETROLCAN = 1 }; ITEMMETA[81] = { WEAPON_PETROLCAN = { durability = 10 } }
+check(#select(2, CB.repairList(81)).list == 0, 'a petrol can is not a gun: nothing to repair')
 -- ---------------------------------------------------------------- the black market buyer
 at(1, vec3(1700, 0, 0)); CB.spotSave(1, 'blackmarket')
 local bmp = addPlayer(82, 'CB82', 'Seller'); at(82, vec3(1700, 0.5, 0))

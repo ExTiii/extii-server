@@ -87,6 +87,7 @@ lib.callback.register('exti_shops:server:open', function(source, index)
         area = store.area,
         greeting = kind.greeting,
         clerkTitle = kind.clerkTitle, -- EX_Tii: e.g. الصيدلي instead of البائع
+        notice = kind.notice,         -- EX_Tii: a banner over the shelf (Ammu-Nation)
         products = products,
         cash = cash,
         bank = bank,
@@ -99,22 +100,18 @@ do
     local function key(cid, name) return ('daily:%s:%s:%s'):format(os.date('%Y-%m-%d'), cid, name) end
     function DAILY.get(cid, name) return GetResourceKvpInt(key(cid, name)) end
     function DAILY.add(cid, name, n) SetResourceKvpInt(key(cid, name), DAILY.get(cid, name) + n) end
-end
-
--- EX_Tii: the gun repair service: the most worn legal gun (registered serial, not a gang gun) back to 100%
-local function repairLegalGun(src)
-    local best, bestD = nil, 100
-    for _, it in pairs(exports.ox_inventory:GetInventoryItems(src) or {}) do
-        local m = it.metadata
-        if it.name:sub(1, 7) == 'WEAPON_' and m and not m.exti_craft and type(m.serial) == 'string' and m.serial ~= 'SCRATCHED' and not m.serial:match('POL') then
-            local d = tonumber(m.durability) or 100
-            if d < bestD then best, bestD = it, d end
-        end
+    -- yesterday's counts are thrown away when the resource starts
+    local today = 'daily:' .. os.date('%Y-%m-%d') .. ':'
+    local handle = StartFindKvp('daily:')
+    if handle ~= -1 then
+        local old = {}
+        repeat
+            local k = FindKvp(handle)
+            if k and k:sub(1, #today) ~= today then old[#old + 1] = k end
+        until not k
+        EndFindKvp(handle)
+        for _, k in ipairs(old) do DeleteResourceKvp(k) end
     end
-    if not best then return false end
-    best.metadata.durability = 100
-    exports.ox_inventory:SetMetadata(src, best.slot, best.metadata)
-    return true, best.label
 end
 
 ---@param cart { name: string, count: integer }[]
@@ -173,12 +170,10 @@ lib.callback.register('exti_shops:server:buy', function(source, index, cart, acc
     if okWeight and canWeight == false then return false, 'cant_carry' end
     for i = 1, #lines do
         local l = lines[i]
-        if not l.product.service then   -- (a service gives nothing to carry)
-            local okCarry, canCarry = pcall(function()
-                return exports.ox_inventory:CanCarryItem(src, l.product.name, l.count, l.product.metadata)
-            end)
-            if not okCarry or not canCarry then return false, 'cant_carry' end
-        end
+        local okCarry, canCarry = pcall(function()
+            return exports.ox_inventory:CanCarryItem(src, l.product.name, l.count, l.product.metadata)
+        end)
+        if not okCarry or not canCarry then return false, 'cant_carry' end
     end
 
     local cash, bank = money(player)
@@ -194,9 +189,7 @@ lib.callback.register('exti_shops:server:buy', function(source, index, cart, acc
         for i = 1, #lines do
             local l = lines[i]
             local given = 0
-            if l.product.service == 'repair' then
-                if repairLegalGun(src) then given = 1 end
-            elseif l.item.weapon then
+            if l.item.weapon then
                 -- weapons one by one so each gets its own serial number
                 for _ = 1, l.count do
                     local metadata = copy(l.product.metadata)
@@ -254,3 +247,50 @@ end)
 exports('Stores', function()
     return Config.stores, Config.types
 end)
+
+---------------------------------------------------------------------------
+-- the Ammu-Nation notice on the wall: admins can move it with /ammusign (kept across restarts)
+---------------------------------------------------------------------------
+do
+    local signs = json.decode(GetResourceKvpString('ammu_signs') or '{}') or {}
+    GlobalState['exti_shops:signs'] = signs
+
+    lib.addCommand('ammusign', {
+        help = 'Put the Ammu-Nation notice on the wall you look at (reset = automatic place)',
+        params = { { name = 'reset', type = 'string', optional = true } },
+        restricted = 'group.admin',
+    }, function(source, args)
+        TriggerClientEvent('exti_shops:client:placeSign', source, args.reset == 'reset')
+    end)
+
+    RegisterNetEvent('exti_shops:server:placeSign', function(spot)
+        local src = source
+        if not IsPlayerAceAllowed(src, 'group.admin') and not IsPlayerAceAllowed(src, 'command.ammusign') then return end
+        local ped = GetPlayerPed(src)
+        if not ped or ped == 0 then return end
+        local here = GetEntityCoords(ped)
+        local best, bestD
+        for i, s in ipairs(Config.stores) do
+            if s.type == 'ammunation' then
+                local d = #(here - vec3(s.clerk.x, s.clerk.y, s.clerk.z))
+                if d < 25.0 and (not bestD or d < bestD) then best, bestD = i, d end
+            end
+        end
+        local function tell(t, kind) TriggerClientEvent('ox_lib:notify', src, { description = t, type = kind }) end
+        if not best then return tell('أنت لست داخل محل Ammu-Nation', 'error') end
+        if spot == false then
+            signs[tostring(best)] = nil
+            tell('رجعت اللافتة إلى مكانها التلقائي', 'success')
+        else
+            if type(spot) ~= 'table' then return end
+            local x, y, z, nx, ny = tonumber(spot.x), tonumber(spot.y), tonumber(spot.z), tonumber(spot.nx), tonumber(spot.ny)
+            if not (x and y and z and nx and ny) or #(vec3(x, y, z) - here) > 10.0 then return tell('الجدار بعيد جدًا', 'error') end
+            local len = math.sqrt(nx * nx + ny * ny)
+            if len < 0.1 then return end
+            signs[tostring(best)] = { x = x, y = y, z = z, nx = nx / len, ny = ny / len }
+            tell('وُضعت اللافتة هنا', 'success')
+        end
+        SetResourceKvp('ammu_signs', json.encode(signs))
+        GlobalState['exti_shops:signs'] = signs
+    end)
+end

@@ -17,6 +17,7 @@ client_script '@support-arabic/escaping.lua'
 client_scripts {
     '@qbx_core/modules/playerdata.lua',
     'client.lua',
+    'sign.lua',
 }
 
 server_script 'server.lua'
@@ -28,5 +29,6 @@ files {
     'html/style.css',
     'html/kit.css',
     'html/app.js',
+    'html/sign.html',
     'html/fonts/*.woff2',
 }

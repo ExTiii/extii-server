@@ -90,18 +90,14 @@ Config.types = {
     ammunation = {
         label = 'متجر الأسلحة',
         icon = 'target',
-        greeting = 'أهلًا بك في أمونيشن. السلاح الناري يحتاج رخصة سلاح.',
+        greeting = 'أهلًا. لم نعد نبيع الأسلحة النارية ولا الذخيرة… الشارع هو من يبيعها الآن. عندنا سترات وأسلحة بيضاء فقط.',
+        notice = 'بأمر من البلدية: بيع الأسلحة النارية والذخيرة متوقف في هذا المتجر. السترات الخفيفة: واحدة لكل شخص في اليوم.',
         clerk = { model = 's_m_y_ammucity_01' },
         circleDistance = 1.6,
         blip = false, -- no map icon (map cleanup)
         products = {
-            -- EX_Tii gun rework: the legal guns (weapon licence, the serial is registered to the buyer)
-            { name = 'WEAPON_SNSPISTOL', price = 1125, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
-            { name = 'WEAPON_PISTOL', price = 1800, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
-            { name = 'WEAPON_VINTAGEPISTOL', price = 2250, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
-            { name = 'WEAPON_PUMPSHOTGUN', price = 3750, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
-            { name = 'WEAPON_MUSKET', price = 2700, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
-            -- melee (no licence)
+            -- EX_Tii gun rework: no guns, no ammo (the gangs supply them). Armour + melee only.
+            { name = 'light_armour', price = 750, category = 'armour', max = 1, daily = 1 },   -- 50% armour, 1 a day per person
             { name = 'WEAPON_KNIFE', price = 300, category = 'melee', max = 1 },
             { name = 'WEAPON_SWITCHBLADE', price = 270, category = 'melee', max = 1 },
             { name = 'WEAPON_MACHETE', price = 300, category = 'melee', max = 1 },
@@ -112,16 +108,6 @@ Config.types = {
             { name = 'WEAPON_HAMMER', price = 90, category = 'melee', max = 1 },
             { name = 'WEAPON_WRENCH', price = 90, category = 'melee', max = 1 },
             { name = 'WEAPON_KNUCKLE', price = 300, category = 'melee', max = 1 },
-            -- ammo: a little per player per day (the rest comes from the Ammo gang)
-            { name = 'ammo-9', price = 8, category = 'ammo', max = 60, step = 10, daily = 60 },
-            { name = 'ammo-45', price = 8, category = 'ammo', max = 36, step = 6, daily = 36 },
-            { name = 'ammo-shotgun', price = 12, category = 'ammo', max = 24, step = 6, daily = 24 },
-            { name = 'ammo-musket', price = 15, category = 'ammo', max = 20, step = 5, daily = 20 },
-            -- legal attachments (the rest only from the Weapons gang)
-            { name = 'at_flashlight', price = 225, category = 'parts', max = 1 },
-            { name = 'at_grip', price = 340, category = 'parts', max = 1 },
-            -- a service: fixes the most worn legal gun you carry (not gang guns with no serial)
-            { name = 'gun_repair', price = 450, category = 'services', max = 1, service = 'repair' },
         },
     },
 }

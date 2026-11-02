@@ -25,8 +25,7 @@
         weapons: 'أسلحة',
         ammo: 'ذخيرة',
         melee: 'أسلحة بيضاء',
-        parts: 'إضافات',
-        services: 'خدمات',
+        armour: 'سترات واقية',
         work: 'مستلزمات العمل',
     };
 
@@ -35,7 +34,7 @@
         too_far: 'ابتعدت عن البائع، اقترب منه وحاول مرة أخرى',
         cant_carry: 'لا يوجد مكان كافٍ في حقيبتك',
         no_license: 'تحتاج رخصة سلاح لشراء هذا',
-        daily_limit: 'وصلت حدك اليومي من هذه الذخيرة',
+        daily_limit: 'وصلت حدك اليومي من هذا (واحدة كل يوم)',
         empty: 'السلة فارغة',
         busy: 'لحظة… جارٍ تنفيذ طلبك السابق',
         failed: 'حدث خطأ، حاول مرة أخرى',
@@ -112,6 +111,7 @@
         $('shopArea').textContent = shop.area ? `فرع ${shop.area}` : '';
         $('greeting').textContent = shop.greeting || 'أهلًا بك!';
         document.querySelector('.clerk-name').textContent = (shop.clerkTitle || 'البائع') + ':'; // EX_Tii: e.g. الصيدلي
+        const nb = $('notice'); if (nb) { nb.textContent = shop.notice || ''; nb.hidden = !shop.notice; }
         renderWallet();
     }
 
@@ -320,7 +320,7 @@
             const r = $('receipt');
             r.classList.add('show');
             setTimeout(() => r.classList.remove('show'), 1600);
-            if (res.code === 'partial') setTimeout(() => toast('لم يتم كل الطلب (لا مكان في الحقيبة، أو لا يوجد سلاح قانوني يحتاج صيانة)، أعدنا لك ثمن الباقي'), 1700);
+            if (res.code === 'partial') setTimeout(() => toast('لم يتسع كل شيء في حقيبتك، أعدنا لك ثمن الباقي'), 1700);
         } else {
             renderCart();
             toast(ERRORS[res && res.code] || ERRORS.failed, 'error');

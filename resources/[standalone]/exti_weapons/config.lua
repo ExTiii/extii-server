@@ -39,7 +39,7 @@ Config.damage = {
     WEAPON_BAT = 0.60, WEAPON_GOLFCLUB = 0.60, WEAPON_CROWBAR = 0.60, WEAPON_HAMMER = 0.60, WEAPON_WRENCH = 0.60,
     WEAPON_KNUCKLE = 0.45, WEAPON_NIGHTSTICK = 0.50, WEAPON_FLASHLIGHT = 0.40,
 }
-Config.headshot = 1.5            -- a headshot does this much of a body shot (no instant one-tap)
+-- (headshots: +50%, set in exti_medical/config.lua -> Config.headshotBonus)
 
 -- Shots fired: gunfire calls the police. Chance by area, one call per area per minute, a suppressor halves it.
 Config.shots = {
@@ -51,6 +51,6 @@ Config.shots = {
     cityZones = { 'AIRP', 'ALTA', 'BANNING', 'BEACH', 'BURTON', 'CHAMH', 'CHIL', 'CYPRE', 'DAVIS', 'DELBE', 'DELPE', 'DELSOL', 'DOWNT',
                   'DTVINE', 'EAST_V', 'EBURO', 'ELYSIAN', 'GOLF', 'HAWICK', 'HORS', 'KOREAT', 'LEGSQU', 'LMESA', 'LOSPUER', 'MIRR', 'MORN',
                   'MOVIE', 'MURRI', 'NOOSE', 'PBOX', 'RANCHO', 'RICHM', 'ROCKF', 'SKID', 'STAD', 'STRAW', 'TERMINA', 'TEXTI', 'VCANA', 'VESP',
-                  'VINE', 'WVINE', 'ZP_ORT', 'PALHIGH', 'TATAMO', 'RGLEN', 'OBSERV', 'GREATC' },
-    townZones = { 'SANDY', 'GRAPES', 'PALETO', 'HARMO', 'CHU', 'BANHAMC', 'BHAMCA', 'ALAMO', 'RTRAK', 'PALFOR' },
+                  'VINE', 'WVINE', 'ZP_ORT', 'PALHIGH', 'TATAMO', 'RGLEN', 'OBSERV', 'GREATC', 'PBLUFF' },
+    townZones = { 'SANDY', 'GRAPES', 'PALETO', 'HARMO', 'CHU', 'SLAB', 'GALFISH' },
 }

@@ -191,3 +191,6 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 .receipt-check { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 8px var(--accent-soft); margin-bottom: 6px; }
 .receipt-card b { font-size: 18px; }
 .receipt-card span { color: var(--muted); font-size: 13px; direction: rtl; }
+
+/* EX_Tii: a banner over the shelf (Ammu-Nation: no guns sold here) */
+.notice { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--accent-line); background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 13px; line-height: 1.6; }

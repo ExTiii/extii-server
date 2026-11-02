@@ -160,6 +160,7 @@ C.weapons = {
     },
     -- attachments (no daily cap: the parts are the limit)
     attachments = {
+        { item = 'armour',                   label = 'سترة ثقيلة (100% درع)', rep = 2, parts = 6 },
         { item = 'at_flashlight',            label = 'كشاف سلاح',          rep = 1, parts = 2 },
         { item = 'at_grip',                  label = 'مقبض',               rep = 2, parts = 3 },
         { item = 'at_clip_extended_pistol',  label = 'مخزن ممتد (مسدس)',    rep = 2, parts = 4 },
