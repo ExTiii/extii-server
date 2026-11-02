@@ -478,6 +478,8 @@
     const GAMES = { bolts, lugnuts, pry, torch, sort, drum, band, melt, press, boxfill, file, assemble, range, trim, weigh };
     function start(game, title, extra) {
         if (G) return;
+        // the rebuilt (workshop look) games live in games.js
+        if (window.EXG_GAME2 && window.EXG_GAME2.has(game)) { window.EXG_GAME2.start(game, title, extra, (done) => post(done)); return; }
         const area = frame(game, title || '', extra && extra.label);
         G = { cleanup: null };
         (GAMES[game] || bolts)(area, extra || {});

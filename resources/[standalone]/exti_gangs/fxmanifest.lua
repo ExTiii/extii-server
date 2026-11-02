@@ -47,6 +47,10 @@ files {
     'html/style.css',
     'html/app.js',
     'html/chop.js',
+    'html/games.js',
+    'html/games.css',
+    'html/mg/*.webp',
+    'html/mg/sfx/*.ogg',
     'html/fonts/*.woff2',
     'html/tag.html',
 }
