@@ -1,10 +1,13 @@
 /* =====================================================================
    EX_Tii jobs: the mini games of the level jobs (Moe's design).
-   { action: 'game', game: 'catch' | 'slaughter' | 'pack', count, seconds }
+   { action: 'game', game: 'catch' | 'slaughter' | 'pack' | 'pick' | 'dry' | 'sort', count, seconds }
    Every game lasts the whole `seconds` (at least 25), then sends { score: 0..1 } to 'gameDone'.
      catch     — chickens run around the pen: click them before they get out
      slaughter — chickens ride the line: press SPACE / E (or click) when one is in the gold zone
      pack      — pieces drop on the table: drag each one into the tray before it spoils
+     pick      — grape bunches hang on the vine with a letter: press W / A / S / D before its ring runs out
+     dry       — hold SPACE (or the mouse) to heat the rack: keep the needle inside the gold band as it moves
+     sort      — raisins come down the chute: A = good (to the carton, left), D = spoiled (to the bin, right)
    ===================================================================== */
 (() => {
     const RES = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'exti_jobs';
@@ -18,6 +21,9 @@
         catch: { title: 'اصطد الدجاج', hint: 'اضغط على كل دجاجة قبل أن تهرب من الحظيرة', unit: 'أمسكت' },
         slaughter: { title: 'اذبح الدجاج', hint: 'اضغط مسافة أو E حين تكون الدجاجة داخل المنطقة الذهبية', unit: 'ذبحت' },
         pack: { title: 'عبّئ الدجاج', hint: 'اسحب كل قطعة إلى الصينية قبل أن تفسد', unit: 'عبّأت' },
+        pick: { title: 'اقطف العنب', hint: 'اضغط الحرف الظاهر على العنقود (W A S D) قبل أن تنتهي دائرته', unit: 'قطفت', word: 'عنقود' },
+        dry: { title: 'جفّف العنب', hint: 'اضغط مع الاستمرار على مسافة لتسخين المنشر، وأبقِ المؤشر داخل المنطقة الذهبية', unit: 'جودة', word: 'عنقود' },
+        sort: { title: 'افرز الزبيب', hint: 'A = زبيب جيد إلى الكرتونة · D = زبيب تالف إلى السلة', unit: 'فرزت', word: 'حبة زبيب' },
     };
 
     let G = null; // the game that is on screen
@@ -35,7 +41,7 @@
                 </div>
                 <div class="mg-timer"><s id="mg-time"></s></div>
                 <div class="mg-area mg-${kind}" id="mg-area"></div>
-                <div class="mg-foot">تتعامل مع <b>${count}</b> دجاجة · نتيجتك تحدد كم تنجو منها</div>
+                <div class="mg-foot">تتعامل مع <b>${count}</b> ${t.word || 'دجاجة'} · نتيجتك تحدد كم تنجو منها</div>
             </div>`;
         document.body.appendChild(el);
         requestAnimationFrame(() => el.classList.add('in'));
@@ -253,12 +259,184 @@
         };
     }
 
+    // ------------------------------------------------------------------ pick (grapes)
+    const GRAPE = `<svg viewBox="0 0 100 110"><path d="M50 4c-2 8 0 14 6 18" stroke="#6b4a1e" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M56 14c10-8 22-6 28 2-10 6-20 6-28-2z" fill="#5fa83a" stroke="#2f6b1a" stroke-width="2"/>${[[38,30],[56,30],[30,46],[47,46],[64,46],[38,62],[56,62],[47,78],[30,62],[64,62],[47,94]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="10" fill="#7b3fa0" stroke="#3e1a57" stroke-width="2.4"/><circle cx="${x-3}" cy="${y-3}" r="3" fill="#fff" opacity=".35"/>`).join('')}</svg>`;
+    const KEYS = [['KeyW', 'W'], ['KeyA', 'A'], ['KeyS', 'S'], ['KeyD', 'D']];
+
+    function pickGame(seconds) {
+        const area = G.el.querySelector('#mg-area');
+        area.innerHTML = `<div class="mg-vine"></div><div class="mg-vine b"></div>`;
+        const W = area.clientWidth, H = area.clientHeight;
+        const N = 16, LIFE = 2.6;
+        const times = schedule(N, seconds, 0.6, LIFE + 0.3);
+        const bunches = [];
+        let next = 0, picked = 0, wrong = 0;
+        setTotal(N);
+        G.score = () => picked / N - wrong * 0.04;
+        const slots = [0.12, 0.3, 0.5, 0.7, 0.88]; // along the vines, so bunches never sit on each other
+        const onKey = (e) => {
+            if (e.repeat) return;
+            const k = KEYS.find(([code]) => code === e.code);
+            if (!k) return;
+            e.preventDefault();
+            const hit = bunches.filter((b) => !b.done && b.key === k[1]).sort((a, b) => a.born - b.born)[0];
+            if (hit) {
+                hit.done = true;
+                picked += 1;
+                setDone(picked);
+                hit.el.classList.add('got');
+                setTimeout(() => hit.el.remove(), 400);
+            } else {
+                wrong += 1;
+                area.classList.remove('miss'); void area.offsetWidth; area.classList.add('miss');
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        G.cleanup = () => window.removeEventListener('keydown', onKey);
+        G.step = (t) => {
+            while (next < N && t >= times[next]) {
+                const busy = new Set(bunches.filter((b) => !b.done).map((b) => b.slot));
+                const free = slots.map((_, i) => i).filter((i) => !busy.has(i));
+                const slot = free[Math.floor(Math.random() * free.length)] ?? 0;
+                const row = Math.random() < 0.5 ? 0 : 1;
+                const key = KEYS[Math.floor(Math.random() * KEYS.length)][1];
+                const el = document.createElement('div');
+                el.className = 'mg-bunch';
+                el.innerHTML = `${GRAPE}<b>${key}</b><i></i>`;
+                el.style.left = `${slots[slot] * W - 50}px`;
+                el.style.top = `${(row ? 0.56 : 0.14) * H}px`;
+                area.appendChild(el);
+                bunches.push({ el, key, slot: slot + row * 10, born: t, done: false });
+                next += 1;
+            }
+            for (const b of bunches) {
+                if (b.done) continue;
+                const left = 1 - (t - b.born) / LIFE;
+                b.el.querySelector('i').style.setProperty('--left', String(Math.max(0, left)));
+                if (left <= 0) { // it fell
+                    b.done = true;
+                    b.el.classList.add('fell');
+                    setTimeout(() => b.el.remove(), 450);
+                }
+            }
+        };
+    }
+
+    // ------------------------------------------------------------------ dry (hold the heat in the band)
+    function dryGame(seconds) {
+        const area = G.el.querySelector('#mg-area');
+        area.innerHTML = `
+            <div class="mg-rack">${'<span></span>'.repeat(18)}</div>
+            <div class="mg-gauge"><div class="mg-band" id="mg-band"></div><div class="mg-needle" id="mg-needle"></div><small>حرارة</small></div>
+            <div class="mg-sun" id="mg-sun"></div>
+            <button class="mg-cut mg-heat" id="mg-heat">سخّن (اضغط مع الاستمرار على مسافة)</button>`;
+        const band = area.querySelector('#mg-band'), needle = area.querySelector('#mg-needle'), sun = area.querySelector('#mg-sun');
+        const rack = area.querySelector('.mg-rack');
+        const BAND = 0.24; // the height of the gold band (part of the gauge)
+        let heat = 0.2, vel = 0, held = false, last = 0, inside = 0, counted = 0;
+        setTotal(100);
+        G.score = () => (counted > 0 ? inside / counted : 0);
+        const down = (e) => { if (e.code === 'Space' || e.type === 'pointerdown') { e.preventDefault && e.preventDefault(); held = true; } };
+        const up = (e) => { if (e.code === 'Space' || e.type === 'pointerup') held = false; };
+        window.addEventListener('keydown', down);
+        window.addEventListener('keyup', up);
+        const btn = area.querySelector('#mg-heat');
+        btn.addEventListener('pointerdown', down);
+        window.addEventListener('pointerup', up);
+        G.cleanup = () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('pointerup', up); };
+        // the band wanders: two slow waves, so it can't be learned by heart
+        const p1 = Math.random() * 6, p2 = Math.random() * 6;
+        const bandAt = (t) => 0.5 + 0.26 * Math.sin(t * 0.42 + p1) + 0.1 * Math.sin(t * 1.13 + p2);
+        G.step = (t) => {
+            const dt = Math.min(0.05, Math.max(0, t - last));
+            last = t;
+            vel += (held ? 1.5 : -1.15) * dt;      // the heat rises while held, cools when let go
+            vel *= Math.pow(0.18, dt);              // with some weight to it
+            heat = Math.max(0, Math.min(1, heat + vel * dt));
+            if (heat === 0 || heat === 1) vel = 0;
+            const c = bandAt(t), lo = c - BAND / 2, hi = c + BAND / 2;
+            band.style.bottom = `${lo * 100}%`;
+            band.style.height = `${BAND * 100}%`;
+            needle.style.bottom = `${heat * 100}%`;
+            const ok = heat >= lo && heat <= hi;
+            if (t > 1.0) { counted += dt; if (ok) inside += dt; } // (a second to find it)
+            area.classList.toggle('hot', heat > hi);
+            area.classList.toggle('cold', heat < lo);
+            needle.classList.toggle('ok', ok);
+            sun.style.opacity = String(0.25 + heat * 0.75);
+            rack.style.setProperty('--dry', String(Math.min(1, t / seconds)));
+            setDone(Math.round(G.score() * 100));
+        };
+    }
+
+    // ------------------------------------------------------------------ sort (good to the carton, bad to the bin)
+    const RAISIN = (bad) => `<svg viewBox="0 0 100 100">${[[34,40],[58,36],[46,58],[66,60],[30,64]].map(([x,y],i)=>`<ellipse cx="${x}" cy="${y}" rx="15" ry="11" transform="rotate(${i*37} ${x} ${y})" fill="${bad ? '#6f7a52' : '#b8742a'}" stroke="${bad ? '#3d4429' : '#6b3c0e'}" stroke-width="2.6"/><path d="M${x-8} ${y-2}q8 5 16 0" stroke="${bad ? '#2f3520' : '#7a4512'}" stroke-width="2" fill="none"/>`).join('')}${bad ? '<circle cx="40" cy="44" r="6" fill="#c9d6b0" opacity=".8"/><circle cx="62" cy="62" r="5" fill="#c9d6b0" opacity=".7"/>' : '<ellipse cx="54" cy="32" rx="5" ry="2.5" fill="#fff" opacity=".4"/>'}</svg>`;
+
+    function sortGame(seconds) {
+        const area = G.el.querySelector('#mg-area');
+        area.innerHTML = `
+            <div class="mg-bin good"><b>A</b><span>الكرتونة</span></div>
+            <div class="mg-chute"></div>
+            <div class="mg-bin bad"><b>D</b><span>سلة التالف</span></div>`;
+        const H = area.clientHeight;
+        const N = 18, FALL = 2.2; // seconds from the top to the bottom of the chute
+        const times = schedule(N, seconds, 0.5, FALL + 0.3);
+        const items = [];
+        let next = 0, right = 0;
+        setTotal(N);
+        G.score = () => right / N;
+        const flash = (cls) => { const b = area.querySelector(`.mg-bin.${cls}`); b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); };
+        const onKey = (e) => {
+            if (e.repeat) return;
+            const good = e.code === 'KeyA' || e.code === 'ArrowLeft';
+            const bad = e.code === 'KeyD' || e.code === 'ArrowRight';
+            if (!good && !bad) return;
+            e.preventDefault();
+            const it = items.filter((i) => !i.done).sort((a, b) => a.born - b.born)[0]; // the lowest one in the chute
+            if (!it) return;
+            it.done = true;
+            const ok = good ? !it.bad : it.bad;
+            if (ok) { right += 1; setDone(right); }
+            it.el.classList.add(good ? 'to-good' : 'to-bad', ok ? 'ok' : 'no');
+            flash(good ? 'good' : 'bad');
+            if (!ok) { area.classList.remove('miss'); void area.offsetWidth; area.classList.add('miss'); }
+            setTimeout(() => it.el.remove(), 420);
+        };
+        window.addEventListener('keydown', onKey);
+        G.cleanup = () => window.removeEventListener('keydown', onKey);
+        G.step = (t) => {
+            while (next < N && t >= times[next]) {
+                const bad = Math.random() < 0.4;
+                const el = document.createElement('div');
+                el.className = 'mg-raisin';
+                el.innerHTML = RAISIN(bad);
+                area.appendChild(el);
+                items.push({ el, bad, born: t, done: false });
+                next += 1;
+            }
+            for (const it of items) {
+                if (it.done) continue;
+                const k = (t - it.born) / FALL;
+                it.el.style.top = `${-70 + k * (H + 40)}px`;
+                if (k >= 1) { // it fell off the end: lost
+                    it.done = true;
+                    it.el.classList.add('fell');
+                    setTimeout(() => it.el.remove(), 300);
+                }
+            }
+        };
+    }
+
     function start(kind, count, seconds) {
         if (G) return;
+        if (!TEXT[kind]) kind = 'pack';
         const el = frame(kind, count);
         G = { el, seconds: Math.max(25, Number(seconds) || 28), start: performance.now(), over: false, score: () => 0, step: () => {} };
         if (kind === 'catch') catchGame(G.seconds);
         else if (kind === 'slaughter') slaughterGame(G.seconds);
+        else if (kind === 'pick') pickGame(G.seconds);
+        else if (kind === 'dry') dryGame(G.seconds);
+        else if (kind === 'sort') sortGame(G.seconds);
         else packGame(G.seconds);
         G.start = performance.now();
         G.raf = requestAnimationFrame(tick);

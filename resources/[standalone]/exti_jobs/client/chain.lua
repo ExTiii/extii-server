@@ -290,7 +290,7 @@ local function actBatch(index, spot)
     end
     local done, r, why = lib.callback.await('exti_jobs:server:batchFinish', false, info.token, score)
     if done and step.kind == 'sellall' then
-        EXJ.notify(('بعت %d دجاجة'):format(r.sold), 'success', 5000)
+        EXJ.notify((step.sold or 'بعت %d'):format(r.sold), 'success', 5000)
     elseif done then
         local text = (step.done or 'أنجزت %d'):format(r.got)
         if r.lost > 0 then text = text .. ' · ' .. (step.lost or 'خسرت %d'):format(r.lost) end

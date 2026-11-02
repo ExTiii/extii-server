@@ -30,7 +30,7 @@ Config.types = {
             -- EX_Tii: no bandage here any more: medicine is sold at the two hospital pharmacies
             -- EX_Tii level jobs (exti_jobs): the supplies used up every run
             { name = 'poultry_kit', price = 3, category = 'work', max = 25, desc = 'لوظيفة الدواجن: كل عدة = دجاجة واحدة' },
-            { name = 'empty_carton', price = 6, category = 'work', max = 30, desc = 'لوظيفة الزبيب: كرتونة لكل 5 زبيب' },
+            { name = 'grape_kit', price = 3, category = 'work', max = 30, desc = 'لوظيفة الزبيب: كل عدة = عنقود واحد' },
         },
     },
 

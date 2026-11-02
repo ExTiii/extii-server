@@ -994,24 +994,31 @@ return {
         client = { image = 'nui://exti_jobs/html/items/poultry_kit.png' },
     },
 
+    ['grape_kit'] = {
+        label = 'عدة قطف عنب (Grape Kit)',
+        weight = 2800,
+        description = 'لوظيفة الزبيب: كل عدة تصبح عنقودًا واحدًا في الكروم',
+        client = { image = 'nui://exti_jobs/html/items/grape_kit.png' },
+    },
+
     ['grape_bunch'] = {
         label = 'عنقود عنب (Grape Bunch)',
-        weight = 200,
-        description = 'تقطفه من كروم مارلو، ويجفّف عند المناشر',
+        weight = 2500,
+        description = 'تقطفه من كروم مارلو ويجفّف عند المناشر (لا يُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/grape_bunch.png' },
     },
 
     ['raisins'] = {
         label = 'زبيب (Raisins)',
-        weight = 120,
-        description = 'كل 5 مع كرتونة فارغة تصبح كرتونة زبيب',
+        weight = 2000,
+        description = 'يُفرز ويُعبّأ في كراتين عند طاولة التعبئة (لا يُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/raisins.png' },
     },
 
     ['raisin_box'] = {
         label = 'كرتونة زبيب (Raisin Box)',
-        weight = 700,
-        description = 'تُباع لتاجر الجملة في ليتل سول',
+        weight = 1800,
+        description = 'تُباع لتاجر الزبيب (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/raisin_box.png' },
     },
 
