@@ -42,9 +42,26 @@ local function miniGame(kind, label, n, mouse)
     return Citizen.Await(p)
 end
 
+-- ox_lib refuses a new skill check (returns nothing) while the last one is still closing, so two
+-- checks in a row (turbo, spark plugs, clutch) failed by themselves: wait until it is really closed
+local function skillFree()
+    local okA, active = pcall(lib.skillCheckActive)
+    return not (okA and active)
+end
+
 local function skill()
-    local ok, res = pcall(lib.skillCheck, { 'easy', 'medium', { areaSize = 50, speedMultiplier = 1.2 } }, { 'w', 'a', 's', 'd' })
-    return ok and res == true
+    for _ = 1, 40 do
+        if skillFree() then break end
+        Wait(50)
+    end
+    Wait(350) -- a short breath, so a key still held from the last check does not count
+    for _ = 1, 3 do
+        local ok, res = pcall(lib.skillCheck, { 'easy', 'medium', { areaSize = 50, speedMultiplier = 1.2 } }, { 'w', 'a', 's', 'd' })
+        if not ok then return false end
+        if res ~= nil then return res == true end
+        Wait(300) -- nil = ox_lib was still busy: try again, it is not a fail
+    end
+    return false
 end
 
 local function wait(label, seconds)
