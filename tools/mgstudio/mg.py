@@ -252,3 +252,16 @@ def worklight(k=1.0, target=(0, 0, 0), warm=(1.0, 0.88, 0.74)):
     L.data.spot_blend = 0.9
     light('AREA', (target[0] + 0.7, target[1] - 0.5, target[2] + 0.6), 4 * k, 1.5, target, (0.75, 0.85, 1.0))
     return L
+
+def lathe(profile, m=None, segs=96, name='lathe'):
+    """revolve (r, z) points around Z into a closed-ish surface"""
+    bm = bmesh.new(); rings = []
+    for i in range(segs):
+        a = 2 * math.pi * i / segs
+        rings.append([bm.verts.new((r * math.cos(a), r * math.sin(a), z)) for r, z in profile])
+    for i in range(segs):
+        A, B = rings[i], rings[(i + 1) % segs]
+        for j in range(len(profile) - 1): bm.faces.new((A[j], A[j + 1], B[j + 1], B[j]))
+    me = bpy.data.meshes.new(name); bm.to_mesh(me); o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o)
+    if m: assign(o, m)
+    return smooth(o, 0, 0, 0, 50)

@@ -129,3 +129,57 @@ e = np.zeros(int(SR * 0.3)); place(e, lp(beep(1900, 0.08), 6000), 0); place(e, l
 s = np.zeros(int(SR * 0.25)); place(s, paper(0.06, 800, 7000, 1), 0); place(s, bp(rng.standard_normal(int(SR * 0.02)), 1000, 5000) * env(int(SR * 0.02), 0.0005, 0.004) * 1.5, 0.07)
 save('strap', s, 0.6)
 print('wash sfx ok')
+
+# ---------------------------------------------------------------- ammo / weapons / weed
+def loopsave(name, x, peak=0.6, xfs=0.15):
+    xf = int(SR * xfs); x = x.copy(); x[:xf] = x[:xf] * np.linspace(0, 1, xf) + x[-xf:] * np.linspace(1, 0, xf); x = x[:-xf]
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 's16le', '-ar', str(SR), '-ac', '1', '-i', '-', '-c:a', 'libvorbis', '-q:a', '4', f'sfx/{name}.ogg'], input=(norm(x, peak) * 32767).astype('<i2').tobytes(), check=True)
+# molten lead: a burner roar and soft bubbling, loop 3 s
+d = 3.0; x = t(d)
+roar = lp(rng.standard_normal(len(x)), 500) * 0.6 + bp(rng.standard_normal(len(x)), 900, 3000) * 0.12
+bub = np.zeros_like(x)
+for i in range(26):
+    f0 = rng.uniform(250, 700); dd = rng.uniform(0.03, 0.07)
+    place(bub, np.sin(2 * np.pi * np.cumsum(np.linspace(f0, f0 * 1.8, int(SR * dd))) / SR) * env(int(SR * dd), 0.004, dd / 3), rng.uniform(0, d - 0.1))
+loopsave('melt_loop', roar + bub * 0.5)
+# the press: a heavy steel thump + the case seating
+p = np.zeros(int(SR * 0.5)); place(p, modal([110, 260, 590, 1300], [0.09, 0.06, 0.04, 0.02], [1, 0.6, 0.4, 0.2], 0.4), 0)
+place(p, lp(rng.standard_normal(int(SR * 0.03)), 1500) * env(int(SR * 0.03), 0.0003, 0.008) * 1.5, 0); place(p, modal([3900, 6100], [0.03, 0.02], [0.3, 0.2], 0.1), 0.01)
+save('press_thump', p, 0.85)
+p = np.zeros(int(SR * 0.4)); place(p, modal([380, 900], [0.05, 0.03], [1, 0.5], 0.2) + bp(rng.standard_normal(int(SR * 0.2)), 200, 3000) * env(int(SR * 0.2), 0.001, 0.03), 0)
+save('press_jam', p, 0.8)
+# brass: a case or round clinking (bright, short)
+for i, base in enumerate((1.0, 1.12, 0.9)):
+    c = modal([3400 * base, 7900 * base, 11200 * base], [0.05, 0.03, 0.02], [1, 0.6, 0.3], 0.18)
+    save(f'brass{i}', c, 0.55)
+# a round pushed into the box (plastic click + brass)
+c = np.zeros(int(SR * 0.15)); place(c, bp(rng.standard_normal(int(SR * 0.012)), 1500, 6000) * env(int(SR * 0.012), 0.0002, 0.003) * 1.4, 0); place(c, modal([3100, 7000], [0.025, 0.015], [0.5, 0.3], 0.1), 0.004)
+save('round_in', c, 0.6)
+# the file: a rasping stroke (noise through a comb of teeth)
+d = 0.28; x = t(d)
+teeth = (np.sin(2 * np.pi * 180 * x) > 0.6).astype(float)
+r = bp(rng.standard_normal(len(x)), 1800, 9000) * (0.4 + 0.6 * teeth) * np.sin(np.pi * x / d) ** 0.7
+save('file_stroke', r, 0.6)
+# gun parts: a snap / click into place, a slide racking
+c = np.zeros(int(SR * 0.2)); place(c, modal([2100, 4800, 8200], [0.02, 0.012, 0.008], [1, 0.6, 0.3], 0.1), 0); place(c, bp(rng.standard_normal(int(SR * 0.006)), 2000, 9000) * env(int(SR * 0.006), 0.0001, 0.002), 0)
+save('part_click', c, 0.7)
+c = np.zeros(int(SR * 0.45)); place(c, bp(rng.standard_normal(int(SR * 0.08)), 1500, 8000) * env(int(SR * 0.08), 0.005, 0.03), 0); place(c, modal([1600, 3900, 6100], [0.04, 0.03, 0.015], [1, 0.6, 0.3], 0.2), 0.08)
+place(c, bp(rng.standard_normal(int(SR * 0.06)), 1500, 8000) * env(int(SR * 0.06), 0.003, 0.02), 0.2); place(c, modal([1900, 4300, 7000], [0.05, 0.03, 0.02], [1, 0.6, 0.3], 0.2), 0.26)
+save('slide_rack', c, 0.8)
+# indoor range shot: crack + boom + room reflections
+d = 1.2; x = t(d)
+shot = np.zeros(len(x))
+crack = rng.standard_normal(int(SR * 0.012)) * env(int(SR * 0.012), 0.00005, 0.003)
+boom = lp(rng.standard_normal(int(SR * 0.25)), 700) * env(int(SR * 0.25), 0.0005, 0.06) * 2.5
+place(shot, crack * 1.2, 0); place(shot, boom, 0)
+for k in range(14): place(shot, lp(rng.standard_normal(int(SR * 0.1)), 2500) * env(int(SR * 0.1), 0.001, 0.03) * 0.5 * 0.82 ** k, 0.02 + k * 0.035 + rng.uniform(0, 0.01))
+save('shot', shot, 0.9)
+# paper hit (the target flicks)
+p = np.zeros(int(SR * 0.15)); place(p, paper(0.05, 1500, 9000, 1.2), 0); save('paper_hit', p, 0.5)
+# trimming scissors: a snip, a leaf dropping
+s = np.zeros(int(SR * 0.18)); place(s, modal([4200, 7800], [0.015, 0.01], [0.6, 0.4], 0.08), 0); place(s, bp(rng.standard_normal(int(SR * 0.02)), 3000, 11000) * env(int(SR * 0.02), 0.0003, 0.005), 0.005)
+save('snip', s, 0.6)
+l = np.zeros(int(SR * 0.3)); place(l, paper(0.2, 700, 5000, 0.8), 0); save('leaf_fall', l, 0.45)
+b = np.zeros(int(SR * 0.4)); place(b, paper(0.12, 1200, 9000, 1), 0); place(b, paper(0.1, 1500, 9000, 0.8), 0.15); place(b, bp(rng.standard_normal(int(SR * 0.02)), 800, 4000) * env(int(SR * 0.02), 0.0005, 0.004), 0.3)
+save('bag_seal', b, 0.6)
+print('arms sfx ok')

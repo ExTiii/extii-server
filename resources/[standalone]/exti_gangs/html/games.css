@@ -74,7 +74,7 @@
 .g2-sort .m-note { filter: drop-shadow(4px 8px 6px rgba(0,0,0,.55)); }
 .g2-sort .m-note.fly { transition: transform .32s cubic-bezier(.3,.7,.3,1); }
 .g2-sort .m-note.in { transition: transform .35s cubic-bezier(.2,.8,.3,1), opacity .2s; }
-.g2-sort .m-tape { position: absolute; width: 150px; height: 34px; margin-left: -75px; display: grid; place-items: center; transform: rotate(-1.5deg);
+.g2-sort .m-tape { position: absolute; z-index: 3; width: 150px; height: 34px; margin-left: -75px; display: grid; place-items: center; transform: rotate(-1.5deg);
     background: #e4dcc2; color: #1d1b18; font: 700 19px/1  'Kit Plex', sans-serif; direction: ltr; box-shadow: 0 2px 3px rgba(0,0,0,.45); }
 .g2-sort .m-tape::before, .g2-sort .m-tape::after { content: ''; position: absolute; top: 0; bottom: 0; width: 6px; background: inherit; }
 .g2-sort .m-tape::before { left: -4px; clip-path: polygon(100% 0, 0 12%, 60% 30%, 0 52%, 70% 70%, 0 88%, 100% 100%); }
@@ -82,13 +82,13 @@
 .g2-sort .m-tape kbd { margin-inline-start: 8px; min-width: 22px; height: 22px; display: inline-grid; place-items: center; border-radius: 3px; background: #1d1b18; color: #f2f2f2; font: 700 12px/1 'Kit Plex', sans-serif; }
 .g2-sort .m-tray { position: absolute; width: 246px; height: 210px; margin: -105px 0 0 -123px; cursor: pointer; }
 .g2-sort .m-tray.bad { box-shadow: inset 0 0 0 3px rgba(220,50,50,.85); }
-.g2-sort .m-tc { position: absolute; width: 60px; margin-left: -30px; text-align: center; font: 700 15px 'Kit Plex', sans-serif; color: #fff; text-shadow: 0 1px 3px #000; direction: ltr; }
+.g2-sort .m-tc { position: absolute; z-index: 3; width: 60px; margin-left: -30px; text-align: center; font: 700 15px 'Kit Plex', sans-serif; color: #fff; text-shadow: 0 1px 3px #000; direction: ltr; }
 
 /* ---------------------------------------------------------------- money wash: drum */
 .g2-drum .m-load { position: absolute; border-radius: 50%; overflow: hidden; }
 .g2-drum .m-load img { position: absolute; left: 50%; top: 50%; transform-origin: 50% 50%; }
 .g2-drum .m-dial { right: 60px; top: 230px; }
-.g2-drum .m-lcd { position: absolute; display: flex; align-items: center; justify-content: center; font: 700 26px/1 'Kit Plex', monospace; color: #7dffb0; text-shadow: 0 0 8px rgba(80,255,150,.6); direction: ltr; letter-spacing: 2px; }
+.g2-drum .m-lcd { position: absolute; display: flex; align-items: center; justify-content: center; font: 700 22px/1 'Kit Plex', monospace; color: #7dffb0; text-shadow: 0 0 8px rgba(80,255,150,.6); direction: ltr; letter-spacing: 2px; }
 
 /* ---------------------------------------------------------------- money wash: band */
 .g2-band .m-lcd { position: absolute; display: flex; align-items: center; justify-content: flex-end; padding-right: 14px; direction: ltr; }
@@ -98,3 +98,41 @@
 .g2-band .m-note, .g2-band .m-stack { filter: drop-shadow(3px 6px 5px rgba(0,0,0,.55)); }
 .g2-band .m-stack.go { transition: transform .5s cubic-bezier(.3,.7,.3,1); }
 .g2-band .m-hit { position: absolute; left: 120px; top: 140px; width: 600px; height: 420px; cursor: pointer; }
+
+/* ---------------------------------------------------------------- ammo */
+.g2-melt .m-lead { position: absolute; border-radius: 50%; }
+.g2-melt .m-flame { position: absolute; left: 509px; top: 362px; width: 32px; height: 46px; transform-origin: 50% 100%; pointer-events: none; mix-blend-mode: screen;
+    clip-path: polygon(50% 0, 78% 45%, 70% 100%, 30% 100%, 22% 45%);
+    background: radial-gradient(ellipse 40% 70% at 50% 85%, rgba(220,240,255,.95), rgba(90,150,255,.85) 45%, rgba(40,80,255,.4) 75%, transparent); }
+.g2-melt .m-dial { right: 60px; top: 200px; }
+.g2-press .m-die { transition: transform .09s ease-in; }
+.g2-press .m-die.down { transform: translateY(26px); }
+.g2-press .m-case { filter: drop-shadow(3px 4px 3px rgba(0,0,0,.5)); }
+.g2-boxfill .m-glow { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; pointer-events: none;
+    box-shadow: 0 0 0 3px rgba(255,214,120,.95), 0 0 18px 6px rgba(255,190,80,.55); animation: pulse .8s ease-in-out infinite; }
+.g2-boxfill .m-round { filter: drop-shadow(1px 2px 1px rgba(0,0,0,.6)); }
+
+/* ---------------------------------------------------------------- weapons */
+.g2-file .m-file { filter: drop-shadow(5px 9px 6px rgba(0,0,0,.6)); transition: transform .09s ease-out; }
+.g2-file .m-shine { position: absolute; height: 3px; opacity: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(235,238,245,.95) 15%, rgba(255,255,255,1) 50%, rgba(235,238,245,.95) 85%, transparent); box-shadow: 0 0 6px rgba(255,255,255,.6); }
+.mg-key kbd.on { background: var(--gc, #e8b547); }
+.g2-assemble .m-part { filter: drop-shadow(4px 8px 5px rgba(0,0,0,.6)); transition: transform .15s ease-out, filter .15s; }
+.g2-assemble .m-part.show { filter: drop-shadow(0 0 2px rgba(255,255,255,.95)) drop-shadow(0 0 10px rgba(255,214,120,.8)) drop-shadow(6px 16px 10px rgba(0,0,0,.6)); }
+.g2-assemble .m-ptag { position: absolute; width: 200px; margin-left: -100px; text-align: center; font: 600 15px 'Kit Plex', sans-serif; color: #c9c5bd; text-shadow: 0 1px 2px #000; pointer-events: none; }
+.g2-assemble .m-seq { position: absolute; left: 0; right: 0; top: 20px; text-align: center; font: 700 18px 'Kit Plex', sans-serif; color: #fff; text-shadow: 0 1px 3px #000; }
+.g2-range { cursor: none; }
+.g2-range .m-target { position: absolute; left: 0; top: 0; pointer-events: none; filter: drop-shadow(0 6px 10px rgba(0,0,0,.7)) brightness(.92); }
+.g2-range .m-target img { width: 100%; height: 100%; display: block; }
+.g2-range .m-target .rod { position: absolute; left: 50%; top: -600px; width: 3px; height: 600px; margin-left: -1px; background: linear-gradient(180deg, #111, #333); }
+.g2-range .m-target .hole { position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #0b0a08; box-shadow: 0 0 0 1.5px rgba(80,60,40,.6); }
+.g2-range .m-dot { position: absolute; left: 0; top: 0; pointer-events: none; }
+.g2-range .m-dot::before { content: ''; position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #ff2a1f; box-shadow: 0 0 6px 2px rgba(255,40,30,.8), 0 0 16px 4px rgba(255,40,30,.35); }
+.g2-range .m-dot::after { content: ''; position: absolute; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(20,20,20,.55), 0 0 0 1px rgba(255,255,255,.08); }
+
+/* ---------------------------------------------------------------- weed */
+.g2-trim .m-leaf { filter: drop-shadow(3px 6px 4px rgba(0,0,0,.45)); }
+.g2-trim .m-leaf.cut { transition: transform .6s cubic-bezier(.5,0,.8,.6), opacity .6s; opacity: 0; }
+.g2-trim .m-nug, .g2-weigh .m-nug { filter: drop-shadow(2px 4px 3px rgba(0,0,0,.5)); }
+.g2-trim .hit { cursor: crosshair; }
+.g2-weigh .m-slcd { position: absolute; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font: 700 34px/1 'Kit Plex', monospace; color: #1d2a1d; letter-spacing: 2px; direction: ltr;
+    background: linear-gradient(180deg, #9db59a, #8aa587); box-shadow: inset 0 2px 6px rgba(0,0,0,.45); border-radius: 2px; }

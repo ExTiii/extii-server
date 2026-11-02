@@ -191,8 +191,8 @@
             <circle cx="${CX}" cy="${CY}" r="${R + 4}" fill="url(#fc${cls})"/>
             <path class="zone" fill="none" stroke="#2f7d45" stroke-width="13" opacity=".9"/>
             ${ticks}
-            <text x="${CX}" y="${CY + 44}" text-anchor="middle" font-size="11" fill="#55514a" font-family="Kit Plex" letter-spacing="1">${unit}</text>
-            <text x="${CX}" y="${CY + 60}" text-anchor="middle" font-size="9" fill="#77716a" font-family="Kit Plex" letter-spacing="2">${brand}</text>
+            <text x="${CX}" y="${CY + 44}" text-anchor="middle" font-size="11" fill="#55514a" font-family="Kit Plex" letter-spacing="1" style="direction:ltr;unicode-bidi:bidi-override">${unit}</text>
+            <text x="${CX}" y="${CY + 60}" text-anchor="middle" font-size="9" fill="#77716a" font-family="Kit Plex" letter-spacing="2" style="direction:ltr;unicode-bidi:bidi-override">${brand}</text>
             <g class="ndl"><path d="M ${CX - 4} ${CY + 16} L ${CX - 1.6} ${CY - R + 14} L ${CX + 1.6} ${CY - R + 14} L ${CX + 4} ${CY + 16} Z" fill="#c4231c"/></g>
             <circle cx="${CX}" cy="${CY}" r="9" fill="#2a2826"/><circle cx="${CX}" cy="${CY}" r="3.5" fill="#6a6560"/>
         </svg><img class="m-bez" src="mg/bezel.webp" alt=""><div class="m-glass"></div>`;
@@ -349,8 +349,8 @@
         const counts = [0, 0, 0, 0];
         const trays = TR.map(([x, y], i) => {
             const t = c.el('div', 'm-tray'); t.style.left = `${x}px`; t.style.top = `${y}px`;
-            const tape = c.el('div', 'm-tape', `$${DEN[i]}<kbd>${i + 1}</kbd>`); tape.style.left = `${x}px`; tape.style.top = `${y - 150}px`;
-            const tc = c.el('div', 'm-tc'); tc.style.left = `${x}px`; tc.style.top = `${y + 80}px`;
+            const tape = c.el('div', 'm-tape', `$${DEN[i]}<kbd>${i + 1}</kbd>`); tape.style.left = `${x}px`; tape.style.top = `${y - 132}px`;
+            const tc = c.el('div', 'm-tc'); tc.style.left = `${x}px`; tc.style.top = `${y + 70}px`;
             return { x, y, t, tc, pile: [] };
         });
         let cur = -1, el = null, done = 0, locked = false;
@@ -400,7 +400,7 @@
         const li = load.firstChild;
         c.img('drum_door.webp');
         const dial = gauge(c, 'rpm', { max: 1400, step: 200, unit: 'RPM', brand: 'AQUAMAX' });
-        const lcd = c.el('div', 'm-lcd'); Object.assign(lcd.style, { left: '678px', top: '20px', width: '120px', height: '52px' });
+        const lcd = c.el('div', 'm-lcd'); Object.assign(lcd.style, { left: '621px', top: '48px', width: '93px', height: '35px' });
         const hum = c.loop('drum_loop', 0.9); hum.on();
         let v = 0.15, held = false, prog = 0, drift = 0, rot = 0, lo = 0.45, hi = 0.65;
         c.raf((dt) => {
@@ -469,9 +469,319 @@
         });
     }
 
+    // ===================================================================== AMMO
+    // helper: an image whose anchor is set once it has loaded
+    function sprite(c, src, cls, place) {
+        const i = c.img(src, cls);
+        const go = () => place(i, i.naturalWidth, i.naturalHeight);
+        if (i.complete && i.naturalWidth) go(); else i.onload = go;
+        return i;
+    }
+
+    // ------------------------------------------------------------- melt: hold to heat, keep the lead in the band
+    function melt(c, extra, meta) {
+        c.bg('melt_bg.webp');
+        const [lx, ly, lw, lh] = (meta && meta.lead) || [371, 118, 293, 226];
+        const cv = c.el('canvas', 'm-lead'); cv.width = lw; cv.height = lh; Object.assign(cv.style, { left: `${lx}px`, top: `${ly}px` });
+        const flame = c.el('div', 'm-flame');
+        const g = cv.getContext('2d');
+        const dial = gauge(c, 'temp', { max: 500, step: 50, unit: '°C', brand: 'LEAD POT' });
+        const roar = c.loop('melt_loop', 0.9); roar.on();
+        let heat = 0.1, held = false, prog = 0, t0 = 0;
+        const dross = Array.from({ length: 26 }, () => [Math.random(), Math.random(), 4 + Math.random() * 14]);
+        c.raf((dt) => {
+            t0 += dt;
+            heat = Math.max(0, Math.min(1, heat + (held ? 0.42 : -0.3) * dt));
+            const mid = 0.6 + Math.sin(t0 * 0.7) * 0.12, lo = mid - 0.09, hi = mid + 0.09;
+            const ok = heat >= lo && heat <= hi;
+            prog = Math.max(0, Math.min(1, prog + (ok ? dt / 6 : (heat > hi ? -dt / 8 : 0))));
+            dial.needle(heat); dial.zone(lo, hi);
+            flame.style.opacity = String(0.35 + heat * 0.65); flame.style.transform = `scale(${0.7 + heat * 0.5 + Math.random() * 0.05}, ${0.55 + heat * 0.6 + Math.random() * 0.08})`;
+            // the lead: dull and crusted when cold, a liquid mirror when right, smoking orange when too hot
+            g.clearRect(0, 0, lw, lh);
+            g.save(); g.beginPath(); g.ellipse(lw / 2, lh / 2, lw / 2 - 2, lh / 2 - 2, 0, 0, 7); g.clip();
+            const m = Math.max(0, Math.min(1, (heat - 0.25) / 0.3));        // 0 solid .. 1 fully molten
+            // solid: a matte grey block; molten: a dark liquid mirror with the lamp's streak sliding on it
+            const solid = [104, 104, 108], liquid = [40, 42, 47];
+            const col = solid.map((v, i) => Math.round(v + (liquid[i] - v) * m));
+            let gr = g.createLinearGradient(0, 0, lw, lh);
+            gr.addColorStop(0, `rgb(${col.map((v) => Math.round(v * 1.15)).join(',')})`); gr.addColorStop(1, `rgb(${col.map((v) => Math.round(v * 0.7)).join(',')})`);
+            g.fillStyle = gr; g.fillRect(0, 0, lw, lh);
+            if (m > 0.05) {
+                const sx = lw * (0.38 + Math.sin(t0 * 0.6) * 0.06), sy = lh * (0.36 + Math.cos(t0 * 0.5) * 0.04);
+                const hl = g.createRadialGradient(sx, sy, 0, sx, sy, lw * 0.32);
+                hl.addColorStop(0, `rgba(235,238,245,${0.75 * m})`); hl.addColorStop(0.35, `rgba(200,205,215,${0.35 * m})`); hl.addColorStop(1, 'rgba(200,205,215,0)');
+                g.save(); g.translate(sx, sy); g.scale(1.9, 0.55); g.translate(-sx, -sy); g.fillStyle = hl; g.fillRect(0, 0, lw, lh); g.restore();
+                // ripples from the heat
+                g.strokeStyle = `rgba(255,255,255,${0.02 + 0.025 * m})`; g.lineWidth = 1;
+                for (let k = 0; k < 2; k++) { const rr = ((t0 * 18 + k * 30) % 90) / 90; g.beginPath(); g.ellipse(lw * 0.55, lh * 0.55, lw * 0.45 * rr, lh * 0.45 * rr, 0, 0, 7); g.stroke(); }
+            }
+            // dross: crust when solid, a few grey skins drifting when molten
+            dross.forEach(([u, v, r], k) => {
+                const x = (u + Math.sin(t0 * 0.2 + k) * 0.03 * m) * lw, y = (v + Math.cos(t0 * 0.17 + k) * 0.03 * m) * lh;
+                g.fillStyle = `rgba(${m > 0.5 ? '120,116,108' : '72,70,66'},${0.8 - m * 0.5})`; g.beginPath(); g.ellipse(x, y, r * (1.7 - m), r * 0.55 * (1.7 - m), k, 0, 7); g.fill();
+            });
+            // too hot: the gold-blue oxide film real lead gets, and it starts to smoke
+            if (heat > hi) {
+                const k = Math.min(1, (heat - hi) * 6);
+                const ox = g.createLinearGradient(0, lh, lw, 0);
+                ox.addColorStop(0, `rgba(200,150,40,${0.45 * k})`); ox.addColorStop(0.5, `rgba(150,60,140,${0.35 * k})`); ox.addColorStop(1, `rgba(40,90,200,${0.45 * k})`);
+                g.fillStyle = ox; g.fillRect(0, 0, lw, lh);
+            }
+            g.restore();
+            c.count(`${Math.round(prog * 100)}%`); c.prog(prog);
+            if (prog >= 1) { roar.off(); sfx('brass1', 0.6); c.flash('ok'); finish(true); return false; }
+        });
+        c.on(c.stage, 'mousedown', (e) => { if (e.button === 0) held = true; });
+        c.on(window, 'mouseup', () => { held = false; });
+    }
+
+    // ------------------------------------------------------------- press: seat each case under the die
+    function press(c, extra, meta) {
+        c.bg('press_bg.webp');
+        const rail = (meta && meta.rail) || 555, DX = (meta && meta.x) || 600;
+        const die = c.img('press_die.webp', 'm-die');
+        let x = -60, speed = 210, done = 0, jam = false, pressed = false, cw = 45;
+        const cas = sprite(c, 'case_side.webp', 'm-case', (i, w, h) => { cw = w; i.dataset.h = h; });
+        const N = 8; c.count(`0/${N}`);
+        const place = () => { cas.style.transform = `translate(${x - cw / 2}px, ${rail - Number(cas.dataset.h || 80)}px)`; };
+        c.raf((dt) => { if (!jam && !pressed) { x += speed * dt; if (x > SW + 60) x = -60; } place(); });
+        c.on(window, 'keydown', (e) => {
+            if (e.code !== 'Space' || jam || pressed) return; e.preventDefault();
+            die.classList.add('down'); c.later(() => die.classList.remove('down'), 180);
+            if (Math.abs(x - DX) <= 22) {
+                pressed = true; sfx('press_thump', 1); done += 1; c.count(`${done}/${N}`); c.prog(done / N); speed += 25;
+                c.later(() => { cas.src = 'mg/round_side.webp'; cas.onload = () => { cas.dataset.h = cas.naturalHeight; place(); }; }, 90);
+                c.later(() => {
+                    sfx(`brass${done % 3}`, 0.7);
+                    if (done >= N) { c.flash('ok'); finish(true); return; }
+                    cas.src = 'mg/case_side.webp'; cas.onload = () => { cas.dataset.h = cas.naturalHeight; }; x = -60; pressed = false;
+                }, 420);
+            } else {
+                jam = true; sfx('press_jam', 0.9); c.jolt(); c.flash('bad');
+                c.later(() => { jam = false; }, 900);
+            }
+        });
+    }
+
+    // ------------------------------------------------------------- boxfill: each round into the lit hole
+    function boxfill(c, extra, meta) {
+        c.bg('box_bg.webp');
+        const CELLS = (meta && meta.cells) || [];
+        const glow = c.el('div', 'm-glow');
+        const holes = CELLS.map(([x, y], i) => {
+            const h = c.el('div', 'hit'); Object.assign(h.style, { left: `${x - 40}px`, top: `${y - 40}px`, width: '80px', height: '80px' });
+            return { x, y, h, full: false, i };
+        });
+        let lit = null, filled = 0;
+        const N = holes.length; c.count(`0/${N}`);
+        const next = () => {
+            const free = holes.filter((h) => !h.full);
+            if (!free.length) return;
+            lit = free[Math.floor(Math.random() * free.length)];
+            glow.style.left = `${lit.x}px`; glow.style.top = `${lit.y}px`; glow.style.display = '';
+            const me = lit;
+            c.later(() => { if (lit === me) { lit = null; glow.style.display = 'none'; c.flash('bad'); c.later(next, 500); } }, 1100);
+        };
+        holes.forEach((h) => c.on(h.h, 'mousedown', (e) => {
+            if (e.button !== 0 || h !== lit || h.full) return;
+            h.full = true; lit = null; glow.style.display = 'none';
+            sprite(c, 'round_top.webp', 'm-round', (i, w, hh) => put(i, h.x, h.y, w / 2, hh / 2, Math.random() * 6.28, 1));
+            sfx('round_in', 0.8, 0.9 + Math.random() * 0.2);
+            filled += 1; c.count(`${filled}/${N}`); c.prog(filled / N);
+            if (filled >= N) { c.flash('ok'); finish(true); return; }
+            c.later(next, 150);
+        }));
+        next();
+    }
+
+    // ===================================================================== WEAPONS
+    // ------------------------------------------------------------- file: A / D in a steady rhythm
+    function file(c, extra, meta) {
+        c.bg('file_bg.webp');
+        const [ex0, ex1, ey] = (meta && meta.edge) || [267, 933, 182];
+        const shine = c.el('div', 'm-shine'); Object.assign(shine.style, { left: `${ex0 + 250}px`, top: `${ey + 30}px`, width: `${ex1 - ex0 - 330}px` });
+        const cv = c.el('canvas'); cv.width = SW; cv.height = SH; const g = cv.getContext('2d');
+        let fw = 1029, fh = 102, side = 0;
+        const fl = sprite(c, 'file.webp', 'm-file', (i, w, h) => { fw = w; fh = h; pos(); });
+        const cx = (ex0 + ex1) / 2 + 60;
+        const pos = () => put(fl, cx + (side ? 70 : -70), ey + 22, fw / 2, fh / 2, -0.03, 1);
+        let want = 'KeyA', prog = 0, lastHit = 0;
+        const chips = [];
+        const keys = document.querySelectorAll('.mg-key kbd');
+        const light = () => keys.forEach((k) => k.classList.toggle('on', k.textContent === (want === 'KeyA' ? 'A' : 'D')));
+        light(); c.count('0%');
+        c.on(window, 'keydown', (e) => {
+            if (e.code !== 'KeyA' && e.code !== 'KeyD') return;
+            const now = performance.now(), gap = now - lastHit;
+            if (e.code !== want) { prog = Math.max(0, prog - 0.04); c.flash('bad'); return; }
+            lastHit = now;
+            if (gap < 120) { prog = Math.max(0, prog - 0.03); c.flash('bad'); }
+            else prog = Math.min(1, prog + 0.035);
+            side = 1 - side; pos(); sfx('file_stroke', 0.8, 0.9 + Math.random() * 0.2);
+            for (let k = 0; k < 10; k++) chips.push({ x: cx - 120 + Math.random() * 240, y: ey + 30, vx: (Math.random() - 0.5) * 80, vy: 60 + Math.random() * 120, a: 1 });
+            want = want === 'KeyA' ? 'KeyD' : 'KeyA'; light();
+            shine.style.opacity = String(prog); c.count(`${Math.round(prog * 100)}%`); c.prog(prog);
+            if (prog >= 1) { sfx('part_click', 0.8); c.flash('ok'); finish(true); }
+        });
+        c.raf((dt) => {
+            g.clearRect(0, 0, SW, SH);
+            for (let i = chips.length - 1; i >= 0; i--) {
+                const p = chips[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; p.a -= dt * 1.2;
+                if (p.a <= 0) { chips.splice(i, 1); continue; }
+                g.fillStyle = `rgba(200,200,205,${p.a})`; g.fillRect(p.x, p.y, 2, 1.4);
+            }
+        });
+    }
+
+    // ------------------------------------------------------------- assemble: remember the order
+    function assemble(c) {
+        c.bg('arms_bg.webp');
+        const PARTS = [['part_spring', 'نابض الإرجاع'], ['part_hammer', 'المطرقة'], ['part_slide', 'المنزلق'], ['part_trigger', 'الزناد'], ['part_frame', 'الهيكل'], ['part_mag', 'المخزن']];
+        const SPOT = [[260, 210], [600, 200], [940, 210], [260, 470], [600, 480], [940, 470]];
+        const seqEl = c.el('div', 'm-seq');
+        const items = PARTS.map(([src, label], i) => {
+            const [x, y] = SPOT[i];
+            const img = sprite(c, `${src}.webp`, 'm-part', (el, w, h) => { const k = Math.min(1, 260 / w, 170 / h); el.dataset.k = k; put(el, x, y, w / 2, h / 2, 0, k); el.dataset.ax = w / 2; el.dataset.ay = h / 2; });
+            const tag = c.el('div', 'm-ptag', label); tag.style.left = `${x}px`; tag.style.top = `${y + 92}px`;
+            const hit = c.el('div', 'hit m-phit'); Object.assign(hit.style, { left: `${x - 140}px`, top: `${y - 100}px`, width: '280px', height: '200px' });
+            return { img, hit, x, y };
+        });
+        const lift = (it, on) => { it.img.classList.toggle('show', on); put(it.img, it.x, it.y - (on ? 10 : 0), Number(it.img.dataset.ax), Number(it.img.dataset.ay), 0, Number(it.img.dataset.k || 1) * (on ? 1.07 : 1)); };
+        let round = 0, order = [], k = 0, showing = true;
+        const ROUNDS = [4, 5];
+        const show = () => {
+            showing = true; k = 0;
+            order = Array.from({ length: ROUNDS[round] }, () => Math.floor(Math.random() * PARTS.length));
+            seqEl.textContent = 'احفظ الترتيب...';
+            order.forEach((p, i) => c.later(() => { lift(items[p], true); sfx('part_click', 0.5, 1.2); c.later(() => lift(items[p], false), 420); }, 600 + i * 650));
+            c.later(() => { showing = false; seqEl.textContent = 'الآن أنت: نفس الترتيب'; }, 600 + order.length * 650);
+        };
+        items.forEach((it, i) => c.on(it.hit, 'mousedown', (e) => {
+            if (e.button !== 0 || showing) return;
+            if (i === order[k]) {
+                lift(it, true); c.later(() => lift(it, false), 200); sfx('part_click', 0.8); k += 1;
+                if (k >= order.length) {
+                    showing = true; round += 1; c.count(`${round}/${ROUNDS.length}`); c.prog(round / ROUNDS.length); sfx('slide_rack', 0.9);
+                    if (round >= ROUNDS.length) { c.flash('ok'); finish(true); return; }
+                    c.later(show, 900);
+                }
+            } else {
+                showing = true; c.flash('bad'); c.jolt(); seqEl.textContent = 'خطأ! من جديد...'; c.later(show, 1000);
+            }
+        }));
+        c.count(`0/${ROUNDS.length}`); show();
+    }
+
+    // ------------------------------------------------------------- range: hit the moving target 5 times
+    function range(c) {
+        c.bg('range_bg.webp');
+        const tg = c.el('div', 'm-target', '<img src="mg/target.webp" alt=""><i class="rod"></i>');
+        const dot = c.el('div', 'm-dot');
+        let hits = 0, t0 = 0, cool = false, cur = { x: 600, y: 300, h: 150 };
+        c.count('0/5');
+        c.raf((dt) => {
+            t0 += dt * (1 + hits * 0.25);
+            const depth = 0.5 + 0.5 * Math.sin(t0 * 0.9);                  // the carrier runs the target in and out
+            const h = 120 + depth * 120, x = 600 + Math.sin(t0 * 1.3) * 380, y = 250 - depth * 40;
+            cur = { x, y, h };
+            tg.style.transform = `translate(${x - h * 0.38}px, ${y}px)`; tg.style.height = `${h}px`; tg.style.width = `${h * 0.765}px`;
+        });
+        c.on(c.stage, 'mousemove', (e) => { const [x, y] = c.at(e); dot.style.transform = `translate(${x}px, ${y}px)`; });
+        c.on(c.stage, 'mousedown', (e) => {
+            if (e.button !== 0 || cool) return; cool = true; c.later(() => { cool = false; }, 350);
+            sfx('shot', 1, 0.95 + Math.random() * 0.1); c.jolt();
+            const [x, y] = c.at(e);
+            const bx = cur.x, by = cur.y + cur.h * (300 / 680), r = cur.h * (230 / 680);
+            if (Math.hypot(x - bx, y - by) < r) {
+                hits += 1; c.count(`${hits}/5`); c.prog(hits / 5); c.later(() => sfx('paper_hit', 0.8), 60);
+                const hole = document.createElement('b'); hole.className = 'hole';
+                hole.style.left = `${((x - (cur.x - cur.h * 0.38)) / (cur.h * 0.765)) * 100}%`; hole.style.top = `${((y - cur.y) / cur.h) * 100}%`;
+                tg.appendChild(hole);
+                if (hits >= 5) { c.flash('ok'); finish(true); }
+            } else c.flash('bad');
+        });
+    }
+
+    // ===================================================================== WEED
+    // ------------------------------------------------------------- trim: cut the fan leaves, not the buds
+    function trim(c) {
+        c.bg('trim_bg.webp');
+        const N = 12, NUGS = 5, LA = [10.8, 104.2];
+        let left = N;
+        for (let i = 0; i < N; i++) {
+            const a = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
+            const r = 70 + Math.random() * 18;
+            const x = 600 + Math.cos(a) * r, y = 345 + Math.sin(a) * r * 0.75;
+            const leaf = sprite(c, 'fanleaf.webp', 'm-leaf', (el) => put(el, x, y, LA[0], LA[1], a, 0.9 + Math.random() * 0.2));
+            const hx = 600 + Math.cos(a) * (r + 120), hy = 345 + Math.sin(a) * (r + 120) * 0.75;
+            const hit = c.el('div', 'hit'); Object.assign(hit.style, { left: `${hx - 55}px`, top: `${hy - 55}px`, width: '110px', height: '110px' });
+            c.on(hit, 'mousedown', (e) => {
+                if (e.button !== 0) return;
+                hit.remove(); sfx('snip', 0.9, 0.9 + Math.random() * 0.2); c.later(() => sfx('leaf_fall', 0.6), 120);
+                leaf.classList.add('cut');
+                leaf.style.transform = `translate(${x - LA[0] + Math.cos(a) * 60}px, ${y - LA[1] + 260}px) rotate(${a + 1.2}rad) scale(0.9)`;
+                left -= 1; c.count(`${N - left}/${N}`); c.prog((N - left) / N);
+                if (left <= 0) { c.flash('ok'); finish(true); }
+            });
+        }
+        for (let i = 0; i < NUGS; i++) {
+            const a = (i / NUGS) * Math.PI * 2 + 0.3, x = 600 + Math.cos(a) * 46, y = 345 + Math.sin(a) * 34;
+            sprite(c, 'nug.webp', 'm-nug', (el, w, h) => put(el, x, y, w / 2, h / 2, a, 0.7));
+            const hit = c.el('div', 'hit'); Object.assign(hit.style, { left: `${x - 30}px`, top: `${y - 30}px`, width: '60px', height: '60px' });
+            c.on(hit, 'mousedown', (e) => { if (e.button === 0) { sfx('snip', 0.6, 0.7); c.jolt(); c.flash('bad'); } });
+        }
+        c.count(`0/${N}`);
+    }
+
+    // ------------------------------------------------------------- weigh: 2.00 g on the pocket scale
+    function weigh(c, extra, meta) {
+        c.bg('scale_bg.webp');
+        const bags = Math.max(1, Math.min(4, Math.ceil(((extra && extra.bags) || 3) / 3)));
+        const [px, py] = (meta && meta.plate) || [600, 285];
+        const L = (meta && meta.lcd) || [525, 471, 150, 48];
+        const lcd = c.el('div', 'm-slcd'); Object.assign(lcd.style, { left: `${L[0]}px`, top: `${L[1]}px`, width: `${L[2]}px`, height: `${L[3]}px` });
+        const pile = [];
+        let g = 0, done = 0;
+        c.count(`0/${bags}`);
+        const show = () => {
+            const shownG = g <= 0 ? 0 : Math.max(0, g + (Math.random() - 0.5) * 0.02);
+            lcd.textContent = shownG.toFixed(2);
+            const want = Math.round(Math.min(2.6, g) / 0.35);
+            while (pile.length < want) { const k = pile.length; pile.push(sprite(c, 'nug.webp', 'm-nug', (el, w, h) => put(el, px + Math.cos(k * 2.4) * 24 * Math.sqrt(k), py + Math.sin(k * 2.4) * 22 * Math.sqrt(k), w / 2, h / 2, k * 1.7, 0.62))); }
+            while (pile.length > want) pile.pop().remove();
+        };
+        const add = (d) => { g = Math.max(0, g + d * (0.85 + Math.random() * 0.3)); sfx('beep', 0.25, 1.6); show(); };
+        const seal = () => {
+            if (Math.abs(g - 2.0) <= 0.1) {
+                done += 1; c.count(`${done}/${bags}`); c.prog(done / bags); sfx('bag_seal', 0.9); g = 0; show();
+                if (done >= bags) { c.flash('ok'); finish(true); }
+            } else { sfx('beep_err', 0.8); c.flash('bad'); lcd.textContent = g < 2 ? 'Lo' : 'Hi'; }
+        };
+        c.on(window, 'keydown', (e) => {
+            if (e.code === 'KeyQ') add(-0.3); else if (e.code === 'KeyE') add(0.7); else if (e.code === 'KeyW') add(0.2); else if (e.code === 'Space') { e.preventDefault(); seal(); }
+        });
+        document.querySelectorAll('.mg-key').forEach((k) => {
+            const kb = k.querySelector('kbd'); if (!kb) return;
+            const map = { Q: () => add(-0.3), E: () => add(0.7), W: () => add(0.2), SPACE: seal };
+            if (map[kb.textContent]) { k.style.cursor = 'pointer'; c.on(k, 'mousedown', map[kb.textContent]); }
+        });
+        show();
+    }
+
     // ===================================================================== start
-    const GAMES = { bolts, lugnuts, pry, torch, sort, drum, band };
-    const META = { pry: { pivot: [499, 397] } };
+    const GAMES = { bolts, lugnuts, pry, torch, sort, drum, band, melt, press, boxfill, file, assemble, range, trim, weigh };
+    const META = {     // positions measured in the renders (mgstudio out/*.json)
+        pry: { pivot: [499, 397] },
+        sort: { trays: [[195, 570], [465, 570], [735, 570], [1005, 570]] },
+        drum: { door: [467, 392, 220] },
+        band: { lcd: [858, 180, 234, 102] },
+        melt: { lead: [371, 118, 293, 226] },
+        press: { rail: 555, x: 600 },
+        boxfill: { cells: [[384, 300], [492, 300], [600, 300], [708, 300], [816, 300], [384, 390], [492, 390], [600, 390], [708, 390], [816, 390], [384, 480], [492, 480], [600, 480], [708, 480], [816, 480], [384, 570], [492, 570], [600, 570], [708, 570], [816, 570]] },
+        file: { edge: [267, 933, 182] },
+        weigh: { plate: [600, 285], lcd: [525, 471, 150, 48] },
+    };
     const TEXT = {
         bolts: ['اضغط مع الاستمرار على كل برغي حتى يخرج', [['', 'اضغط مع الاستمرار', true]]],
         lugnuts: ['فكّ الصواميل بترتيب النجمة: الصامولة المحدّدة أولًا', [['', 'فكّ', true]]],
@@ -480,6 +790,14 @@
         sort: ['ضع كل ورقة في درجها: اضغط الدرج أو رقمه (1 = 10$ · 2 = 20$ · 3 = 50$ · 4 = 100$)', [['1-4', 'الدرج'], ['', 'الدرج', true]]],
         drum: ['أبقِ سرعة الغسالة في المنطقة الخضراء حتى تكتمل الدورة', [['SPACE', 'اضغط مع الاستمرار: أسرع']]],
         band: ['اضغط مع الاستمرار ليعدّ الجهاز، وأفلت عند 50 بالضبط (±2) لتربط الرزمة', [['', 'اضغط مع الاستمرار', true]]],
+        melt: ['اضغط مع الاستمرار لتسخّن، أفلت لتبرد: أبقِ الحرارة في المنطقة الخضراء حتى يذوب كل الرصاص', [['', 'سخّن', true]]],
+        press: ['اضغط المسافة عندما يكون الظرف تحت المكبس تمامًا (8 أظرف). الخطأ يعلّق الآلة', [['SPACE', 'اضغط']]],
+        boxfill: ['اضغط على الخانة المضيئة لتضع الطلقة قبل أن تنطفئ', [['', 'ضع الطلقة', true]]],
+        file: ['اضغط A ثم D بالتناوب بإيقاع ثابت لتبرد الهيكل. السرعة الزائدة تُتلفه', [['A', 'يسار'], ['D', 'يمين']]],
+        assemble: ['احفظ ترتيب القطع ثم اضغطها بنفس الترتيب', [['', 'اختر القطعة', true]]],
+        range: ['أصب الهدف المتحرك 5 مرات', [['', 'أطلق', true]]],
+        trim: ['قصّ كل الأوراق الكبيرة، ولا تقصّ البراعم', [['', 'قصّ', true]]],
+        weigh: ['زِد أو أنقص حتى يصير الكيس 2.00 غرام بالضبط (±0.1) ثم اختم', [['E', 'قبصة'], ['W', 'قليل'], ['Q', 'أنقص'], ['SPACE', 'اختم الكيس']]],
     };
     function start(game, title, extra, cb) {
         if (G || !GAMES[game]) return false;
