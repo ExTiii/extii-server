@@ -332,7 +332,7 @@ end
 ---------------------------------------------------------------------------
 -- admins: /jobspots [job] — move the places of a level job by standing where they should be
 ---------------------------------------------------------------------------
-local SAVE_ERR = { admin = 'للإدارة فقط', nospot = 'لا توجد دائرة قريبة منك (6 أمتار)', last = 'لا يمكن حذف آخر دائرة', failed = 'تعذّر الحفظ' }
+local SAVE_ERR = { many = 'وصلت 40 دائرة، احذف واحدة أولًا', admin = 'للإدارة فقط', nospot = 'لا توجد دائرة قريبة منك (6 أمتار)', last = 'لا يمكن حذف آخر دائرة', failed = 'تعذّر الحفظ' }
 local showAll = false
 
 local function save(name, what, stepId, action, okText)
