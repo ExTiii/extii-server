@@ -72,14 +72,8 @@ def file_bg(part='bg'):
 def file_sprite():
     reset('autoshop_01', 0.06, rot=0.4, transparent=True)
     # a flat bastard file: hatched steel blade, tang into a wooden handle
-    steel = mat('fs', (0.16, 0.16, 0.17), 0.5, 1.0)
-    nt = steel.node_tree; b = P(steel)
-    wv = nt.nodes.new('ShaderNodeTexWave'); wv.inputs['Scale'].default_value = 420; wv.wave_type = 'BANDS'; wv.bands_direction = 'DIAGONAL'
-    bu = nt.nodes.new('ShaderNodeBump'); bu.inputs['Strength'].default_value = 1.0
-    nt.links.new(wv.outputs['Fac'], bu.inputs['Height']); nt.links.new(bu.outputs['Normal'], b.inputs['Normal'])
-    wv2 = nt.nodes.new('ShaderNodeTexWave'); wv2.inputs['Scale'].default_value = 420; wv2.wave_type = 'BANDS'; wv2.bands_direction = 'DIAGONAL'; wv2.inputs['Distortion'].default_value = 0.5
-    cr = nt.nodes.new('ShaderNodeValToRGB'); cr.color_ramp.elements[0].color = (0.05, 0.05, 0.055, 1); cr.color_ramp.elements[1].color = (0.42, 0.42, 0.44, 1)
-    nt.links.new(wv2.outputs['Fac'], cr.inputs[0]); nt.links.new(cr.outputs[0], b.inputs['Base Color'])
+    steel = img_mat('fs', '/home/claude/mgstudio/tex/filecut.png', rough=0.45, spec=0.6)
+    P(steel).inputs['Metallic'].default_value = 0.85
     blade = box((0.2, 0.02, 0.005), (0, 0, 0.0025), steel, bevel=0.0008)
     for v in blade.data.vertices:
         if v.co.x > 0.05: v.co.y *= 1 - (v.co.x - 0.05) / 0.16

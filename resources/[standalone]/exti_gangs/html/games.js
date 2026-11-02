@@ -605,7 +605,7 @@
         let fw = 1029, fh = 102, side = 0;
         const fl = sprite(c, 'file.webp', 'm-file', (i, w, h) => { fw = w; fh = h; pos(); });
         const cx = (ex0 + ex1) / 2 + 60;
-        const pos = () => put(fl, cx + (side ? 70 : -70), ey + 22, fw / 2, fh / 2, -0.03, 1);
+        const pos = () => put(fl, cx + (side ? 60 : -60), ey + 20, fw / 2, fh / 2, -0.03, 0.72);
         let want = 'KeyA', prog = 0, lastHit = 0;
         const chips = [];
         const keys = document.querySelectorAll('.mg-key kbd');
