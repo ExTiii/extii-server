@@ -405,6 +405,31 @@ lib.callback.register('exti_driveschool:server:drive', function(source, passed, 
     return { passed = false, why = tooLong and 'time' or why, licence = k }
 end)
 
+-- admins: give a licence without the test (the same as passing it: the record, the card, logged)
+--   /givelicence [player id] [car / truck / boat / heli]
+lib.addCommand('givelicence', {
+    help = 'إعطاء رخصة بدون اختبار (للإدارة): car / truck / boat / heli',
+    params = {
+        { name = 'id', type = 'playerId', help = 'رقم اللاعب' },
+        { name = 'licence', type = 'string', help = 'car / truck / boat / heli', optional = true },
+    },
+    restricted = 'group.admin',
+}, function(source, args)
+    local k = args.licence or 'car'
+    if not L[k] then return notify(source, 'error', 'الرخص: car / truck / boat / heli') end
+    local p = getPlayer(args.id)
+    if not p then return notify(source, 'error', 'اللاعب غير موجود') end
+    setLicence(p, k, true)
+    local ds = markNew(p)
+    ds[k] = { passed = true, at = os.time() }
+    p.Functions.SetMetaData('driveschool', ds)
+    pcall(function() exports.qbx_idcard:CreateMetaLicense(args.id, L[k].item) end)
+    notify(args.id, 'success', ('حصلت على %s'):format(L[k].label))
+    if source ~= args.id then notify(source, 'success', ('أُعطيت %s لـ %s'):format(L[k].label, nameOf(p))) end
+    lib.logger(source, 'driveschool', ('admin gave %s the %s licence'):format(p.PlayerData.citizenid, k))
+    lib.print.info(('[driveschool] admin %s gave %s (%s) the %s licence'):format(source, nameOf(p), p.PlayerData.citizenid, k))
+end)
+
 -- gave up / left
 RegisterNetEvent('exti_driveschool:server:cancel', function()
     local src = source
