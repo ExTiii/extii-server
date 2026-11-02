@@ -309,3 +309,8 @@ function Config.circleOf(store)
     local h = math.rad(c.w or 0.0)
     return vec3(c.x - math.sin(h) * d, c.y + math.cos(h) * d, c.z)
 end
+
+-- the Ammu-Nation wall notice is saved per shop by the clerk's spot (so adding shops to the list never moves it)
+function Config.signKey(store)
+    return ('%.1f,%.1f'):format(store.clerk.x, store.clerk.y)
+end

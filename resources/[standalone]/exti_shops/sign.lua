@@ -49,12 +49,12 @@ end
 -- the shops that get the notice
 local stores = {}
 for i, s in ipairs(Config.stores) do
-    if s.type == 'ammunation' then stores[#stores + 1] = { index = i, clerk = s.clerk } end
+    if s.type == 'ammunation' then stores[#stores + 1] = { index = i, clerk = s.clerk, key = Config.signKey(s) } end
 end
 
 -- no admin spot yet: the wall behind the clerk (looked for once, from the clerk's chest backwards)
 local function autoSpot(st)
-    if st.auto ~= nil then return st.auto end
+    if st.auto then return st.auto end
     local c = st.clerk
     local h = math.rad(c.w)
     local fwd = vec3(-math.sin(h), math.cos(h), 0.0)
@@ -64,14 +64,17 @@ local function autoSpot(st)
     local _, hit, pos, normal = GetShapeTestResult(ray)
     if hit == 1 and #(pos - from) > 0.4 and math.abs(normal.z) < 0.4 then
         st.auto = { p = vec3(pos.x, pos.y, from.z + 0.25), n = vec3(normal.x, normal.y, 0.0) }
-    else
-        st.auto = { p = from - fwd * 1.2 + vec3(0.0, 0.0, 0.25), n = fwd }
+        return st.auto
     end
-    return st.auto
+    -- the shop's walls may not be loaded yet: keep trying for a while, then settle on behind-the-clerk
+    st.tries = (st.tries or 0) + 1
+    local fallback = { p = from - fwd * 1.2 + vec3(0.0, 0.0, 0.25), n = fwd }
+    if st.tries >= 300 then st.auto = fallback end
+    return fallback
 end
 
 local function spotOf(st)
-    local s = placed[tostring(st.index)]
+    local s = placed[st.key]
     if s then return { p = vec3(s.x, s.y, s.z), n = vec3(s.nx, s.ny, 0.0) } end
     return autoSpot(st)
 end

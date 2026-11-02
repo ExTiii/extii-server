@@ -279,7 +279,7 @@ do
         local function tell(t, kind) TriggerClientEvent('ox_lib:notify', src, { description = t, type = kind }) end
         if not best then return tell('أنت لست داخل محل Ammu-Nation', 'error') end
         if spot == false then
-            signs[tostring(best)] = nil
+            signs[Config.signKey(Config.stores[best])] = nil
             tell('رجعت اللافتة إلى مكانها التلقائي', 'success')
         else
             if type(spot) ~= 'table' then return end
@@ -287,7 +287,7 @@ do
             if not (x and y and z and nx and ny) or #(vec3(x, y, z) - here) > 10.0 then return tell('الجدار بعيد جدًا', 'error') end
             local len = math.sqrt(nx * nx + ny * ny)
             if len < 0.1 then return end
-            signs[tostring(best)] = { x = x, y = y, z = z, nx = nx / len, ny = ny / len }
+            signs[Config.signKey(Config.stores[best])] = { x = x, y = y, z = z, nx = nx / len, ny = ny / len }
             tell('وُضعت اللافتة هنا', 'success')
         end
         SetResourceKvp('ammu_signs', json.encode(signs))
