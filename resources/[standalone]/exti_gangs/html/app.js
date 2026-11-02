@@ -119,7 +119,7 @@
         if (D.stash) {
             const s = D.stash;
             const items = D.gang.type === 'wash'
-                ? [['wash_supplies', 'مواد الغسيل'], ['black_money', 'مال غير نظيف'], ['money', 'نقد'], ['c4', 'C4']]
+                ? [['wash_supplies', 'مواد الغسيل'], ['black_money', 'مال غير نظيف'], ['lockpick', 'مفاتيح فتح'], ['c4', 'C4']]
                 : [['chop_tools', 'أدوات التفكيك'], ['black_money', 'مال غير نظيف'], ['lockpick', 'مفاتيح فتح'], ['c4', 'C4']];
             h += `<div class="h2 sect">المخزن</div><div class="grid g4">${items.map(([k, l]) => `<div class="card"><div class="k">${l}</div><div class="v">${k === 'black_money' ? money(s[k]) : (s[k] || 0)}</div></div>`).join('')}</div>`;
         }
@@ -177,7 +177,7 @@
     function washTab() {
         const w = D.wash;
         let h = `<div class="h2">غسيل الأموال <small>نسبة العصابة ${w.cut}% · للغاسل ${w.washerShare}% منها · الباقي لبنك العصابة</small></div>`;
-        if (w.busy) h += `<div class="alert info">دفعة في الآلة الآن: ${money(w.busy.total)} · الخطوة ${w.busy.stage}/3</div>`;
+        if (w.busy) h += `<div class="alert info">دفعة في الآلة الآن: ${money(w.busy.total)} · الخطوة ${Math.min(3, w.busy.stage + 1)}/3</div>`;
         h += `<div class="grid g4">
             <div class="card"><div class="k">غُسل اليوم</div><div class="v">${money(w.washed)}</div><div class="s">من ${money(w.washCap)}</div><div class="bar2"><i style="width:${Math.min(100, w.washed / Math.max(1, w.washCap) * 100)}%"></i></div></div>
             <div class="card"><div class="k">في الصندوق</div><div class="v">${money(w.queueTotal)}</div><div class="s">${w.queueCount} طلب ينتظر</div></div>

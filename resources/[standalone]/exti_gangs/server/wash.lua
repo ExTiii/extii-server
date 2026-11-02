@@ -22,11 +22,14 @@ MySQL.ready(function()
         `left` INT NOT NULL,
         `cut` INT NOT NULL,
         `ready` INT NOT NULL DEFAULT 0,
+        `washing` INT NOT NULL DEFAULT 0,
         `closed` TINYINT NOT NULL DEFAULT 0,
         `created` INT NOT NULL,
         INDEX `gang_open` (`gang`, `closed`),
         INDEX `cid_open` (`citizenid`, `closed`)
     ) DEFAULT CHARSET=utf8mb4]])
+    -- a batch that was in the machine when the server stopped goes back in the box (nothing is lost)
+    MySQL.update.await('UPDATE `exti_gang_wash` SET `left` = `left` + `washing`, `washing` = 0, `closed` = 0 WHERE `washing` > 0')
 end)
 
 local function washGang(name)
@@ -84,8 +87,9 @@ lib.callback.register('exti_gangs:server:washDrop', function(source, name, amoun
         if (ox:GetItemCount(source, 'black_money') or 0) < amount then return false, 'nomoney' end
         if not ox:RemoveItem(source, 'black_money', amount) then return false, 'nomoney' end
         local cut = g.settings.washCut
-        MySQL.insert.await('INSERT INTO `exti_gang_wash` (`gang`, `citizenid`, `name`, `dirty`, `left`, `cut`, `created`) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        local id = MySQL.insert.await('INSERT INTO `exti_gang_wash` (`gang`, `citizenid`, `name`, `dirty`, `left`, `cut`, `created`) VALUES (?, ?, ?, ?, ?, ?, ?)',
             { g.name, cid, GANG.charName(p), amount, amount, cut, os.time() })
+        if not id then ox:AddItem(source, 'black_money', amount); return false, 'failed' end
         GANG.log(g, GANG.charName(p), 'wash_drop', ('$%d · النسبة %d%%'):format(amount, cut))
         GANG.toGang(g, ('طلب غسيل جديد في الصندوق: $%d'):format(amount), 'inform', 1)
         return true, { amount = amount, back = amount - math.floor(amount * cut / 100), cut = cut }
@@ -106,7 +110,7 @@ lib.callback.register('exti_gangs:server:washCollect', function(source, name)
     for _, o in ipairs(myOrders(g, cid)) do
         if o.ready > 0 then
             -- take it only if nobody else did (a second click / a second box)
-            local n = MySQL.update.await('UPDATE `exti_gang_wash` SET `ready` = 0, `closed` = IF(`left` = 0, 1, 0) WHERE `id` = ? AND `ready` = ?', { o.id, o.ready })
+            local n = MySQL.update.await('UPDATE `exti_gang_wash` SET `ready` = 0, `closed` = IF(`left` = 0 AND `washing` = 0, 1, 0) WHERE `id` = ? AND `ready` = ?', { o.id, o.ready })
             if n and n > 0 then total = total + o.ready end
         end
     end
@@ -130,8 +134,11 @@ lib.callback.register('exti_gangs:server:washCancel', function(source, name)
     for _, o in ipairs(myOrders(g, p.PlayerData.citizenid)) do
         if o.left > 0 and ox:CanCarryItem(source, 'black_money', o.left) then
             -- (what's in the machine right now was already taken off `left`)
-            local n = MySQL.update.await('UPDATE `exti_gang_wash` SET `left` = 0, `closed` = IF(`ready` = 0, 1, 0) WHERE `id` = ? AND `left` = ?', { o.id, o.left })
-            if n and n > 0 then ox:AddItem(source, 'black_money', o.left); back = back + o.left end
+            local n = MySQL.update.await('UPDATE `exti_gang_wash` SET `left` = 0, `closed` = IF(`ready` = 0 AND `washing` = 0, 1, 0) WHERE `id` = ? AND `left` = ?', { o.id, o.left })
+            if n and n > 0 then
+                if ox:AddItem(source, 'black_money', o.left) then back = back + o.left
+                else MySQL.update.await('UPDATE `exti_gang_wash` SET `left` = `left` + ?, `closed` = 0 WHERE `id` = ?', { o.left, o.id }) end
+            end
         end
     end
     busyBox[source] = nil
@@ -147,7 +154,7 @@ AddEventHandler('playerDropped', function() busyBox[source] = nil end)
 ---------------------------------------------------------------------------
 local function refund(s)
     for _, part in ipairs(s.parts) do
-        MySQL.update.await('UPDATE `exti_gang_wash` SET `left` = `left` + ?, `closed` = 0 WHERE `id` = ?', { part.amount, part.id })
+        MySQL.update.await('UPDATE `exti_gang_wash` SET `left` = `left` + ?, `washing` = GREATEST(`washing` - ?, 0), `closed` = 0 WHERE `id` = ?', { part.amount, part.amount, part.id })
     end
 end
 
@@ -167,12 +174,19 @@ lib.callback.register('exti_gangs:server:washBegin', function(source)
     if g.locked then return false, 'locked' end
     if not GANG.near(source, GANG.spot(g, 'washer'), 2.5) then return false, 'far' end
     local old = sessions[g.name]
-    if old and (os.time() - old.stageAt > SESSION_IDLE or GetPlayerPed(old.src) == 0) then endSession(g.name, true); old = nil end
-    if old then return false, 'busy' end
+    -- an abandoned batch (no step for 10 min, or the washer is gone) frees the machine
+    local stale = old and ((old.pending and os.time() - old.stageAt > 30)
+        or (not old.pending and (os.time() - old.stageAt > SESSION_IDLE or GetPlayerPed(old.src) == 0)))
+    if old and not stale then return false, 'busy' end
     local cd = GANG.cooldownLeft('wash:' .. g.name)
     if cd > 0 then return false, 'cooldown', cd end
     local room = math.min(W.batchMax, dailyLeft(g))
     if room < 1 then return false, 'daily' end
+    -- take the machine NOW (before any wait), so two presses at once can't start two batches
+    local claim = { src = source, pending = true, stageAt = os.time(), parts = {}, total = 0, token = 0 }
+    sessions[g.name] = claim
+    if stale then refund(old) end   -- the abandoned batch's money goes back in the box
+    local function release(...) if sessions[g.name] == claim then sessions[g.name] = nil end return ... end
     -- the oldest orders first, up to one batch
     local rows = MySQL.query.await('SELECT `id`, `left` FROM `exti_gang_wash` WHERE `gang` = ? AND `closed` = 0 AND `left` > 0 ORDER BY `id` LIMIT 20', { g.name }) or {}
     local parts, total = {}, 0
@@ -182,26 +196,27 @@ lib.callback.register('exti_gangs:server:washBegin', function(source)
         parts[#parts + 1] = { id = r.id, amount = take }
         total = total + take
     end
-    if total < 1 then return false, 'empty' end
+    if total < 1 then return release(false, 'empty') end
     local supplies = math.ceil(total / W.supplyPer)
     local stash = GANG.stashId(g)
-    if (ox:GetItemCount(stash, 'wash_supplies') or 0) < supplies then return false, 'supplies', supplies end
-    -- reserve the money (a cancel at the box can't take what's in the machine)
+    if (ox:GetItemCount(stash, 'wash_supplies') or 0) < supplies then return release(false, 'supplies', supplies) end
+    -- reserve the money (a cancel at the box can't take what's in the machine; a restart gives it back)
     local got = {}
     for _, part in ipairs(parts) do
-        local n = MySQL.update.await('UPDATE `exti_gang_wash` SET `left` = `left` - ? WHERE `id` = ? AND `left` >= ?', { part.amount, part.id, part.amount })
+        local n = MySQL.update.await('UPDATE `exti_gang_wash` SET `left` = `left` - ?, `washing` = `washing` + ? WHERE `id` = ? AND `left` >= ?', { part.amount, part.amount, part.id, part.amount })
         if n and n > 0 then got[#got + 1] = part end
     end
     total = 0
     for _, part in ipairs(got) do total = total + part.amount end
-    if total < 1 then return false, 'empty' end
+    if total < 1 then return release(false, 'empty') end
     supplies = math.ceil(total / W.supplyPer)
-    if not ox:RemoveItem(stash, 'wash_supplies', supplies) then
+    if sessions[g.name] ~= claim or not ox:RemoveItem(stash, 'wash_supplies', supplies) then
         refund({ parts = got })
-        return false, 'supplies', supplies
+        return release(false, sessions[g.name] ~= claim and 'busy' or 'supplies', supplies)
     end
     local token = math.random(100000, 999999)
     sessions[g.name] = { src = source, cid = m.citizenid, token = token, stage = 0, stageAt = os.time(), parts = got, total = total, supplies = supplies }
+    claim.pending = false
     GANG.log(g, m.name, 'wash_start', ('$%d · %d مواد'):format(total, supplies))
     return true, { token = token, total = total, supplies = supplies, stacks = math.max(1, math.ceil(total / 1000)), seconds = W.stageSeconds }
 end)
@@ -220,13 +235,16 @@ local function tip(g)
 end
 
 local function finish(g, s)
+    -- the machine's wait and the daily total first (before any database wait), so nobody slips in
+    GANG.addDaily('g', g.name, 'washed', s.total)
+    GANG.setCooldown('wash:' .. g.name, W.cooldown)
     local toCustomers, cutTotal = 0, 0
     local cust = {}
     for _, part in ipairs(s.parts) do
         local o = MySQL.single.await('SELECT `citizenid`, `cut` FROM `exti_gang_wash` WHERE `id` = ?', { part.id })
         local cut = o and o.cut or g.settings.washCut
         local clean = part.amount - math.floor(part.amount * cut / 100)
-        MySQL.update.await('UPDATE `exti_gang_wash` SET `ready` = `ready` + ?, `closed` = 0 WHERE `id` = ?', { clean, part.id })
+        MySQL.update.await('UPDATE `exti_gang_wash` SET `ready` = `ready` + ?, `washing` = GREATEST(`washing` - ?, 0), `closed` = 0 WHERE `id` = ?', { clean, part.amount, part.id })
         toCustomers = toCustomers + clean
         cutTotal = cutTotal + (part.amount - clean)
         if o then cust[o.citizenid] = true end
@@ -237,8 +255,6 @@ local function finish(g, s)
     if wp and washerCut > 0 then wp.Functions.AddMoney('cash', washerCut, 'gang-wash-share') else toBank = toBank + washerCut; washerCut = 0 end
     g.bank = g.bank + toBank
     GANG.saveGang(g)
-    GANG.addDaily('g', g.name, 'washed', s.total)
-    GANG.setCooldown('wash:' .. g.name, W.cooldown)
     GANG.addRep(g, C.rep.gain.wash, 'wash')
     local marked = math.random() < W.markedChance
     if marked then tip(g) end
@@ -287,7 +303,7 @@ end)
 function GANG.washView(g, m)
     local _, L = GANG.level(g)
     local total, n = queueTotal(g)
-    local rows = MySQL.query.await('SELECT `name`, `left`, `cut`, `created` FROM `exti_gang_wash` WHERE `gang` = ? AND `closed` = 0 AND `left` > 0 ORDER BY `id` LIMIT 30', { g.name }) or {}
+    local rows = m.rank >= 1 and MySQL.query.await('SELECT `name`, `left`, `cut`, `created` FROM `exti_gang_wash` WHERE `gang` = ? AND `closed` = 0 AND `left` > 0 ORDER BY `id` LIMIT 30', { g.name }) or {}
     local s = sessions[g.name]
     return {
         queue = rows, queueTotal = total, queueCount = n,
