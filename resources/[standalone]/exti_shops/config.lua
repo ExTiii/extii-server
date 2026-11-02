@@ -31,6 +31,10 @@ Config.types = {
             -- EX_Tii level jobs (exti_jobs): the supplies used up every run
             { name = 'poultry_kit', price = 3, category = 'work', max = 25, desc = 'لوظيفة الدواجن: كل عدة = دجاجة واحدة' },
             { name = 'grape_kit', price = 3, category = 'work', max = 30, desc = 'لوظيفة الزبيب: كل عدة = عنقود واحد' },
+            { name = 'yeast_pack', price = 3, category = 'work', max = 25, desc = 'لوظيفة الخبّاز: كل كيس = رغيف واحد' },
+            { name = 'fish_bait', price = 3, category = 'work', max = 24, desc = 'لوظيفة الصيد: كل علبة = سمكة واحدة' },
+            { name = 'headlamp_battery', price = 4, category = 'work', max = 20, desc = 'لوظيفة المعادن: كل بطارية = صخرة واحدة' },
+            { name = 'thread_spool', price = 4, category = 'work', max = 22, desc = 'لوظيفة الأقمشة: كل بكرة = قطعة ملابس' },
         },
     },
 

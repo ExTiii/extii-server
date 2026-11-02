@@ -1237,6 +1237,7 @@ lib.callback.register('exti_jobs:server:batchBegin', function(source, stepIndex)
     local shift, step = batchStep(source, stepIndex)
     if not shift then return false, step end
     local have = countOf(source, step.take)
+    for item in pairs(step.takeAlso or {}) do have = have + countOf(source, item) end   -- (metals: every kind of bar)
     if have < 1 then return false, 'missing', step.take end
     shift.pending = { step = stepIndex, count = math.min(have, MAX_BATCH), at = GetGameTimer(), token = math.random(100000, 999999) }
     return true, { token = shift.pending.token, count = shift.pending.count, seconds = step.seconds }
@@ -1250,6 +1251,30 @@ local function batchFinish(source, token, score)
     if not pending or pending.token ~= token then return false, 'failed' end
     -- the game (or the progress bar) really took its time
     if GetGameTimer() - pending.at < step.seconds * 1000 - 1500 then return false, 'fast' end
+    if step.kind == 'sellall' and step.takeAlso then
+        -- several goods, each its own price (metals: copper, iron, gold)
+        local total, money, list = 0, 0, { { step.take, step.price } }
+        for item, price in pairs(step.takeAlso) do list[#list + 1] = { item, price } end
+        local left = pending.count
+        local takenAll = {}
+        for _, it in ipairs(list) do
+            local n = math.min(left, countOf(source, it[1]))
+            if n > 0 then
+                if not ox:RemoveItem(source, it[1], n) then
+                    for _, t in ipairs(takenAll) do ox:AddItem(source, t[1], t[2]) end   -- nothing is lost
+                    return false, 'missing', it[1]
+                end
+                takenAll[#takenAll + 1] = { it[1], n }
+                total, money, left = total + n, money + n * it[2], left - n
+            end
+        end
+        if total < 1 then return false, 'missing', step.take end
+        local paid = payTask(source, shift, money, 'job-' .. shift.job)
+        shift.rounds = shift.rounds + 1
+        lib.logger(source, 'jobs', ('sold %d bars for %d$'):format(total, paid))
+        return true, { sold = total, paid = paid }
+    end
+
     local count = math.min(pending.count, countOf(source, step.take))
     if count < 1 then return false, 'missing', step.take end
 
@@ -1265,14 +1290,38 @@ local function batchFinish(source, token, score)
     if score ~= score then score = 0 end
     score = math.max(0.0, math.min(1.0, score))
     local got = math.floor(count * score + 0.5)
-    local net = weightOf(step.give) * got - weightOf(step.take) * count
+    -- what comes out: one item, or a mix (metals: mostly copper and iron, sometimes gold)
+    local out = { [step.give] = got }
+    if step.giveMix and got > 0 then
+        out = {}
+        local sum = 0
+        for _, m in ipairs(step.giveMix) do sum = sum + m[2] end
+        for _ = 1, got do
+            local r, acc = math.random() * sum, 0
+            for _, m in ipairs(step.giveMix) do
+                acc = acc + m[2]
+                if r <= acc then out[m[1]] = (out[m[1]] or 0) + 1; break end
+            end
+        end
+    end
+    local net = -weightOf(step.take) * count
+    for item, n in pairs(out) do net = net + weightOf(item) * n end
     if net > 0 and not ox:CanCarryWeight(source, net) then return false, 'full' end
     if not ox:RemoveItem(source, step.take, count) then return false, 'missing', step.take end
-    if got > 0 and not ox:AddItem(source, step.give, got) then
-        ox:AddItem(source, step.take, count) -- nothing is lost
-        return false, 'full'
+    local added = {}
+    for item, n in pairs(out) do
+        if n > 0 then
+            if not ox:AddItem(source, item, n) then
+                for _, a in ipairs(added) do ox:RemoveItem(source, a[1], a[2]) end
+                ox:AddItem(source, step.take, count) -- nothing is lost
+                return false, 'full'
+            end
+            added[#added + 1] = { item, n }
+        end
     end
-    return true, { got = got, lost = count - got }
+    local mix
+    if step.giveMix then mix = {}; for item, n in pairs(out) do if n > 0 then mix[#mix + 1] = { item = item, n = n } end end end
+    return true, { got = got, lost = count - got, mix = mix }
 end
 
 lib.callback.register('exti_jobs:server:batchFinish', function(source, token, score)

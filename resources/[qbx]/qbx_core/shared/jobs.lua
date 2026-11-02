@@ -360,6 +360,50 @@ return {
             },
         },
     },
+    ['bread'] = { -- EX_Tii: level job (exti_jobs), player level 15
+        label = 'المخابز',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            [0] = {
+                name = 'خبّاز',
+                payment = 50
+            },
+        },
+    },
+    ['fishing'] = { -- EX_Tii: level job (exti_jobs), player level 22
+        label = 'الصيد',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            [0] = {
+                name = 'صياد سمك',
+                payment = 50
+            },
+        },
+    },
+    ['metals'] = { -- EX_Tii: level job (exti_jobs), player level 30
+        label = 'المعادن',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            [0] = {
+                name = 'عامل معادن',
+                payment = 50
+            },
+        },
+    },
+    ['fabrics'] = { -- EX_Tii: level job (exti_jobs), player level 40
+        label = 'النسيج',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            [0] = {
+                name = 'عامل أقمشة',
+                payment = 50
+            },
+        },
+    },
     ['vineyard'] = {
         label = 'مزرعة العنب',
         defaultDuty = true,

@@ -67,6 +67,8 @@ local function allItemsOf(job)
         for _, n in ipairs({ type(st.take) == 'string' and st.take or nil, type(st.give) == 'string' and st.give or nil }) do
             if n and not seen[n] then seen[n] = true list[#list + 1] = n end
         end
+        for item in pairs(st.takeAlso or {}) do if not seen[item] then seen[item] = true list[#list + 1] = item end end
+        for _, m in ipairs(st.giveMix or {}) do if not seen[m[1]] then seen[m[1]] = true list[#list + 1] = m[1] end end
     end
     return list
 end
@@ -294,6 +296,11 @@ local function actBatch(index, spot)
     elseif done then
         local text = (step.done or 'أنجزت %d'):format(r.got)
         if r.lost > 0 then text = text .. ' · ' .. (step.lost or 'خسرت %d'):format(r.lost) end
+        if r.mix then
+            local parts = {}
+            for _, m in ipairs(r.mix) do parts[#parts + 1] = ('%d %s'):format(m.n, itemLabel(m.item)) end
+            text = text .. ' (' .. table.concat(parts, ' · ') .. ')'
+        end
         EXJ.notify(text, r.lost > 0 and 'inform' or 'success', 6000)
     elseif r == 'missing' then
         EXJ.notify(('تحتاج %s'):format(itemLabel(why)), 'error')
@@ -308,6 +315,10 @@ local function promptFor(index)
     local job, step = C.job, C.job.chain[index]
     if step.kind == 'batch' or step.kind == 'sellall' then
         local n = C.have[step.take] or 0
+        if step.kind == 'sellall' and step.takeAlso then
+            for item in pairs(step.takeAlso) do n = n + (C.have[item] or 0) end
+            if n > 0 then return ('[E] %s (%d)'):format(step.label, n) end
+        end
         if n < 1 then
             local isSupply = false
             for _, s in ipairs(job.supplies or {}) do if s == step.take then isSupply = true end end
