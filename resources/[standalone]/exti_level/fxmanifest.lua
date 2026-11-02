@@ -4,7 +4,7 @@ lua54 'yes'
 
 name 'exti_level'
 author 'EX_Tii'
-description 'EX_Tii Level: the player level 1-300 (XP only from real work), the XP card, the level in the radial menu'
+description 'EX_Tii Level: the player level 1-300 (XP only from real work), XP in the normal notification with a level bar, the level in the radial menu'
 version '1.0.0'
 
 dependencies { 'ox_lib', 'qbx_core', 'oxmysql' }
@@ -22,11 +22,4 @@ server_scripts {
     'server.lua',
 }
 
-ui_page 'html/index.html'
-
-files {
-    'html/index.html',
-    'html/level.css',
-    'html/level.js',
-    'html/fonts/*.woff2',
-}
+-- the XP shows in the normal notification (ox_lib) with the level bar inside it

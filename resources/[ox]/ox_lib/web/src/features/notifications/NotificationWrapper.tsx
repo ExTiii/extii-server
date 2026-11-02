@@ -3,7 +3,7 @@ import { fixMoney } from '../../utils/misc';
 import { toast, Toaster } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import { Box, Center, createStyles, Group, keyframes, RingProgress, Stack, Text, ThemeIcon } from '@mantine/core';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import tinycolor from 'tinycolor2';
 import type { NotificationProps } from '../../typings';
 import MarkdownComponents from '../../config/MarkdownComponents';
@@ -87,6 +87,56 @@ const durationCircle = keyframes({
   '100%': { strokeDasharray: `${15.1 * 2 * Math.PI}, 0` },
 });
 
+
+// EX_Tii: the bar inside a notification (the level bar). It slides from `from` to `to` (%), right to left,
+// and the XP numbers count up. A notification with the same id updates in place, so the bar goes on from where it was.
+const glow = keyframes({ from: { filter: 'brightness(1)' }, to: { filter: 'brightness(1.35)' } });
+const fmt = (n: number) => Math.round(n || 0).toLocaleString('en-US');
+const ProgressBar: React.FC<{ p: NonNullable<NotificationProps['progress']> }> = ({ p }) => {
+  const clamp = (n?: number) => Math.max(0, Math.min(100, Number(n) || 0));
+  const to = clamp(p.to);
+  const from = Math.min(clamp(p.from ?? p.to), to);
+  const [width, setWidth] = useState(from);
+  const [cur, setCur] = useState(p.prev ?? p.cur ?? 0);
+  const [piece, setPiece] = useState(0);
+  const raf = useRef<number>();
+  useEffect(() => {
+    setWidth(from);
+    setPiece(0);
+    const t = setTimeout(() => setWidth(to), 650);
+    const t2 = setTimeout(() => setPiece(Math.max(to - from, 2.5)), 60);
+    const a = p.prev ?? p.cur ?? 0, b = p.cur ?? 0, t0 = performance.now();
+    const step = (now: number) => {
+      const k = Math.min(1, (now - t0) / 900);
+      setCur(a + (b - a) * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) raf.current = requestAnimationFrame(step);
+    };
+    if (raf.current) cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(step);
+    return () => { clearTimeout(t); clearTimeout(t2); if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [p.from, p.to, p.cur, p.prev]);
+  const color = p.color || '#e8b547';
+  return (
+    <Box sx={{ marginTop: 7, width: '100%' }}>
+      <Box sx={{ position: 'relative', height: 8, borderRadius: 5, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+        <Box sx={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: `${width}%`, borderRadius: 5,
+          background: `linear-gradient(270deg, ${color}, #ffd659)`, transition: 'width 0.9s cubic-bezier(0.3, 0.8, 0.3, 1)' }} />
+        {to > from && (
+          <Box sx={{ position: 'absolute', top: 0, bottom: 0, borderRadius: 5, right: `${Math.max(0, Math.min(from, 100 - Math.max(to - from, 2.5)))}%`,
+            width: `${piece}%`, background: 'linear-gradient(270deg, #fff2b8, #ffffff)', boxShadow: '0 0 8px 2px rgba(255, 236, 150, 0.85)',
+            transition: 'width 0.8s cubic-bezier(0.3, 0.8, 0.3, 1)', animation: `${glow} 1.1s ease-in-out infinite alternate` }} />
+        )}
+      </Box>
+      {p.need !== undefined && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 11.5, color: '#a19f99' }}>
+          <span dir="ltr" style={{ color: '#e6e2d6' }}>{fmt(cur)} / {fmt(p.need)} XP</span>
+          <span dir="ltr" style={{ color: '#ffd659' }}>{to.toFixed(1)}%</span>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
 const Notifications: React.FC = () => {
   const { classes } = useStyles();
   const [toastKey, setToastKey] = useState(0);
@@ -98,7 +148,7 @@ const Notifications: React.FC = () => {
       return;
     }
 
-    if (!data.title && !data.description) return;
+    if (!data.title && !data.description && !data.progress) return;
 
     const toastId = data.id?.toString();
     // EX_Tii: duration = 0 keeps the notification on screen until it is dismissed (needs an id)
@@ -215,7 +265,7 @@ const Notifications: React.FC = () => {
                 )}
               </>
             )}
-            <Stack spacing={0}>
+            <Stack spacing={0} sx={data.progress ? { flex: 1, minWidth: 230 } : undefined}>
               {data.title && <Text className={classes.title}>{fixMoney(data.title)}</Text>}
               {data.description && (
                 <ReactMarkdown
@@ -225,6 +275,7 @@ const Notifications: React.FC = () => {
                   {fixMoney(data.description)}
                 </ReactMarkdown>
               )}
+              {data.progress && <ProgressBar p={data.progress} />}
             </Stack>
           </Group>
         </Box>
