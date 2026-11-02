@@ -26,12 +26,8 @@ end
 ---------------------------------------------------------------------------
 -- the thief tag (+ the owner's car alarm)
 ---------------------------------------------------------------------------
-local alarmed = {}   -- [plate] = os.time() (one alarm per car per 10 min)
-
 local function tagThief(src, vehicle, how)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    local st = Entity(vehicle).state
-    if st.exti_thief then return end
     local cid = GANG.cid(src)
     if not cid then return end
     -- he must really be at the car (these are plain game events: a cheat could send them for any car)
@@ -39,17 +35,10 @@ local function tagThief(src, vehicle, how)
     if not here or #(here - GetEntityCoords(vehicle)) > 5.0 then return end
     local owned = isOwnedBy(vehicle)
     if owned and owned.citizenid == cid then return end -- your own car
-    st:set('exti_thief', cid, true)
-    if owned then
-        local plate = GetVehicleNumberPlateText(vehicle):gsub('^%s+', ''):gsub('%s+$', '')
-        if (alarmed[plate] or 0) + 600 < os.time() then
-            alarmed[plate] = os.time()
-            local os_ = GANG.srcOf(owned.citizenid)
-            if os_ then
-                TriggerClientEvent('exti_gangs:client:carAlarm', os_, { plate = plate, coords = GetEntityCoords(vehicle) })
-            end
-        end
-    end
+    local st = Entity(vehicle).state
+    if not st.exti_thief then st:set('exti_thief', cid, true) end
+    -- the police alert, the GPS tracker, the owner's alarm + the stolen flag (server/theft.lua)
+    GANG.stolen(src, vehicle, how, owned)
 end
 
 RegisterNetEvent('qbx_vehiclekeys:server:hotwiredVehicle', function(netId)
@@ -66,23 +55,6 @@ RegisterNetEvent('qb-vehiclekeys:server:setVehLockState', function(netId, state)
     local ok, has = pcall(function() return exports.qbx_vehiclekeys:HasKeys(src, veh) end)
     if ok and has then return end -- the owner (or someone with keys) unlocking
     tagThief(src, veh, 'lockpick')
-end)
-
--- the owner reports his car stolen: a BOLO for the police
-RegisterNetEvent('exti_gangs:server:reportStolen', function(plate)
-    local src = source
-    if type(plate) ~= 'string' or #plate > 12 then return end
-    local p = GANG.player(src)
-    if not p then return end
-    local ok, vid = pcall(function() return exports.qbx_vehicles:GetVehicleIdByPlate(plate) end)
-    local owned = ok and vid and exports.qbx_vehicles:GetPlayerVehicle(vid)
-    if not owned or owned.citizenid ~= p.PlayerData.citizenid then return end
-    if GetResourceState('exti_police') == 'started' then
-        MySQL.insert('INSERT INTO `exti_police_bolos` (`kind`, `title`, `text`, `plate`, `officer`, `created`) VALUES (?, ?, ?, ?, ?, ?)', {
-            'vehicle', ('سيارة مسروقة %s'):format(plate), ('بلاغ من المالك %s'):format(GANG.charName(p)), plate, 'بلاغ مواطن', os.time() })
-    end
-    GANG.notify(src, ('تم إبلاغ الشرطة: اللوحة %s مطلوبة الآن'):format(plate), 'success')
-    GANG.log('-', GANG.charName(p), 'stolen_report', plate)
 end)
 
 ---------------------------------------------------------------------------
@@ -127,6 +99,8 @@ local function tierOf(veh, classFromClient)
     local t = math.type(classFromClient) == 'integer' and CH.classes[classFromClient]
     return t and 'low' or nil
 end
+
+GANG.isOwnedBy, GANG.tierOf, GANG.blockedVehicle = isOwnedBy, tierOf, blockedVehicle
 
 local function check(src, netId, classFromClient)
     local g, m = GANG.memberOf(src)

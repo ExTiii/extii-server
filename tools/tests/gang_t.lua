@@ -25,6 +25,12 @@ qbx = { table = { size = function(t) local n = 0; for _ in pairs(t) do n = n + 1
 THREADS = {}
 function CreateThread(f) local co = coroutine.create(f); THREADS[#THREADS + 1] = co; coroutine.resume(co) end
 function SetTimeout() end
+promise = { new = function() local o = {}; function o:resolve(v) self.v = v; self.done = true end; return o end }
+Citizen = { Await = function(p) return p.v end }
+WITNESS = false
+function GetVehicleColours(v) return 0, 0 end
+function GetIsVehiclePrimaryColourCustom() return false end
+function GetVehicleCustomPrimaryColour() return 0, 0, 0 end
 function Wait() if coroutine.isyieldable() then coroutine.yield() end end
 function GetConvar(_, d) return d end
 function PerformHttpRequest() end
@@ -45,6 +51,7 @@ local function fireNet(name, src, ...) source = src; for _, f in ipairs(netHandl
 
 -- MySQL (rows kept only where the code reads them back)
 local leftRows = {}
+BOLOS, UPD, CALLS = {}, {}, {}
 MySQL = {
     ready = function(f) READIES = READIES or {}; READIES[#READIES + 1] = f end,
     query = setmetatable({ await = function(q, p)
@@ -54,12 +61,12 @@ MySQL = {
         if q:find('DELETE FROM `exti_gang_left`') then leftRows[p[1]] = nil end
         if q:find('INSERT INTO `exti_gang_left`') then leftRows[p[1]] = p[2] end
     end }),
-    insert = setmetatable({ await = function() return 1 end }, { __call = function(_, q, p)
+    insert = setmetatable({ await = function(q, p) if q:find('exti_police_bolos') then BOLO = p; BOLOS[#BOLOS + 1] = { id = #BOLOS + 1, plate = p[4], officer = p[5], title = p[2] } end return 1 end }, { __call = function(_, q, p)
         if q:find('exti_gang_left') then leftRows[p[1]] = p[2] end
         if q:find('exti_police_bolos') then BOLO = p end
     end }),
-    update = setmetatable({ await = function() return 1 end }, { __call = function() end }),
-    single = { await = function(q, p) if q:find('exti_gang_left') then return leftRows[p[1]] and { left_at = leftRows[p[1]] } or nil end end },
+    update = setmetatable({ await = function(q, p) if q:find('exti_police_bolos') then UPD[#UPD + 1] = { q = q, p = p }; if q:find('`closed` = ?') then for _, b in ipairs(BOLOS) do if b.id == p[3] then b.closed = true end end end end return 1 end }, { __call = function() end }),
+    single = { await = function(q, p) if q:find('exti_police_bolos') then for i = #BOLOS, 1, -1 do local b = BOLOS[i]; if b.plate == p[1] and not b.closed then return b end end return nil end if q:find('exti_gang_left') then return leftRows[p[1]] and { left_at = leftRows[p[1]] } or nil end end },
 }
 -- fix: query used as both function and table
 local q = MySQL.query
@@ -122,6 +129,7 @@ local EXP_INDEX = function(_, res)
         SetPlayerPrimaryGang = function(_, cid, g) return true end,
         RemovePlayerFromGang = function(_, cid, g) qbxMember[cid] = nil return true end,
         GetVehiclesByHash = function() return vehicleInfo end,
+        GetDutyCountJob = function(_, job) local l = {}; for s, pl in pairs(players) do local j = pl.PlayerData.job; if j and j.name == job and j.onduty then l[#l + 1] = s end end return #l, l end,
     } end
     if res == 'ox_inventory' then return {
         RegisterStash = function(_, id, label, slots, weight) stashes[id] = { slots = slots, weight = weight } end,
@@ -134,10 +142,11 @@ local EXP_INDEX = function(_, res)
         registerHook = function(_, name, fn, opts) hooks[name] = fn end,
     } end
     if res == 'qbx_vehicles' then return {
-        GetVehicleIdByPlate = function(_, plate) return ownedByPlate[plate] and ownedByPlate[plate].id end,
+        GetVehicleIdByPlate = function(_, plate) for k, o in pairs(ownedByPlate) do if k:gsub('%s+$', ''):upper() == tostring(plate):gsub('%s+$', ''):upper() then return o.id end end end,
         GetPlayerVehicle = function(_, id) for _, o in pairs(ownedByPlate) do if o.id == id then return o end end end,
         SaveVehicle = function(_, veh, opts) savedVehicle = opts return true end,
     } end
+    if res == 'exti_police' then return { AddCall = function(_, d) CALLS[#CALLS + 1] = d return #CALLS end } end
     if res == 'qbx_vehiclekeys' then return { HasKeys = function(_, src, veh) return (entityState[veh] or {}).keys == src end } end
     return {}
 end
@@ -146,7 +155,7 @@ exports = setmetatable({}, { __index = EXP_INDEX, __call = function() end })
 -- ox_lib
 local CB, CMD = {}, {}
 lib = {
-    callback = { register = function(name, fn) CB[name:gsub('exti_gangs:server:', '')] = fn end },
+    callback = setmetatable({ register = function(name, fn) CB[name:gsub('exti_gangs:server:', '')] = fn end }, { __call = function(_, name, src, cb) cb(WITNESS) end }),
     addCommand = function(name, opts, fn) CMD[name] = fn end,
     print = { info = function() end, error = function(m) print('ERR ' .. tostring(m)) end },
     logger = function() end,
@@ -158,6 +167,8 @@ dofile(RES .. 'server/main.lua')
 dofile(RES .. 'server/spots.lua')
 dofile(RES .. 'server/collect.lua')
 dofile(RES .. 'server/chop.lua')
+dofile(RES .. 'server/theft.lua')
+dofile(RES .. 'server/door.lua')
 for _, f in ipairs(READIES) do f() end
 
 -- ---------------------------------------------------------------- tests
@@ -268,6 +279,47 @@ at(3, vec3(131, 1, 0))
 fireNet('qbx_vehiclekeys:server:hotwiredVehicle', 3, CAR)
 check(entityState[CAR].exti_thief == 'CID3', 'hotwiring tags the thief on the car')
 
+-- car theft -> police
+check(#CALLS == 1 and CALLS[1].label == 'سرقة سيارة' and CALLS[1].text:find('سوداء'), 'a super car hotwired: the police always get it (model, colour)')
+check(entityState[CAR].exti_tracker == true, 'a fast car gets the GPS tracker')
+fireNet('qbx_vehiclekeys:server:hotwiredVehicle', 3, CAR)
+check(#CALLS == 1, 'the same car again within 5 min: no second alert')
+local NPC = 60
+entityPos[NPC] = vec3(300, 0, 0); entityType[NPC] = 2; entityModel[NPC] = joaat('blista'); vehicleInfo[joaat('blista')] = { category = 'compacts' }
+at(3, vec3(301, 0, 0))
+local rnd = math.random
+math.random = function(a, b) if a == nil then return 0.99 end return rnd(a, b) end
+fireNet('exti_gangs:server:theftAttempt', 3, 'carjack', NPC, false)
+check(#CALLS == 1, 'a normal car, unlucky roll, no witness: no alert')
+advance(5)
+fireNet('exti_gangs:server:theftAttempt', 3, 'carjack', NPC, false)
+check(#CALLS == 1, 'trying again on the same car does not roll again for 5 min')
+advance(5)
+fireNet('exti_gangs:server:theftAttempt', 3, 'carjack', NPC, true)
+check(#CALLS == 2 and CALLS[2].text:find('شاهد'), 'a witness saw it: the call goes in')
+math.random = rnd
+local NPC2 = 61
+entityPos[NPC2] = vec3(400, 0, 0); entityType[NPC2] = 2; entityModel[NPC2] = joaat('blista')
+at(4, vec3(900, 0, 0))
+fireNet('exti_gangs:server:theftAttempt', 4, 'carjack', NPC2, true)
+check(#CALLS == 2, 'a fake attempt from far away is ignored')
+players[4].PlayerData.job = { name = 'police', onduty = true }
+at(4, vec3(401, 0, 0))
+fireNet('exti_gangs:server:theftAttempt', 4, 'carjack', NPC2, true)
+check(#CALLS == 2, 'an officer on duty opening a car: no alert')
+-- the tracker: cops see it, the thief pulls it
+for _, co in ipairs(THREADS) do if coroutine.status(co) == 'suspended' then coroutine.resume(co) end end
+local seenT = false
+for _, e in ipairs(clientEvents) do if e.name == 'exti_gangs:client:tracker' and e.src == 4 then seenT = true end end
+check(seenT, 'the officer on duty sees the tracker live')
+check(CB.pullBegin(4, CAR) == false, 'the officer can not pull the tracker')
+at(3, vec3(131, 1, 0))
+local okP = CB.pullBegin(3, CAR)
+check(okP and CB.pullFinish(3, true) == false, 'pulling it takes its time')
+CB.pullBegin(3, CAR); advance(8)
+check(CB.pullFinish(3, true) == true and entityState[CAR].exti_tracker == nil, 'the thief pulls the tracker out')
+players[4].PlayerData.job = nil
+
 -- chop
 at(3, vec3(131, 0, 0))
 inv.gang_chopz.chop_tools = 10
@@ -300,8 +352,13 @@ check(entityState[PC].exti_thief == 'CID3', 'lockpicking a player car tags the t
 local alarm = false
 for _, e in ipairs(clientEvents) do if e.name == 'exti_gangs:client:carAlarm' and e.src == 4 then alarm = true end end
 check(alarm, 'the owner gets the car alarm')
-fireNet('exti_gangs:server:reportStolen', 4, 'OWN 123 ')
-check(BOLO and BOLO[4] == 'OWN 123 ', 'the owner reports it: a police BOLO with the plate')
+local flagged = false
+for _, e in ipairs(clientEvents) do if e.name == 'exti_gangs:client:carAlarm' and e.src == 4 then flagged = e.args[1].flagged and e.args[1].coords ~= nil end end
+check(BOLO and BOLO[4] == 'OWN 123' and BOLO[5] == 'نظام الإنذار' and flagged, 'the alarm flags the plate STOLEN on the police tablet right away (owner sees where)')
+local nc = #CALLS
+check(nc > 0 and CALLS[nc].text:find('OWN') and CALLS[nc].text:find('%*'), 'the police get the call with half the plate: ' .. tostring(CALLS[nc] and CALLS[nc].text))
+fireNet('exti_gangs:server:reportStolen', 4, 'OWN 123', true)
+check(UPD[#UPD] and UPD[#UPD].p[1]:find('بلاغ المالك'), 'the owner confirms: the BOLO says "owner report"')
 local ok2 = CB.chopStart(3, PC, 6)
 for st = 1, 4 do advance(65); local _, r_ = CB.chopStage(3, st); if st == 4 then FIN2 = r_ end end
 check(ok2 and FIN2 and savedVehicle and savedVehicle.state == 2 and savedVehicle.depotPrice == FIN2.money and savedVehicle.garage == 'impoundlot', 'the player car goes to the impound, recovery fee = what the gang made')
@@ -382,5 +439,37 @@ entityPos[CAR3] = vec3(130, -6, 0); entityType[CAR3] = 2; entityModel[CAR3] = jo
 at(10, vec3(131, -6, 0)); CB.setRank(3, extra[1], 2)
 local okS, whyS = CB.chopStart(10, CAR3, 0)
 check(okS == true, 'another member can start a new chop when the chopper is gone (' .. tostring(whyS) .. ')')
+
+-- the HQ front door
+at(1, vec3(200, 0, 0)); CB.spotSave(1, 'hq', 'chopz', 'door_out')
+at(1, vec3(205, 0, 0)); CB.spotSave(1, 'hq', 'chopz', 'door_in')
+at(10, vec3(200, 0, 0))
+local okE, toE = CB.door(10, 'chopz', 'enter')
+check(okE and toE.x == 205, 'a member walks in through the front door')
+at(10, toE)
+local guest = addPlayer(20, 'CG20', 'Guest'); at(20, vec3(200.5, 0, 0))
+check(select(2, CB.door(20, 'chopz', 'enter')) == 'notmember', 'a stranger can not walk in')
+local before = #clientEvents
+check(CB.door(20, 'chopz', 'knock') == true, 'he knocks')
+local kid = nil
+for i = before + 1, #clientEvents do local e = clientEvents[i]; if e.name == 'exti_gangs:client:knock' and e.src == 10 then kid = e.args[1] end end
+check(kid ~= nil, 'the member inside hears the knock')
+fireNet('exti_gangs:server:knockAnswer', 10, kid, true)
+local let = false
+for i = before + 1, #clientEvents do local e = clientEvents[i]; if e.name == 'exti_gangs:client:doorTeleport' and e.src == 20 then let = true end end
+check(let, 'the member opens: the guest is let in')
+check(select(2, CB.door(20, 'chopz', 'knock')) == 'soon', 'no knock spam')
+local cop = addPlayer(21, 'CP21', 'Cop'); cop.PlayerData.job = { name = 'police', onduty = true }; at(21, vec3(200, 0, 0))
+check(select(2, CB.door(21, 'chopz', 'enter')) == 'notmember', 'the police can not just walk in')
+local okB, rB = CB.door(21, 'chopz', 'breachBegin')
+check(okB and rB.seconds == 10, 'the police start a breach (10 s)')
+check(CB.door(21, 'chopz', 'breachFinish') == false, 'a breach can not be skipped')
+CB.door(21, 'chopz', 'breachBegin'); advance(11)
+local okF, toF = CB.door(21, 'chopz', 'breachFinish')
+check(okF and toF.x == 205, 'after 10 s the police are in')
+local cop2 = addPlayer(22, 'CP22', 'Cop2'); cop2.PlayerData.job = { name = 'police', onduty = true }; at(22, vec3(200, 0, 0))
+check(CB.door(22, 'chopz', 'enter') == true, 'the door stays open to the police for 10 min')
+at(20, vec3(205, 0, 0))
+check(CB.door(20, 'chopz', 'exit') == true, 'anyone inside can walk out')
 
 print(('\n%d passed, %d failed'):format(passes, fails))

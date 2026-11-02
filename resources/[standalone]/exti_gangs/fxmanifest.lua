@@ -6,7 +6,7 @@ use_experimental_fxv2_oal 'yes'
 name 'exti_gangs'
 author 'EX_Tii Roleplay'
 description 'EX_Tii gangs: ranks, gang bank, HQ, rep, the shared collection point and the Chop Shop'
-version '1.0.0'
+version '1.1.0'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -17,6 +17,8 @@ client_scripts {
     '@qbx_core/modules/playerdata.lua',
     'client/main.lua',
     'client/chop.lua',
+    'client/theft.lua',
+    'client/door.lua',
 }
 
 server_scripts {
@@ -25,6 +27,8 @@ server_scripts {
     'server/spots.lua',
     'server/collect.lua',
     'server/chop.lua',
+    'server/theft.lua',
+    'server/door.lua',
 }
 
 ui_page 'html/index.html'

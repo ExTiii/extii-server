@@ -267,22 +267,33 @@ local function prompt(p, onAnswer)
             if IsControlJustPressed(0, 303) then return answerPrompt(false) end  -- U (N is push-to-talk)
             Wait(0)
         end
-        if promptCb == mine then answerPrompt(false) end
+        if promptCb == mine then answerPrompt(nil) end -- no answer
     end)
 end
+GC.prompt = prompt
 
 RegisterNetEvent('exti_gangs:client:invite', function(inv)
     PlaySoundFrontend(-1, 'Text_Arrive_Tone', 'Phone_SoundSet_Default', false)
     prompt({ title = ('دعوة إلى عصابة %s'):format(inv.gang), text = ('%s يدعوك إلى %s · تبدأ عدّاءً'):format(inv.from, inv.type),
              color = inv.color, tag = inv.tag, yes = 'انضمام', no = 'رفض', timeout = 30 },
-        function(yes) TriggerServerEvent('exti_gangs:server:inviteAnswer', yes) end)
+        function(yes) TriggerServerEvent('exti_gangs:server:inviteAnswer', yes == true) end)
 end)
 
+-- my car's alarm: where it was on my map for a moment, and the police were told (the plate is flagged)
 RegisterNetEvent('exti_gangs:client:carAlarm', function(a)
     PlaySoundFrontend(-1, 'TIMER_STOP', 'HUD_MINI_GAME_SOUNDSET', false)
-    prompt({ title = 'إنذار سيارتك انطلق!', text = ('أحدهم يعبث بسيارتك (%s). هل تبلّغ الشرطة أنها مسروقة؟'):format(a.plate), color = '#e5484d',
-             tag = '!', yes = 'أبلغ الشرطة', no = 'تجاهل', timeout = 25 },
-        function(yes) if yes then TriggerServerEvent('exti_gangs:server:reportStolen', a.plate) end end)
+    if a.coords then
+        local blip = AddBlipForCoord(a.coords.x, a.coords.y, a.coords.z)
+        SetBlipSprite(blip, 225); SetBlipColour(blip, 1); SetBlipScale(blip, 0.9); SetBlipFlashes(blip, true); SetBlipAsShortRange(blip, false)
+        BeginTextCommandSetBlipName('STRING'); AddTextComponentSubstringPlayerName('سيارتك: الإنذار'); EndTextCommandSetBlipName(blip)
+        SetTimeout((a.blip or 30) * 1000, function() if DoesBlipExist(blip) then RemoveBlip(blip) end end)
+    end
+    local text = a.flagged
+        and ('أحدهم يعبث بسيارتك (%s). الشرطة أُبلغت واللوحة مطلوبة. هل هي مسروقة فعلًا؟'):format(a.plate)
+        or ('أحدهم يعبث بسيارتك (%s). هل تبلّغ الشرطة أنها مسروقة؟'):format(a.plate)
+    prompt({ title = 'إنذار سيارتك انطلق!', text = text, color = '#e5484d', tag = '!',
+             yes = 'نعم، مسروقة', no = a.flagged and 'لا، ألغِ البلاغ' or 'تجاهل', timeout = 25 },
+        function(yes) if yes ~= nil then TriggerServerEvent('exti_gangs:server:reportStolen', a.plate, yes == true) end end)
 end)
 
 ---------------------------------------------------------------------------
@@ -299,6 +310,15 @@ local function points()
             if LABELS[kind] and (kind ~= 'bench' or (my.type == 'chop' and my.rank >= 1)) then
                 list[#list + 1] = { kind = kind, pos = v3(p) }
             end
+        end
+    end
+    -- the HQ front doors (every gang: anyone can knock, the police can breach)
+    for name, set in pairs(spots.hq or {}) do
+        if set.door_out and set.door_in then
+            local mine = my and my.name == name
+            list[#list + 1] = { kind = 'door_out', gang = name, pos = v3(set.door_out),
+                                label = mine and '[E] ادخل المقر' or (GC.isCop and GC.isCop() and '[E] الباب (اطرق / اقتحم)' or '[E] اطرق الباب') }
+            list[#list + 1] = { kind = 'door_in', gang = name, pos = v3(set.door_in), label = '[E] اخرج' }
         end
     end
     for i, c in ipairs(spots.collect and spots.collect.crates or {}) do list[#list + 1] = { kind = 'crate', i = i, pos = v3(c) } end
@@ -329,7 +349,7 @@ CreateThread(function()
                 end
             end
         end
-        showPrompt(best and LABELS[best.kind] or nil)
+        showPrompt(best and (best.label or LABELS[best.kind]) or nil)
         if best and IsControlJustReleased(0, 38) then
             busy = true; showPrompt(nil)
             local k = best.kind
@@ -339,7 +359,9 @@ CreateThread(function()
             elseif k == 'locker' then doLocker()
             elseif k == 'bench' then doBench()
             elseif k == 'crate' then doCrate(best.i)
-            elseif k == 'fence' then doFence() end
+            elseif k == 'fence' then doFence()
+            elseif k == 'door_out' then GC.doorOut(best.gang)
+            elseif k == 'door_in' then GC.doorIn(best.gang) end
             busy = false
         end
         Wait(sleep)
@@ -349,7 +371,7 @@ end)
 ---------------------------------------------------------------------------
 -- /gangspots (admins): stand where it goes, pick it
 ---------------------------------------------------------------------------
-local KIND_LABEL = { laptop = 'الحاسوب (الإدارة)', stash = 'المخزن', deposit = 'تسليم القطع', locker = 'خزانة الملابس', bench = 'طاولة المفاتيح (التفكيك)', garage = 'مركز ورشة التفكيك (التفكيك)' }
+local KIND_LABEL = { door_out = 'باب المقر من الخارج', door_in = 'باب المقر من الداخل', laptop = 'الحاسوب (الإدارة)', stash = 'المخزن', deposit = 'تسليم القطع', locker = 'خزانة الملابس', bench = 'طاولة المفاتيح (التفكيك)', garage = 'مركز ورشة التفكيك (التفكيك)' }
 local function save(what, a, b, msg)
     local ok, why = lib.callback.await('exti_gangs:server:spotSave', false, what, a, b)
     notify(ok and (msg or 'حُفظ المكان') or (why == 'max' and 'الحد 12 صندوقًا' or 'لم يُحفظ'), ok and 'success' or 'error')
@@ -358,7 +380,7 @@ RegisterNetEvent('exti_gangs:client:spotsMenu', function(gangList)
     local opts = {}
     for _, g in ipairs(gangList) do
         local sub = {}
-        for _, kind in ipairs({ 'laptop', 'stash', 'deposit', 'locker', 'bench', 'garage' }) do
+        for _, kind in ipairs({ 'door_out', 'door_in', 'laptop', 'stash', 'deposit', 'locker', 'bench', 'garage' }) do
             if (kind ~= 'bench' and kind ~= 'garage') or g.type == 'chop' then
                 sub[#sub + 1] = { title = KIND_LABEL[kind] .. ' هنا', icon = 'location-dot', onSelect = function() save('hq', g.name, kind) end }
             end
@@ -376,6 +398,18 @@ RegisterNetEvent('exti_gangs:client:spotsMenu', function(gangList)
     end }
     opts[#opts + 1] = { title = 'نقطة الجمع: احذف كل الصناديق', icon = 'trash', onSelect = function() save('crates_clear', nil, nil, 'مُسحت') end }
     opts[#opts + 1] = { title = 'المصرّف (يشتري القطع المسروقة) هنا', icon = 'user-secret', onSelect = function() save('fence') end }
+    -- the luxury houses: go and look (it takes you inside: leave through the wall with noclip to set the outside door)
+    local houses = {}
+    for _, h in ipairs(C.houses or {}) do
+        houses[#houses + 1] = { title = h.label, icon = 'house-chimney', onSelect = function()
+            local ped = PlayerPedId()
+            RequestCollisionAtCoord(h.coords.x, h.coords.y, h.coords.z)
+            SetEntityCoords(ped, h.coords.x, h.coords.y, h.coords.z, false, false, false, false)
+            notify(('أنت داخل %s'):format(h.label), 'inform')
+        end }
+    end
+    lib.registerContext({ id = 'exti_gs_houses', title = 'المنازل الفاخرة', menu = 'exti_gs_main', options = houses })
+    opts[#opts + 1] = { title = 'المنازل الفاخرة (انتقل وشاهد)', description = ('%d منازل'):format(#houses), icon = 'house-chimney', menu = 'exti_gs_houses' }
     lib.registerContext({ id = 'exti_gs_main', title = 'أماكن العصابات', options = opts })
     lib.showContext('exti_gs_main')
 end)

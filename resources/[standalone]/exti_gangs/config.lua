@@ -94,6 +94,48 @@ C.chop = {
                    'oracle', 'tailgater', 'buffalo', 'felon', 'sentinel', 'fugitive', 'kuruma', 'issi2', 'blista' },
 }
 
+-- ------------------------------------------------------------------ car theft -> police
+-- Every lockpick / hotwire / key search / carjack (the car keys script) and every car really stolen.
+-- Player cars, police cars and fast cars always alert. Normal cars: a chance (lower at night).
+-- A witness (an NPC close by, looking at you) always calls it in.
+C.theft = {
+    dayChance = 0.60, nightChance = 0.35,
+    nightFrom = 22, nightTo = 6,          -- game clock hours
+    alwaysTiers = { super = true, sports = true },
+    repeatWindow = 300,                   -- one alert per car per 5 min (a missed roll also holds for 5 min)
+    witnessRadius = 25.0,
+    -- GPS tracker on fast cars: the police see the car live for this long, unless the thief pulls it out
+    trackerTiers = { super = true, sports = true },
+    trackerSeconds = 120, trackerEvery = 4,
+    pullSeconds = 7,
+    ownerBlipSeconds = 30,                -- the owner sees where his car was when the alarm went off
+}
+
+-- ------------------------------------------------------------------ HQ front door
+-- The HQ houses have no working front door: [E] at the door outside -> inside, [E] inside -> out.
+-- Members walk in. Anyone else knocks (a member inside lets him in). Police on duty can breach it.
+C.door = {
+    reach = 2.0,
+    knockCooldown = 20,
+    breachSeconds = 10,
+    breachOpen = 600,                     -- after a breach the door stays open to the police for 10 min
+    insideRange = 80.0,                   -- further than this from the inside door = he isn't inside any more
+}
+
+-- The luxury houses on the map (for /gangspots -> "luxury houses": takes you inside to look)
+C.houses = {
+    { label = '3655 Wild Oats Drive',            coords = vec3(-169.29, 486.49, 137.44) },
+    { label = '2044 North Conker Avenue',        coords = vec3(340.94, 437.18, 149.39) },
+    { label = '2045 North Conker Avenue',        coords = vec3(373.02, 416.11, 145.70) },
+    { label = '2862 Hillcrest Avenue',           coords = vec3(-676.13, 588.61, 145.17) },
+    { label = '2868 Hillcrest Avenue',           coords = vec3(-763.11, 615.91, 144.14) },
+    { label = '2874 Hillcrest Avenue',           coords = vec3(-857.80, 682.56, 152.65) },
+    { label = '2677 Whispymound Drive',          coords = vec3(120.50, 549.95, 184.10) },
+    { label = '2133 Mad Wayne Thunder Drive',    coords = vec3(-1288.00, 440.75, 97.69) },
+    { label = 'Michael (Rockford Hills)',        coords = vec3(-802.31, 175.06, 72.84) },
+    { label = 'Franklin (Vinewood Hills)',       coords = vec3(7.12, 536.62, 176.03) },
+}
+
 C.webhookConvar = 'exti_gangs_webhook' -- set exti_gangs_webhook "https://discord.com/api/webhooks/..." in server.cfg
 
 return C

@@ -1,11 +1,11 @@
 -- =====================================================================
 -- EX_Tii gangs: places set in game by an admin with /gangspots (saved in data/spots.json)
---   hq[gang] = { laptop, stash, deposit, locker, bench, garage (+ radius) }
+--   hq[gang] = { laptop, stash, deposit, locker, bench, garage, door_out (outside), door_in (inside) }
 --   collect  = { crates = { {x,y,z,h}, ... } }   (the shared collection point)
 --   fence    = { x, y, z, h }                     (buys stolen parts)
 -- =====================================================================
 local FILE = 'data/spots.json'
-local KINDS = { laptop = true, stash = true, deposit = true, locker = true, bench = true, garage = true }
+local KINDS = { laptop = true, stash = true, deposit = true, locker = true, bench = true, garage = true, door_out = true, door_in = true }
 local MAX_CRATES = 12
 
 local function num(v) return type(v) == 'number' and v == v and v > -20000 and v < 20000 end
