@@ -408,6 +408,7 @@
             drift += dt; const mid = 0.55 + Math.sin(drift * 0.9) * 0.2; lo = mid - 0.1; hi = mid + 0.1;
             const ok = v >= lo && v <= hi;
             prog = Math.max(0, Math.min(1, prog + (ok ? dt / 7 : -dt / 14)));
+            G.dbg = { v, lo, hi };
             dial.needle(v); dial.zone(lo, hi);
             rot += v * 900 * dt;
             li.style.transform = `translate(-50%, -50%) rotate(${rot}deg)`;
@@ -442,11 +443,11 @@
         c.raf((dt) => {
             if (down && !locked) {
                 n += speed * dt; speed = Math.min(26, speed + 9 * dt);
-                const f = Math.floor(n); show(f);
+                const f = Math.floor(n); show(f); G.dbg = { n: f };
                 while (shownN < Math.min(12, Math.floor(f / 5) + 1)) { shownN += 1; addLayer(); }
             }
         });
-        c.on(hit, 'mousedown', (e) => { if (e.button !== 0 || locked) return; down = true; n = 0; speed = 9; clearStack(); whirr.on(); });
+        c.on(hit, 'mousedown', (e) => { if (e.button !== 0 || locked) return; down = true; n = 0; speed = 9; G.dbg = { n: 0 }; clearStack(); whirr.on(); });
         c.on(window, 'mouseup', () => {
             if (!down || locked) return; down = false; whirr.off();
             const f = Math.floor(n);
@@ -545,7 +546,7 @@
         const cas = sprite(c, 'case_side.webp', 'm-case', (i, w, h) => { cw = w; i.dataset.h = h; });
         const N = 8; c.count(`0/${N}`);
         const place = () => { cas.style.transform = `translate(${x - cw / 2}px, ${rail - Number(cas.dataset.h || 80)}px)`; };
-        c.raf((dt) => { if (!jam && !pressed) { x += speed * dt; if (x > SW + 60) x = -60; } place(); });
+        c.raf((dt) => { if (!jam && !pressed) { x += speed * dt; if (x > SW + 60) x = -60; } place(); G.dbg = { x, pressed, jam }; });
         c.on(window, 'keydown', (e) => {
             if (e.code !== 'Space' || jam || pressed) return; e.preventDefault();
             die.classList.add('down'); c.later(() => die.classList.remove('down'), 180);
@@ -808,5 +809,5 @@
         return true;
     }
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && G) finish(false); });
-    window.EXG_GAME2 = { start, has: (g) => !!GAMES[g] };
+    window.EXG_GAME2 = { start, has: (g) => !!GAMES[g], state: () => (G && G.dbg) || null };   // state(): read-only numbers for the browser tests
 })();
