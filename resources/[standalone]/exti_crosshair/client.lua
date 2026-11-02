@@ -9,7 +9,7 @@ local Config = {
     color = { 255, 255, 255 }, -- white
     alpha = 235,
     outline = true,          -- a thin dark ring so the dot shows on bright walls
-    onlyWhenAiming = false,  -- true = the dot only appears while aiming (right mouse)
+    onlyWhenAiming = true,   -- the dot only appears while aiming down sights (right mouse)
 }
 
 -- the weapon groups that are guns (pistol, SMG, rifle, MG, shotgun, sniper, heavy, stun gun)
