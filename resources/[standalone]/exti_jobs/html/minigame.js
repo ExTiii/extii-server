@@ -1,13 +1,13 @@
 /* =====================================================================
    EX_Tii jobs: the mini games of the level jobs (Moe's design).
-   { action: 'game', game: 'catch' | 'slaughter' | 'pack' | 'pick' | 'dry' | 'sort', count, seconds }
+   { action: 'game', game: 'catch' | 'slaughter' | 'pack' | 'pick' | 'dry' | 'box', count, seconds }
    Every game lasts the whole `seconds` (at least 25), then sends { score: 0..1 } to 'gameDone'.
      catch     — chickens run around the pen: click them before they get out
      slaughter — chickens ride the line: press SPACE / E (or click) when one is in the gold zone
      pack      — pieces drop on the table: drag each one into the tray before it spoils
      pick      — grape bunches hang on the vine with a letter: press W / A / S / D before its ring runs out
      dry       — hold SPACE (or the mouse) to heat the rack: keep the needle inside the gold band as it moves
-     sort      — raisins come down the chute: A = good (to the carton, left), D = spoiled (to the bin, right)
+     box       — build cartons: click the 4 sides to raise them, drag the scoop of raisins in, drag the tape across
    ===================================================================== */
 (() => {
     const RES = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'exti_jobs';
@@ -23,7 +23,7 @@
         pack: { title: 'عبّئ الدجاج', hint: 'اسحب كل قطعة إلى الصينية قبل أن تفسد', unit: 'عبّأت' },
         pick: { title: 'اقطف العنب', hint: 'اضغط الحرف الظاهر على العنقود (W A S D) قبل أن تنتهي دائرته', unit: 'قطفت', word: 'عنقود' },
         dry: { title: 'جفّف العنب', hint: 'اضغط مع الاستمرار على مسافة لتسخين المنشر، وأبقِ المؤشر داخل المنطقة الذهبية', unit: 'جودة', word: 'عنقود' },
-        sort: { title: 'افرز الزبيب', hint: 'A = زبيب جيد إلى الكرتونة · D = زبيب تالف إلى السلة', unit: 'فرزت', word: 'حبة زبيب' },
+        box: { title: 'عبّئ الكراتين', hint: 'ارفع جوانب الكرتونة، املأها بالمغرفة، ثم أغلقها بالشريط', unit: 'كرتونة', word: 'حبة زبيب' },
     };
 
     let G = null; // the game that is on screen
@@ -369,62 +369,130 @@
         };
     }
 
-    // ------------------------------------------------------------------ sort (good to the carton, bad to the bin)
-    const RAISIN = (bad) => `<svg viewBox="0 0 100 100">${[[34,40],[58,36],[46,58],[66,60],[30,64]].map(([x,y],i)=>`<ellipse cx="${x}" cy="${y}" rx="15" ry="11" transform="rotate(${i*37} ${x} ${y})" fill="${bad ? '#6f7a52' : '#b8742a'}" stroke="${bad ? '#3d4429' : '#6b3c0e'}" stroke-width="2.6"/><path d="M${x-8} ${y-2}q8 5 16 0" stroke="${bad ? '#2f3520' : '#7a4512'}" stroke-width="2" fill="none"/>`).join('')}${bad ? '<circle cx="40" cy="44" r="6" fill="#c9d6b0" opacity=".8"/><circle cx="62" cy="62" r="5" fill="#c9d6b0" opacity=".7"/>' : '<ellipse cx="54" cy="32" rx="5" ry="2.5" fill="#fff" opacity=".4"/>'}</svg>`;
-
-    function sortGame(seconds) {
+    // ------------------------------------------------------------------ box (fold, fill, tape)
+    // One carton at a time, seen from above at an angle: a flat carton (its 4 sides lying open) on the table.
+    //   1) click each side to raise it   2) drag the scoop from the raisin tub into the carton (2 scoops)
+    //   3) the flaps close: drag the tape from one end of the lid to the other. Then the next carton comes.
+    function boxGame(seconds) {
         const area = G.el.querySelector('#mg-area');
+        const TARGET = 6, SCOOPS = 2;
         area.innerHTML = `
-            <div class="mg-bin good"><b>A</b><span>الكرتونة</span></div>
-            <div class="mg-chute"></div>
-            <div class="mg-bin bad"><b>D</b><span>سلة التالف</span></div>`;
-        const H = area.clientHeight;
-        const N = 18, FALL = 2.2; // seconds from the top to the bottom of the chute
-        const times = schedule(N, seconds, 0.5, FALL + 0.3);
-        const items = [];
-        let next = 0, right = 0;
-        setTotal(N);
-        G.score = () => right / N;
-        const flash = (cls) => { const b = area.querySelector(`.mg-bin.${cls}`); b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); };
-        const onKey = (e) => {
-            if (e.repeat) return;
-            const good = e.code === 'KeyA' || e.code === 'ArrowLeft';
-            const bad = e.code === 'KeyD' || e.code === 'ArrowRight';
-            if (!good && !bad) return;
+            <div class="bx-step" id="bx-step"></div>
+            <div class="bx-tub" id="bx-tub"><div class="bx-raisins"></div><div class="bx-scoop" id="bx-scoop"><i></i></div><span>الزبيب</span></div>
+            <div class="bx-stage"><div class="bx-world" id="bx-world"></div></div>
+            <div class="bx-stack" id="bx-stack"></div>`;
+        const world = area.querySelector('#bx-world'), stepEl = area.querySelector('#bx-step');
+        const stack = area.querySelector('#bx-stack'), scoop = area.querySelector('#bx-scoop');
+        let done = 0, c = null, ghost = null, tape = null;
+        setTotal(TARGET);
+        G.score = () => Math.min(1, done / TARGET);
+
+        const STEPS = ['ارفع جوانب الكرتونة الأربعة (اضغط على كل جانب)', 'اسحب المغرفة من الزبيب إلى الكرتونة', 'اسحب الشريط على الغطاء من طرف لطرف'];
+        const setStep = (i) => { stepEl.innerHTML = `<b>${i + 1}</b>${STEPS[i]}`; area.dataset.step = String(i); };
+        const nudge = (el) => { el.classList.remove('bx-no'); void el.offsetWidth; el.classList.add('bx-no'); };
+
+        function newCarton() {
+            world.innerHTML = `
+                <div class="bx-floor">
+                    <div class="bx-fill" style="--fill:0"></div>
+                    <div class="bx-wall back" data-w="back"></div>
+                    <div class="bx-wall front" data-w="front"><em>زبيب مجفف · 2 كغ</em></div>
+                    <div class="bx-wall left" data-w="left"></div>
+                    <div class="bx-wall right" data-w="right"></div>
+                    <div class="bx-lid"><i class="bx-seam"></i><i class="bx-tape" id="bx-tape"></i><i class="bx-guide"></i></div>
+                </div>`;
+            world.classList.remove('out');
+            world.classList.add('in');
+            c = { up: 0, scoops: 0, sealed: false };
+            world.querySelectorAll('.bx-wall').forEach((w) => {
+                w.onpointerdown = (e) => {
+                    e.preventDefault();
+                    if (w.classList.contains('up')) return;
+                    w.classList.add('up');
+                    c.up += 1;
+                    if (c.up === 4) setStep(1);
+                };
+            });
+            setStep(0);
+        }
+
+        // the scoop: drag it from the tub into the carton
+        scoop.onpointerdown = (e) => {
             e.preventDefault();
-            const it = items.filter((i) => !i.done).sort((a, b) => a.born - b.born)[0]; // the lowest one in the chute
-            if (!it) return;
-            it.done = true;
-            const ok = good ? !it.bad : it.bad;
-            if (ok) { right += 1; setDone(right); }
-            it.el.classList.add(good ? 'to-good' : 'to-bad', ok ? 'ok' : 'no');
-            flash(good ? 'good' : 'bad');
-            if (!ok) { area.classList.remove('miss'); void area.offsetWidth; area.classList.add('miss'); }
-            setTimeout(() => it.el.remove(), 420);
+            if (!c) return;
+            ghost = document.createElement('div');
+            ghost.className = 'bx-scoop ghost';
+            ghost.innerHTML = '<i></i>';
+            area.appendChild(ghost);
+            moveGhost(e);
         };
-        window.addEventListener('keydown', onKey);
-        G.cleanup = () => window.removeEventListener('keydown', onKey);
-        G.step = (t) => {
-            while (next < N && t >= times[next]) {
-                const bad = Math.random() < 0.4;
-                const el = document.createElement('div');
-                el.className = 'mg-raisin';
-                el.innerHTML = RAISIN(bad);
-                area.appendChild(el);
-                items.push({ el, bad, born: t, done: false });
-                next += 1;
-            }
-            for (const it of items) {
-                if (it.done) continue;
-                const k = (t - it.born) / FALL;
-                it.el.style.top = `${-70 + k * (H + 40)}px`;
-                if (k >= 1) { // it fell off the end: lost
-                    it.done = true;
-                    it.el.classList.add('fell');
-                    setTimeout(() => it.el.remove(), 300);
-                }
+        const moveGhost = (e) => {
+            if (!ghost) return;
+            const r = area.getBoundingClientRect();
+            ghost.style.left = `${e.clientX - r.left - 40}px`;
+            ghost.style.top = `${e.clientY - r.top - 24}px`;
+        };
+        const overBox = (e) => {
+            const f = world.querySelector('.bx-floor').getBoundingClientRect();
+            return e.clientX > f.left - 20 && e.clientX < f.right + 20 && e.clientY > f.top - 40 && e.clientY < f.bottom + 20;
+        };
+        const dropScoop = (e) => {
+            const g = ghost;
+            ghost = null;
+            g.remove();
+            if (!c || !overBox(e)) return;
+            if (c.up < 4) { nudge(world); return; }          // the sides are still down: it would spill
+            if (c.scoops >= SCOOPS) return;
+            c.scoops += 1;
+            world.querySelector('.bx-fill').style.setProperty('--fill', String(c.scoops / SCOOPS));
+            if (c.scoops === SCOOPS) {
+                setTimeout(() => { if (c) { world.querySelector('.bx-lid').classList.add('shut'); setStep(2); } }, 260);
             }
         };
+
+        // the tape: press on the lid near one end and drag to the other end
+        const lidPress = (e) => {
+            const lid = e.target.closest && e.target.closest('.bx-lid');
+            if (!lid || !lid.classList.contains('shut') || !c || c.sealed) return false;
+            e.preventDefault();
+            const r = lid.getBoundingClientRect();
+            tape = { r, el: lid.querySelector('#bx-tape'), from: e.clientX < r.left + r.width / 2 ? 'l' : 'r' };
+            tape.el.classList.toggle('fromr', tape.from === 'r');
+            return true;
+        };
+        const moveTape = (e) => {
+            if (!tape) return;
+            const k = (e.clientX - tape.r.left) / tape.r.width;
+            const len = Math.max(0, Math.min(1, tape.from === 'l' ? k : 1 - k));
+            tape.el.style.setProperty('--len', String(len));
+            if (len >= 0.92) seal();
+        };
+        const seal = () => {
+            tape.el.style.setProperty('--len', '1');
+            tape = null;
+            c.sealed = true;
+            c = null;
+            done += 1;
+            setDone(done);
+            const mini = document.createElement('i');
+            stack.appendChild(mini);
+            world.classList.remove('in');
+            world.classList.add('out');
+            setTimeout(newCarton, 420);
+        };
+
+        const onDown = (e) => { lidPress(e); };
+        const onMove = (e) => { moveGhost(e); moveTape(e); };
+        const onUp = (e) => {
+            if (ghost) dropScoop(e);
+            if (tape) { tape.el.style.setProperty('--len', '0'); tape = null; } // let go too early: the tape comes off
+        };
+        area.addEventListener('pointerdown', onDown);
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        G.cleanup = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+        G.step = () => {};
+        newCarton();
     }
 
     function start(kind, count, seconds) {
@@ -436,7 +504,7 @@
         else if (kind === 'slaughter') slaughterGame(G.seconds);
         else if (kind === 'pick') pickGame(G.seconds);
         else if (kind === 'dry') dryGame(G.seconds);
-        else if (kind === 'sort') sortGame(G.seconds);
+        else if (kind === 'box') boxGame(G.seconds);
         else packGame(G.seconds);
         G.start = performance.now();
         G.raf = requestAnimationFrame(tick);
