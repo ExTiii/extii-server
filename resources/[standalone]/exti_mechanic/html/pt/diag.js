@@ -69,7 +69,7 @@
             </div>`;
         }
         return `<div class="pt-appwin">${PT.head('الورشة', 'الفحص', r ? PT.metaBox('اللوحة', r.plate) : '')}
-            <div class="pt-abody pad">${body}</div></div>`;
+            <div class="pt-abody pad" data-scroll="diag">${body}</div></div>`;
     }
 
     PT.app('diagnostics', {

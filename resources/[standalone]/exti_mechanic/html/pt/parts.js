@@ -40,7 +40,7 @@
             </section>
             <aside class="ps-side">
                 <h3>${I('receipt', 16, 2)} الطلبية</h3>
-                <div class="ps-lines">${lines || '<p class="pt-mute">اختر القطع من القائمة.</p>'}</div>
+                <div class="ps-lines" data-scroll="parts-cart">${lines || '<p class="pt-mute">اختر القطع من القائمة.</p>'}</div>
                 <div class="ps-total"><span>المجموع (${cartCount()})</span><b>${money(total)}</b></div>
                 <div class="ps-bal"><span>رصيد حساب الورشة</span><b class="${short ? 'bad' : ''}">${r.balance != null ? money(r.balance) : '—'}</b></div>
                 <button class="pt-btn primary" data-act="psOrder" ${!cartCount() || short || !r.canOrder || p.busy ? 'disabled' : ''}>${I('send', 15, 2)} ${p.busy ? 'جارٍ الطلب…' : 'اطلب الآن'}</button>
@@ -71,7 +71,7 @@
         const tabs = `<div class="pt-fchips ps-tabs"><button class="${p.tab === 'shop' ? 'on' : ''}" data-act="psTab" data-t="shop">المتجر</button><button class="${p.tab === 'orders' ? 'on' : ''}" data-act="psTab" data-t="orders">الطلبيات${r && PT.list(r.orders).some((o) => o.status === 'ready') ? ' •' : ''}</button></div>`;
         const body = !r ? '<div class="pt-empty"><span class="pt-spin"></span><p>جارٍ التحميل…</p></div>' : (p.tab === 'shop' ? shop() : orders());
         return `<div class="pt-appwin">${PT.head('الورشة', 'متجر القطع', r && r.balance != null ? PT.metaBox('حساب الورشة', `$${Number(r.balance).toLocaleString('en-US')}`) : '')}
-            <div class="pt-abody pad">${tabs}${body}</div></div>`;
+            <div class="pt-abody pad" data-scroll="parts-${p.tab}">${tabs}${body}</div></div>`;
     }
 
     // the countdown on the orders tab

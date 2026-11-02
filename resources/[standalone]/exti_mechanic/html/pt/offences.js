@@ -62,7 +62,7 @@
     function view() {
         const n = PT.list(O().list).length;
         return `<div class="pt-appwin">${PT.head('الفواتير', 'قوالب الفواتير', PT.metaBox('العدد', String(n)))}
-            <div class="pt-abody pad">${table(false)}</div></div>`;
+            <div class="pt-abody pad" data-scroll="offences">${table(false)}</div></div>`;
     }
 
     const num = (v) => { const s = String(v == null ? '' : v).replace(/[^\d]/g, ''); return s ? Number(s) : 0; };
