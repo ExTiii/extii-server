@@ -28,7 +28,6 @@ Config.types = {
             { name = 'sprunk', price = 10, category = 'food' },
             { name = 'redbull', price = 50, category = 'food', max = 10 }, -- 1 minute of sprinting without getting tired
             -- EX_Tii: no bandage here any more: medicine is sold at the two hospital pharmacies
-            { name = 'repairkit', price = 250, category = 'tools', max = 5 },
         },
     },
 
@@ -47,7 +46,6 @@ Config.types = {
             { name = 'water', price = 10, category = 'food' },
             { name = 'sprunk', price = 10, category = 'food' },
             { name = 'redbull', price = 50, category = 'food', max = 10 },
-            { name = 'repairkit', price = 250, category = 'tools', max = 5 },
         },
     },
 
@@ -74,8 +72,7 @@ Config.types = {
         circleDistance = 1.45,
         blip = { sprite = 402, colour = 3 },
         products = {
-            { name = 'repairkit', price = 250, category = 'tools', max = 5 }, -- engine only: enough to drive again
-            { name = 'advancedrepairkit', price = 1000, category = 'tools', max = 3, image = 'advancedkit.png' }, -- full fix: engine + body
+            -- EX_Tii: repair kits are for mechanics only now (they get them at the workshop)
             { name = 'lockpick', price = 10, category = 'tools', max = 10 },
         },
     },

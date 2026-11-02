@@ -23,6 +23,7 @@ Config.offDutyOnLogin = true      -- mechanics always start a session off duty (
 --   evidence  = the parts shelf (parts and things taken off customers' vehicles land here)
 --   garage    = the service units garage: tow trucks, flatbeds, vans (spawn = where the vehicle appears)
 --   cars      = the car garage: the workshop's cars (like the video: one garage for cars, one for service units)
+--   delivery  = where the boxes from the parts shop arrive
 Config.stations = {
     -- Benny's Original Motor Works, Strawberry (the workshop in the video). The spots are a first
     -- guess (not checked in game): stand where each one belongs and use /mechspots to place it.
@@ -36,6 +37,8 @@ Config.stations = {
         evidence = vec3(-218.50, -1321.50, 30.89),
         garage = { coords = vec3(-190.50, -1302.00, 31.30), spawn = vec4(-190.50, -1302.00, 31.30, 90.0) },
         cars = { coords = vec3(-190.50, -1310.00, 31.30), spawn = vec4(-190.50, -1310.00, 31.30, 90.0) },
+        -- where the parts shop's boxes arrive (move it with /mechspots → نقطة استلام القطع)
+        delivery = vec3(-224.00, -1309.00, 30.89),
     },
 }
 
@@ -214,5 +217,86 @@ Config.charges = {
         { 'تعديل أداء (مرحلة 1)', 'تعديل', 5000, 0 },
         { 'تعديل أداء (مرحلة 2)', 'تعديل', 12000, 0 },
         { 'تركيب نيتروز', 'تعديل', 8000, 0 },
+    },
+}
+
+-- =====================================================================
+-- SERVICE (part B): wear, diagnostics, repairs with mini-games, wash/wax, the parts shop
+-- =====================================================================
+-- Every car wears while it is driven (player cars, job cars, street cars). Cars people own and
+-- job cars (police / EMS / mechanic fleets) keep their condition in the database; a street car
+-- keeps it while the server runs.
+-- life = km of driving until the part is at 0% (a city hour of driving is about 40-60 km, so the
+-- oil lasts about 3 real hours of driving). Hard driving (very fast) wears up to 1.5x faster.
+Config.service = {
+    -- the parts of a petrol car. part = the item that replaces it, count = how many,
+    -- game = the mini-game recipe (see Config.service.recipes)
+    components = {
+        { id = 'engine_oil',  label = 'زيت المحرك',       life = 150, part = 'engine_oil',         count = 1, game = 'oil',     ice = true },
+        { id = 'air_filter',  label = 'فلتر الهواء',       life = 250, part = 'air_filter',         count = 1, game = 'filter',  ice = true },
+        { id = 'coolant',     label = 'سائل التبريد',      life = 220, part = 'coolant',            count = 1, game = 'pour',    ice = true, ev = true },
+        { id = 'spark_plugs', label = 'شمعات الإشعال',     life = 300, part = 'spark_plugs',        count = 1, game = 'plugs',   ice = true },
+        { id = 'brake_pads',  label = 'فحمات الفرامل',     life = 180, part = 'brake_pads',         count = 1, game = 'brakes',  ice = true, ev = true },
+        { id = 'brake_fluid', label = 'سائل الفرامل',      life = 350, part = 'brake_fluid',        count = 1, game = 'pour',    ice = true, ev = true },
+        { id = 'clutch',      label = 'القابض (الكلتش)',   life = 400, part = 'clutch_kit',         count = 1, game = 'clutch',  ice = true },
+        { id = 'trans_fluid', label = 'زيت ناقل الحركة',   life = 350, part = 'transmission_fluid', count = 1, game = 'pour',    ice = true },
+        { id = 'tires',       label = 'الإطارات',          life = 200, part = 'car_tire',           count = 4, game = 'wheels',  ice = true, ev = true },
+        -- electric cars only
+        { id = 'battery',     label = 'البطارية',          life = 400, part = 'ev_battery',         count = 1, game = 'battery', ev = true },
+        { id = 'motor',       label = 'المحرك الكهربائي',  life = 500, part = 'ev_motor',           count = 1, game = 'clutch',  ev = true },
+    },
+    -- a street car nobody owns starts somewhere in this range (%)
+    streetStart = { 55, 100 },
+    -- how often the driver's game reports the distance (seconds) and the database is written (seconds)
+    reportEvery = 20, saveEvery = 60,
+    -- when the effects start (%)
+    warnAt = 15,           -- below this: the part starts to misbehave (misfires, weak brakes, slipping clutch)
+    -- how close the mechanic must be to the car (metres)
+    reach = 4.0,
+    -- wash / wax
+    washItem = 'car_soap', waxItem = 'car_wax',
+    waxHours = 6,          -- a waxed car gets dirty much more slowly for this many real hours
+    -- the steps of every repair. pour = fill to the green line; torque = stop the needle in the green
+    -- (one per bolt); keys = press the keys shown; hold = hold SPACE until the bar is full;
+    -- skill = ox_lib skill check; wait = a progress bar; scrub = wash with the mouse
+    recipes = {
+        oil     = { { 'hold', 'فك سدادة الزيت' }, { 'wait', 'تصريف الزيت القديم', 6 }, { 'torque', 'أعد سدادة الزيت', 1 }, { 'pour', 'اسكب الزيت الجديد' } },
+        pour    = { { 'keys', 'افتح الغطاء', 3 }, { 'pour', 'اسكب حتى الخط الأخضر' } },
+        filter  = { { 'keys', 'فك غطاء الفلتر', 4 }, { 'wait', 'تبديل الفلتر', 3 }, { 'torque', 'اربط الغطاء', 2 } },
+        plugs   = { { 'skill', 'الشمعة 1' }, { 'skill', 'الشمعة 2' }, { 'skill', 'الشمعة 3' }, { 'skill', 'الشمعة 4' } },
+        brakes  = { { 'keys', 'فك العجلة', 5 }, { 'skill', 'فك الكاليبر' }, { 'wait', 'تركيب الفحمات الجديدة', 4 }, { 'torque', 'اربط البراغي', 5 } },
+        clutch  = { { 'keys', 'فك ناقل الحركة', 6 }, { 'wait', 'إخراج القطعة القديمة', 6 }, { 'skill', 'تثبيت القطعة الجديدة' }, { 'skill', 'ضبط المحاذاة' }, { 'torque', 'اربط البراغي', 6 } },
+        battery = { { 'keys', 'افصل الكهرباء', 6 }, { 'wait', 'إخراج البطارية', 6 }, { 'skill', 'ركّب البطارية الجديدة' }, { 'torque', 'اربط البراغي', 4 } },
+        -- one wheel (done 4 times): jack, lugs off, swap, torque
+        wheel   = { { 'wait', 'رفع السيارة بالرافعة', 2 }, { 'keys', 'فك الصواميل', 4 }, { 'wait', 'تبديل الإطار', 2 }, { 'torque', 'اربط الصواميل', 4 } },
+        wash    = { { 'scrub', 'نظّف السيارة بالإسفنجة' } },
+        wax     = { { 'scrub', 'وزّع الواكس على السيارة' } },
+    },
+}
+
+-- the parts shop on the tablet: paid from the workshop account, the box arrives at the delivery
+-- spot near the workshop after a few minutes and a mechanic carries it to the parts shelf
+Config.parts = {
+    orderGrade = 1,        -- from this rank up a mechanic may order (1 = ميكانيكي)
+    etaMinutes = 5,        -- how long a delivery takes (real minutes)
+    maxPerOrder = 40,      -- items in one order
+    keepDays = 14,         -- the orders list shows this many days
+    catalog = {
+        { item = 'engine_oil',         price = 60,   category = 'سوائل' },
+        { item = 'coolant',            price = 45,   category = 'سوائل' },
+        { item = 'brake_fluid',        price = 45,   category = 'سوائل' },
+        { item = 'transmission_fluid', price = 70,   category = 'سوائل' },
+        { item = 'air_filter',         price = 40,   category = 'محرك' },
+        { item = 'spark_plugs',        price = 90,   category = 'محرك' },
+        { item = 'clutch_kit',         price = 350,  category = 'ناقل الحركة' },
+        { item = 'brake_pads',         price = 120,  category = 'فرامل' },
+        { item = 'car_tire',           price = 80,   category = 'إطارات' },
+        { item = 'ev_battery',         price = 1500, category = 'كهربائي' },
+        { item = 'ev_motor',           price = 1200, category = 'كهربائي' },
+        { item = 'car_soap',           price = 15,   category = 'تنظيف' },
+        { item = 'car_wax',            price = 40,   category = 'تنظيف' },
+        { item = 'repairkit',          price = 150,  category = 'عُدد' },
+        { item = 'advancedrepairkit',  price = 400,  category = 'عُدد' },
+        { item = 'tirekit',            price = 100,  category = 'عُدد' },
     },
 }

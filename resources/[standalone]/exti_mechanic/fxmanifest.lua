@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'exti_mechanic'
 author 'EX_Tii'
-description 'EX_Tii Mechanic: the workshop (clock in terminal, cloakroom, personal locker, tool storage by rank, garages with the service trucks and cars, public forms), the mechanic tablet (map, chat, calendar, camera, gallery, form inbox, management, billing) and the bill sheet'
-version '1.0.0'
+description 'EX_Tii Mechanic: the workshop (clock in terminal, cloakroom, personal locker, tool storage by rank, garages with the service trucks and cars, public forms), service (wear, diagnostics, repairs with mini-games, wash/wax, parts shop), the mechanic tablet (map, chat, calendar, camera, gallery, form inbox, management, billing) and the bill sheet'
+version '1.1.0'
 
 dependencies {
     'ox_lib',
@@ -30,6 +30,8 @@ client_scripts {
     'client/forms.lua',
     'client/tablet.lua',
     'client/charges.lua',
+    'client/wear.lua',
+    'client/service.lua',
 }
 
 server_scripts {
@@ -41,6 +43,8 @@ server_scripts {
     'server/forms.lua',
     'server/tablet.lua',
     'server/charges.lua',
+    'server/service.lua',
+    'server/parts.lua',
     'server/photos.js',
 }
 
@@ -59,10 +63,14 @@ files {
     'html/forms.css',
     'html/charge.js',
     'html/charge.css',
+    'html/mg.js',
+    'html/mg.css',
+    'html/items/*.png',
     'html/fonts/*.woff2',
     'html/tablet.html',
     'html/locked.html',
     'html/pt/*.js',
     'html/pt/tablet.css',
+    'html/pt/service.css',
     'html/pt/img/map.jpg',
 }

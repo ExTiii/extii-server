@@ -793,4 +793,83 @@ return {
         label = 'أصفاد (Handcuffs)',
         weight = 200,
     },
+
+    -- EX_Tii mechanic: car parts (the pictures live in exti_mechanic/html/items)
+    ['engine_oil'] = {
+        label = 'زيت محرك (Engine Oil)',
+        weight = 1500,
+        client = { image = 'nui://exti_mechanic/html/items/engine_oil.png' },
+    },
+
+    ['air_filter'] = {
+        label = 'فلتر هواء (Air Filter)',
+        weight = 500,
+        client = { image = 'nui://exti_mechanic/html/items/air_filter.png' },
+    },
+
+    ['coolant'] = {
+        label = 'سائل تبريد (Coolant)',
+        weight = 1500,
+        client = { image = 'nui://exti_mechanic/html/items/coolant.png' },
+    },
+
+    ['spark_plugs'] = {
+        label = 'شمعات إشعال (Spark Plugs)',
+        weight = 400,
+        client = { image = 'nui://exti_mechanic/html/items/spark_plugs.png' },
+    },
+
+    ['brake_pads'] = {
+        label = 'فحمات فرامل (Brake Pads)',
+        weight = 1200,
+        client = { image = 'nui://exti_mechanic/html/items/brake_pads.png' },
+    },
+
+    ['brake_fluid'] = {
+        label = 'سائل فرامل (Brake Fluid)',
+        weight = 800,
+        client = { image = 'nui://exti_mechanic/html/items/brake_fluid.png' },
+    },
+
+    ['clutch_kit'] = {
+        label = 'طقم قابض (Clutch Kit)',
+        weight = 6000,
+        client = { image = 'nui://exti_mechanic/html/items/clutch_kit.png' },
+    },
+
+    ['transmission_fluid'] = {
+        label = 'زيت ناقل الحركة (Transmission Fluid)',
+        weight = 1500,
+        client = { image = 'nui://exti_mechanic/html/items/transmission_fluid.png' },
+    },
+
+    ['car_tire'] = {
+        label = 'إطار سيارة (Tire)',
+        weight = 8000,
+        client = { image = 'nui://exti_mechanic/html/items/car_tire.png' },
+    },
+
+    ['ev_battery'] = {
+        label = 'بطارية سيارة كهربائية (EV Battery)',
+        weight = 20000,
+        client = { image = 'nui://exti_mechanic/html/items/ev_battery.png' },
+    },
+
+    ['ev_motor'] = {
+        label = 'محرك كهربائي (EV Motor)',
+        weight = 15000,
+        client = { image = 'nui://exti_mechanic/html/items/ev_motor.png' },
+    },
+
+    ['car_soap'] = {
+        label = 'صابون سيارات (Car Soap)',
+        weight = 800,
+        client = { image = 'nui://exti_mechanic/html/items/car_soap.png' },
+    },
+
+    ['car_wax'] = {
+        label = 'واكس تلميع (Car Wax)',
+        weight = 600,
+        client = { image = 'nui://exti_mechanic/html/items/car_wax.png' },
+    },
 }

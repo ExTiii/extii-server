@@ -8,12 +8,12 @@ MEC = MEC or {}
 -- the spots an admin can move. point = an E spot; spawn = where a vehicle appears (with heading)
 MEC.SPOT_KINDS = {
     duty = 'point', cloakroom = 'point', locker = 'point', armory = 'point', forms = 'point', inbox = 'point',
-    evidence = 'point', garage = 'point', garageSpawn = 'spawn', cars = 'point', carsSpawn = 'spawn',
+    evidence = 'point', delivery = 'point', garage = 'point', garageSpawn = 'spawn', cars = 'point', carsSpawn = 'spawn',
 }
 -- these can also be removed from a station
-MEC.SPOT_OPTIONAL = { cloakroom = true, locker = true, armory = true, forms = true, inbox = true, evidence = true }
+MEC.SPOT_OPTIONAL = { cloakroom = true, locker = true, armory = true, forms = true, inbox = true, evidence = true, delivery = true }
 -- the simple E spots (not the garages)
-MEC.POINTS = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence' }
+MEC.POINTS = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence', 'delivery' }
 
 local DEFAULTS = {}
 for name, s in pairs(Config.stations) do

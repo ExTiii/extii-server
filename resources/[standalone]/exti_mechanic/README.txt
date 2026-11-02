@@ -1,4 +1,4 @@
-EX_Tii Mechanic (delivery A — the job)
+EX_Tii Mechanic (A: the job · B: service)
 ======================================
 
 The workshop (Benny's Original Motor Works, Strawberry — like the video)
@@ -34,3 +34,21 @@ _roles, _offences (the services), _charges (the bills), _gallery, _settings. Set
 
 Needs: exti_bank (Config.societies.mechanic), exti_radial (provider exti_mechanic:RadialMenu),
 qbx_core shared/jobs.lua (job "mechanic"), support-arabic, ox_lib, ox_inventory, ox_target, Renewed-Banking.
+
+SERVICE (part B)
+- Wear: every car wears while driven (oil, air filter, coolant, spark plugs, brake pads, brake fluid, clutch,
+  gearbox oil, tires; electric cars: battery, motor, coolant, brakes, tires). Owned cars and job fleets are
+  saved by plate (exti_mechanic_wear); street cars live in memory. Life of each part: Config.service.components.
+- What the driver feels: weak brakes, slipping clutch / stuck in first gear at 30 km/h, misfires, smoke, a dead
+  engine (oil or coolant at 0), tires bursting, slower EVs. A warning when getting into a worn car.
+- Repairs: on duty, next to any car: "[E] صيانة المركبة" -> every part with its %, the part item you need and how
+  many you carry -> each repair is a set of mini-games (hold, keys, torque, pour, skill check, scrub) with the right
+  animation. The part is used up only when it succeeds; the repair goes into the car's history (exti_mechanic_service).
+- Wash (car_soap) and wax (car_wax: the car stays clean for Config.service.waxHours).
+- Tablet → الفحص: stand next to a car (6 m): picture, plate, km, every part, engine/body, wax, service history.
+- Tablet → متجر القطع: order parts with the workshop account (rank ميكانيكي+), ETA Config.parts.etaMinutes; the box
+  appears at the delivery spot near the workshop (blip + box); "[E] استلام طلبيات القطع" puts it on the parts shelf.
+- Repair kits (exti_tools: repairkit / advancedrepairkit) work for on-duty mechanics only; removed from public shops.
+- Items: engine_oil, air_filter, coolant, spark_plugs, brake_pads, brake_fluid, clutch_kit, transmission_fluid,
+  car_tire, ev_battery, ev_motor, car_soap, car_wax (pictures in html/items).
+- Admin test: /carwear all 5  ·  /carwear engine_oil 0  (the car you sit in)

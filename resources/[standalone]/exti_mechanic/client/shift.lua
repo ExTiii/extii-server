@@ -228,12 +228,13 @@ local KIND_LABEL = {
     forms = 'نماذج الورشة (للمواطنين)',
     inbox = 'صندوق النماذج (كمبيوتر المكتب)',
     evidence = 'رفّ القطع',
+    delivery = 'نقطة استلام القطع',
     garage = 'مرآب مركبات الخدمة (مكان الزر)',
     garageSpawn = 'مرآب مركبات الخدمة (مكان ظهور المركبة)',
     cars = 'مرآب السيارات (مكان الزر)',
     carsSpawn = 'مرآب السيارات (مكان ظهور السيارة)',
 }
-local KIND_ORDER = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence', 'garage', 'garageSpawn', 'cars', 'carsSpawn' }
+local KIND_ORDER = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence', 'delivery', 'garage', 'garageSpawn', 'cars', 'carsSpawn' }
 
 local function spotNow(st, kind)
     if kind == 'garageSpawn' then return st.garage and st.garage.spawn end

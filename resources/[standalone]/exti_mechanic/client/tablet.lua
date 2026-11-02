@@ -253,6 +253,7 @@ for _, name in ipairs({
     'calendar', 'calendarAdd', 'calendarDelete',
     'formsList', 'formGet', 'formAction',
     'offences', 'offenceSave', 'offenceDelete',
+    'diagScan', 'partsView', 'partsOrder',
     'bossDashboard', 'bossCashFlow', 'bossFunds', 'bossDeposit', 'bossWithdraw', 'bossMembers',
     'bossSetGrade', 'bossFire', 'bossBonus', 'bossNearby', 'bossInvite', 'bossRoles', 'bossRoleSave', 'bossLogs',
 }) do ALLOWED[name] = true end
@@ -260,6 +261,13 @@ for _, name in ipairs({
 RegisterNUICallback('ptCall', function(data, cb)
     if not tablet.open or type(data) ~= 'table' or not ALLOWED[data.fn] then return cb({ ok = false, e = 'failed' }) end
     local a = type(data.args) == 'table' and data.args or {}
+    -- the diagnostics app: the game picks the car next to the mechanic
+    if data.fn == 'diagScan' then
+        local veh = lib.getClosestVehicle(GetEntityCoords(cache.ped), 6.0, true)
+        if not veh or not NetworkGetEntityIsNetworked(veh) then return cb({ ok = false, e = 'no_car' }) end
+        local okE, ev = pcall(GetIsVehicleElectric, GetEntityModel(veh))
+        a = { NetworkGetNetworkIdFromEntity(veh), okE and ev == true, GetDisplayNameFromVehicleModel(GetEntityModel(veh)) }
+    end
     -- up to 8 values (the price list sends 5: id, name, category, price, jail minutes)
     local ok, res, err = pcall(lib.callback.await, 'exti_mechanic:server:tab_' .. data.fn, false, a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8])
     if not ok then return cb({ ok = false, e = 'failed' }) end

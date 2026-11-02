@@ -196,6 +196,7 @@ end)
 ---------------------------------------------------------------------------
 -- the parts shelf (the evidence spot of a workshop): one shared stash, on duty only
 ---------------------------------------------------------------------------
+MEC.SHELF_ID = 'exti_mechanic_shelf'
 local SHELF = { id = 'exti_mechanic_shelf', label = 'رفّ القطع', slots = 60, weight = 400000 }
 MEC.withInventory(function()
     exports.ox_inventory:RegisterStash(SHELF.id, SHELF.label, SHELF.slots, SHELF.weight, nil, MEC.NOONE)

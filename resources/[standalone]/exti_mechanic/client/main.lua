@@ -218,6 +218,7 @@ local SPOT_TEXT = {
     evidence = '[E] رفّ القطع',
     garage = '[E] مرآب مركبات الخدمة',
     cars = '[E] مرآب السيارات',
+    delivery = '[E] استلام طلبيات القطع',
 }
 
 local function runSpot(spot)
@@ -229,6 +230,7 @@ local function runSpot(spot)
     if spot.kind == 'armory' then return openArmory() end
     if spot.kind == 'evidence' then return MEC.openShelf(spot) end
     if spot.kind == 'inbox' then return MEC.openInbox(spot) end
+    if spot.kind == 'delivery' then return MEC.collectParts(spot) end
     if spot.kind == 'garage' or spot.kind == 'cars' then
         if cache.vehicle then return MEC.parkIn(spot) end
         return MEC.openGarage(spot, spot.kind == 'cars' and 'car' or 'ground')
@@ -265,6 +267,11 @@ CreateThread(function()
                 -- the trunk of one of the team's vehicles
                 local tText, tAction = MEC.trunkPrompt(p)
                 if tText then text, action, sleep = tText, tAction, 0 end
+                -- any car next to an on-duty mechanic: the service menu
+                if not tText and MEC.servicePrompt then
+                    local sText, sAction = MEC.servicePrompt(p)
+                    if sText then text, action, sleep = sText, sAction, 0 end
+                end
             end
         end
         MEC.prompt(text)

@@ -990,3 +990,18 @@ AddEventHandler('qbx_core:server:onPaycheck', function(src, payment)
     local p = getPlayer(src)
     if p and isCop(p) then MEC.log(src, 'salary_paid', ('$%d'):format(tonumber(payment) or 0)) end
 end)
+
+---------------------------------------------------------------------------
+-- service (part B): the diagnostics app and the parts shop (server/service.lua, server/parts.lua)
+---------------------------------------------------------------------------
+cb('diagScan', function(source, netId, ev, model)
+    return MEC.diagScan(source, netId, ev, model)
+end)
+
+cb('partsView', function(source)
+    return MEC.partsView(source)
+end)
+
+cb('partsOrder', function(source, cart)
+    return MEC.partsOrder(source, cart)
+end)
