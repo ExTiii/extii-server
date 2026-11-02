@@ -337,6 +337,9 @@ local function removeMember(cid, why)
     return m
 end
 
+GANG.setMember, GANG.removeMember = setMember, removeMember
+GANG.cooldowns = cooldowns
+
 local function leftWait(cid)
     local row = MySQL.single.await('SELECT `left_at` FROM `exti_gang_left` WHERE `citizenid` = ?', { cid })
     if not row then return 0 end

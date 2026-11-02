@@ -37,6 +37,7 @@ server_scripts {
     'server/turf.lua',
     'server/craft.lua',
     'server/weed.lua',
+    'server/admin.lua',
 }
 
 ui_page 'html/index.html'

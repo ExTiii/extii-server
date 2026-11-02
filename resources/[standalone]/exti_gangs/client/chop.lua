@@ -240,3 +240,11 @@ CreateThread(function()
         Wait(sleep)
     end
 end)
+
+-- the admin panel's test button: play any minigame straight away (nothing is given or taken)
+exports('TestMinigame', function(game)
+    CreateThread(function()
+        local done = minigame(game, 'تجربة: ' .. tostring(game), { stacks = 3, bags = 6, label = 'لوحة الإدارة' })
+        lib.notify({ description = done and 'انتهت التجربة: نجحت' or 'أوقفت التجربة', type = done and 'success' or 'inform' })
+    end)
+end)
