@@ -24,6 +24,9 @@
         tools: 'أدوات',
         weapons: 'أسلحة',
         ammo: 'ذخيرة',
+        melee: 'أسلحة بيضاء',
+        parts: 'إضافات',
+        services: 'خدمات',
         work: 'مستلزمات العمل',
     };
 
@@ -32,6 +35,7 @@
         too_far: 'ابتعدت عن البائع، اقترب منه وحاول مرة أخرى',
         cant_carry: 'لا يوجد مكان كافٍ في حقيبتك',
         no_license: 'تحتاج رخصة سلاح لشراء هذا',
+        daily_limit: 'وصلت حدك اليومي من هذه الذخيرة',
         empty: 'السلة فارغة',
         busy: 'لحظة… جارٍ تنفيذ طلبك السابق',
         failed: 'حدث خطأ، حاول مرة أخرى',
@@ -316,7 +320,7 @@
             const r = $('receipt');
             r.classList.add('show');
             setTimeout(() => r.classList.remove('show'), 1600);
-            if (res.code === 'partial') setTimeout(() => toast('لم يتسع كل شيء في حقيبتك، أعدنا لك ثمن الباقي'), 1700);
+            if (res.code === 'partial') setTimeout(() => toast('لم يتم كل الطلب (لا مكان في الحقيبة، أو لا يوجد سلاح قانوني يحتاج صيانة)، أعدنا لك ثمن الباقي'), 1700);
         } else {
             renderCart();
             toast(ERRORS[res && res.code] || ERRORS.failed, 'error');

@@ -69,9 +69,13 @@ function GC.craft()
     if m.cooldown > 0 then opts[#opts + 1] = { title = ('الآلة تبرد: %d:%02d'):format(m.cooldown // 60, m.cooldown % 60), icon = 'clock', readOnly = true } end
     opts[#opts + 1] = { title = m.type == 'ammo' and ('مواد ذخيرة في المخزن: %d · يبقى اليوم %d طلقة'):format(m.parts, m.left)
                         or ('قطع أسلحة في المخزن: %d · يبقى اليوم %d سلاح'):format(m.parts, m.left), icon = 'box', readOnly = true }
+    if m.type == 'weapons' then
+        opts[#opts + 1] = { title = 'أصلح سلاحًا معك', description = 'أي سلاح غير سلاح الشرطة يعود 100% (قطع من المخزن)', icon = 'screwdriver-wrench',
+                            onSelect = function() CreateThread(GC.repairGun) end }
+    end
     for _, it in ipairs(m.list) do
         opts[#opts + 1] = {
-            title = it.label, icon = m.type == 'ammo' and 'circle-dot' or 'gun',
+            title = it.label, icon = m.type == 'ammo' and 'circle-dot' or it.attachment and 'puzzle-piece' or 'gun',
             description = it.open and (m.type == 'ammo' and ('1 مادة = %d طلقة'):format(m.perMaterial) or ('%d قطعة'):format(it.parts)) or ('يُفتح في السمعة %d'):format(it.rep),
             disabled = not it.open or m.cooldown > 0,
             onSelect = function()
@@ -89,6 +93,32 @@ function GC.craft()
     end
     lib.registerContext({ id = 'exti_gang_craft', title = m.type == 'ammo' and 'مكبس الذخيرة' or 'طاولة الأسلحة', options = opts })
     lib.showContext('exti_gang_craft')
+end
+
+---------------------------------------------------------------------------
+-- repair a gun at the Weapons gang bench
+---------------------------------------------------------------------------
+function GC.repairGun()
+    local ok, r = lib.callback.await('exti_gangs:server:repairList', false)
+    if not ok then return cfail(r) end
+    if #r.list == 0 then return GC.notify('ليس معك سلاح يحتاج إصلاحًا', 'inform') end
+    local opts = {}
+    for _, w in ipairs(r.list) do
+        opts[#opts + 1] = { title = w.label, description = ('الحالة %d%% · %d قطع من المخزن'):format(w.durability, r.parts), icon = 'gun',
+            progress = w.durability, colorScheme = w.durability < 30 and 'red' or 'yellow', disabled = r.have < r.parts,
+            onSelect = function()
+                CreateThread(function()
+                    local fine, secs = lib.callback.await('exti_gangs:server:repairBegin', false, w.slot)
+                    if not fine then return cfail(secs) end
+                    local done = lib.progressBar({ duration = secs * 1000, label = 'تفكّ السلاح وتنظّفه وتبدّل القطع...', canCancel = false, position = 'bottom',
+                        disable = { move = true, car = true, combat = true }, anim = { dict = 'mini@repair', clip = 'fixing_a_ped', flag = 1 } })
+                    local okF, label = lib.callback.await('exti_gangs:server:repairFinish', false)
+                    if okF then GC.notify(('أصلحت %s: 100%%'):format(label), 'success') else GC.notify('لم ينجح الإصلاح: أعدنا القطع إلى المخزن', 'error') end
+                end)
+            end }
+    end
+    lib.registerContext({ id = 'exti_gang_repair', title = 'إصلاح الأسلحة', menu = 'exti_gang_craft', options = opts })
+    lib.showContext('exti_gang_repair')
 end
 
 ---------------------------------------------------------------------------

@@ -93,6 +93,30 @@ lib.callback.register('exti_shops:server:open', function(source, index)
     }
 end)
 
+-- EX_Tii: what each character bought today (for products with a daily limit), kept across restarts
+DAILY = {}
+do
+    local function key(cid, name) return ('daily:%s:%s:%s'):format(os.date('%Y-%m-%d'), cid, name) end
+    function DAILY.get(cid, name) return GetResourceKvpInt(key(cid, name)) end
+    function DAILY.add(cid, name, n) SetResourceKvpInt(key(cid, name), DAILY.get(cid, name) + n) end
+end
+
+-- EX_Tii: the gun repair service: the most worn legal gun (registered serial, not a gang gun) back to 100%
+local function repairLegalGun(src)
+    local best, bestD = nil, 100
+    for _, it in pairs(exports.ox_inventory:GetInventoryItems(src) or {}) do
+        local m = it.metadata
+        if it.name:sub(1, 7) == 'WEAPON_' and m and not m.exti_craft and type(m.serial) == 'string' and m.serial ~= 'SCRATCHED' and not m.serial:match('POL') then
+            local d = tonumber(m.durability) or 100
+            if d < bestD then best, bestD = it, d end
+        end
+    end
+    if not best then return false end
+    best.metadata.durability = 100
+    exports.ox_inventory:SetMetadata(src, best.slot, best.metadata)
+    return true, best.label
+end
+
 ---@param cart { name: string, count: integer }[]
 ---@return table? lines, string? errorCode
 local function readCart(kind, cart, player)
@@ -109,6 +133,8 @@ local function readCart(kind, cart, player)
         if not product or seen[name] then return nil, 'failed' end
         if math.type(count) ~= 'integer' or count < 1 or count > (product.max or 25) then return nil, 'failed' end
         if not hasLicence(player, product.licence or product.license) then return nil, 'no_license' end
+        -- EX_Tii: a daily limit per character (ammo)
+        if product.daily and (DAILY.get(player.PlayerData.citizenid, name) + count) > product.daily then return nil, 'daily_limit' end
         local item = oxItem(name)
         if not item then return nil, 'failed' end
         seen[name] = true
@@ -147,10 +173,12 @@ lib.callback.register('exti_shops:server:buy', function(source, index, cart, acc
     if okWeight and canWeight == false then return false, 'cant_carry' end
     for i = 1, #lines do
         local l = lines[i]
-        local okCarry, canCarry = pcall(function()
-            return exports.ox_inventory:CanCarryItem(src, l.product.name, l.count, l.product.metadata)
-        end)
-        if not okCarry or not canCarry then return false, 'cant_carry' end
+        if not l.product.service then   -- (a service gives nothing to carry)
+            local okCarry, canCarry = pcall(function()
+                return exports.ox_inventory:CanCarryItem(src, l.product.name, l.count, l.product.metadata)
+            end)
+            if not okCarry or not canCarry then return false, 'cant_carry' end
+        end
     end
 
     local cash, bank = money(player)
@@ -166,7 +194,9 @@ lib.callback.register('exti_shops:server:buy', function(source, index, cart, acc
         for i = 1, #lines do
             local l = lines[i]
             local given = 0
-            if l.item.weapon then
+            if l.product.service == 'repair' then
+                if repairLegalGun(src) then given = 1 end
+            elseif l.item.weapon then
                 -- weapons one by one so each gets its own serial number
                 for _ = 1, l.count do
                     local metadata = copy(l.product.metadata)
@@ -177,6 +207,7 @@ lib.callback.register('exti_shops:server:buy', function(source, index, cart, acc
                 if exports.ox_inventory:AddItem(src, l.product.name, l.count, metadata) then given = l.count end
             end
             if given < l.count then refund = refund + (l.count - given) * l.product.price end
+            if given > 0 and l.product.daily then DAILY.add(player.PlayerData.citizenid, l.product.name, given) end
             if given > 0 then bought[#bought + 1] = ('%dx %s'):format(given, l.product.name) end
         end
 

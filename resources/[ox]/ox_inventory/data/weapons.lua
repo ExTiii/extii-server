@@ -1,720 +1,208 @@
 return {
 	Weapons = {
-		['WEAPON_BATTLERIFLE'] = {
-			label = 'بندقية قتالية (Battle Rifle)',
-			weight = 3300,
-			durability = 0.03,
-			ammoname = 'ammo-rifle2',
-		},
-
-		['WEAPON_SNOWLAUNCHER'] = {
-			label = 'قاذف كرات الثلج (Snowball Launcher)',
-			weight = 1000,
-			durability = 0.03,
-			ammoname = 'WEAPON_SNOWBALL',
-		},
-
-		['WEAPON_TECPISTOL'] = {
-			label = 'رشاش تكتيكي صغير (Tactical SMG)',
-			weight = 1500,
-			durability = 0.075,
-			ammoname = 'ammo-9',
-		},
-
-		['WEAPON_ADVANCEDRIFLE'] = {
-			label = 'بندقية متطورة (Advanced Rifle)',
-			weight = 3100,
-			durability = 0.03,
-			ammoname = 'ammo-rifle',
-		},
+		-- EX_Tii: the gun rework. 36 weapons (legal at Ammu-Nation, the Weapons gang, the police, heist loot only, melee, tools).
+		-- Every other GTA weapon was removed: an item that is not defined here is dropped from inventories by ox_inventory.
+		-- durability = what one shot wears off (0.1 = about 1,000 shots). Police guns (0) never wear.
 
 		['WEAPON_APPISTOL'] = {
 			label = 'مسدس خارق للدروع (AP Pistol)',
 			weight = 1400,
-			durability = 0.1,
+			durability = 0.0667,
 			ammoname = 'ammo-9',
 		},
-
 		['WEAPON_ASSAULTRIFLE'] = {
 			label = 'بندقية هجومية (Assault Rifle)',
 			weight = 4500,
-			durability = 0.03,
+			durability = 0.05,
 			ammoname = 'ammo-rifle2',
 		},
-
-		['WEAPON_ASSAULTRIFLE_MK2'] = {
-			label = 'بندقية هجومية MK2 (Assault Rifle MK2)',
-			weight = 2950,
-			durability = 0.03,
-			ammoname = 'ammo-rifle2',
-		},
-
-		['WEAPON_ASSAULTSHOTGUN'] = {
-			label = 'بندقية صيد هجومية (Assault Shotgun)',
-			weight = 5200,
-			durability = 0.05,
-			ammoname = 'ammo-shotgun'
-		},
-
-		['WEAPON_ASSAULTSMG'] = {
-			label = 'رشاش هجومي صغير (Assault SMG)',
-			weight = 2900,
-			durability = 0.05,
-			ammoname = 'ammo-rifle'
-		},
-
-		['WEAPON_BALL'] = {
-			label = 'كرة (Ball)',
-			weight = 149,
-			throwable = true,
-		},
-
 		['WEAPON_BAT'] = {
 			label = 'مضرب بيسبول (Bat)',
 			weight = 1134,
 			durability = 0.1,
 		},
-
-		['WEAPON_BATTLEAXE'] = {
-			label = 'فأس قتالي (Battle Axe)',
-			weight = 6500,
-			durability = 0.1,
-		},
-
-		['WEAPON_BOTTLE'] = {
-			label = 'زجاجة (Bottle)',
-			weight = 350,
-			durability = 0.1,
-		},
-
-		['WEAPON_BULLPUPRIFLE'] = {
-			label = 'بندقية بولباب (Bullpup Rifle)',
-			weight = 2900,
-			durability = 0.03,
-			ammoname = 'ammo-rifle'
-		},
-
-		['WEAPON_BULLPUPRIFLE_MK2'] = {
-			label = 'بندقية بولباب MK2 (Bullpup Rifle MK2)',
-			weight = 2900,
-			durability = 0.03,
-			ammoname = 'ammo-rifle'
-		},
-
-		['WEAPON_BULLPUPSHOTGUN'] = {
-			label = 'بندقية صيد بولباب (Bullpup Shotgun)',
-			weight = 3100,
-			durability = 0.2,
-			ammoname = 'ammo-shotgun'
-		},
-
-		['WEAPON_BZGAS'] = {
-			label = 'غاز BZ (BZ Gas)',
-			weight = 600,
-			throwable = true,
-		},
-
 		['WEAPON_CARBINERIFLE'] = {
 			label = 'بندقية كاربين (Carbine Rifle)',
 			weight = 3100,
-			durability = 0.03,
+			durability = 0,
 			ammoname = 'ammo-rifle'
 		},
-
-		['WEAPON_CARBINERIFLE_MK2'] = {
-			label = 'بندقية كاربين MK2 (Carbine Rifle MK2)',
-			weight = 3000,
-			durability = 0.03,
-			ammoname = 'ammo-rifle'
-		},
-
-		['WEAPON_CERAMICPISTOL'] = {
-			label = 'مسدس سيراميك (Ceramic Pistol)',
-			weight = 800,
-			durability = 0.2,
-			ammoname = 'ammo-9'
-		},
-
-		['WEAPON_PISTOLXM3'] = {
-			label = 'مسدس WM 29 (WM 29 Pistol)',
-			weight = 969,
-			durability = 0.2,
-			ammoname = 'ammo-9'
-		},
-
-		['WEAPON_COMBATMG'] = {
-			label = 'رشاش قتالي (Combat MG)',
-			weight = 7500,
-			durability = 0.02,
-			ammoname = 'ammo-rifle'
-		},
-
-		['WEAPON_COMBATMG_MK2'] = {
-			label = 'رشاش قتالي MK2 (Combat MG MK2)',
-			weight = 8000,
-			durability = 0.02,
-			ammoname = 'ammo-rifle2'
-		},
-
-		['WEAPON_COMBATPDW'] = {
-			label = 'رشاش دفاع شخصي (Combat PDW)',
-			weight = 2300,
-			durability = 0.1,
-			ammoname = 'ammo-9'
-		},
-
 		['WEAPON_COMBATPISTOL'] = {
 			label = 'مسدس قتالي (Combat Pistol)',
 			weight = 785,
-			durability = 0.2,
+			durability = 0,
 			ammoname = 'ammo-9'
 		},
-
-		['WEAPON_COMBATSHOTGUN'] = {
-			label = 'بندقية صيد قتالية (Combat Shotgun)',
-			weight = 4400,
-			durability = 0.2,
-			ammoname = 'ammo-shotgun'
-		},
-
-		['WEAPON_COMPACTLAUNCHER'] = {
-			label = 'قاذف قنابل صغير (Compact Grenade Launcher)',
-			weight = 2500,
-			durability = 0.05,
-			ammoname = 'ammo-grenade'
-		},
-
 		['WEAPON_COMPACTRIFLE'] = {
 			label = 'بندقية صغيرة (Compact Rifle)',
 			weight = 3600,
 			durability = 0.05,
 			ammoname = 'ammo-rifle2'
 		},
-
 		['WEAPON_CROWBAR'] = {
 			label = 'عتلة (Crowbar)',
 			weight = 2500,
 			durability = 0.1,
 		},
-
-		['WEAPON_DAGGER'] = {
-			label = 'خنجر (Dagger)',
-			weight = 800,
-			durability = 0.1,
-		},
-
 		['WEAPON_DBSHOTGUN'] = {
 			label = 'بندقية صيد بماسورتين (Double Barrel Shotgun)',
 			weight = 3175,
-			durability = 0.4,
+			durability = 0.1,
 			ammoname = 'ammo-shotgun'
 		},
-
-		['WEAPON_DOUBLEACTION'] = {
-			label = 'مسدس دوّار مزدوج الحركة (Double Action Revolver)',
-			weight = 940,
-			durability = 0.2,
-			ammoname = 'ammo-38'
-		},
-
-		['WEAPON_EMPLAUNCHER'] = {
-			label = 'قاذف نبضات كهرومغناطيسية (Compact EMP Launcher)',
-			weight = 2750,
-			durability = 0.2,
-			ammoname = 'ammo-emp'
-		},
-
 		['WEAPON_FIREEXTINGUISHER'] = {
 			label = 'طفاية حريق (Fire Extinguisher)',
 			weight = 8616,
             durability = 0.006
 		},
-
-		['WEAPON_FIREWORK'] = {
-			label = 'قاذف ألعاب نارية (Firework Launcher)',
-			weight = 1000,
-			durability = 0.5,
-			ammoname = 'ammo-firework'
-		},
-
-		['WEAPON_FLARE'] = {
-			label = 'شعلة (Flare)',
-			weight = 250,
-			throwable = true,
-		},
-
-		['WEAPON_FLAREGUN'] = {
-			label = 'مسدس إشارة (Flare Gun)',
-			weight = 1000,
-			durability = 0.5,
-			ammoname = 'ammo-flare'
-		},
-
 		['WEAPON_FLASHLIGHT'] = {
 			label = 'كشاف (Flashlight)',
 			weight = 125,
 			durability = 0.1,
 		},
-
 		['WEAPON_GOLFCLUB'] = {
 			label = 'مضرب غولف (Golf Club)',
 			weight = 330,
 			durability = 0.1,
 		},
-
 		['WEAPON_GRENADE'] = {
 			label = 'قنبلة يدوية (Grenade)',
 			weight = 400,
 			throwable = true,
 		},
-
-		['WEAPON_GRENADELAUNCHER'] = {
-			label = 'قاذف قنابل (Grenade Launcher)',
-			weight = 6500,
-			durability = 0.05,
-			ammoname = 'ammo-grenade'
-		},
-
-		['WEAPON_GUSENBERG'] = {
-			label = 'رشاش غوزنبرغ (Gusenberg)',
-			weight = 4900,
-			durability = 0.04,
-			ammoname = 'ammo-45'
-		},
-
 		['WEAPON_HAMMER'] = {
 			label = 'مطرقة (Hammer)',
 			weight = 1200,
 			durability = 0.1,
 		},
-
 		['WEAPON_HATCHET'] = {
 			label = 'فأس صغير (Hatchet)',
 			weight = 1000,
 			durability = 0.1,
 		},
-
-		['WEAPON_HEAVYRIFLE'] = {
-			label = 'بندقية ثقيلة (Heavy Rifle)',
-			weight = 3300,
-			durability = 0.2,
-			ammoname = 'ammo-rifle'
-		},
-
-		['WEAPON_HAZARDCAN'] = {
-			label = 'علبة مواد خطرة (Hazard Can)',
-			weight = 12000,
-		},
-
-		['WEAPON_METALDETECTOR'] = {
-			label = 'جهاز كشف المعادن (Metal Detector)',
-			weight = 1200,
-		},
-
-		['WEAPON_HOMINGLAUNCHER'] = {
-			label = 'قاذف صواريخ موجهة (Homing Launcher)',
-			weight = 10000,
-			durability = 0.6,
-			ammoname = 'ammo-rocket'
-		},
-
-		['WEAPON_FERTILIZERCAN'] = {
-			label = 'علبة سماد (Fertilizer Can)',
-			weight = 12000,
-		},
-
 		['WEAPON_HEAVYPISTOL'] = {
 			label = 'مسدس ثقيل (Heavy Pistol)',
 			weight = 1100,
-			durability = 0.2,
+			durability = 0.1,
 			ammoname = 'ammo-45'
 		},
-
-		['WEAPON_HEAVYSHOTGUN'] = {
-			label = 'بندقية صيد ثقيلة (Heavy Shotgun)',
-			weight = 3600,
-			durability = 0.1,
-			ammoname = 'ammo-shotgun'
-		},
-
-		['WEAPON_HEAVYSNIPER'] = {
-			label = 'قناصة ثقيلة (Heavy Sniper)',
-			weight = 12700,
-			durability = 0.5,
-			ammoname = 'ammo-heavysniper'
-		},
-
-		['WEAPON_HEAVYSNIPER_MK2'] = {
-			label = 'قناصة ثقيلة MK2 (Heavy Sniper MK2)',
-			weight = 14000,
-			durability = 0.5,
-			ammoname = 'ammo-heavysniper'
-		},
-
 		['WEAPON_KNIFE'] = {
 			label = 'سكين (Knife)',
 			weight = 300,
 			durability = 0.1,
 		},
-
 		['WEAPON_KNUCKLE'] = {
 			label = 'قبضة حديدية (Knuckle Dusters)',
 			weight = 300,
 			durability = 0.1,
 		},
-
 		['WEAPON_MACHETE'] = {
 			label = 'ساطور (Machete)',
 			weight = 1000,
 			durability = 0.1,
 		},
-
 		['WEAPON_MACHINEPISTOL'] = {
 			label = 'مسدس رشاش (Machine Pistol)',
 			weight = 1400,
-			durability = 0.05,
+			durability = 0.0667,
 			ammoname = 'ammo-9'
 		},
-
-		['WEAPON_MARKSMANPISTOL'] = {
-			label = 'مسدس رماية (Marksman Pistol)',
-			weight = 1588,
-			durability = 0.5,
-			ammoname = 'ammo-22'
-		},
-
-		['WEAPON_MARKSMANRIFLE'] = {
-			label = 'بندقية رماية (Marksman Rifle)',
-			weight = 7500,
-			durability = 0.4,
-			ammoname = 'ammo-sniper'
-		},
-
-		['WEAPON_MARKSMANRIFLE_MK2'] = {
-			label = 'بندقية رماية MK2 (Marksman Rifle MK2)',
-			weight = 4000,
-			durability = 0.4,
-			ammoname = 'ammo-sniper'
-		},
-
-		['WEAPON_MG'] = {
-			label = 'رشاش (Machine Gun)',
-			weight = 9000,
-			durability = 0.02,
-			ammoname = 'ammo-rifle2'
-		},
-
-		['WEAPON_MINIGUN'] = {
-			label = 'رشاش دوّار (Minigun)',
-			weight = 38500,
-			durability = 0.1,
-			ammoname = 'ammo-rifle2'
-		},
-
 		['WEAPON_MICROSMG'] = {
 			label = 'رشاش صغير جدًا (Micro SMG)',
 			weight = 3000,
-			durability = 0.1,
+			durability = 0.0667,
 			ammoname = 'ammo-45'
 		},
-
-		['WEAPON_MILITARYRIFLE'] = {
-			label = 'بندقية عسكرية (Military Rifle)',
-			weight = 3600,
-			durability = 0.03,
-			ammoname = 'ammo-rifle'
-		},
-
 		['WEAPON_MINISMG'] = {
 			label = 'رشاش مصغّر (Mini SMG)',
 			weight = 1270,
-			durability = 0.05,
+			durability = 0.0667,
 			ammoname = 'ammo-9'
 		},
-
-		['WEAPON_MOLOTOV'] = {
-			label = 'زجاجة مولوتوف (Molotov)',
-			weight = 1800,
-			throwable = true,
-		},
-
 		['WEAPON_MUSKET'] = {
 			label = 'بندقية قديمة (Musket)',
 			weight = 4500,
-			durability = 0.5,
+			durability = 0.1,
 			ammoname = 'ammo-musket'
 		},
-
-		['WEAPON_NAVYREVOLVER'] = {
-			label = 'مسدس دوّار بحري (Navy Revolver)',
-			weight = 4000,
-			durability = 0.2,
-			ammoname = 'ammo-44'
-		},
-
 		['WEAPON_NIGHTSTICK'] = {
 			label = 'هراوة (Nightstick)',
 			weight = 1000,
 			durability = 0.1,
 		},
-
 		['WEAPON_PETROLCAN'] = {
 			label = 'جالون وقود (Jerry Can)',
 			weight = 4000,
 		},
-
-		['WEAPON_GADGETPISTOL'] = {
-			label = 'مسدس بيريكو (Perico Pistol)',
-			weight = 1750,
-			durability = 0.1,
-			ammoname = 'ammo-9'
-		},
-
-		['WEAPON_PIPEBOMB'] = {
-			label = 'قنبلة أنبوبية (Pipe Bomb)',
-			weight = 1800,
-			throwable = true,
-		},
-
 		['WEAPON_PISTOL'] = {
 			label = 'مسدس (Pistol)',
 			weight = 1130,
 			durability = 0.1,
 			ammoname = 'ammo-9',
 		},
-
-		['WEAPON_PISTOL50'] = {
-			label = 'مسدس عيار .50 (Pistol .50)',
-			weight = 2000,
-			durability = 0.1,
-			ammoname = 'ammo-50'
-		},
-
-		['WEAPON_PISTOL_MK2'] = {
-			label = 'مسدس MK2 (Pistol MK2)',
-			weight = 1000,
-			durability = 0.5,
-			ammoname = 'ammo-9'
-		},
-
-		['WEAPON_POOLCUE'] = {
-			label = 'عصا بلياردو (Pool Cue)',
-			weight = 146,
-			durability = 0.1,
-		},
-
-		['WEAPON_CANDYCANE'] = {
-			label = 'عصا حلوى (Candy Cane)',
-			weight = 85,
-			durability = 0.1,
-		},
-
-		['WEAPON_PROXMINE'] = {
-			label = 'لغم تقاربي (Proximity Mine)',
-			weight = 2500,
-			throwable = true,
-		},
-
 		['WEAPON_PUMPSHOTGUN'] = {
 			label = 'بندقية صيد مضخية (Pump Shotgun)',
 			weight = 3400,
 			durability = 0.1,
 			ammoname = 'ammo-shotgun'
 		},
-
-		['WEAPON_PUMPSHOTGUN_MK2'] = {
-			label = 'بندقية صيد مضخية MK2 (Pump Shotgun MK2)',
-			weight = 3200,
-			durability = 0.1,
-			ammoname = 'ammo-shotgun'
-		},
-
-		['WEAPON_RAILGUN'] = {
-			label = 'مدفع كهرومغناطيسي (Railgun)',
-			weight = 3570,
-			durability = 0.5,
-			ammoname = 'ammo-railgun'
-		},
-
-		['WEAPON_RAILGUNXM3'] = {
-			label = 'مدفع كهرومغناطيسي XM3 (Railgun XM3)',
-			weight = 3570,
-			durability = 0.5,
-			ammoname = 'ammo-railgun'
-		},
-
-		['WEAPON_RAYCARBINE'] = {
-			label = 'رشاش هيلبرينغر (Unholy Hellbringer)',
-			weight = 3620,
-			durability = 0.2,
-			ammoname = 'ammo-laser'
-		},
-
-		['WEAPON_RAYPISTOL'] = {
-			label = 'مسدس الذرّات (Up-n-Atomizer)',
-			weight = 1540,
-			durability = 0.5
-		},
-
 		['WEAPON_REVOLVER'] = {
 			label = 'مسدس دوّار (Revolver)',
 			weight = 2260,
 			durability = 0.1,
 			ammoname = 'ammo-44'
 		},
-
-		['WEAPON_REVOLVER_MK2'] = {
-			label = 'مسدس دوّار MK2 (Revolver MK2)',
-			weight = 2600,
-			durability = 0.1,
-			ammoname = 'ammo-44'
-		},
-
-		['WEAPON_RPG'] = {
-			label = 'قاذف صواريخ RPG (RPG)',
-			weight = 5000,
-			durability = 0.3,
-			ammoname = 'ammo-rocket'
-		},
-
 		['WEAPON_SAWNOFFSHOTGUN'] = {
 			label = 'بندقية صيد مقصوصة (Sawn Off Shotgun)',
 			weight = 2380,
 			durability = 0.1,
 			ammoname = 'ammo-shotgun'
 		},
-
 		['WEAPON_SMG'] = {
 			label = 'رشاش صغير (SMG)',
 			weight = 3084,
-			durability = 0.8,
+			durability = 0,
 			ammoname = 'ammo-9'
 		},
-
-		['WEAPON_SMG_MK2'] = {
-			label = 'رشاش صغير MK2 (SMG MK2)',
-			weight = 2700,
-			durability = 0.05,
-			ammoname = 'ammo-9'
-		},
-
-		['WEAPON_SMOKEGRENADE'] = {
-			label = 'قنبلة دخان (Smoke Grenade)',
-			weight = 600,
-			throwable = true,
-		},
-
 		['WEAPON_SNIPERRIFLE'] = {
 			label = 'بندقية قنص (Sniper Rifle)',
 			weight = 5000,
-			durability = 0.5,
+			durability = 0,
 			ammoname = 'ammo-sniper'
 		},
-
-		['WEAPON_SNOWBALL'] = {
-			label = 'كرة ثلج (Snowball)',
-			weight = 5,
-			throwable = true,
-		},
-
 		['WEAPON_SNSPISTOL'] = {
 			label = 'مسدس جيب (SNS Pistol)',
 			weight = 465,
 			durability = 0.1,
 			ammoname = 'ammo-45'
 		},
-
-		['WEAPON_SNSPISTOL_MK2'] = {
-			label = 'مسدس جيب MK2 (SNS Pistol MK2)',
-			weight = 465,
-			durability = 0.1,
-			ammoname = 'ammo-45'
-		},
-
 		['WEAPON_SPECIALCARBINE'] = {
 			label = 'كاربين خاص (Special Carbine)',
 			weight = 3000,
-			durability = 0.03,
+			durability = 0.05,
 			ammoname = 'ammo-rifle'
 		},
-
-		['WEAPON_SPECIALCARBINE_MK2'] = {
-			label = 'كاربين خاص MK2 (Special Carbine MK2)',
-			weight = 3370,
-			durability = 0.03,
-			ammoname = 'ammo-rifle'
-		},
-
-		['WEAPON_STICKYBOMB'] = {
-			label = 'قنبلة لاصقة (Sticky Bomb)',
-			weight = 1000,
-			throwable = true,
-		},
-
-		['WEAPON_STONE_HATCHET'] = {
-			label = 'فأس حجري (Stone Hatchet)',
-			weight = 800,
-			durability = 0.1,
-		},
-
 		['WEAPON_STUNGUN'] = {
 			label = 'مسدس صاعق (Taser)',
 			weight = 227,
-			durability = 0.1,
+			durability = 0,
 		},
-
-		['WEAPON_AUTOSHOTGUN'] = {
-			label = 'بندقية صيد سويبر (Sweeper Shotgun)',
-			weight = 4400,
-			durability = 0.05,
-			ammoname = 'ammo-shotgun'
-		},
-
 		['WEAPON_SWITCHBLADE'] = {
 			label = 'مطواة (Switchblade)',
 			weight = 300,
 			durability = 0.1,
 			anim = { 'anim@melee@switchblade@holster', 'unholster', 200, 'anim@melee@switchblade@holster', 'holster', 600 },
 		},
-
 		['WEAPON_VINTAGEPISTOL'] = {
 			label = 'مسدس قديم (Vintage Pistol)',
 			weight = 700,
 			durability = 0.1,
 			ammoname = 'ammo-9'
 		},
-
-		['WEAPON_RAYMINIGUN'] = {
-			label = 'رشاش ويدو ميكر (Widowmaker)',
-			weight = 7000,
-			durability = 0.1,
-			ammoname = 'ammo-laser'
-		},
-
 		['WEAPON_WRENCH'] = {
 			label = 'مفتاح ربط (Wrench)',
 			weight = 2500,
 			durability = 0.1,
-		},
-
-		['WEAPON_PRECISIONRIFLE'] = {
-			label = 'بندقية دقيقة (Precision Rifle)',
-			weight = 4800,
-			durability = 0.4,
-			ammoname = 'ammo-sniper'
-		},
-
-		['WEAPON_TACTICALRIFLE'] = {
-			label = 'بندقية تكتيكية (Tactical Rifle)',
-			weight = 3400,
-			durability = 0.03,
-			ammoname = 'ammo-rifle'
-		},
-
-		['WEAPON_TEARGAS'] = {
-			label = 'غاز مسيل للدموع (Tear Gas)',
-			weight = 600,
-			throwable = true,
 		},
 	},
 

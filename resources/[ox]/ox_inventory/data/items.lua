@@ -1070,6 +1070,14 @@ return {
         description = 'من الحصاد: تُقلَّم وتُعبّأ في أكياس 2 غرام على طاولة العصابة',
     },
 
+    -- EX_Tii gun rework: the Ammu-Nation repair service (bought at the counter, never carried)
+    ['gun_repair'] = {
+        label = 'صيانة سلاح (Gun Repair)',
+        weight = 0,
+        description = 'يُصلح أكثر سلاح قانوني مستهلك معك إلى 100%',
+        client = { image = 'cleaningkit.png' },
+    },
+
     -- EX_Tii gangs: turf graffiti (tools shop). One can = one tag; the brush scrubs 3 rival tags
     ['spray_can'] = {
         label = 'علبة رش',

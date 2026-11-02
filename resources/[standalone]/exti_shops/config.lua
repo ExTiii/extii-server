@@ -95,10 +95,33 @@ Config.types = {
         circleDistance = 1.6,
         blip = false, -- no map icon (map cleanup)
         products = {
-            { name = 'WEAPON_KNIFE', price = 200, category = 'weapons', max = 1 },
-            { name = 'WEAPON_BAT', price = 100, category = 'weapons', max = 1 },
-            { name = 'WEAPON_PISTOL', price = 1000, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
-            { name = 'ammo-9', price = 5, category = 'ammo', max = 250, step = 10 },
+            -- EX_Tii gun rework: the legal guns (weapon licence, the serial is registered to the buyer)
+            { name = 'WEAPON_SNSPISTOL', price = 1125, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
+            { name = 'WEAPON_PISTOL', price = 1800, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
+            { name = 'WEAPON_VINTAGEPISTOL', price = 2250, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
+            { name = 'WEAPON_PUMPSHOTGUN', price = 3750, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
+            { name = 'WEAPON_MUSKET', price = 2700, category = 'weapons', max = 1, license = 'weapon', metadata = { registered = true } },
+            -- melee (no licence)
+            { name = 'WEAPON_KNIFE', price = 300, category = 'melee', max = 1 },
+            { name = 'WEAPON_SWITCHBLADE', price = 270, category = 'melee', max = 1 },
+            { name = 'WEAPON_MACHETE', price = 300, category = 'melee', max = 1 },
+            { name = 'WEAPON_HATCHET', price = 225, category = 'melee', max = 1 },
+            { name = 'WEAPON_BAT', price = 150, category = 'melee', max = 1 },
+            { name = 'WEAPON_GOLFCLUB', price = 180, category = 'melee', max = 1 },
+            { name = 'WEAPON_CROWBAR', price = 120, category = 'melee', max = 1 },
+            { name = 'WEAPON_HAMMER', price = 90, category = 'melee', max = 1 },
+            { name = 'WEAPON_WRENCH', price = 90, category = 'melee', max = 1 },
+            { name = 'WEAPON_KNUCKLE', price = 300, category = 'melee', max = 1 },
+            -- ammo: a little per player per day (the rest comes from the Ammo gang)
+            { name = 'ammo-9', price = 8, category = 'ammo', max = 60, step = 10, daily = 60 },
+            { name = 'ammo-45', price = 8, category = 'ammo', max = 36, step = 6, daily = 36 },
+            { name = 'ammo-shotgun', price = 12, category = 'ammo', max = 24, step = 6, daily = 24 },
+            { name = 'ammo-musket', price = 15, category = 'ammo', max = 20, step = 5, daily = 20 },
+            -- legal attachments (the rest only from the Weapons gang)
+            { name = 'at_flashlight', price = 225, category = 'parts', max = 1 },
+            { name = 'at_grip', price = 340, category = 'parts', max = 1 },
+            -- a service: fixes the most worn legal gun you carry (not gang guns with no serial)
+            { name = 'gun_repair', price = 450, category = 'services', max = 1, service = 'repair' },
         },
     },
 }

@@ -33,6 +33,7 @@ local function menuOf(g)
         for i, t in ipairs(AM.types) do out[#out + 1] = { i = i, label = t.label, item = t.item, rep = t.rep, open = lv >= t.rep } end
     elseif g.type == 'weapons' then
         for i, t in ipairs(WP.guns) do out[#out + 1] = { i = i, label = t.label, item = t.item, rep = t.rep, parts = t.parts, open = lv >= t.rep } end
+        for i, t in ipairs(WP.attachments or {}) do out[#out + 1] = { i = 100 + i, label = t.label, item = t.item, rep = t.rep, parts = t.parts, open = lv >= t.rep, attachment = true } end
     end
     return out
 end
@@ -80,6 +81,13 @@ lib.callback.register('exti_gangs:server:craftBegin', function(source, choice, a
         if amount < 1 then return false, 'daily' end
         s.item, s.count, s.parts, s.label = t.item, amount * AM.perMaterial, amount, t.label
         s.seconds = AM.stageSeconds
+    elseif choice and choice > 100 then
+        -- an attachment (no daily cap)
+        local t = WP.attachments and WP.attachments[choice - 100]
+        if not t then return false, 'bad' end
+        if lv < t.rep then return false, 'rep' end
+        s.item, s.count, s.parts, s.label, s.attachment = t.item, 1, t.parts, t.label, true
+        s.seconds = WP.stageSeconds
     else
         local t = choice and WP.guns[choice]
         if not t then return false, 'bad' end
@@ -90,7 +98,7 @@ lib.callback.register('exti_gangs:server:craftBegin', function(source, choice, a
     end
     local stash = GANG.stashId(g)
     -- room for what comes out (a full stash would swallow the product)
-    if not ox:CanCarryItem(stash, s.item, s.count, g.type == 'weapons' and { serial = WP.serial } or nil) then return false, 'stashfull' end
+    if not ox:CanCarryItem(stash, s.item, s.count, (g.type == 'weapons' and not s.attachment) and { serial = WP.serial } or nil) then return false, 'stashfull' end
     -- the machine is taken before the stash is touched (two presses can't start two batches)
     sessions[g.name] = s
     if (ox:GetItemCount(stash, part) or 0) < s.parts or not ox:RemoveItem(stash, part, s.parts) then
@@ -128,6 +136,8 @@ lib.callback.register('exti_gangs:server:craftStage', function(source, token, st
         GANG.addDaily('g', g.name, 'rounds', s.count)
         give(s.item, s.count)
         GANG.addRep(g, C.rep.gain.ammo, 'ammo')
+    elseif s.attachment then
+        give(s.item, 1)
     else
         GANG.addDaily('g', g.name, 'guns', 1)
         give(s.item, 1, { serial = WP.serial, registered = false, exti_craft = g.name, description = 'الرقم التسلسلي مكشوط' })
@@ -165,6 +175,58 @@ function GANG.craftView(g)
         perMaterial = AM.perMaterial,
     }
 end
+
+---------------------------------------------------------------------------
+-- the Weapons gang repairs guns at the bench (any gun but police guns): parts from the gang stash
+---------------------------------------------------------------------------
+local repairing = {}
+local function isPoliceGun(m) return type(m) == 'table' and type(m.serial) == 'string' and m.serial:match('POL') ~= nil end
+
+lib.callback.register('exti_gangs:server:repairList', function(source)
+    local g, m = GANG.memberOf(source)
+    if not g or g.type ~= 'weapons' or m.rank < 1 then return false, 'rank' end
+    if not GANG.near(source, GANG.spot(g, 'workbench'), 2.5) then return false, 'far' end
+    local list = {}
+    for _, it in pairs(ox:GetInventoryItems(source) or {}) do
+        if it.name:sub(1, 7) == 'WEAPON_' and it.metadata and not isPoliceGun(it.metadata) then
+            local d = tonumber(it.metadata.durability) or 100
+            if d < 100 then list[#list + 1] = { slot = it.slot, label = it.label or it.name, durability = math.floor(d) } end
+        end
+    end
+    return true, { list = list, parts = WP.repairParts, have = ox:GetItemCount(GANG.stashId(g), 'gun_parts') or 0, seconds = WP.repairSeconds }
+end)
+
+lib.callback.register('exti_gangs:server:repairBegin', function(source, slot)
+    local g, m = GANG.memberOf(source)
+    if not g or g.type ~= 'weapons' or m.rank < 1 then return false, 'rank' end
+    if not GANG.near(source, GANG.spot(g, 'workbench'), 2.5) then return false, 'far' end
+    slot = math.tointeger(tonumber(slot))
+    local it = slot and ox:GetSlot(source, slot)
+    if not it or it.name:sub(1, 7) ~= 'WEAPON_' or isPoliceGun(it.metadata) then return false, 'bad' end
+    if not ox:RemoveItem(GANG.stashId(g), 'gun_parts', WP.repairParts) then return false, 'parts', WP.repairParts end
+    repairing[source] = { slot = slot, name = it.name, serial = it.metadata and it.metadata.serial, at = os.time(), g = g.name }
+    return true, WP.repairSeconds
+end)
+
+lib.callback.register('exti_gangs:server:repairFinish', function(source)
+    local r = repairing[source]; repairing[source] = nil
+    if not r or os.time() - r.at < WP.repairSeconds - 1 then return false end
+    local it = ox:GetSlot(source, r.slot)
+    -- the same gun still in that slot
+    if not it or it.name ~= r.name or (it.metadata and it.metadata.serial) ~= r.serial then
+        local g = GANG.gangs[r.g]
+        if g then ox:AddItem(GANG.stashId(g), 'gun_parts', WP.repairParts) end
+        return false, 'moved'
+    end
+    it.metadata.durability = 100
+    ox:SetMetadata(source, r.slot, it.metadata)
+    GANG.log(GANG.gangs[r.g], GANG.charName(GANG.player(source)), 'gun_repair', it.label or it.name)
+    return true, it.label or it.name
+end)
+AddEventHandler('playerDropped', function()
+    local r = repairing[source]; repairing[source] = nil
+    if r and GANG.gangs[r.g] then ox:AddItem(GANG.stashId(GANG.gangs[r.g]), 'gun_parts', WP.repairParts) end
+end)
 
 ---------------------------------------------------------------------------
 -- the black market buyer

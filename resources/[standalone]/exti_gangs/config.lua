@@ -50,7 +50,8 @@ C.crewDailyTake = 10000
 C.itemValue = { black_money = 1, lockpick = 150, c4 = 2500, chop_tools = 100, wash_supplies = 100, ammo_materials = 100, gun_parts = 100,
                 gang_weed_seeds = 100, weed_bud = 30, ['weed_og-kush'] = 45, ['ammo-9'] = 4, ['ammo-45'] = 4, ['ammo-shotgun'] = 4, ['ammo-rifle'] = 4, ['ammo-rifle2'] = 4,
                 WEAPON_SNSPISTOL = 1200, WEAPON_PISTOL = 1200, WEAPON_VINTAGEPISTOL = 1200, WEAPON_SAWNOFFSHOTGUN = 2800, WEAPON_MICROSMG = 2800,
-                WEAPON_HEAVYPISTOL = 1200, WEAPON_MINISMG = 2800, WEAPON_COMPACTRIFLE = 5500 }
+                WEAPON_HEAVYPISTOL = 1200, WEAPON_MINISMG = 2800, WEAPON_COMPACTRIFLE = 5500, WEAPON_DBSHOTGUN = 2800, WEAPON_REVOLVER = 1200,
+                WEAPON_MACHINEPISTOL = 2800, ['ammo-44'] = 4 }
 
 -- gang reputation: earned by doing the gang's work. Each level unlocks a bit more.
 C.rep = {
@@ -132,6 +133,7 @@ C.ammo = {
         { item = 'ammo-45',      label = 'ذخيرة .45',    rep = 2 },
         { item = 'ammo-rifle',   label = 'ذخيرة بندقية', rep = 3 },
         { item = 'ammo-rifle2',  label = 'ذخيرة بندقية مدمجة', rep = 3 },
+        { item = 'ammo-44',      label = 'ذخيرة .44 (مسدس دوّار)', rep = 3 },
     },
 }
 
@@ -152,7 +154,26 @@ C.weapons = {
         { item = 'WEAPON_HEAVYPISTOL',    label = 'مسدس ثقيل',       rep = 3, parts = 8 },
         { item = 'WEAPON_MINISMG',        label = 'رشاش ميني',       rep = 4, parts = 15 },
         { item = 'WEAPON_COMPACTRIFLE',   label = 'بندقية مدمجة',    rep = 5, parts = 25 },
+        { item = 'WEAPON_DBSHOTGUN',      label = 'بندقية بسبطانتين', rep = 2, parts = 15 },
+        { item = 'WEAPON_REVOLVER',       label = 'مسدس دوّار',      rep = 3, parts = 8 },
+        { item = 'WEAPON_MACHINEPISTOL',  label = 'مسدس رشاش',       rep = 4, parts = 15 },
     },
+    -- attachments (no daily cap: the parts are the limit)
+    attachments = {
+        { item = 'at_flashlight',            label = 'كشاف سلاح',          rep = 1, parts = 2 },
+        { item = 'at_grip',                  label = 'مقبض',               rep = 2, parts = 3 },
+        { item = 'at_clip_extended_pistol',  label = 'مخزن ممتد (مسدس)',    rep = 2, parts = 4 },
+        { item = 'at_clip_extended_smg',     label = 'مخزن ممتد (رشاش)',    rep = 3, parts = 5 },
+        { item = 'at_clip_extended_shotgun', label = 'مخزن ممتد (خرطوش)',   rep = 3, parts = 5 },
+        { item = 'at_scope_holo',            label = 'منظار هولو',          rep = 4, parts = 6 },
+        { item = 'at_scope_small',           label = 'منظار صغير',          rep = 4, parts = 6 },
+        { item = 'at_clip_extended_rifle',   label = 'مخزن ممتد (بندقية)',  rep = 4, parts = 6 },
+        { item = 'at_suppressor_light',      label = 'كاتم صوت خفيف',       rep = 4, parts = 8 },
+        { item = 'at_scope_medium',          label = 'منظار متوسط',         rep = 5, parts = 8 },
+        { item = 'at_suppressor_heavy',      label = 'كاتم صوت ثقيل',       rep = 5, parts = 10 },
+    },
+    repairParts = 3,                       -- the bench repairs any non-police gun to 100%
+    repairSeconds = 10,
 }
 
 -- ------------------------------------------------------------------ the black market buyer (placed with /gangspots)
@@ -163,7 +184,8 @@ C.blackMarket = {
     -- (ammo only from members of an Ammo gang, and only as much as that gang made today: police armory ammo can't be sold)
     prices = { ['ammo-9'] = 4, ['ammo-45'] = 4, ['ammo-shotgun'] = 4, ['ammo-rifle'] = 4, ['ammo-rifle2'] = 4,
                WEAPON_SNSPISTOL = 1200, WEAPON_PISTOL = 1200, WEAPON_VINTAGEPISTOL = 1200, WEAPON_HEAVYPISTOL = 1200,
-               WEAPON_SAWNOFFSHOTGUN = 2800, WEAPON_MICROSMG = 2800, WEAPON_MINISMG = 2800, WEAPON_COMPACTRIFLE = 5500 },
+               WEAPON_SAWNOFFSHOTGUN = 2800, WEAPON_MICROSMG = 2800, WEAPON_MINISMG = 2800, WEAPON_COMPACTRIFLE = 5500,
+               WEAPON_DBSHOTGUN = 2800, WEAPON_REVOLVER = 1200, WEAPON_MACHINEPISTOL = 2800, ['ammo-44'] = 4 },
 }
 
 -- ------------------------------------------------------------------ Weed
