@@ -408,6 +408,7 @@ lib.addCommand('deletegang', {
     MySQL.query('DELETE FROM `exti_gangs` WHERE `name` = ?', { g.name })
     gangs[g.name] = nil
     exports.ox_inventory:ClearInventory(stashId(g))
+    if GANG.turfDropGang then GANG.turfDropGang(g.name) end
     log(g.name, GANG.charName(GANG.player(source)), 'gang_deleted', g.label)
     notify(source, 'تم حذف العصابة', 'success')
     TriggerClientEvent('exti_gangs:client:gangsChanged', -1)

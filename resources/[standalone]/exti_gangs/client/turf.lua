@@ -9,7 +9,8 @@
 local T = C.turf
 local RES = GetCurrentResourceName()
 local turf = GlobalState['exti_gangs:turf'] or { zones = {}, tags = {} }
-AddStateBagChangeHandler('exti_gangs:turf', 'global', function(_, _, v) turf = v or { zones = {}, tags = {} } end)
+local cleanTextures   -- (below)
+AddStateBagChangeHandler('exti_gangs:turf', 'global', function(_, _, v) turf = v or { zones = {}, tags = {} }; if cleanTextures then cleanTextures() end end)
 
 ---------------------------------------------------------------------------
 -- textures: one per gang tag + colour (made once, kept)
@@ -23,7 +24,7 @@ local function texOf(tag, color)
     if t then return t.ready and t.name or nil end
     local name = 'tag_' .. key:gsub('[^%w]', '')
     local url = ('nui://%s/html/tag.html?t=%s&c=%s'):format(RES, tag or 'GANG', (color or '#e8b547'):gsub('#', '%%23'))
-    local dui = CreateDui(url, 1024, 512)
+    local dui = CreateDui(url, 512, 256)
     t = { name = name, dui = dui, ready = false }
     textures[key] = t
     CreateThread(function()
@@ -40,6 +41,17 @@ AddEventHandler('onResourceStop', function(r)
     if r ~= RES then return end
     for _, t in pairs(textures) do if t.dui then DestroyDui(t.dui) end end
 end)
+
+-- a tag / colour nobody uses any more: its page goes
+cleanTextures = function()
+    local used = {}
+    for _, t in ipairs(turf.tags or {}) do used[(t.tag or 'GANG') .. (t.color or '')] = true end
+    local my = GC.my and GC.my()
+    if my then used[(my.tag or 'GANG') .. (my.color or '')] = true end
+    for key, t in pairs(textures) do
+        if not used[key] and t.ready then DestroyDui(t.dui); textures[key] = nil end
+    end
+end
 
 ---------------------------------------------------------------------------
 -- drawing a tag on a wall
@@ -126,7 +138,9 @@ local function useSpray()
     if working then return end
     local my = GC.my()
     if not my then return tfail('nogang') end
-    local hit, _, coords, normal = lib.raycast.cam(1 | 16, 4, 3.0)
+    -- (the ray starts at the camera, which in third person is a few metres behind you)
+    local camDist = #(GetFinalRenderedCamCoord() - GetEntityCoords(PlayerPedId()))
+    local hit, _, coords, normal = lib.raycast.cam(1 | 16, 4, 3.0 + camDist)
     if not hit or not coords or not normal then return tfail('wall') end
     local ok, info, extra = lib.callback.await('exti_gangs:server:tagBegin', false,
         { x = coords.x, y = coords.y, z = coords.z }, { x = normal.x, y = normal.y, z = normal.z })
@@ -182,9 +196,9 @@ local function scrub(t)
     })
     working = false
     ClearPedTasks(ped)
-    ghost = nil
-    if not done then return GC.notify('أُلغيت', 'error') end
+    if not done then ghost = nil; return GC.notify('أُلغيت', 'error') end
     local fin, res = lib.callback.await('exti_gangs:server:scrubFinish', false, info.token)
+    ghost = nil
     if not fin then return tfail(res) end
     GC.notify(('مُسحت العلامة · %s'):format(res.zone), 'success')
 end

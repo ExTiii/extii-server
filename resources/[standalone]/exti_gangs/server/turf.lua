@@ -91,7 +91,7 @@ local function publish()
     local list = {}
     for _, t in pairs(tags) do
         local g = GANG.gangs[t.gang]
-        if g then list[#list + 1] = { id = t.id, zone = t.zone, gang = t.gang, x = t.x, y = t.y, z = t.z, nx = t.nx, ny = t.ny, nz = t.nz, tag = g.tag, color = g.color } end
+        if g and not t.pending then list[#list + 1] = { id = t.id, zone = t.zone, gang = t.gang, x = t.x, y = t.y, z = t.z, nx = t.nx, ny = t.ny, nz = t.nz, tag = g.tag, color = g.color } end
     end
     local zl = {}
     for _, z in ipairs(zones) do
@@ -101,6 +101,18 @@ local function publish()
     GlobalState['exti_gangs:turf'] = { zones = zl, tags = list }
 end
 GANG.publishTurf = publish   -- (a gang changing its tag / colour calls this)
+
+-- a gang was deleted: its tags go too
+function GANG.turfDropGang(name)
+    local touched = {}
+    for id, t in pairs(tags) do
+        if t.gang == name and not t.pending then tags[id] = nil; touched[t.zone] = true end
+    end
+    MySQL.query('DELETE FROM `exti_gang_tags` WHERE `gang` = ?', { name })
+    for zid in pairs(touched) do recompute(zid) end
+    for zid, gname in pairs(owner) do if gname == name then owner[zid] = nil; recompute(zid) end end
+    publish()
+end
 
 MySQL.ready(function()
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS `exti_gang_tags` (
@@ -113,6 +125,8 @@ MySQL.ready(function()
         `created` INT NOT NULL,
         INDEX `zone` (`zone`)
     ) DEFAULT CHARSET=utf8mb4]])
+    -- the gangs must be loaded first (server/main.lua), or every tag would look like it has no gang
+    while not GANG.ready do Wait(100) end
     for _, r in ipairs(MySQL.query.await('SELECT * FROM `exti_gang_tags`') or {}) do
         if zoneById(r.zone) and GANG.gangs[r.gang] then
             tags[r.id] = { id = r.id, zone = r.zone, gang = r.gang, x = r.x, y = r.y, z = r.z, nx = r.nx, ny = r.ny, nz = r.nz, created = r.created }
@@ -209,8 +223,12 @@ lib.callback.register('exti_gangs:server:tagFinish', function(source, token, wit
         if #(vec3(t.x, t.y, t.z) - vec3(b.pos.x, b.pos.y, b.pos.z)) < T.minGap then return false, 'close' end
     end
     if not ox:RemoveItem(source, 'spray_can', 1) then return false, 'nocan' end
+    -- hold the spot while the database writes (two players finishing at once can't make a 6th tag)
+    local hold = 'p' .. source
+    tags[hold] = { id = hold, zone = zone.id, gang = g.name, x = b.pos.x, y = b.pos.y, z = b.pos.z, nx = 0, ny = 0, nz = 0, pending = true }
     local id = MySQL.insert.await('INSERT INTO `exti_gang_tags` (`zone`, `gang`, `x`, `y`, `z`, `nx`, `ny`, `nz`, `by`, `created`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         { zone.id, g.name, b.pos.x, b.pos.y, b.pos.z, b.normal.x, b.normal.y, b.normal.z, m.citizenid, os.time() })
+    tags[hold] = nil
     if not id then ox:AddItem(source, 'spray_can', 1); return false end
     tags[id] = { id = id, zone = zone.id, gang = g.name, x = b.pos.x, y = b.pos.y, z = b.pos.z, nx = b.normal.x, ny = b.normal.y, nz = b.normal.z, created = os.time() }
     GANG.setCooldown('tag:' .. m.citizenid, T.cooldown)

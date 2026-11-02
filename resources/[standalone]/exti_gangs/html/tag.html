@@ -6,7 +6,7 @@
 html, body { margin: 0; background: transparent; overflow: hidden; }
 canvas { display: block; }
 </style></head>
-<body><canvas id="c" width="1024" height="512"></canvas>
+<body><canvas id="c" width="512" height="256"></canvas>
 <script>
 (async () => {
     const q = new URLSearchParams(location.search);
@@ -19,26 +19,26 @@ canvas { display: block; }
     const W = cv.width, H = cv.height;
     const dark = (h, k) => { const n = parseInt(h.slice(1), 16); const f = (v) => Math.max(0, Math.round(v * k)); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; };
     // fit the word
-    let size = 300;
+    let size = 150;
     x.font = `${size}px Spray`;
-    while (x.measureText(tag).width > W * 0.86 && size > 80) { size -= 10; x.font = `${size}px Spray`; }
+    while (x.measureText(tag).width > W * 0.86 && size > 40) { size -= 5; x.font = `${size}px Spray`; }
     const tw = x.measureText(tag).width, baseY = H * 0.66;
     x.save(); x.translate(W / 2, baseY); x.rotate(-0.06);
     x.textAlign = 'center'; x.textBaseline = 'alphabetic';
     // soft overspray
-    x.shadowColor = col; x.shadowBlur = 26; x.globalAlpha = 0.35; x.fillStyle = col; x.fillText(tag, 0, 0);
+    x.shadowColor = col; x.shadowBlur = 13; x.globalAlpha = 0.35; x.fillStyle = col; x.fillText(tag, 0, 0);
     // outline + fill
     x.shadowBlur = 0; x.globalAlpha = 1;
-    x.lineWidth = Math.max(8, size * 0.045); x.lineJoin = 'round'; x.strokeStyle = '#0b0b0d'; x.strokeText(tag, 0, 0);
+    x.lineWidth = Math.max(4, size * 0.045); x.lineJoin = 'round'; x.strokeStyle = '#0b0b0d'; x.strokeText(tag, 0, 0);
     x.fillStyle = col; x.fillText(tag, 0, 0);
     // a lighter highlight on the top half
     const gr = x.createLinearGradient(0, -size * 0.8, 0, 0); gr.addColorStop(0, 'rgba(255,255,255,.28)'); gr.addColorStop(0.55, 'rgba(255,255,255,0)');
     x.fillStyle = gr; x.fillText(tag, 0, 0);
     // drips running down from the bottom of the letters
     for (let i = 0; i < 9; i++) {
-        const dx = -tw / 2 + tw * (0.06 + rnd() * 0.88), len = 20 + rnd() * 90, w = 4 + rnd() * 6;
+        const dx = -tw / 2 + tw * (0.06 + rnd() * 0.88), len = 10 + rnd() * 45, w = 2 + rnd() * 3;
         const g2 = x.createLinearGradient(0, -6, 0, len); g2.addColorStop(0, col); g2.addColorStop(1, dark(col, 0.75));
-        x.fillStyle = g2; x.beginPath(); x.moveTo(dx - w / 2, -8); x.lineTo(dx + w / 2, -8); x.lineTo(dx + w * 0.35, len); x.arc(dx, len, w * 0.45, 0, Math.PI); x.closePath(); x.fill();
+        x.fillStyle = g2; x.beginPath(); x.moveTo(dx - w / 2, -4); x.lineTo(dx + w / 2, -4); x.lineTo(dx + w * 0.35, len); x.arc(dx, len, w * 0.45, 0, Math.PI); x.closePath(); x.fill();
     }
     x.restore();
 })();
