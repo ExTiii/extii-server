@@ -63,6 +63,9 @@ const Tune = (() => {
     const car = () => D.car;
     const perfNow = (p) => (p.saved != null ? p.saved : p.cur);
 
+    // aftermarket rims on the car or picked (the game paints only those)
+    const stockRims = () => !(ch.wheels && ch.wheels.i >= 0) && !(car().wheels && car().wheels.i >= 0);
+
     function lines() {
         const out = [];
         const c = car();
@@ -82,7 +85,7 @@ const Tune = (() => {
         if (ch.paint1) out.push({ label: `الصبغ الأساسي (${FINISH[ch.paint1.t]})`, price: P('paint1'), color: hex(ch.paint1.c) });
         if (ch.paint2) out.push({ label: `الصبغ الثانوي (${FINISH[ch.paint2.t]})`, price: P('paint2'), color: hex(ch.paint2.c) });
         if (ch.pearl !== undefined) out.push({ label: 'اللمعة (البيرل)', price: P('pearl') });
-        if (ch.wheelColor !== undefined) out.push({ label: 'لون الجنوط', price: P('wheelColor') });
+        if (ch.wheelColor !== undefined && !stockRims()) out.push({ label: 'لون الجنوط', price: P('wheelColor') });
         if (ch.wheels) out.push({ label: `جنوط: ${ch.wheels.n}`, price: P('wheels') });
         Object.keys(ch.body || {}).forEach((mod) => {
             const b = arr(c.body).find((x) => String(x.mod) === mod);
@@ -197,6 +200,14 @@ const Tune = (() => {
                 <label class="tn-pick"><input type="color" value="${hex(v.c)}" data-input="color"><span>لون خاص: <bdi dir="ltr">${hex(v.c).toUpperCase()}</bdi></span></label></div>`;
         } else {
             const cur = ch[sub] !== undefined ? ch[sub] : c[sub];
+            // the game paints only aftermarket rims: on the car's own wheels the colour does nothing
+            const stockRims = !(ch.wheels && ch.wheels.i >= 0) && !(c.wheels && c.wheels.i >= 0);
+            if (sub === 'wheelColor' && stockRims) {
+                if (ch.wheelColor !== undefined) { delete ch.wheelColor; post('tunePreview', { k: 'wheelColor', v: c.wheelColor }); }
+                return `<div class="tn-sub">${subs.map(([id, l]) => chip(`data-act="sub" data-v="${id}"`, sub === id, l)).join('')}</div>
+                    <div class="tn-row"><h4>لون الجنوط</h4><p class="tn-hint">لون الجنوط يظهر فقط على الجنوط المعدّلة. جنوط سيارتك الأصلية لا تتغير بالصبغ.</p>
+                    <button class="tn-btn ghost" data-act="cat" data-v="wheels">اختر جنوطًا جديدة أولًا</button></div>`;
+            }
             body = `<div class="tn-row"><h4>${sub === 'pearl' ? 'اللمعة فوق الصبغ' : 'لون الجنوط'} <span class="tn-price">${money(P(sub))}</span></h4>
                 <div class="tn-sw named">${GTA.map(([id, name, h]) => `<button class="${cur === id ? 'on' : ''}" data-act="gta" data-v="${id}" style="--c:${h}" title="${esc(name)}"><i></i><span>${esc(name)}</span></button>`).join('')}</div></div>`;
         }
@@ -362,6 +373,7 @@ const Tune = (() => {
         const c = car();
         const cur = { turbo: c.turbo, pearl: c.pearl, neon: c.neon.on, xenon: c.xenon.on };
         arr(c.perf).forEach((p) => { cur[p.key] = p.cur; });
+        if (stockRims()) delete ch.wheelColor;
         post('tuneConfirm', { changes: ch, cur }).then((r) => {
             busy = false;
             if (r && r.ok) return; // the game closes the menu
