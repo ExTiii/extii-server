@@ -501,6 +501,8 @@ return {
     ['weed_og-kush'] = {
         label = 'حشيش أو جي كوش 2غ (OG Kush 2g)',
         weight = 200,
+        description = 'استعمله على زاوية شارع لتبدأ البيع (واستعمله مرة ثانية للإيقاف)',
+        client = { export = 'exti_gangs.useBag' },
     },
 
     ['weed_og-kush_seed'] = {
@@ -1040,6 +1042,32 @@ return {
         label = 'متفجرات C4',
         weight = 1000,
         description = 'لا تأتي إلا من ورشة التفكيك. مطلوبة لعمليات السطو الكبيرة',
+    },
+
+    -- EX_Tii gangs: the Ammo, Weapons and Weed gangs' parts (from the shared collection point) + weed buds
+    ['ammo_materials'] = {
+        label = 'مواد ذخيرة (Ammo Materials)',
+        weight = 1500,
+        description = 'قطعة عصابة الذخيرة: رصاص وأظرف نحاسية. المادة الواحدة = 10 طلقات',
+    },
+
+    ['gun_parts'] = {
+        label = 'قطع أسلحة (Gun Parts)',
+        weight = 1000,
+        description = 'قطعة عصابة الأسلحة: تُركّب منها الأسلحة على طاولة العصابة',
+    },
+
+    ['gang_weed_seeds'] = {
+        label = 'بذور حشيش (Weed Seeds)',
+        weight = 50,
+        description = 'قطعة عصابة الحشيش: تُزرع في غرفة الزراعة',
+        client = { image = 'weed_og-kush_seed.png' },
+    },
+
+    ['weed_bud'] = {
+        label = 'براعم حشيش (Weed Buds)',
+        weight = 150,
+        description = 'من الحصاد: تُقلَّم وتُعبّأ في أكياس 2 غرام على طاولة العصابة',
     },
 
     -- EX_Tii gangs: turf graffiti (tools shop). One can = one tag; the brush scrubs 3 rival tags

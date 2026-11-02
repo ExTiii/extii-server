@@ -68,6 +68,8 @@
         if (D.me.rank >= 1) t.push({ id: 'members', label: 'الأعضاء', icon: I.users });
         if (D.chop) t.push({ id: 'prod', label: 'ورشة التفكيك', icon: I.wrench });
         if (D.wash) t.push({ id: 'prod', label: 'غسيل الأموال', icon: I.wrench });
+        if (D.craft) t.push({ id: 'prod', label: D.craft.type === 'ammo' ? 'مكبس الذخيرة' : 'طاولة الأسلحة', icon: I.wrench });
+        if (D.weed) t.push({ id: 'prod', label: 'غرفة الزراعة', icon: I.wrench });
         if (D.turf) t.push({ id: 'turf', label: 'النفوذ', icon: I.star });
         t.push({ id: 'rep', label: 'السمعة', icon: I.star });
         if (D.me.rank === 3) t.push({ id: 'settings', label: 'الإعدادات', icon: I.gear });
@@ -119,9 +121,14 @@
                   <div class="s">${me.collectWait > 0 ? 'الجولة التالية بعد ' + mmss(me.collectWait) : 'جاهز لجولة جمع'} · ربحت اليوم ${money(me.paidToday)}</div></div></div>`;
         if (D.stash) {
             const s = D.stash;
-            const items = D.gang.type === 'wash'
-                ? [['wash_supplies', 'مواد الغسيل'], ['black_money', 'مال غير نظيف'], ['lockpick', 'مفاتيح فتح'], ['c4', 'C4']]
-                : [['chop_tools', 'أدوات التفكيك'], ['black_money', 'مال غير نظيف'], ['lockpick', 'مفاتيح فتح'], ['c4', 'C4']];
+            const ITEMS = {
+                chop: [['chop_tools', 'أدوات التفكيك'], ['black_money', 'مال غير نظيف'], ['lockpick', 'مفاتيح فتح'], ['c4', 'C4']],
+                wash: [['wash_supplies', 'مواد الغسيل'], ['black_money', 'مال غير نظيف'], ['lockpick', 'مفاتيح فتح'], ['c4', 'C4']],
+                ammo: [['ammo_materials', 'مواد الذخيرة'], ['ammo-9', 'طلقات 9 ملم'], ['ammo-rifle', 'طلقات بندقية'], ['black_money', 'مال غير نظيف']],
+                weapons: [['gun_parts', 'قطع الأسلحة'], ['WEAPON_PISTOL', 'مسدسات'], ['WEAPON_MICROSMG', 'رشاشات صغيرة'], ['black_money', 'مال غير نظيف']],
+                weed: [['gang_weed_seeds', 'بذور'], ['weed_bud', 'براعم'], ['weed_og-kush', 'أكياس 2 غ'], ['black_money', 'مال غير نظيف']],
+            };
+            const items = ITEMS[D.gang.type] || ITEMS.chop;
             h += `<div class="h2 sect">المخزن</div><div class="grid g4">${items.map(([k, l]) => `<div class="card"><div class="k">${l}</div><div class="v">${k === 'black_money' ? money(s[k]) : (s[k] || 0)}</div></div>`).join('')}</div>`;
         }
         if (me.rank >= 1) {
@@ -190,6 +197,36 @@
         return h;
     }
 
+    // ------------------------------------------------------------------ ammo / weapons
+    function craftTab() {
+        const c = D.craft, ammo = c.type === 'ammo';
+        let h = `<div class="h2">${ammo ? 'مكبس الذخيرة' : 'طاولة الأسلحة'} <small>${ammo ? '1 مادة = ' + c.perMaterial + ' طلقة' : 'كل سلاح بلا رقم تسلسلي'}</small></div>`;
+        if (c.busy) h += `<div class="alert info">قيد العمل: ${esc(c.busy.label)} · الخطوة ${Math.min(3, c.busy.stage + 1)}/3</div>`;
+        h += `<div class="grid g3">
+            <div class="card"><div class="k">${ammo ? 'طلقات اليوم' : 'أسلحة اليوم'}</div><div class="v">${c.made} / ${c.cap}</div><div class="bar2"><i style="width:${Math.min(100, c.made / Math.max(1, c.cap) * 100)}%"></i></div></div>
+            <div class="card"><div class="k">${ammo ? 'مواد الذخيرة' : 'قطع الأسلحة'}</div><div class="v">${c.parts}</div><div class="s">في المخزن</div></div>
+            <div class="card"><div class="k">الآلة</div><div class="v ${c.cooldown > 0 ? '' : 'gc'}">${c.cooldown > 0 ? mmss(c.cooldown) : 'جاهزة'}</div></div></div>`;
+        h += `<div class="h2 sect">ما تصنعونه <small>يُفتح مع سمعة العصابة</small></div><table class="table"><tr><th>${ammo ? 'النوع' : 'السلاح'}</th>${ammo ? '' : '<th>القطع</th>'}<th>السمعة</th><th></th></tr>
+            ${c.list.map((x) => `<tr><td><b>${esc(x.label)}</b></td>${ammo ? '' : `<td>${x.parts}</td>`}<td>${x.rep}</td><td>${x.open ? '<span style="color:var(--gc);font-weight:700">مفتوح</span>' : '<span style="color:var(--mute)">مقفل</span>'}</td></tr>`).join('')}</table>
+            <div class="alert info sect">بيعوا للاعبين بالسعر الذي تريدونه. ما يزيد يشتريه رجل السوق السوداء بسعر منخفض (مال غير نظيف).</div>`;
+        return h;
+    }
+
+    // ------------------------------------------------------------------ weed
+    function weedTab() {
+        const w = D.weed;
+        let h = `<div class="h2">غرفة الزراعة <small>تنضج النبتة في ${Math.round(w.grow / 60)} دقيقة · اسقوها كل ${Math.round(w.water / 60)} دقائق</small></div>
+            <div class="grid g3"><div class="card"><div class="k">بذور</div><div class="v">${w.seeds}</div></div>
+            <div class="card"><div class="k">براعم</div><div class="v">${w.buds}</div></div>
+            <div class="card"><div class="k">أكياس 2 غ</div><div class="v gc">${w.bags}</div></div></div>
+            <div class="h2 sect">الأصص</div><div class="grid g4">`;
+        h += (w.pots || []).map((p) => p.empty ? `<div class="card"><div class="k">أصيص ${p.i}</div><div class="v" style="color:var(--mute)">فارغ</div></div>`
+            : `<div class="card"><div class="k">أصيص ${p.i}${p.fert ? ' · مسمّد' : ''}</div><div class="v ${p.ready ? 'gc' : ''}">${p.ready ? 'ناضجة' : mmss(p.left)}</div>
+               <div class="s">${p.wet > 0 ? 'رطب ' + mmss(p.wet) : '<b style="color:#ff5a4f">جاف! اسقوها</b>'}</div></div>`).join('') || '<div class="card">لا توجد أصص بعد</div>';
+        h += `</div><div class="alert info sect">البيع: استعمل كيس الحشيش على زاوية شارع وانتظر الزبائن. في منطقتكم الخطر أقل، وفي منطقة عصابة أخرى أكبر.</div>`;
+        return h;
+    }
+
     // ------------------------------------------------------------------ turf
     function turfTab() {
         const t = D.turf;
@@ -213,7 +250,7 @@
         r.levels.forEach((l, i) => {
             const n = i + 1;
             h += `<div class="step ${n < r.level ? 'done' : n === r.level ? 'now' : ''}"><h4>${n} · ${esc(l.name)}</h4>
-                <div>${l.partsDaily} قطعة يوميًا</div><div>${D.gang.type === 'wash' ? money(l.washDaily) + ' غسيل يوميًا' : l.chopsDaily + ' تفكيك يوميًا'}</div><div>مخزن ${l.stashSlots} خانة · ${Math.round(l.stashWeight / 1000)} كغ</div>
+                <div>${l.partsDaily} قطعة يوميًا</div><div>${({ wash: money(l.washDaily) + ' غسيل يوميًا', chop: l.chopsDaily + ' تفكيك يوميًا', ammo: (D.ammoDaily ? D.ammoDaily[i] : '') + ' طلقة يوميًا', weapons: '6 أسلحة يوميًا', weed: '12 أصيصًا' })[D.gang.type] || ''}</div><div>مخزن ${l.stashSlots} خانة · ${Math.round(l.stashWeight / 1000)} كغ</div>
                 <div>${l.rentOff ? 'خصم إيجار ' + Math.round(l.rentOff * 100) + '%' : 'إيجار كامل'}</div><div style="direction:ltr;text-align:right">${l.xp} XP</div></div>`;
         });
         return h + '</div>';
@@ -229,7 +266,7 @@
         return `<div class="h2">الإعدادات <small>للزعيم فقط</small></div><div class="grid g2">
             ${slider('partPay', 'أجر القطعة للأعضاء', L.partPay, '$')}
             <div class="field"><label>تسليم القطع<b>${S.deposits ? 'مفتوح' : 'مقفل'}</b></label><button class="toggle ${S.deposits ? 'on' : ''}" data-toggle="deposits"></button></div>
-            ${D.gang.type === 'wash' ? slider('washCut', 'نسبة العصابة من الغسيل', L.wash) : slider('thiefCut', 'حصة سارق السيارة', L.thief) + slider('chopperCut', 'حصة المفكك', L.chopper)}
+            ${D.gang.type === 'wash' ? slider('washCut', 'نسبة العصابة من الغسيل', L.wash) : D.gang.type === 'chop' ? slider('thiefCut', 'حصة سارق السيارة', L.thief) + slider('chopperCut', 'حصة المفكك', L.chopper) : ''}
             <div class="field"><label>لون العصابة</label><div class="swatches">${D.colors.map((c) => `<button class="sw ${c === S.color ? 'on' : ''}" style="background:${c}" data-color="${c}"></button>`).join('')}</div></div>
             <div class="field"><label>رمز العصابة (2–4 حروف إنجليزية)</label><input class="in" id="tag" maxlength="4" value="${esc(S.tag || '')}"></div>
             </div><div class="sect"><button class="btn gc" data-save>حفظ الإعدادات</button></div>`;
@@ -240,7 +277,8 @@
         bank_deposit: 'إيداع', bank_withdraw: 'سحب', rent_paid: 'دفع الإيجار', rent_unpaid: 'إيجار غير مدفوع', joined: 'انضمام', left: 'مغادرة', kick: 'طرد', promote: 'ترقية',
         demote: 'تخفيض', leader_transfer: 'نقل الزعامة', leader_auto: 'زعامة تلقائية', settings: 'الإعدادات', stash_take: 'أخذ من المخزن', outfit_saved: 'زي العصابة',
         rep_level: 'مستوى سمعة', gang_created: 'إنشاء العصابة', wash: 'غسيل دفعة', wash_start: 'بدء غسيل', wash_drop: 'طلب غسيل', wash_collect: 'استلام نظيف',
-        wash_cancel: 'إلغاء طلب', turf_tag: 'علامة نفوذ', turf_scrub: 'مسح علامة', turf_scrubbed: 'مُسحت علامتنا', wash_cancel_batch: 'إيقاف الغسيل', door_breach_start: 'محاولة اقتحام', door_breached: 'اقتحام', stolen_report: 'بلاغ سرقة' };
+        wash_cancel: 'إلغاء طلب', turf_tag: 'علامة نفوذ', ammo_start: 'بدء ذخيرة', ammo_made: 'ذخيرة', gun_start: 'بدء سلاح', gun_made: 'سلاح', craft_stop: 'إيقاف الآلة',
+        weed_harvest: 'حصاد', weed_bagged: 'تعبئة', black_market: 'سوق سوداء', turf_scrub: 'مسح علامة', turf_scrubbed: 'مُسحت علامتنا', wash_cancel_batch: 'إيقاف الغسيل', door_breach_start: 'محاولة اقتحام', door_breached: 'اقتحام', stolen_report: 'بلاغ سرقة' };
     function logs() {
         return `<div class="h2">السجل <small>آخر 100 عملية</small></div><div class="card" style="padding:4px 4px">${(D.logs || []).map((l) =>
             `<div class="log"><span class="t">${dt(l.created)}</span><span class="a">${esc(ACTION[l.action] || l.action)}</span><span><b>${esc(l.actor)}</b> ${esc(l.details || '')}</span></div>`).join('') || '<div class="log">لا شيء بعد</div>'}</div>`;
@@ -249,7 +287,7 @@
     // ------------------------------------------------------------------ render + clicks
     function render() {
         if (!D) return;
-        const body = tab === 'members' ? members() : tab === 'prod' ? (D.wash ? washTab() : prod()) : tab === 'rep' ? rep() : tab === 'turf' ? turfTab() : tab === 'settings' ? settings() : tab === 'logs' ? logs() : home();
+        const body = tab === 'members' ? members() : tab === 'prod' ? (D.wash ? washTab() : D.craft ? craftTab() : D.weed ? weedTab() : prod()) : tab === 'rep' ? rep() : tab === 'turf' ? turfTab() : tab === 'settings' ? settings() : tab === 'logs' ? logs() : home();
         const scroll = $('.main', lap) ? $('.main', lap).scrollTop : 0;
         lap.innerHTML = shell(body);
         $('.main', lap).scrollTop = scroll;

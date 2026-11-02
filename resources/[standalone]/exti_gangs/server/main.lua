@@ -671,6 +671,7 @@ lib.callback.register('exti_gangs:server:laptop', function(source)
         today = { parts = GANG.getDaily('g', g.name, 'parts'), partsCap = L.partsDaily },
         ranks = C.ranks, slots = { crew = C.rankSlots[1], underboss = C.rankSlots[2] }, colors = C.colors, now = now(),
         limits = { partPay = C.partPay, thief = C.chop.split.thief, chopper = C.chop.split.chopper, wash = C.wash.cut },
+        ammoDaily = C.ammo.dailyRounds,
     }
     if m.rank >= 1 then
         data.gang.bank = g.bank
@@ -684,6 +685,8 @@ lib.callback.register('exti_gangs:server:laptop', function(source)
     if g.type == 'chop' and GANG.chopView then data.chop = GANG.chopView(g, m) end
     if g.type == 'wash' and GANG.washView then data.wash = GANG.washView(g, m) end
     if GANG.turfView then data.turf = GANG.turfView(g) end
+    if (g.type == 'ammo' or g.type == 'weapons') and GANG.craftView then data.craft = GANG.craftView(g) end
+    if g.type == 'weed' and GANG.weedView then data.weed = GANG.weedView(g) end
     return data
 end)
 

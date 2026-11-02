@@ -99,6 +99,78 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .table td { padding: 10px 12px; background: #121418; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .table td:first-child { border-right: 1px solid var(--line); border-radius: 0 10px 10px 0; }
 .table td:last-child { border-left: 1px solid var(--line); border-radius: 10px 0 0 10px; }
+/* ------------------------------------------------------------------ ammo / weapons / weed games */
+.g-melt.shake, .g-press.shake, .g-boxfill.shake, .g-file.shake, .g-assemble.shake, .g-range.shake, .g-trim.shake, .g-weigh.shake { animation: shake .3s; }
+.g-melt .key, .g-press .key { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; color: var(--mute); font-size: 13px; }
+/* melt: a crucible over a burner, a thermometer, the mould filling */
+.g-melt { background: radial-gradient(circle at 40% 80%, #4a2412, #120c08 70%); cursor: pointer; user-select: none; }
+.g-melt .crucible { position: absolute; inset: 20px 30px 40px; display: grid; grid-template-columns: 1fr 40px; grid-template-rows: 1fr 30px; gap: 16px; }
+.g-melt .pot { align-self: end; justify-self: center; width: 200px; height: 140px; border-radius: 10px 10px 90px 90px; background: linear-gradient(180deg, #3b3d42, #1d1e21); position: relative; box-shadow: 0 0 40px rgba(255,120,30,.25), inset 0 -10px 20px rgba(0,0,0,.5); }
+.g-melt .pot i { position: absolute; left: 14px; right: 14px; top: 12px; height: 34px; border-radius: 50%; box-shadow: 0 0 22px rgba(255,170,60,.5); }
+.g-melt .therm { grid-row: 1; grid-column: 2; position: relative; border-radius: 16px; background: #1b1c1f; box-shadow: inset 0 0 0 2px #2d2f33; }
+.g-melt .therm .band { position: absolute; left: 3px; right: 3px; border-radius: 10px; background: rgba(61,220,151,.55); }
+.g-melt .mercury { position: absolute; left: 12px; right: 12px; bottom: 6px; border-radius: 8px; background: linear-gradient(0deg, #ffb347, #ff7a1a); max-height: calc(100% - 12px); }
+.g-melt .mercury.hot { background: linear-gradient(0deg, #ff5a4f, #ff1a1a); }
+.g-melt .mould { grid-column: 1 / -1; height: 14px; border-radius: 7px; background: rgba(255,255,255,.08); overflow: hidden; align-self: center; }
+.g-melt .mould i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #b9bcc2, #f1f1f1); }
+/* press: the belt and the die */
+.g-press { background: linear-gradient(180deg, #2a2d32, #17181b); }
+.g-press .belt { position: absolute; left: 0; right: 0; top: 190px; height: 26px; background: repeating-linear-gradient(90deg, #3a3d43 0 18px, #2b2d31 18px 36px); }
+.g-press .slot { position: absolute; left: calc(50% - 24px); width: 48px; top: -4px; bottom: -4px; border: 2px dashed rgba(61,220,151,.6); border-radius: 6px; }
+.g-press .die { position: absolute; left: calc(50% - 34px); width: 68px; height: 120px; top: -126px; border-radius: 6px 6px 2px 2px; background: linear-gradient(90deg, #6b7079, #a6abb3, #6b7079); transition: transform .12s; box-shadow: 0 6px 14px rgba(0,0,0,.5); }
+.g-press .die.down { transform: translateY(26px); }
+.g-press .casing { position: absolute; top: -28px; width: 22px; height: 34px; margin-left: -11px; border-radius: 4px 4px 2px 2px; background: linear-gradient(90deg, #b07a2a, #f0c060, #b07a2a); }
+.g-press .casing.pressed { height: 24px; top: -18px; background: linear-gradient(90deg, #8a8f97, #d8dce2, #8a8f97); }
+/* boxfill: a 5x4 ammo box */
+.g-boxfill { background: radial-gradient(circle, #34372c, #16170f 75%); display: grid; place-items: center; }
+.g-boxfill .ammobox { display: grid; grid-template-columns: repeat(5, 62px); gap: 8px; padding: 16px; border-radius: 10px; background: #3f4a2f; box-shadow: inset 0 0 0 4px #2c3421, 0 10px 24px rgba(0,0,0,.5); }
+.g-boxfill .cell { width: 62px; height: 52px; border: 0; border-radius: 8px; background: #26301b; box-shadow: inset 0 3px 8px rgba(0,0,0,.6); cursor: pointer; }
+.g-boxfill .cell.lit { background: color-mix(in srgb, var(--gc) 55%, #26301b); box-shadow: 0 0 0 2px var(--gc), inset 0 3px 8px rgba(0,0,0,.3); }
+.g-boxfill .cell.full { background: radial-gradient(circle at 50% 40%, #f0c060 0 10px, #b07a2a 11px 15px, #26301b 16px); }
+/* file: the frame and the rasp */
+.g-file { background: linear-gradient(180deg, #4b3c2c, #241c14); }
+.g-file .frame { position: absolute; left: 0; right: 0; top: 70px; height: 150px; display: grid; place-items: center; }
+.g-file .gunframe { width: 300px; height: 70px; border-radius: 8px 40px 8px 8px; background: linear-gradient(180deg, #5a5f68, #33363c); box-shadow: 0 8px 20px rgba(0,0,0,.5); }
+.g-file .rasp { position: absolute; width: 160px; height: 16px; top: 52px; border-radius: 4px; background: repeating-linear-gradient(90deg, #9aa0a8 0 3px, #5b6068 3px 6px); transition: transform .08s; }
+.g-file .sparks.bad::after { content: 'بهدوء!'; position: absolute; left: 0; right: 0; top: 120px; text-align: center; color: #ff5a4f; font-size: 14px; }
+.g-file .fill { position: absolute; left: 30px; right: 30px; bottom: 70px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.08); overflow: hidden; }
+.g-file .fill i { display: block; height: 100%; width: 0; background: var(--gc); }
+.g-file .keys { position: absolute; bottom: 18px; left: 0; right: 0; display: flex; justify-content: center; gap: 14px; }
+.g-file .keys b { width: 48px; height: 48px; border-radius: 10px; display: grid; place-items: center; background: #1c1e22; color: var(--mute); font-size: 20px; }
+.g-file .keys b.on { background: var(--gc); color: #0b0b0d; }
+/* assemble: the parts on the mat */
+.g-assemble { background: linear-gradient(180deg, #1f2a24, #111612); }
+.g-assemble .seq { position: absolute; top: 24px; left: 0; right: 0; text-align: center; font-size: 15px; color: #e8e8e8; }
+.g-assemble .parts { position: absolute; left: 40px; right: 40px; top: 80px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.g-assemble .part { height: 100px; border: 0; border-radius: 12px; background: #1b221d; color: #cfd6cf; font: inherit; cursor: pointer; display: grid; place-items: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); transition: background .15s; }
+.g-assemble .part i { width: 54px; height: 16px; border-radius: 4px; background: linear-gradient(90deg, #6b7079, #b9bec6); }
+.g-assemble .p-spring i { height: 10px; background: repeating-linear-gradient(90deg, #b9bec6 0 4px, transparent 4px 7px); }
+.g-assemble .p-pin i { width: 40px; height: 6px; } .g-assemble .p-barrel i { width: 70px; height: 12px; border-radius: 6px; }
+.g-assemble .p-trigger i { width: 22px; height: 26px; border-radius: 4px 14px 4px 4px; } .g-assemble .p-mag i { width: 22px; height: 40px; }
+.g-assemble .part.show { background: color-mix(in srgb, var(--gc) 45%, #1b221d); box-shadow: 0 0 0 2px var(--gc); }
+.g-assemble .part.ok { background: #2f6b4a; }
+/* range: the target */
+.g-range { background: linear-gradient(180deg, #2b2f2a, #161814); cursor: none; }
+.g-range .target { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; background: radial-gradient(circle, #e5484d 0 10px, #f1f1f1 11px 22px, #e5484d 23px 34px, #f1f1f1 35px 45px); box-shadow: 0 4px 10px rgba(0,0,0,.5); }
+.g-range .target.hit { transform: scale(.85); filter: brightness(1.4); }
+.g-range .cross { position: absolute; width: 34px; height: 34px; pointer-events: none; transform: translate(-50%,-50%); background: linear-gradient(#fff,#fff) center/2px 100% no-repeat, linear-gradient(#fff,#fff) center/100% 2px no-repeat; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,.6); }
+/* trim: a bud with fan leaves */
+.g-trim { background: radial-gradient(circle, #2a3324, #11150e 75%); }
+.g-trim .bud { position: absolute; left: 50%; top: 50%; width: 90px; height: 120px; margin: -60px 0 0 -45px; border-radius: 45%; background: radial-gradient(circle at 40% 35%, #a6c46a, #5f7d34 60%, #3e5222); box-shadow: inset 0 0 20px rgba(0,0,0,.35); }
+.g-trim .leaf { position: absolute; width: 34px; height: 64px; border: 0; border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%; background: linear-gradient(180deg, #3f8a3a, #24561f); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+.g-trim .leaf.cut { opacity: 0; transition: opacity .2s; }
+.g-trim .nug { position: absolute; width: 26px; height: 26px; border: 0; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #b6cf7a, #6b8a3c); cursor: pointer; }
+/* weigh: the scale */
+.g-weigh { background: linear-gradient(180deg, #23252a, #121316); }
+.g-weigh .scale { position: absolute; left: 50%; top: 30px; width: 260px; margin-left: -130px; }
+.g-weigh .screen { height: 70px; border-radius: 10px; background: #0d1a12; box-shadow: inset 0 0 0 3px #1f2b23; display: flex; align-items: center; justify-content: center; gap: 6px; color: #5dff9c; direction: ltr; }
+.g-weigh .screen b { font-size: 40px; font-weight: 700; font-family: monospace; } .g-weigh .screen span { font-size: 18px; }
+.g-weigh .plate { margin: 16px auto 0; width: 220px; height: 90px; border-radius: 50%; background: radial-gradient(ellipse, #c9ced5, #7d838b); display: grid; place-items: center; }
+.g-weigh .plate i { width: 60px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #a6c46a, #5f7d34); transition: transform .15s; }
+.g-weigh .wbtns { position: absolute; left: 20px; right: 20px; bottom: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.g-weigh .wbtns button { height: 46px; border: 0; border-radius: 10px; background: #2a2d33; color: #eee; font: inherit; cursor: pointer; }
+.g-weigh .wbtns .seal { background: var(--gc); color: #0b0b0d; font-weight: 700; }
+
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3a3d44; margin-left: 8px; }
 .dot.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 .rank { padding: 3px 9px; border-radius: 6px; font-size: 12px; background: rgba(255,255,255,.06); }

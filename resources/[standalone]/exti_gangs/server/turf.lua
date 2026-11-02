@@ -60,6 +60,7 @@ local function zoneAt(c)
     for _, z in ipairs(zones) do if inside(z, c.x, c.y) then return z end end
 end
 GANG.zoneAt = zoneAt
+function GANG.turfOwner(id) return owner[id] end
 
 ---------------------------------------------------------------------------
 -- tags + who owns what

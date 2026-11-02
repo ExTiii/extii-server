@@ -21,6 +21,8 @@ client_scripts {
     'client/door.lua',
     'client/wash.lua',
     'client/turf.lua',
+    'client/craft.lua',
+    'client/weed.lua',
 }
 
 server_scripts {
@@ -33,6 +35,8 @@ server_scripts {
     'server/door.lua',
     'server/wash.lua',
     'server/turf.lua',
+    'server/craft.lua',
+    'server/weed.lua',
 }
 
 ui_page 'html/index.html'

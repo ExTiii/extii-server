@@ -5,7 +5,7 @@
 --   fence    = { x, y, z, h }                     (buys stolen parts)
 -- =====================================================================
 local FILE = 'data/spots.json'
-local KINDS = { laptop = true, stash = true, deposit = true, locker = true, bench = true, garage = true, door_out = true, door_in = true, dropbox = true, washer = true }
+local KINDS = { laptop = true, stash = true, deposit = true, locker = true, bench = true, garage = true, door_out = true, door_in = true, dropbox = true, washer = true, press = true, workbench = true, weedtable = true }
 local MAX_CRATES = 12
 
 local function num(v) return type(v) == 'number' and v == v and v > -20000 and v < 20000 end
@@ -29,12 +29,19 @@ do
                     end
                     if #list > 0 then spots.hq[gang].doors = list end
                 end
+                -- weed pots: { x, y, z, h }
+                if type(set.pots) == 'table' then
+                    local list = {}
+                    for _, d in ipairs(set.pots) do local p = pos4(d); if p and #list < C.weed.pots then list[#list + 1] = p end end
+                    if #list > 0 then spots.hq[gang].pots = list end
+                end
             end
         end
         for _, c in ipairs(type(data.collect) == 'table' and type(data.collect.crates) == 'table' and data.collect.crates or {}) do
             local p = pos4(c); if p and #spots.collect.crates < MAX_CRATES then spots.collect.crates[#spots.collect.crates + 1] = p end
         end
         spots.fence = pos4(data.fence)
+        spots.blackmarket = pos4(data.blackmarket)
     end
 end
 GANG.spots = spots
@@ -84,6 +91,24 @@ lib.callback.register('exti_gangs:server:spotSave', function(source, what, a, b)
         spots.collect.crates = {}
     elseif what == 'fence' then
         spots.fence = here
+    elseif what == 'blackmarket' then
+        spots.blackmarket = here
+    elseif what == 'pot_add' then
+        if not GANG.gangs[a] then return false end
+        spots.hq[a] = spots.hq[a] or {}
+        local list = spots.hq[a].pots or {}
+        if #list >= C.weed.pots then return false, 'max' end
+        list[#list + 1] = here
+        spots.hq[a].pots = list
+    elseif what == 'pot_remove' then
+        local list = spots.hq[a] and spots.hq[a].pots
+        local i = math.type(b) == 'integer' and b or nil
+        if not list or not i or not list[i] then return false end
+        table.remove(list, i)
+        if GANG.weedPotRemoved then GANG.weedPotRemoved(a, i) end
+    elseif what == 'pots_clear' then
+        if spots.hq[a] then spots.hq[a].pots = nil end
+        if GANG.weedPotRemoved then GANG.weedPotRemoved(a, nil) end
     else
         return false
     end

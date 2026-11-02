@@ -9,6 +9,7 @@ local my = nil                   -- my gang (name, type, rank, color, tag, label
 local spots = GlobalState['exti_gangs:spots'] or { hq = {}, collect = { crates = {} } }
 local crates = {}                -- spawned crate props [i] = entity
 local fencePed = nil
+local bmPed = nil
 local busy = false
 GC.my = function() return my end
 GC.spots = function() return spots end
@@ -60,6 +61,16 @@ function GC.rebuild()
     crates = {}
     if fencePed and DoesEntityExist(fencePed) then DeleteEntity(fencePed) end
     fencePed = nil
+    if bmPed and DoesEntityExist(bmPed) then DeleteEntity(bmPed) end
+    bmPed = nil
+    if spots.blackmarket then
+        local bh = loadModel(C.blackMarket.model)
+        if bh then
+            bmPed = CreatePed(4, bh, spots.blackmarket.x, spots.blackmarket.y, spots.blackmarket.z - 1.0, spots.blackmarket.h or 0.0, false, false)
+            SetEntityInvincible(bmPed, true); FreezeEntityPosition(bmPed, true); SetBlockingOfNonTemporaryEvents(bmPed, true)
+            TaskStartScenarioInPlace(bmPed, 'WORLD_HUMAN_STAND_IMPATIENT', 0, true)
+        end
+    end
     local h = loadModel(C.collect.crateModel)
     for i, c in ipairs(spots.collect and spots.collect.crates or {}) do
         if h then
@@ -82,6 +93,7 @@ AddEventHandler('onResourceStop', function(r)
     if r ~= GetCurrentResourceName() then return end
     for _, e in pairs(crates) do if DoesEntityExist(e) then DeleteEntity(e) end end
     if fencePed and DoesEntityExist(fencePed) then DeleteEntity(fencePed) end
+    if bmPed and DoesEntityExist(bmPed) then DeleteEntity(bmPed) end
 end)
 
 ---------------------------------------------------------------------------
@@ -336,6 +348,15 @@ local function points()
     if my and my.type == 'wash' and my.rank >= 1 and spots.hq and spots.hq[my.name] and spots.hq[my.name].washer then
         list[#list + 1] = { kind = 'washer', pos = v3(spots.hq[my.name].washer), label = '[E] آلة الغسيل' }
     end
+    -- the production stations of my gang
+    local mine = my and spots.hq and spots.hq[my.name]
+    if mine and my.rank >= 1 and my.type == 'ammo' and mine.press then list[#list + 1] = { kind = 'craft', pos = v3(mine.press), label = '[E] مكبس الذخيرة' } end
+    if mine and my.rank >= 1 and my.type == 'weapons' and mine.workbench then list[#list + 1] = { kind = 'craft', pos = v3(mine.workbench), label = '[E] طاولة الأسلحة' } end
+    if mine and my.type == 'weed' then
+        if mine.weedtable then list[#list + 1] = { kind = 'weedtable', pos = v3(mine.weedtable), label = '[E] طاولة التقليم والتعبئة' } end
+        for i, p in ipairs(mine.pots or {}) do list[#list + 1] = { kind = 'pot', i = i, pos = v3(p), label = GC.potLabel and GC.potLabel(i) or '[E] أصيص' } end
+    end
+    if spots.blackmarket then list[#list + 1] = { kind = 'blackmarket', pos = v3(spots.blackmarket), label = '[E] تكلّم مع الرجل' } end
     -- the police clean graffiti
     if GC.turfPoints then for _, pt in ipairs(GC.turfPoints()) do list[#list + 1] = pt end end
     for i, c in ipairs(spots.collect and spots.collect.crates or {}) do list[#list + 1] = { kind = 'crate', i = i, pos = v3(c) } end
@@ -361,7 +382,7 @@ CreateThread(function()
                 local d = #(here - pt.pos)
                 if d < 12.0 then sleep = 0 end
                 if d < (pt.reach or (pt.kind == 'crate' and 1.8 or 1.5)) and d < bestD then best, bestD = pt, d end
-                if d < 12.0 and pt.kind ~= 'crate' and pt.kind ~= 'fence' and pt.kind ~= 'rdoor' and pt.kind ~= 'tag' then
+                if d < 12.0 and pt.kind ~= 'crate' and pt.kind ~= 'fence' and pt.kind ~= 'rdoor' and pt.kind ~= 'tag' and pt.kind ~= 'pot' and pt.kind ~= 'blackmarket' then
                     DrawMarker(20, pt.pos.x, pt.pos.y, pt.pos.z - 0.55, 0, 0, 0, 0, 180.0, 0, 0.32, 0.32, 0.22, 232, 181, 71, 140, true, true, 2, false, nil, nil, false)
                 end
             end
@@ -382,7 +403,11 @@ CreateThread(function()
             elseif k == 'rdoor' then GC.realDoor(best.gang, best.i)
             elseif k == 'dropbox' then GC.dropBox(best.gang)
             elseif k == 'washer' then GC.washer()
-            elseif k == 'tag' then GC.scrubTag(best.tag) end
+            elseif k == 'tag' then GC.scrubTag(best.tag)
+            elseif k == 'craft' then GC.craft()
+            elseif k == 'weedtable' then GC.weedTable()
+            elseif k == 'pot' then GC.pot(best.i)
+            elseif k == 'blackmarket' then GC.blackMarket() end
             busy = false
         end
         Wait(sleep)
@@ -392,20 +417,32 @@ end)
 ---------------------------------------------------------------------------
 -- /gangspots (admins): stand where it goes, pick it
 ---------------------------------------------------------------------------
-local KIND_LABEL = { dropbox = 'صندوق الغسيل (خارج المقر، للجميع)', washer = 'آلة الغسيل (داخل المقر)', door_out = 'باب المقر من الخارج', door_in = 'باب المقر من الداخل', laptop = 'الحاسوب (الإدارة)', stash = 'المخزن', deposit = 'تسليم القطع', locker = 'خزانة الملابس', bench = 'طاولة المفاتيح (التفكيك)', garage = 'مركز ورشة التفكيك (التفكيك)' }
+local KIND_LABEL = { press = 'مكبس الذخيرة', workbench = 'طاولة الأسلحة', weedtable = 'طاولة التقليم والتعبئة', dropbox = 'صندوق الغسيل (خارج المقر، للجميع)', washer = 'آلة الغسيل (داخل المقر)', door_out = 'باب المقر من الخارج', door_in = 'باب المقر من الداخل', laptop = 'الحاسوب (الإدارة)', stash = 'المخزن', deposit = 'تسليم القطع', locker = 'خزانة الملابس', bench = 'طاولة المفاتيح (التفكيك)', garage = 'مركز ورشة التفكيك (التفكيك)' }
 local function save(what, a, b, msg)
     local ok, why = lib.callback.await('exti_gangs:server:spotSave', false, what, a, b)
-    notify(ok and (msg or 'حُفظ المكان') or (why == 'max' and 'الحد 12 صندوقًا' or 'لم يُحفظ'), ok and 'success' or 'error')
+    notify(ok and (msg or 'حُفظ المكان') or (why == 'max' and 'وصلت الحد' or 'لم يُحفظ'), ok and 'success' or 'error')
 end
 RegisterNetEvent('exti_gangs:client:spotsMenu', function(gangList)
     local opts = {}
     for _, g in ipairs(gangList) do
         local sub = {}
-        for _, kind in ipairs({ 'door_out', 'door_in', 'laptop', 'stash', 'deposit', 'locker', 'bench', 'garage', 'dropbox', 'washer' }) do
-            local only = (kind == 'bench' or kind == 'garage') and 'chop' or (kind == 'dropbox' or kind == 'washer') and 'wash' or nil
+        local ONLY = { bench = 'chop', garage = 'chop', dropbox = 'wash', washer = 'wash', press = 'ammo', workbench = 'weapons', weedtable = 'weed' }
+        for _, kind in ipairs({ 'door_out', 'door_in', 'laptop', 'stash', 'deposit', 'locker', 'bench', 'garage', 'dropbox', 'washer', 'press', 'workbench', 'weedtable' }) do
+            local only = ONLY[kind]
             if not only or g.type == only then
                 sub[#sub + 1] = { title = KIND_LABEL[kind] .. ' هنا', icon = 'location-dot', onSelect = function() save('hq', g.name, kind) end }
             end
+        end
+        if g.type == 'weed' then
+            local pots = spots.hq and spots.hq[g.name] and spots.hq[g.name].pots or {}
+            sub[#sub + 1] = { title = ('أصيص هنا (%d من %d)'):format(#pots, C.weed.pots), icon = 'seedling', onSelect = function() save('pot_add', g.name, nil, 'أُضيف الأصيص') end }
+            sub[#sub + 1] = { title = 'احذف أقرب أصيص', icon = 'trash', onSelect = function()
+                local here, best, bd = GetEntityCoords(PlayerPedId()), nil, 999.0
+                for i, p in ipairs(pots) do local d = #(here - v3(p)); if d < bd then best, bd = i, d end end
+                if not best or bd > 5.0 then return notify('لا يوجد أصيص قريب', 'error') end
+                save('pot_remove', g.name, best, 'حُذف الأصيص')
+            end }
+            sub[#sub + 1] = { title = 'احذف كل الأصص', icon = 'trash', onSelect = function() save('pots_clear', g.name, nil, 'مُسحت') end }
         end
         sub[#sub + 1] = { title = 'باب حقيقي: انظر إليه ثم اختر هذا', description = 'يُقفل للجميع إلا العصابة (الباب المزدوج: كل جهة على حدة)', icon = 'door-closed', onSelect = function()
             local model, c = GC.aimDoor()
@@ -430,6 +467,7 @@ RegisterNetEvent('exti_gangs:client:spotsMenu', function(gangList)
     end }
     opts[#opts + 1] = { title = 'نقطة الجمع: احذف كل الصناديق', icon = 'trash', onSelect = function() save('crates_clear', nil, nil, 'مُسحت') end }
     opts[#opts + 1] = { title = 'المصرّف (يشتري القطع المسروقة) هنا', icon = 'user-secret', onSelect = function() save('fence') end }
+    opts[#opts + 1] = { title = 'السوق السوداء (يشتري ذخيرة وأسلحة العصابات) هنا', icon = 'user-ninja', onSelect = function() save('blackmarket') end }
     -- the luxury houses: go and look (it takes you inside: leave through the wall with noclip to set the outside door)
     local houses = {}
     for _, h in ipairs(C.houses or {}) do

@@ -16,13 +16,13 @@ C.rankSlots = { [1] = 6, [2] = 3, [3] = 1 } -- Crew 6, Underboss 3, 1 Leader, th
 C.leaveWaitHours = 48                       -- after leaving / being kicked, before joining another gang
 C.leaderInactiveDays = 14                   -- then the longest-serving Underboss takes over
 
--- the 5 gang types (one gang per type at launch). Only 'chop' is built so far: the others say "soon".
+-- the 5 gang types (one gang per type at launch)
 C.types = {
     chop    = { label = 'ورشة التفكيك', en = 'Chop Shop', part = 'chop_tools', icon = 'wrench', ready = true },
     wash    = { label = 'غسيل الأموال', en = 'Money Wash', part = 'wash_supplies', icon = 'wash', ready = true },
-    ammo    = { label = 'الذخيرة', en = 'Ammo', part = 'ammo_materials', icon = 'ammo' },
-    weapons = { label = 'الأسلحة', en = 'Weapons', part = 'gun_parts', icon = 'gun' },
-    weed    = { label = 'الحشيش', en = 'Weed', part = 'gang_weed_seeds', icon = 'leaf' },
+    ammo    = { label = 'الذخيرة', en = 'Ammo', part = 'ammo_materials', icon = 'ammo', ready = true },
+    weapons = { label = 'الأسلحة', en = 'Weapons', part = 'gun_parts', icon = 'gun', ready = true },
+    weed    = { label = 'الحشيش', en = 'Weed', part = 'gang_weed_seeds', icon = 'leaf', ready = true },
 }
 C.onePerType = true
 
@@ -47,11 +47,14 @@ C.fence = { price = 40, model = 's_m_y_dealer_01', name = 'المصرّف' } -- 
 
 -- what a Crew member may take out of the stash per day (value of the items). Runners take nothing out.
 C.crewDailyTake = 10000
-C.itemValue = { black_money = 1, lockpick = 150, c4 = 2500, chop_tools = 100, wash_supplies = 100 }
+C.itemValue = { black_money = 1, lockpick = 150, c4 = 2500, chop_tools = 100, wash_supplies = 100, ammo_materials = 100, gun_parts = 100,
+                gang_weed_seeds = 100, weed_bud = 30, ['weed_og-kush'] = 45, ['ammo-9'] = 4, ['ammo-45'] = 4, ['ammo-shotgun'] = 4, ['ammo-rifle'] = 4,
+                WEAPON_SNSPISTOL = 1200, WEAPON_PISTOL = 1200, WEAPON_VINTAGEPISTOL = 1200, WEAPON_SAWNOFFSHOTGUN = 2800, WEAPON_MICROSMG = 2800,
+                WEAPON_HEAVYPISTOL = 1200, WEAPON_MINISMG = 2800, WEAPON_COMPACTRIFLE = 5500 }
 
 -- gang reputation: earned by doing the gang's work. Each level unlocks a bit more.
 C.rep = {
-    gain = { part = 1, chop = 12, playerChop = 20, bench = 1, wash = 8 },
+    gain = { part = 1, chop = 12, playerChop = 20, bench = 1, wash = 8, ammo = 6, gun = 10, harvest = 6, bag = 1, corner = 1 },
     levels = {
         { xp = 0,     name = 'شارع',     partsDaily = 80,  chopsDaily = 10, washDaily = 40000, stashSlots = 60,  stashWeight = 400000, rentOff = 0.00 },
         { xp = 600,   name = 'حيّ',      partsDaily = 90,  chopsDaily = 11, washDaily = 50000, stashSlots = 70,  stashWeight = 500000, rentOff = 0.05 },
@@ -112,6 +115,77 @@ C.wash = {
     markedChance = 0.10,                      -- marked bills: an anonymous tip to the police (the area, not the spot)
     tipRadius = 150.0,
     tipDelay = { 60, 240 },                   -- seconds after the batch (so it isn't a live alarm)
+}
+
+-- ------------------------------------------------------------------ Ammo
+-- The ammo press in the HQ (Crew and up): 3 steps (melt the lead, press the casings, box the rounds).
+-- 1 ammo materials = 10 rounds. The rounds go to the gang stash.
+C.ammo = {
+    perMaterial = 10,
+    batchMax = 10,                         -- materials per batch (100 rounds)
+    cooldown = 120,
+    stageSeconds = { 12, 15, 12 },
+    dailyRounds = { 600, 700, 800, 900, 1000 },   -- by rep level
+    types = {
+        { item = 'ammo-9',       label = 'ذخيرة 9 ملم',  rep = 1 },
+        { item = 'ammo-shotgun', label = 'خرطوش',        rep = 1 },
+        { item = 'ammo-45',      label = 'ذخيرة .45',    rep = 2 },
+        { item = 'ammo-rifle',   label = 'ذخيرة بندقية', rep = 3 },
+    },
+}
+
+-- ------------------------------------------------------------------ Weapons
+-- The workbench in the HQ (Crew and up): 3 steps (file the frame, assemble, test fire). Serial scratched off.
+C.weapons = {
+    cooldown = 180,
+    daily = 6,                             -- guns per gang per day
+    stageSeconds = { 15, 15, 12 },
+    serial = 'SCRATCHED',
+    testFireTip = 0.10,                    -- the test fire is heard: an anonymous tip to the police
+    guns = {
+        { item = 'WEAPON_SNSPISTOL',      label = 'مسدس SNS',        rep = 1, parts = 8 },
+        { item = 'WEAPON_PISTOL',         label = 'مسدس',            rep = 1, parts = 8 },
+        { item = 'WEAPON_VINTAGEPISTOL',  label = 'مسدس قديم',       rep = 2, parts = 8 },
+        { item = 'WEAPON_SAWNOFFSHOTGUN', label = 'بندقية مقصوصة',   rep = 2, parts = 15 },
+        { item = 'WEAPON_MICROSMG',       label = 'رشاش صغير',       rep = 3, parts = 15 },
+        { item = 'WEAPON_HEAVYPISTOL',    label = 'مسدس ثقيل',       rep = 3, parts = 8 },
+        { item = 'WEAPON_MINISMG',        label = 'رشاش ميني',       rep = 4, parts = 15 },
+        { item = 'WEAPON_COMPACTRIFLE',   label = 'بندقية مدمجة',    rep = 5, parts = 25 },
+    },
+}
+
+-- ------------------------------------------------------------------ the black market buyer (placed with /gangspots)
+-- Buys only what the Ammo and Weapons gangs made (gang ammo and serial-less gang guns), for dirty money.
+C.blackMarket = {
+    model = 'g_m_m_armboss_01',
+    dailyPerPlayer = 15000,                -- what one player can sell him per day
+    prices = { ['ammo-9'] = 4, ['ammo-45'] = 4, ['ammo-shotgun'] = 4, ['ammo-rifle'] = 4,
+               WEAPON_SNSPISTOL = 1200, WEAPON_PISTOL = 1200, WEAPON_VINTAGEPISTOL = 1200, WEAPON_HEAVYPISTOL = 1200,
+               WEAPON_SAWNOFFSHOTGUN = 2800, WEAPON_MICROSMG = 2800, WEAPON_MINISMG = 2800, WEAPON_COMPACTRIFLE = 5500 },
+}
+
+-- ------------------------------------------------------------------ Weed
+-- Up to 12 pots in the HQ grow room (placed with /gangspots). A seed grows in 30 minutes. Water keeps it
+-- healthy (dry time costs buds), fertilizer (weed_nutrition) gives more. Harvest -> the table: trim + weigh 2 g bags.
+-- Then sell bags on street corners to locals (anyone can, the police may get a call).
+C.weed = {
+    pots = 12,
+    growSeconds = 1800,
+    waterLasts = 600,                      -- a watered plant is fine for 10 min, then it dries out
+    budsBase = 8, fertBonus = 0.25, dryMaxLoss = 0.6,
+    harvestTip = 0.10,                     -- the smell of a harvest: an anonymous tip to the police
+    bagItem = 'weed_og-kush',              -- a 2 g bag (the existing item)
+    budsPerBag = 1,
+    tableBatch = 10,                       -- bags per table round
+    tableSeconds = { 10, 10 },
+    corner = {
+        price = { 40, 50 },                -- dirty money per bag
+        perSale = { 1, 3 },
+        every = { 20, 40 },                -- seconds between two buyers
+        radius = 25.0,                     -- stay near your corner
+        dailyBags = 80,                    -- per player
+        policeChance = { own = 0.05, none = 0.12, rival = 0.25 },   -- per sale, by whose turf it is
+    },
 }
 
 -- ------------------------------------------------------------------ Turf & graffiti

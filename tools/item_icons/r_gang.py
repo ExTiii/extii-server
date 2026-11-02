@@ -99,3 +99,44 @@ def scrub_brush():
             objs.append(K.cyl(0.012, 0.09, (-0.21 + ix * 0.052, -0.06 + iy * 0.06, 0.045), br, verts=12))
     sponge = K.box((0.26, 0.16, 0.09), (0.34, -0.2, 0.045), K.mat('sponge', (0.95, 0.85, 0.1), rough=0.95, bump=0.6, bump_scale=600), bevel=0.02)
     return objs + [sponge], {'el': 30}
+
+@item
+def ammo_materials():
+    # lead ingots and a tray of empty brass casings
+    lead = K.mat('lead', (0.42, 0.43, 0.46), rough=0.45, metal=1, noise_rough=0.1)
+    objs = []
+    for i, (x, y, z) in enumerate(((-0.28, 0.0, 0.05), (-0.28, 0.2, 0.05), (-0.28, 0.1, 0.15))):
+        objs.append(K.box((0.34, 0.16, 0.1), (x, y, z), lead, bevel=0.02))
+    brass = K.mat('brassc', (0.85, 0.62, 0.25), rough=0.25, metal=1)
+    tray = K.box((0.42, 0.34, 0.04), (0.18, -0.05, 0.02), K.mat('trayg', (0.16, 0.2, 0.12), rough=0.6), bevel=0.01)
+    objs.append(tray)
+    for ix in range(5):
+        for iy in range(4):
+            objs.append(K.cyl(0.026, 0.12, (0.03 + ix * 0.075, -0.16 + iy * 0.075, 0.1), brass, verts=24))
+    return objs, {'el': 40}
+
+@item
+def gun_parts():
+    # a slide, a barrel, a spring and a few pins on a rag
+    rag = K.mat('rag', (0.28, 0.3, 0.26), rough=0.95, bump=0.4, bump_scale=500)
+    objs = [K.box((0.72, 0.5, 0.01), (0.03, 0, 0.005), rag, bevel=0.005)]
+    dark = K.dark_steel()
+    slide = K.box((0.55, 0.11, 0.09), (-0.05, 0.15, 0.055), dark, bevel=0.012)
+    for i in range(7):
+        objs.append(K.box((0.012, 0.115, 0.05), (0.08 + i * 0.022, 0.15, 0.08), K.mat('serr', (0.08, 0.08, 0.09), rough=0.4, metal=1)))
+    barrel = K.cyl(0.03, 0.42, (-0.02, -0.05, 0.035), K.steel(), rot=(0, rad(90), rad(6)))
+    spring = K.torus(0.025, 0.006, (0.3, -0.18, 0.03), K.steel(), rot=(0, rad(90), 0))
+    objs += [slide, barrel, spring]
+    for i in range(6):
+        objs.append(K.torus(0.025, 0.006, (0.24 + i * 0.022, -0.18, 0.03), K.steel(), rot=(0, rad(90), 0)))
+    for i in range(3):
+        objs.append(K.cyl(0.008, 0.1, (0.3 + i * 0.04, 0.05, 0.012), K.chrome(), rot=(0, rad(90), rad(30))))
+    return objs, {'el': 45}
+
+@item
+def weed_bud():
+    import r_misc as Mi
+    random.seed(5); out = []
+    for i, (x, y) in enumerate(((0, 0), (0.15, 0.06), (-0.14, 0.07), (0.03, -0.13))):
+        out += Mi._bud((x, y, 0.0), 0.9 if i == 0 else 0.7, ((0.02, 0.07, 0.01), (0.1, 0.24, 0.03)), i)
+    return out, {'el': 35}

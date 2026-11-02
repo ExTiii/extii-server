@@ -53,6 +53,7 @@ local function fireNet(name, src, ...) source = src; for _, f in ipairs(netHandl
 local leftRows = {}
 BOLOS, UPD, CALLS = {}, {}, {}
 META = {}
+ITEMMETA = {}
 TAGS_DB = {}
 MySQL = {
     ready = function(f) READIES = READIES or {}; READIES[#READIES + 1] = f end,
@@ -168,10 +169,10 @@ local EXP_INDEX = function(_, res)
     if res == 'ox_inventory' then return {
         RegisterStash = function(_, id, label, slots, weight) stashes[id] = { slots = slots, weight = weight } end,
         CanCarryItem = function(_, id, item, n) return true end,
-        AddItem = function(_, id, item, n) local t = invOf(id); t[item] = (t[item] or 0) + n return true end,
+        AddItem = function(_, id, item, n, meta) local t = invOf(id); t[item] = (t[item] or 0) + n; if meta then ITEMMETA[id] = ITEMMETA[id] or {}; ITEMMETA[id][item] = meta end return true end,
         RemoveItem = function(_, id, item, n) local t = invOf(id); if (t[item] or 0) < n then return false end t[item] = t[item] - n return true end,
         GetItemCount = function(_, id, item) return invOf(id)[item] or 0 end,
-        GetInventoryItems = function(_, id) local out = {}; for k, v in pairs(invOf(id)) do out[#out + 1] = { name = k, count = v } end return out end,
+        GetInventoryItems = function(_, id) local out = {}; for k, v in pairs(invOf(id)) do if v > 0 then out[#out + 1] = { name = k, count = v, slot = #out + 1, metadata = (ITEMMETA[id] or {})[k] } end end return out end,
         ClearInventory = function(_, id) inv[id] = {} end,
         registerHook = function(_, name, fn, opts) hooks[name] = fn end,
         GetSlotWithItem = function(_, id, item) local n = invOf(id)[item] or 0; if n < 1 then return nil end return { slot = 1, metadata = (META[id] or {})[item] } end,
@@ -207,6 +208,8 @@ dofile(RES .. 'server/theft.lua')
 dofile(RES .. 'server/door.lua')
 dofile(RES .. 'server/wash.lua')
 dofile(RES .. 'server/turf.lua')
+dofile(RES .. 'server/craft.lua')
+dofile(RES .. 'server/weed.lua')
 for _, f in ipairs(READIES) do f() end
 
 -- ---------------------------------------------------------------- tests
@@ -698,5 +701,91 @@ end
 check(full == 'full' and #GlobalState['exti_gangs:turf'].tags == 5, 'a zone holds 5 tags at most')
 local okDel = CB.zoneDelete(1, zid)
 check(okDel and #GlobalState['exti_gangs:turf'].zones == 0 and #GlobalState['exti_gangs:turf'].tags == 0, 'deleting a zone removes its tags')
+
+-- ---------------------------------------------------------------- Ammo
+local am = addPlayer(80, 'CM80', 'AmmoBoss')
+CMD.creategang(1, { name = 'shells', kind = 'ammo', leader = 80, label = 'Shell Co' })
+local ag = GANG.gangs.shells
+check(ag and ag.type == 'ammo', 'an Ammo gang is created')
+at(1, vec3(1500, 0, 0)); CB.spotSave(1, 'hq', 'shells', 'press')
+at(80, vec3(1500, 0, 0))
+check(select(2, CB.craftBegin(80, 1, 5)) == 'parts', 'no ammo materials: refused')
+invOf('gang_shells').ammo_materials = 30
+check(select(2, CB.craftBegin(80, 3, 5)) == 'rep', '.45 needs rep 2')
+local okA, ai = CB.craftBegin(80, 1, 5)
+check(okA and ai.count == 50 and inv.gang_shells.ammo_materials == 25, '5 materials -> a batch of 50 rounds of 9 mm')
+check(select(2, CB.craftBegin(80, 1, 5)) == 'busy', 'one batch at a time')
+check(select(2, CB.craftStage(80, ai.token, 1)) == 'fast', 'a step needs its time')
+local resA
+for st = 1, 3 do advance(16); local _, r = CB.craftStage(80, ai.token, st); if st == 3 then resA = r end end
+check(resA and inv.gang_shells['ammo-9'] == 50, '3 steps: 50 rounds into the gang stash')
+check(select(2, CB.craftBegin(80, 1, 5)) == 'cooldown', 'the press cools down')
+-- ---------------------------------------------------------------- Weapons
+local wp = addPlayer(81, 'CW81', 'GunBoss')
+CMD.creategang(1, { name = 'smiths', kind = 'weapons', leader = 81, label = 'Gun Smiths' })
+local wg2 = GANG.gangs.smiths
+at(1, vec3(1600, 0, 0)); CB.spotSave(1, 'hq', 'smiths', 'workbench')
+at(81, vec3(1600, 0, 0))
+invOf('gang_smiths').gun_parts = 20
+check(select(2, CB.craftBegin(81, 8)) == 'rep', 'the compact rifle needs rep 5')
+local okW2, wi2 = CB.craftBegin(81, 2)
+check(okW2 and inv.gang_smiths.gun_parts == 12, 'a pistol: 8 gun parts')
+for st = 1, 3 do advance(16); CB.craftStage(81, wi2.token, st) end
+check(inv.gang_smiths.WEAPON_PISTOL == 1 and ITEMMETA.gang_smiths.WEAPON_PISTOL.serial == 'SCRATCHED' and ITEMMETA.gang_smiths.WEAPON_PISTOL.exti_craft == 'smiths', 'the pistol is in the stash with its serial scratched off')
+GANG.addDaily('g', 'smiths', 'guns', 5); advance(200)
+check(select(2, CB.craftBegin(81, 1)) == 'daily', '6 guns a day per gang')
+-- ---------------------------------------------------------------- the black market buyer
+at(1, vec3(1700, 0, 0)); CB.spotSave(1, 'blackmarket')
+local bmp = addPlayer(82, 'CB82', 'Seller'); at(82, vec3(1700, 0.5, 0))
+invOf(82)['ammo-9'] = 100
+invOf(82).WEAPON_PISTOL = 1; ITEMMETA[82] = { WEAPON_PISTOL = { serial = 'ABC123', registered = true } }
+local okP2, pv = CB.blackMarket(82, true)
+check(okP2 and pv.total == 400, 'he buys gang ammo, not a registered shop pistol (offer $400)')
+ITEMMETA[82].WEAPON_PISTOL = { serial = 'SCRATCHED', exti_craft = 'smiths' }
+local okS2, paid = CB.blackMarket(82, false)
+check(okS2 and paid == 1600 and inv[82].black_money == 1600 and (inv[82]['ammo-9'] or 0) == 0, 'a gang pistol + 100 rounds: $1,600 dirty money')
+invOf(82)['ammo-9'] = 10000
+local _, paid2 = CB.blackMarket(82, false)
+check(GANG.getDaily('m', 'CB82', 'blackmarket') <= 15000, 'he buys at most $15,000 a day from one player')
+-- ---------------------------------------------------------------- Weed
+local wb = addPlayer(83, 'CK83', 'WeedBoss')
+CMD.creategang(1, { name = 'greens', kind = 'weed', leader = 83, label = 'Green House' })
+local gg = GANG.gangs.greens
+at(1, vec3(1800, 0, 0)); CB.spotSave(1, 'pot_add', 'greens')
+at(1, vec3(1801, 0, 0)); CB.spotSave(1, 'pot_add', 'greens')
+at(1, vec3(1805, 0, 0)); CB.spotSave(1, 'hq', 'greens', 'weedtable')
+check(#GANG.spots.hq.greens.pots == 2, 'the admin places 2 pots')
+at(83, vec3(1800, 0, 0))
+check(select(2, CB.pot(83, 1, 'plant')) == 'noseed', 'no seeds in the stash: no planting')
+invOf('gang_greens').gang_weed_seeds = 5
+check(CB.pot(83, 1, 'plant') == true and inv.gang_greens.gang_weed_seeds == 4, 'he plants a seed')
+check(select(2, CB.pot(83, 1, 'harvest')) == 'growing', 'not ripe yet')
+check(select(2, CB.pot(83, 1, 'water')) == 'wet', 'just planted: the soil is wet')
+invOf(83).weed_nutrition = 1
+check(CB.pot(83, 1, 'fert') == true, 'fertilized')
+for k = 1, 3 do advance(590); CB.pot(83, 1, 'water') end
+advance(60)
+local okH, buds = CB.pot(83, 1, 'harvest')
+check(okH and buds == 10 and inv.gang_greens.weed_bud == 10, 'watered + fertilized: 10 buds into the stash')
+at(83, vec3(1801, 0, 0)); CB.pot(83, 2, 'plant'); advance(1801)
+local _, buds2 = CB.pot(83, 2, 'harvest')
+check(buds2 and buds2 < 8, 'never watered: a smaller harvest (' .. tostring(buds2) .. ')')
+at(83, vec3(1805, 0, 0))
+local okT9, t9 = CB.weedTableBegin(83)
+check(okT9 and t9.bags == 10, 'the table takes 10 buds')
+for st = 1, 2 do advance(11); CB.weedTableStage(83, t9.token, st) end
+check(inv.gang_greens['weed_og-kush'] == 10, '10 bags of 2 g into the stash')
+-- corner selling
+local cs = addPlayer(84, 'CS84', 'Corner'); at(84, vec3(2500, 0, 0))
+check(select(2, CB.cornerStart(84)) == 'nobags', 'no bags: no selling')
+invOf(84)['weed_og-kush'] = 5
+local okC2, c2 = CB.cornerStart(84)
+check(okC2 and c2.kind == 'none', 'he starts selling on a corner (nobody\'s turf)')
+check(select(2, CB.cornerSell(84)) == 'wait', 'a buyer comes only after a while')
+advance(45)
+local okC3, r3 = CB.cornerSell(84)
+check(okC3 and r3.bags >= 1 and inv[84].black_money == r3.money, 'he sells ' .. tostring(r3 and r3.bags) .. ' bags for dirty money')
+at(84, vec3(2600, 0, 0)); advance(45)
+check(select(2, CB.cornerSell(84)) == 'moved', 'walking away stops the selling')
 
 print(('\n%d passed, %d failed'):format(passes, fails))
