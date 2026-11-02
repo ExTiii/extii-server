@@ -24,6 +24,7 @@
         tools: 'أدوات',
         weapons: 'أسلحة',
         ammo: 'ذخيرة',
+        work: 'مستلزمات العمل',
     };
 
     const ERRORS = {

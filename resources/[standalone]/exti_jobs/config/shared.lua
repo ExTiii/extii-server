@@ -17,41 +17,23 @@ return {
     returnBonus = { base = 65, perRound = 33, max = 260 },
 
     -- jobs anyone may switch away from at the job center (police, EMS and other team jobs can't)
-    freeJobs = { unemployed = true, tow = true, garbage = true, delivery = true, taxi = true, bus = true, trucker = true, reporter = true, vineyard = true },
+    freeJobs = { unemployed = true, tow = true, garbage = true, delivery = true, chicken = true, raisin = true, taxi = true, bus = true, trucker = true, reporter = true, vineyard = true },
 
     -- the order on the tablet
-    order = { 'delivery', 'garbage', 'tow' },
+    order = { 'delivery', 'garbage', 'tow', 'chicken', 'raisin' },
 
-    -- EX_Tii level system (exti_level): the starter jobs above need no level. These jobs need a level
-    -- and supplies from the 24/7 store; they are being built one phase at a time (soon = shown as
-    -- "قريبًا" in the job centre until its update arrives). minLevel = the player level needed.
+    -- EX_Tii level system (exti_level): the starter jobs need no level. The level jobs (chicken, raisins
+    -- below in `jobs`) need a level and supplies from the 24/7 store. These four are still being built:
+    -- shown as "قريبًا" in the job centre until their update arrives. minLevel = the player level needed.
     upcoming = {
-        { name = 'fishing', label = 'صياد سمك', company = 'سوق السمك في لوس سانتوس', icon = 'fish', minLevel = 3, hourText = '2,700$',
-          short = 'اصطد السمك من الرصيف أو بالقارب وبِعه في سوق السمك. كل نوع بسعر.', supplies = { 'صنارة', 'طُعم' }, soon = true },
-        { name = 'hotdog', label = 'بائع نقانق', company = 'عربات شانكي للنقانق', icon = 'hotdog', minLevel = 8, hourText = '2,900$',
-          short = 'جهّز العربة وقدّم النقانق للزبائن في الشوارع المزدحمة.', supplies = { 'نقانق', 'خبز', 'صلصة' }, soon = true },
-        { name = 'windows', label = 'منظف نوافذ', company = 'بُرج كلين', icon = 'window', minLevel = 15, hourText = '3,100$',
-          short = 'نظّف واجهات الأبراج من المنصة المعلّقة.', supplies = { 'ممسحة زجاج', 'صابون زجاج' }, soon = true },
-        { name = 'pizza', label = 'عامل بيتزا', company = 'بيتزا ذيس', icon = 'pizza', minLevel = 22, hourText = '3,300$',
-          short = 'اخبز البيتزا في المطعم ثم أوصلها بالدراجة ساخنة.', supplies = { 'عجينة', 'جبن' }, soon = true },
-        { name = 'farming', label = 'مزارع', company = 'مزارع غريبسيد', icon = 'leaf', minLevel = 30, hourText = '3,500$',
-          short = 'ازرع واسقِ واحصد المحصول وبِعه.', supplies = { 'بذور', 'سماد' }, soon = true },
-        { name = 'bus', label = 'سائق حافلة', company = 'حافلات لوس سانتوس', icon = 'bus', minLevel = 40, hourText = '3,700$',
-          short = 'قُد الحافلة على خطوط المدينة وأوصل الركاب.', supplies = { 'لفة تذاكر' }, soon = true },
-        { name = 'lumber', label = 'حطّاب', company = 'منشرة بوليتو', icon = 'tree', minLevel = 55, hourText = '4,000$',
-          short = 'اقطع الأشجار وحمّل الجذوع وأوصلها إلى المنشرة.', supplies = { 'فأس', 'قفازات' }, soon = true },
-        { name = 'mining', label = 'عامل منجم', company = 'منجم ديفيس كوارتز', icon = 'pickaxe', minLevel = 70, hourText = '4,300$',
-          short = 'احفر الصخور، اصهر الخام وبِع المعادن.', supplies = { 'معول', 'بطاريات مصباح الرأس' }, soon = true },
-        { name = 'recycling', label = 'عامل إعادة التدوير', company = 'مصنع إعادة التدوير', icon = 'recycle', minLevel = 90, hourText = '4,600$',
-          short = 'افرز المواد في المصنع واكبسها وجهّزها للبيع.', supplies = { 'قفازات عمل', 'أكياس قمامة' }, soon = true },
-        { name = 'trucker', label = 'سائق شاحنة', company = 'نقل سان أندرياس', icon = 'truck', minLevel = 110, hourText = '5,000$',
-          short = 'انقل المقطورات لمسافات طويلة بين المدن.', supplies = { 'أحزمة ربط', 'مشاعل طريق' }, soon = true },
-        { name = 'electrician', label = 'كهربائي', company = 'كهرباء لوس سانتوس', icon = 'bolt', minLevel = 140, hourText = '5,400$',
-          short = 'أصلح صناديق الكهرباء المعطلة في أنحاء المدينة.', supplies = { 'لفة أسلاك', 'فيوزات' }, soon = true },
-        { name = 'scuba', label = 'غوّاص إنقاذ', company = 'إنقاذ بحري', icon = 'dive', minLevel = 175, hourText = '5,800$',
-          short = 'اغطس إلى حطام السفن وانتشل البضائع.', supplies = { 'تعبئة أكسجين', 'مصباح غوص' }, soon = true },
-        { name = 'oil', label = 'فني حقول النفط', company = 'نفط ساندي شورز', icon = 'oil', minLevel = 220, hourText = '6,200$',
-          short = 'صِن المضخات وخطوط الأنابيب في حقول النفط.', supplies = { 'حشوات', 'شحم صمامات' }, soon = true },
+        { name = 'bread', label = 'خبّاز', company = 'مخابز لوس سانتوس', icon = 'wheat', minLevel = 15, hourText = '3,100$',
+          short = 'احصد القمح في حقول غريبسيد، اطحنه في المطحنة واخبز الخبز ثم بِعه.', supplies = { 'خميرة' }, soon = true },
+        { name = 'fishing', label = 'صياد سمك', company = 'سوق السمك في لوس سانتوس', icon = 'fish', minLevel = 22, hourText = '3,300$',
+          short = 'اصطد السمك بالقارب قرب الساحل، نظّفه ثم بِعه في سوق السمك.', supplies = { 'طُعم' }, soon = true },
+        { name = 'metals', label = 'عامل معادن', company = 'منجم ديفيس كوارتز', icon = 'pickaxe', minLevel = 30, hourText = '3,500$',
+          short = 'احفر الصخور في المنجم، اغسلها واصهرها في المسبك ثم بِع النحاس والحديد والذهب.', supplies = { 'بطاريات مصباح الرأس' }, soon = true },
+        { name = 'fabrics', label = 'عامل أقمشة', company = 'مصنع نسيج لوس سانتوس', icon = 'spool', minLevel = 40, hourText = '3,700$',
+          short = 'اجمع الصوف من مزرعة غريبسيد، انسج القماش وخِط الملابس ثم بِعها.', supplies = { 'بكرات خيط' }, soon = true },
     },
 
     -- EX_Tii: team jobs: you join them here, but they are run by their own script (EMS = exti_ems).
@@ -193,6 +175,131 @@ return {
                 returnRadius = 30.0,
                 dock = vec3(72.00, 98.30, 79.20), -- park the van here to load the parcels (the lot entrance)
                 dockRadius = 4.0,
+            },
+        },
+            -------------------------------------------------------------------
+        -- EX_Tii level jobs: 3 stops (collect -> process -> sell), a skill check at every step,
+        -- real items in the inventory, supplies from the 24/7 store used up every run.
+        -- Every place can be moved in game by an admin with /jobspots (saved in data/spots.json).
+        -- chain: the steps. kind = collect | process | sell.
+        --   collect: spots (several, each rests `rest` seconds after you used it), give = { item, min, max }, cap = most you may carry
+        --   process: take = { item = count }, give = { item = count } (one press = one batch)
+        --   sell:    take = { item = count }, price = $ per batch, perHour = most batches bought from you in an hour
+        -------------------------------------------------------------------
+        chicken = {
+            label = 'عامل دواجن',
+            company = 'مزارع كلاكن بيل - باليتو',
+            icon = 'chicken',
+            minLevel = 3,
+            short = 'اصطد الدجاج الحي في مزرعة باليتو، اذبحه ونظّفه، عبّئه في صوانٍ ثم بِعه لتاجر الجملة في المدينة.',
+            steps = {
+                'اذهب إلى مزرعة الدواجن في باليتو وتحدّث مع المشرف لتبدأ المناوبة وتستلم شاحنة النقل.',
+                'اصطد الدجاج في الحظيرة: قف في دائرة ذهبية، اضغط E ونجح في التحدي.',
+                'عند طاولة الذبح حوّل كل 5 دجاجات حية إلى دجاج مذبوح.',
+                'عند خط التعبئة عبّئ كل 5 دجاجات مذبوحة في صينية (تحتاج صينية تغليف لكل 5).',
+                'قُد الشاحنة إلى تاجر الجملة في ليتل سول وبِع الصواني.',
+            },
+            extra = 'تحتاج من بقالة 24/7: صواني تغليف (صينية لكل 5 دجاجات). الدجاج في حقيبتك حقيقي: يمكن أن يُسرق منك.',
+            payText = '200$ لكل صينية (5 دجاجات)',
+            hourText = '2,700$',
+            taskWord = { 'صينية', 'صوانٍ' },
+            levelSteps = { 0, 30, 80, 160, 280 },
+            perRound = 4,
+            roundMinutes = 17,
+            xpRate = 0.21,
+            supplies = { 'packing_tray' },
+            vehicle = { model = 'benson', label = 'شاحنة نقل الدواجن', plate = 'CLK', blipName = 'شاحنة الدواجن' },
+            hq = {
+                label = 'مزرعة الدواجن',
+                place = 'باليتو باي',
+                blip = { sprite = 126, colour = 0, scale = 0.75, name = 'مزرعة الدواجن' },
+                supervisor = { model = 'a_m_m_farmer_01', coords = vec4(-59.10, 6244.70, 31.09, 130.0), scenario = 'WORLD_HUMAN_CLIPBOARD', name = 'المشرف حمدان' },
+                spawns = {},            -- empty: the truck appears on the nearest road (or where /jobspots put it)
+                returnRadius = 45.0,
+            },
+            chain = {
+                { id = 'catch', kind = 'collect', label = 'اصطد الدجاج', place = 'حظيرة الدجاج', blip = 126,
+                  spots = { vec3(-64.40, 6240.20, 31.09), vec3(-61.40, 6242.70, 31.09), vec3(-63.90, 6243.10, 31.09), vec3(-61.90, 6239.80, 31.09) },
+                  give = { item = 'live_chicken', min = 2, max = 3 }, cap = 20, rest = 30,
+                  time = 4500, skill = { 'easy', 'easy' }, anim = { dict = 'anim@mp_snowball', clip = 'pickup_snowball' },
+                  progress = 'تمسك الدجاجة...', fail = 'هربت الدجاجة! حاول مرة أخرى' },
+                { id = 'slaughter', kind = 'process', label = 'اذبح الدجاج', place = 'طاولة الذبح', blip = 273,
+                  spot = vec3(-77.99, 6229.06, 31.09),
+                  take = { live_chicken = 5 }, give = { slaughtered_chicken = 5 },
+                  time = 7000, skill = { 'easy', 'medium' }, anim = { dict = 'anim@amb@business@coc@coc_unpack_cut_left@', clip = 'coke_cut_v1_coccutter' },
+                  progress = 'تذبح وتنظّف الدجاج...', fail = 'انزلقت السكين، أعد المحاولة' },
+                { id = 'pack', kind = 'process', label = 'عبّئ الدجاج', place = 'خط التعبئة', blip = 478,
+                  spot = vec3(-101.98, 6208.80, 31.03),
+                  take = { slaughtered_chicken = 5, packing_tray = 1 }, give = { packed_chicken = 1 },
+                  time = 7000, skill = { 'easy', 'medium' }, anim = { dict = 'mini@repair', clip = 'fixing_a_ped' },
+                  progress = 'تعبّئ الدجاج في الصينية...', fail = 'تمزّق الغلاف، أعد المحاولة' },
+                { id = 'sell', kind = 'sell', label = 'بِع الدجاج', place = 'تاجر الجملة - ليتل سول', blip = 431,
+                  spot = vec3(-596.16, -889.32, 25.51),
+                  take = { packed_chicken = 1 }, price = 200, perHour = 17,
+                  time = 3500, skill = { 'easy' }, anim = { dict = 'mp_common', clip = 'givetake1_a' },
+                  progress = 'تسلّم الصينية للتاجر...', fail = 'سقطت الصينية، التقطها وحاول مرة أخرى' },
+            },
+        },
+
+        -------------------------------------------------------------------
+        raisin = {
+            label = 'عامل زبيب',
+            company = 'مزارع مارلو للعنب',
+            icon = 'grapes',
+            minLevel = 8,
+            short = 'اقطف العنب من كروم مارلو، جفّفه على المناشر في المعصرة، عبّئ الزبيب في كراتين ثم بِعه لتاجر الجملة.',
+            steps = {
+                'اذهب إلى مزارع مارلو للعنب وتحدّث مع المشرف لتبدأ المناوبة وتستلم الشاحنة.',
+                'اقطف العنب بين صفوف الكروم: كل دائرة ذهبية تعطيك عناقيد، ثم ترتاح قليلًا.',
+                'عند مناشر التجفيف حوّل كل 5 عناقيد إلى زبيب.',
+                'عند طاولة التعبئة عبّئ كل 5 زبيب في كرتونة (تحتاج كرتونة فارغة لكل علبة).',
+                'قُد الشاحنة إلى تاجر الجملة في ليتل سول وبِع الكراتين.',
+            },
+            extra = 'تحتاج من بقالة 24/7: كراتين فارغة (كرتونة لكل 5 زبيب). العنب والزبيب في حقيبتك حقيقيان: يمكن أن يُسرقا منك.',
+            payText = '125$ لكل كرتونة زبيب',
+            hourText = '2,900$',
+            taskWord = { 'كرتونة', 'كراتين' },
+            levelSteps = { 0, 45, 120, 240, 420 },
+            perRound = 6,
+            roundMinutes = 15,
+            xpRate = 0.21,
+            supplies = { 'empty_carton' },
+            vehicle = { model = 'sadler', label = 'بيك أب المزرعة', plate = 'VIN', blipName = 'بيك أب المزرعة' },
+            hq = {
+                label = 'مزارع مارلو للعنب',
+                place = 'تونغفا هيلز',
+                blip = { sprite = 85, colour = 0, scale = 0.75, name = 'مزارع العنب' },
+                supervisor = { model = 'a_m_m_farmer_01', coords = vec4(-1928.81, 2059.53, 140.84, 260.0), scenario = 'WORLD_HUMAN_CLIPBOARD', name = 'المشرف مروان' },
+                spawns = {},
+                returnRadius = 45.0,
+            },
+            chain = {
+                { id = 'pick', kind = 'collect', label = 'اقطف العنب', place = 'كروم العنب', blip = 85,
+                  spots = {
+                      vec3(-1875.41, 2100.37, 138.86), vec3(-1908.69, 2107.48, 131.31), vec3(-1866.04, 2112.64, 134.41), vec3(-1907.76, 2125.35, 124.03),
+                      vec3(-1850.31, 2142.95, 122.30), vec3(-1888.22, 2164.51, 114.81), vec3(-1835.52, 2180.59, 104.88), vec3(-1891.98, 2208.35, 94.56),
+                      vec3(-1720.37, 2182.03, 106.18), vec3(-1808.52, 2173.14, 107.63), vec3(-1784.22, 2222.80, 92.86), vec3(-1889.13, 2250.05, 79.63),
+                      vec3(-1861.16, 2254.32, 81.04), vec3(-1886.75, 2272.45, 70.81), vec3(-1845.49, 2274.63, 73.33), vec3(-1687.28, 2195.76, 97.87),
+                      vec3(-1741.18, 2173.22, 114.39), vec3(-1743.17, 2141.11, 121.18), vec3(-1813.84, 2089.57, 134.21), vec3(-1698.71, 2150.65, 110.41),
+                  },
+                  give = { item = 'grape_bunch', min = 3, max = 4 }, cap = 30, rest = 240,
+                  time = 5000, skill = { 'easy', 'easy' }, anim = { dict = 'amb@world_human_gardener_plant@male@base', clip = 'base' },
+                  progress = 'تقطف العناقيد...', fail = 'سقطت العناقيد على الأرض، حاول مرة أخرى' },
+                { id = 'dry', kind = 'process', label = 'جفّف العنب', place = 'مناشر التجفيف', blip = 478,
+                  spot = vec3(-1881.50, 2062.60, 135.92),
+                  take = { grape_bunch = 5 }, give = { raisins = 5 },
+                  time = 7000, skill = { 'easy', 'medium' }, anim = { dict = 'mini@repair', clip = 'fixing_a_ped' },
+                  progress = 'تنشر العنب ليجفّ...', fail = 'تبعثر العنب، أعد المحاولة' },
+                { id = 'box', kind = 'process', label = 'عبّئ الزبيب', place = 'طاولة التعبئة', blip = 478,
+                  spot = vec3(-1876.00, 2061.30, 135.92),
+                  take = { raisins = 5, empty_carton = 1 }, give = { raisin_box = 1 },
+                  time = 6000, skill = { 'easy', 'medium' }, anim = { dict = 'mini@repair', clip = 'fixing_a_ped' },
+                  progress = 'تعبّئ الزبيب في الكرتونة...', fail = 'انقلبت الكرتونة، أعد المحاولة' },
+                { id = 'sell', kind = 'sell', label = 'بِع الزبيب', place = 'تاجر الجملة - ليتل سول', blip = 431,
+                  spot = vec3(-596.16, -889.32, 25.51),
+                  take = { raisin_box = 1 }, price = 125, perHour = 28,
+                  time = 3500, skill = { 'easy' }, anim = { dict = 'mp_common', clip = 'givetake1_a' },
+                  progress = 'تسلّم الكرتونة للتاجر...', fail = 'سقطت الكرتونة، التقطها وحاول مرة أخرى' },
             },
         },
     },

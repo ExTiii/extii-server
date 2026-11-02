@@ -338,6 +338,28 @@ return {
             },
         },
     },
+    ['chicken'] = { -- EX_Tii: level job (exti_jobs), player level 3
+        label = 'الدواجن',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            [0] = {
+                name = 'عامل دواجن',
+                payment = 50
+            },
+        },
+    },
+    ['raisin'] = { -- EX_Tii: level job (exti_jobs), player level 8
+        label = 'الزبيب',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            [0] = {
+                name = 'عامل زبيب',
+                payment = 50
+            },
+        },
+    },
     ['vineyard'] = {
         label = 'مزرعة العنب',
         defaultDuty = true,

@@ -12,7 +12,7 @@ Config.reach = 1.3           -- how close to the counter spot you must be to pre
 Config.circleRadius = 0.65   -- the circle's size, only used when Config.circles = true
 Config.useDistance = 3.0     -- the server only sells to players this close to the circle (meters)
 
--- what each kind of shop sells. category: food | medical | tools | weapons | ammo
+-- what each kind of shop sells. category: food | medical | tools | weapons | ammo | work
 -- max = most you can buy of it at once
 Config.types = {
     general = {
@@ -28,6 +28,9 @@ Config.types = {
             { name = 'sprunk', price = 10, category = 'food' },
             { name = 'redbull', price = 50, category = 'food', max = 10 }, -- 1 minute of sprinting without getting tired
             -- EX_Tii: no bandage here any more: medicine is sold at the two hospital pharmacies
+            -- EX_Tii level jobs (exti_jobs): the supplies used up every run
+            { name = 'packing_tray', price = 10, category = 'work', max = 20, desc = 'لوظيفة الدواجن: صينية لكل 5 دجاجات' },
+            { name = 'empty_carton', price = 6, category = 'work', max = 30, desc = 'لوظيفة الزبيب: كرتونة لكل 5 زبيب' },
         },
     },
 
