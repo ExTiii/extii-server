@@ -25,6 +25,7 @@ RegisterNUICallback('chopgame', function(req, cb)
 end)
 
 local function minigame(game, title, extra)
+    if gameP then local old = gameP; gameP = nil; old:resolve(false) end   -- a game still open: it counts as stopped
     gameP = promise.new()
     SendNUIMessage({ action = 'chopgame', game = game, title = title, extra = extra })
     SetNuiFocus(true, true)

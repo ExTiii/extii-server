@@ -75,7 +75,7 @@
         if (!G) return;
         const g = G; G = null;
         g.off.forEach((f) => { try { f(); } catch (e) {} });
-        setTimeout(() => { box.className = 'game hidden'; box.innerHTML = ''; g.cb(done); }, done ? 650 : 0);
+        setTimeout(() => { if (!G) { box.className = 'game hidden'; box.innerHTML = ''; } g.cb(done); }, done ? 650 : 0);
     }
     const M = 3000;                                  // scene pixels per metre (top-down scenes)
     const P = (x, y) => [SW / 2 + x * M, SH / 2 - y * M];
@@ -148,7 +148,7 @@
         const showMark = () => { const n = nuts[order[k]]; mark.style.left = `${n.x}px`; mark.style.top = `${n.y}px`; };
         showMark(); c.count('0/5');
         nuts.forEach((n) => c.on(n.hit, 'mousedown', (e) => {
-            if (e.button !== 0 || busy || n.gone) return;
+            if (e.button !== 0 || busy || n.gone || !NA[0]) return;
             if (n.i === order[k]) {
                 busy = true; n.gone = true; mark.style.display = 'none';
                 sfx('impact', 0.9, 0.96 + Math.random() * 0.08);
@@ -368,10 +368,10 @@
             if (el.complete && el.naturalWidth) go(); else el.onload = go;
         };
         const pick = (i) => {
-            if (locked || cur < 0 || !el) return;
+            if (locked || cur < 0 || !el || !el.dataset.ax) return;     // (the note is still loading)
             if (i === cur) {
                 const tr = trays[i], n = el;
-                n.classList.remove('fly'); n.classList.add('in');
+                n.classList.remove('fly'); n.classList.add('m-in');
                 put(n, tr.x + (Math.random() - 0.5) * 14, tr.y - 6 + (Math.random() - 0.5) * 10, Number(n.dataset.ax), Number(n.dataset.ay), (Math.random() - 0.5) * 0.15 + (i % 2 ? 1.5708 : -1.5708), 0.55);
                 sfx('note_drop', 0.8, 0.9 + Math.random() * 0.2);
                 tr.pile.push(n); if (tr.pile.length > 4) tr.pile.shift().remove();
@@ -415,7 +415,7 @@
             li.style.filter = v > 0.55 ? `blur(${Math.min(3, (v - 0.55) * 7)}px)` : '';
             lcd.textContent = String(Math.round(v * 1400)).padStart(4, ' ');
             c.count(`${Math.round(prog * 100)}%`); c.prog(prog);
-            if (prog >= 1) { hum.off(); sfx('beep', 0.8); c.later(() => sfx('beep', 0.8), 180); c.flash('ok'); finish(true); return false; }
+            if (prog >= 1) { hum.off(); sfx('beep', 0.8); setTimeout(() => sfx('beep', 0.8), 180); c.flash('ok'); finish(true); return false; }
         });
         c.on(window, 'keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); held = true; } });
         c.on(window, 'keyup', (e) => { if (e.code === 'Space') held = false; });
@@ -452,7 +452,7 @@
             if (!down || locked) return; down = false; whirr.off();
             const f = Math.floor(n);
             if (Math.abs(f - 50) <= 2) {
-                sfx('beep', 0.8); c.later(() => sfx('strap', 0.9), 140);
+                sfx('beep', 0.8); setTimeout(() => sfx('strap', 0.9), 140);
                 clearStack();
                 const st = c.img('stack_band.webp', 'm-stack');
                 const place = () => {
@@ -604,9 +604,10 @@
         const shine = c.el('div', 'm-shine'); Object.assign(shine.style, { left: `${ex0 + 250}px`, top: `${ey + 30}px`, width: `${ex1 - ex0 - 330}px` });
         const cv = c.el('canvas'); cv.width = SW; cv.height = SH; const g = cv.getContext('2d');
         let fw = 1029, fh = 102, side = 0;
-        const fl = sprite(c, 'file.webp', 'm-file', (i, w, h) => { fw = w; fh = h; pos(); });
         const cx = (ex0 + ex1) / 2 + 60;
-        const pos = () => put(fl, cx + (side ? 60 : -60), ey + 20, fw / 2, fh / 2, -0.03, 0.72);
+        let fl = null;
+        const pos = () => { if (fl) put(fl, cx + (side ? 60 : -60), ey + 20, fw / 2, fh / 2, -0.03, 0.72); };
+        fl = sprite(c, 'file.webp', 'm-file', (i, w, h) => { fw = w; fh = h; fl = i; pos(); });
         let want = 'KeyA', prog = 0, lastHit = 0;
         const chips = [];
         const keys = document.querySelectorAll('.mg-key kbd');
@@ -648,7 +649,7 @@
             const hit = c.el('div', 'hit m-phit'); Object.assign(hit.style, { left: `${x - 140}px`, top: `${y - 100}px`, width: '280px', height: '200px' });
             return { img, hit, x, y };
         });
-        const lift = (it, on) => { it.img.classList.toggle('show', on); put(it.img, it.x, it.y - (on ? 10 : 0), Number(it.img.dataset.ax), Number(it.img.dataset.ay), 0, Number(it.img.dataset.k || 1) * (on ? 1.07 : 1)); };
+        const lift = (it, on) => { if (!it.img.dataset.ax) return; it.img.classList.toggle('show', on); put(it.img, it.x, it.y - (on ? 10 : 0), Number(it.img.dataset.ax), Number(it.img.dataset.ay), 0, Number(it.img.dataset.k || 1) * (on ? 1.07 : 1)); };
         let round = 0, order = [], k = 0, showing = true;
         const ROUNDS = [4, 5];
         const show = () => {
@@ -695,7 +696,7 @@
             const [x, y] = c.at(e);
             const bx = cur.x, by = cur.y + cur.h * (300 / 680), r = cur.h * (230 / 680);
             if (Math.hypot(x - bx, y - by) < r) {
-                hits += 1; c.count(`${hits}/5`); c.prog(hits / 5); c.later(() => sfx('paper_hit', 0.8), 60);
+                hits += 1; c.count(`${hits}/5`); c.prog(hits / 5); setTimeout(() => sfx('paper_hit', 0.8), 60);
                 const hole = document.createElement('b'); hole.className = 'hole';
                 hole.style.left = `${((x - (cur.x - cur.h * 0.38)) / (cur.h * 0.765)) * 100}%`; hole.style.top = `${((y - cur.y) / cur.h) * 100}%`;
                 tg.appendChild(hole);
@@ -719,7 +720,7 @@
             const hit = c.el('div', 'hit'); Object.assign(hit.style, { left: `${hx - 55}px`, top: `${hy - 55}px`, width: '110px', height: '110px' });
             c.on(hit, 'mousedown', (e) => {
                 if (e.button !== 0) return;
-                hit.remove(); sfx('snip', 0.9, 0.9 + Math.random() * 0.2); c.later(() => sfx('leaf_fall', 0.6), 120);
+                hit.remove(); sfx('snip', 0.9, 0.9 + Math.random() * 0.2); setTimeout(() => sfx('leaf_fall', 0.6), 120);
                 leaf.classList.add('cut');
                 leaf.style.transform = `translate(${x - LA[0] + Math.cos(a) * 60}px, ${y - LA[1] + 260}px) rotate(${a + 1.2}rad) scale(0.9)`;
                 left -= 1; c.count(`${N - left}/${N}`); c.prog((N - left) / N);
@@ -805,7 +806,7 @@
         const [hint, keys] = TEXT[game];
         G = { off: [], cb };
         const c = shell(game, title || '', (extra && extra.label) || 'ورشة التفكيك', hint, keys);
-        GAMES[game](c, extra || {}, META[game]);
+        try { GAMES[game](c, extra || {}, META[game]); } catch (e) { console.error('[minigame]', game, e); finish(false); }
         return true;
     }
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && G) finish(false); });
