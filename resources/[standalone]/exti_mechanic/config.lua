@@ -182,7 +182,7 @@ Config.tablet = {
 Config.chat = { maxText = 500, history = 100 }   -- letters per message, messages shown per chat
 Config.calendarColors = { '#3b8cf0', '#f29b38', '#2fb36a', '#e0566b', '#9b6cf0', '#22c7b8' } -- the first one is picked by default
 Config.bonusMax = 50000           -- the leader's bonus to one mechanic at a time (from the workshop account)
-Config.salaryMax = 1000           -- the highest salary the leader can set for a rank (every paycheck)
+Config.salaryMax = 250            -- the highest salary the leader can set for a rank (every paycheck = 10 min). EX_Tii economy: max $1,500/hour on duty
 
 Config.reachPoint = 1.6           -- how close to an E spot you must be (meters)
 Config.vehicleReach = 4.0         -- in a workshop vehicle: how close to the garage to return it
@@ -380,33 +380,33 @@ Config.tuning = {
         paint = 'paint_can', wheels = 'wheel_set', body = 'body_kit', tint = 'tint_film',
         neon = 'neon_kit', xenon = 'xenon_kit', plate = 'body_kit',
     },
-    -- the starting prices the customer pays ($). After the first start they live in the database
+    -- the starting prices the customer pays ($; EX_Tii economy: +25%). After the first start they live in the database
     -- and the manager edits them on the tablet (الطلبات → الأسعار).
     prices = {
-        { 'engine_1', 'المحرك: المستوى 1', 2000 }, { 'engine_2', 'المحرك: المستوى 2', 4500 },
-        { 'engine_3', 'المحرك: المستوى 3', 8000 }, { 'engine_4', 'المحرك: المستوى 4', 13000 },
-        { 'brakes_1', 'الفرامل: المستوى 1', 1200 }, { 'brakes_2', 'الفرامل: المستوى 2', 2800 },
-        { 'brakes_3', 'الفرامل: المستوى 3', 5000 },
-        { 'transmission_1', 'ناقل الحركة: المستوى 1', 1500 }, { 'transmission_2', 'ناقل الحركة: المستوى 2', 3200 },
-        { 'transmission_3', 'ناقل الحركة: المستوى 3', 6000 },
-        { 'suspension_1', 'التعليق: المستوى 1', 800 }, { 'suspension_2', 'التعليق: المستوى 2', 1600 },
-        { 'suspension_3', 'التعليق: المستوى 3', 2800 }, { 'suspension_4', 'التعليق: المستوى 4', 4200 },
-        { 'turbo', 'تيربو', 10000 },
-        { 'remove', 'إرجاع قطعة أداء للأصل', 300 },
-        { 'paint1', 'الصبغ الأساسي', 1500 }, { 'paint2', 'الصبغ الثانوي', 900 },
-        { 'pearl', 'اللمعة (البيرل)', 800 }, { 'wheelColor', 'لون الجنوط', 400 },
-        { 'wheels', 'طقم جنوط', 1800 },
-        { 'body', 'قطعة هيكل', 700 }, { 'horn', 'الزامور', 300 }, { 'livery', 'ملصقات', 1200 },
-        { 'tint', 'تظليل النوافذ', 450 },
-        { 'neon', 'تركيب / إزالة النيون', 1800 }, { 'neonColor', 'لون النيون', 300 },
-        { 'xenon', 'تركيب / إزالة الزينون', 1000 }, { 'xenonColor', 'لون الزينون', 250 },
-        { 'plate', 'شكل اللوحة', 200 },
-        { 'nitro', 'تركيب نظام النيترو', 12000 },
-        { 'swap_dominator', 'محرك V8 مسل', 9000 }, { 'swap_gauntlet', 'محرك V8 كلاسيك', 7500 },
-        { 'swap_elegy2', 'محرك تونر توربو', 8500 }, { 'swap_sultanrs', 'محرك رالي 4 سلندر', 9000 },
-        { 'swap_omnis', 'محرك رالي توربو', 12000 }, { 'swap_zentorno', 'محرك V12 سوبر', 20000 },
-        { 'swap_t20', 'محرك هايبر هايبرد', 26000 }, { 'swap_voltic', 'محرك كهربائي', 15000 },
-        { 'swap_stock', 'إرجاع المحرك الأصلي', 3000 },
+        { 'engine_1', 'المحرك: المستوى 1', 2500 }, { 'engine_2', 'المحرك: المستوى 2', 5600 },
+        { 'engine_3', 'المحرك: المستوى 3', 10000 }, { 'engine_4', 'المحرك: المستوى 4', 16250 },
+        { 'brakes_1', 'الفرامل: المستوى 1', 1500 }, { 'brakes_2', 'الفرامل: المستوى 2', 3500 },
+        { 'brakes_3', 'الفرامل: المستوى 3', 6250 },
+        { 'transmission_1', 'ناقل الحركة: المستوى 1', 1900 }, { 'transmission_2', 'ناقل الحركة: المستوى 2', 4000 },
+        { 'transmission_3', 'ناقل الحركة: المستوى 3', 7500 },
+        { 'suspension_1', 'التعليق: المستوى 1', 1000 }, { 'suspension_2', 'التعليق: المستوى 2', 2000 },
+        { 'suspension_3', 'التعليق: المستوى 3', 3500 }, { 'suspension_4', 'التعليق: المستوى 4', 5250 },
+        { 'turbo', 'تيربو', 12500 },
+        { 'remove', 'إرجاع قطعة أداء للأصل', 400 },
+        { 'paint1', 'الصبغ الأساسي', 1900 }, { 'paint2', 'الصبغ الثانوي', 1100 },
+        { 'pearl', 'اللمعة (البيرل)', 1000 }, { 'wheelColor', 'لون الجنوط', 500 },
+        { 'wheels', 'طقم جنوط', 2250 },
+        { 'body', 'قطعة هيكل', 900 }, { 'horn', 'الزامور', 400 }, { 'livery', 'ملصقات', 1500 },
+        { 'tint', 'تظليل النوافذ', 550 },
+        { 'neon', 'تركيب / إزالة النيون', 2250 }, { 'neonColor', 'لون النيون', 400 },
+        { 'xenon', 'تركيب / إزالة الزينون', 1250 }, { 'xenonColor', 'لون الزينون', 300 },
+        { 'plate', 'شكل اللوحة', 250 },
+        { 'nitro', 'تركيب نظام النيترو', 15000 },
+        { 'swap_dominator', 'محرك V8 مسل', 11250 }, { 'swap_gauntlet', 'محرك V8 كلاسيك', 9400 },
+        { 'swap_elegy2', 'محرك تونر توربو', 10600 }, { 'swap_sultanrs', 'محرك رالي 4 سلندر', 11250 },
+        { 'swap_omnis', 'محرك رالي توربو', 15000 }, { 'swap_zentorno', 'محرك V12 سوبر', 25000 },
+        { 'swap_t20', 'محرك هايبر هايبرد', 32500 }, { 'swap_voltic', 'محرك كهربائي', 18750 },
+        { 'swap_stock', 'إرجاع المحرك الأصلي', 3750 },
     },
     maxPrice = 250000,     -- the most the manager can set for one change
 }

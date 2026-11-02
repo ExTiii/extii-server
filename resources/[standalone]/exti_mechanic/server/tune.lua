@@ -110,6 +110,17 @@ CreateThread(function()
         if PRICE_LABEL[r.key] then PRICES[r.key] = tonumber(r.price) or PRICES[r.key] end
         have[r.key] = true
     end
+    -- EX_Tii economy (once): the prices already saved go up 25% (the new defaults already are)
+    if GetResourceKvpInt('tune_prices_x125') ~= 1 then
+        for _, r in ipairs(rows) do
+            if r.key ~= 'cut' and PRICE_LABEL[r.key] then
+                local v = math.floor((tonumber(r.price) or 0) * 1.25 / 50 + 0.5) * 50
+                MySQL.update.await('UPDATE `exti_mechanic_tune_prices` SET `price` = ? WHERE `key` = ?', { v, r.key })
+                PRICES[r.key] = v
+            end
+        end
+        SetResourceKvpInt('tune_prices_x125', 1)
+    end
     for _, key in ipairs(PRICE_ORDER) do
         if not have[key] then MySQL.insert.await('INSERT INTO `exti_mechanic_tune_prices` (`key`, `price`) VALUES (?, ?)', { key, PRICES[key] }) end
     end

@@ -1,7 +1,8 @@
 -- =====================================================================
 -- EX_Tii jobs: settings shared by the game and the server
 -- Three jobs to start with: tow, garbage, delivery.
--- Money: about $3,500-4,000 an hour at level 1 (plus the $50 paycheck every 10 minutes).
+-- Money: about $2,300-2,600 an hour at level 1, ~$3,500 at level 5 (plus the $50 paycheck every 10 minutes).
+-- (EX_Tii economy: pay cut 35% so a nice car takes real work)
 -- =====================================================================
 return {
     deposit = 250,          -- paid when the work vehicle is taken, given back when it is returned
@@ -13,7 +14,7 @@ return {
 
     -- bonus for bringing the work vehicle back at the end of the shift:
     -- base + per finished round (up to max), times how healthy the vehicle is
-    returnBonus = { base = 100, perRound = 50, max = 400 },
+    returnBonus = { base = 65, perRound = 33, max = 260 },
 
     -- jobs anyone may switch away from at the job center (police, EMS and other team jobs can't)
     freeJobs = { unemployed = true, tow = true, garbage = true, delivery = true, taxi = true, bus = true, trucker = true, reporter = true, vineyard = true },
@@ -61,12 +62,12 @@ return {
                 'كل جولة 3 مركبات، وبعدها تصلك جولة جديدة مباشرة.',
             },
             extra = 'المركبات التي تُترك دون سائق أكثر من 10 دقائق يمكنك سحبها إلى ساحة الحجز، ويدفع صاحبها رسوم الاستلام.',
-            payText = 'حوالي 200$ لكل مركبة',
-            hourText = '3,500$ – 4,000$',
+            payText = 'حوالي 125$ لكل مركبة',
+            hourText = '2,300$ – 2,600$',
             taskWord = { 'مركبة', 'مركبات' },
             levelSteps = { 0, 25, 70, 140, 240 },
-            pay = { base = 175, perMeter = 0.03, maxDistance = 70 }, -- cars are 300-950 m away now: about 190-205$ each
-            abandonedPay = 250,
+            pay = { base = 114, perMeter = 0.02, maxDistance = 45 }, -- cars are 300-950 m away: about 120-135$ each
+            abandonedPay = 160,
             impoundFee = 500,
             abandonedMinutes = 10, -- tow drivers may take a car left this long (the impound staff take it at 15)
             perRound = 3,
@@ -104,11 +105,11 @@ return {
                 'كل حاوية فيها كيسان أو ثلاثة، وكل جولة 6 حاويات قريبة من بعضها.',
                 'بعد آخر حاوية عد إلى المستودع وادخل بالشاحنة الدائرة الذهبية لتفريغها، فتبدأ جولة جديدة.',
             },
-            payText = '40$ لكل كيس (حوالي 100$ لكل حاوية)',
-            hourText = '3,500$ – 4,000$',
+            payText = '26$ لكل كيس (حوالي 65$ لكل حاوية)',
+            hourText = '2,300$ – 2,600$',
             taskWord = { 'حاوية', 'حاويات' },
             levelSteps = { 0, 45, 120, 240, 420 },
-            pay = { perBag = 40 },
+            pay = { perBag = 26 },
             bags = { 2, 3 },
             perRound = 6,
             vehicle = { model = 'trash', label = 'شاحنة نفايات', plate = 'LSC', blipName = 'شاحنة النفايات' },
@@ -140,11 +141,11 @@ return {
                 'ادخل المتجر وقف في الدائرة الذهبية عند المحاسب، ثم اضغط E لتسليم الطرد.',
                 'بعد آخر طرد عد إلى المستودع لتحميل جولة جديدة.',
             },
-            payText = 'حوالي 110$ لكل طرد (أكثر للمسافات الأبعد)',
-            hourText = '3,500$ – 4,000$',
+            payText = 'حوالي 70$ لكل طرد (أكثر للمسافات الأبعد)',
+            hourText = '2,300$ – 2,600$',
             taskWord = { 'طرد', 'طرود' },
             levelSteps = { 0, 45, 120, 240, 420 },
-            pay = { base = 90, perMeter = 0.035, maxDistance = 60 },
+            pay = { base = 58, perMeter = 0.023, maxDistance = 40 },
             perRound = 6,
             vehicle = { model = 'boxville2', label = 'شاحنة توصيل GoPostal', plate = 'GOP', blipName = 'شاحنة التوصيل' },
             vanBack = -3.6, -- metres behind the middle of the van where the parcels are taken out

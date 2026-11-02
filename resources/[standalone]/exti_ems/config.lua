@@ -30,7 +30,7 @@ Config.pay = {
     treat = 150,                  -- healing someone who is hurt (only paid when their health is below treatBelow)
 }
 Config.treatBelow = 85            -- %: treating someone healthier than this is free (no pay)
-Config.payCooldown = 10           -- minutes: the same patient only pays again after this (no farming with friends)
+Config.payCooldown = 30           -- minutes: the same patient only pays again after this (no farming with friends)
 
 Config.items = {
     revive = 'firstaid',          -- revive kit (إسعافات أولية), from the supply cabinet

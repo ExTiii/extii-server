@@ -933,7 +933,8 @@ local function applyRoles()
         if g and not g.isboss then
             local data = {}
             for k, v in pairs(g) do data[k] = v end
-            data.name, data.payment = r.name, r.payment
+            -- never above the cap (salaries saved before the cap come down to it)
+            data.name, data.payment = r.name, math.min(tonumber(r.payment) or 0, Config.salaryMax or 250)
             pcall(function() exports.qbx_core:UpsertJobGrade(JOB, r.grade, data, false) end)
         end
     end

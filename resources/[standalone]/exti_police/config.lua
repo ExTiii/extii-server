@@ -206,7 +206,7 @@ Config.tablet = {
 Config.chat = { maxText = 500, history = 100 }   -- letters per message, messages shown per chat
 Config.calendarColors = { '#3b8cf0', '#f29b38', '#2fb36a', '#e0566b', '#9b6cf0', '#22c7b8' } -- the first one is picked by default
 Config.bonusMax = 50000           -- the leader's bonus to one officer at a time (from the police account)
-Config.salaryMax = 1000           -- the highest salary the leader can set for a rank (every paycheck)
+Config.salaryMax = 250            -- the highest salary the leader can set for a rank (every paycheck = 10 min). EX_Tii economy: max $1,500/hour on duty
 
 Config.reachPoint = 1.6           -- how close to an E spot you must be (meters)
 Config.vehicleReach = 4.0         -- in your car / helicopter: how close to the garage / pad to return it
