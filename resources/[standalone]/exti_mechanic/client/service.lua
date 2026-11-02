@@ -79,16 +79,35 @@ local WHERE = {
     battery = 'under', wheel = 'wheel', wash = 'wash', wax = 'wash',
 }
 
+-- one animation at a time: a small loop keeps it playing (the progress bars and skill checks may
+-- interrupt it) until stopAnim(); stopAnim waits for the loop to end before clearing, so nothing
+-- can start it again afterwards
+local animOn, animToken = nil, 0
+
 local function playAnim(name)
     local a = ANIM[name]
-    if not a then return end
-    if pcall(lib.requestAnimDict, a.dict, 3000) then
-        TaskPlayAnim(cache.ped, a.dict, a.clip, 3.0, 3.0, -1, 1, 0, false, false, false)
-    end
+    if not a or not pcall(lib.requestAnimDict, a.dict, 3000) then return end
+    animToken = animToken + 1
+    local token = animToken
+    animOn = a
+    CreateThread(function()
+        while animOn == a and animToken == token do
+            if not IsEntityPlayingAnim(cache.ped, a.dict, a.clip, 3) then
+                TaskPlayAnim(cache.ped, a.dict, a.clip, 3.0, 3.0, -1, 1, 0, false, false, false)
+            end
+            Wait(400)
+        end
+    end)
 end
 
 local function stopAnim()
+    local a = animOn
+    animOn = nil
+    animToken = animToken + 1
+    Wait(450) -- the keeper loop sees the change and ends first
+    if a then StopAnimTask(cache.ped, a.dict, a.clip, 2.0) end
     ClearPedTasks(cache.ped)
+    ClearPedSecondaryTask(cache.ped)
 end
 
 local function faceCar(veh, where)
@@ -118,18 +137,21 @@ local function runJob(veh, start, done)
     if where == 'bonnet' then SetVehicleDoorOpen(veh, 4, false, false) end
     faceCar(veh, where)
     local ok = true
-    for t = 1, (job.times or 1) do
-        playAnim(where)
-        for _, step in ipairs(job.steps or {}) do
-            if not DoesEntityExist(veh) or #(GetEntityCoords(cache.ped) - GetEntityCoords(veh)) > S.reach + 2.0 then ok = false break end
-            if not runStep(step) then ok = false break end
-            playAnim(where)
+    playAnim(where)
+    -- any error in a step still ends the animation and frees the mechanic
+    local okRun = pcall(function()
+        for t = 1, (job.times or 1) do
+            for _, step in ipairs(job.steps or {}) do
+                if not DoesEntityExist(veh) or #(GetEntityCoords(cache.ped) - GetEntityCoords(veh)) > S.reach + 2.0 then ok = false break end
+                if not runStep(step) then ok = false break end
+            end
+            if not ok then break end
+            if job.times and job.times > 1 and t < job.times then
+                lib.notify({ type = 'success', description = ('تم الإطار %d من %d'):format(t, job.times) })
+            end
         end
-        if not ok then break end
-        if job.times and job.times > 1 and t < job.times then
-            lib.notify({ type = 'success', description = ('تم الإطار %d من %d'):format(t, job.times) })
-        end
-    end
+    end)
+    if not okRun then ok = false end
     stopAnim()
     if where == 'bonnet' then SetVehicleDoorShut(veh, 4, false) end
     if not ok then
