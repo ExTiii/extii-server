@@ -1041,4 +1041,11 @@ return {
         weight = 1000,
         description = 'لا تأتي إلا من ورشة التفكيك. مطلوبة لعمليات السطو الكبيرة',
     },
+
+    -- EX_Tii gangs: the Money Wash's part (from the shared collection point): 1 per $1,000 washed
+    ['wash_supplies'] = {
+        label = 'مواد غسيل (Wash Supplies)',
+        weight = 1200,
+        description = 'قطعة عصابة غسيل الأموال: منظّف وأشرطة رزم. واحدة لكل 1,000$ تُغسل',
+    },
 }

@@ -329,6 +329,13 @@ local function points()
             if label then list[#list + 1] = { kind = 'rdoor', gang = name, i = i, pos = v3(d), label = label, reach = 2.0 } end
         end
     end
+    -- the Money Wash drop boxes (anyone) and my gang's machine
+    for name, set in pairs(spots.hq or {}) do
+        if set.dropbox then list[#list + 1] = { kind = 'dropbox', gang = name, pos = v3(set.dropbox), label = '[E] صندوق الغسيل' } end
+    end
+    if my and my.type == 'wash' and my.rank >= 1 and spots.hq and spots.hq[my.name] and spots.hq[my.name].washer then
+        list[#list + 1] = { kind = 'washer', pos = v3(spots.hq[my.name].washer), label = '[E] آلة الغسيل' }
+    end
     for i, c in ipairs(spots.collect and spots.collect.crates or {}) do list[#list + 1] = { kind = 'crate', i = i, pos = v3(c) } end
     if spots.fence then list[#list + 1] = { kind = 'fence', pos = v3(spots.fence) } end
     return list
@@ -370,7 +377,9 @@ CreateThread(function()
             elseif k == 'fence' then doFence()
             elseif k == 'door_out' then GC.doorOut(best.gang)
             elseif k == 'door_in' then GC.doorIn(best.gang)
-            elseif k == 'rdoor' then GC.realDoor(best.gang, best.i) end
+            elseif k == 'rdoor' then GC.realDoor(best.gang, best.i)
+            elseif k == 'dropbox' then GC.dropBox(best.gang)
+            elseif k == 'washer' then GC.washer() end
             busy = false
         end
         Wait(sleep)
@@ -380,7 +389,7 @@ end)
 ---------------------------------------------------------------------------
 -- /gangspots (admins): stand where it goes, pick it
 ---------------------------------------------------------------------------
-local KIND_LABEL = { door_out = 'باب المقر من الخارج', door_in = 'باب المقر من الداخل', laptop = 'الحاسوب (الإدارة)', stash = 'المخزن', deposit = 'تسليم القطع', locker = 'خزانة الملابس', bench = 'طاولة المفاتيح (التفكيك)', garage = 'مركز ورشة التفكيك (التفكيك)' }
+local KIND_LABEL = { dropbox = 'صندوق الغسيل (خارج المقر، للجميع)', washer = 'آلة الغسيل (داخل المقر)', door_out = 'باب المقر من الخارج', door_in = 'باب المقر من الداخل', laptop = 'الحاسوب (الإدارة)', stash = 'المخزن', deposit = 'تسليم القطع', locker = 'خزانة الملابس', bench = 'طاولة المفاتيح (التفكيك)', garage = 'مركز ورشة التفكيك (التفكيك)' }
 local function save(what, a, b, msg)
     local ok, why = lib.callback.await('exti_gangs:server:spotSave', false, what, a, b)
     notify(ok and (msg or 'حُفظ المكان') or (why == 'max' and 'الحد 12 صندوقًا' or 'لم يُحفظ'), ok and 'success' or 'error')
@@ -389,8 +398,9 @@ RegisterNetEvent('exti_gangs:client:spotsMenu', function(gangList)
     local opts = {}
     for _, g in ipairs(gangList) do
         local sub = {}
-        for _, kind in ipairs({ 'door_out', 'door_in', 'laptop', 'stash', 'deposit', 'locker', 'bench', 'garage' }) do
-            if (kind ~= 'bench' and kind ~= 'garage') or g.type == 'chop' then
+        for _, kind in ipairs({ 'door_out', 'door_in', 'laptop', 'stash', 'deposit', 'locker', 'bench', 'garage', 'dropbox', 'washer' }) do
+            local only = (kind == 'bench' or kind == 'garage') and 'chop' or (kind == 'dropbox' or kind == 'washer') and 'wash' or nil
+            if not only or g.type == only then
                 sub[#sub + 1] = { title = KIND_LABEL[kind] .. ' هنا', icon = 'location-dot', onSelect = function() save('hq', g.name, kind) end }
             end
         end

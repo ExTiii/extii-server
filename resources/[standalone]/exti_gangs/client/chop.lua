@@ -24,12 +24,14 @@ RegisterNUICallback('chopgame', function(req, cb)
     cb(true)
 end)
 
-local function minigame(game, title)
+local function minigame(game, title, extra)
     gameP = promise.new()
-    SendNUIMessage({ action = 'chopgame', game = game, title = title })
+    SendNUIMessage({ action = 'chopgame', game = game, title = title, extra = extra })
     SetNuiFocus(true, true)
     return Citizen.Await(gameP)
 end
+
+GC.minigame = minigame
 
 local function control(veh)
     local t = GetGameTimer()

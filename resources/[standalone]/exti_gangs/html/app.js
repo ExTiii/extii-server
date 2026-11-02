@@ -67,6 +67,7 @@
         const t = [{ id: 'home', label: 'نظرة عامة', icon: I.home }];
         if (D.me.rank >= 1) t.push({ id: 'members', label: 'الأعضاء', icon: I.users });
         if (D.chop) t.push({ id: 'prod', label: 'ورشة التفكيك', icon: I.wrench });
+        if (D.wash) t.push({ id: 'prod', label: 'غسيل الأموال', icon: I.wrench });
         t.push({ id: 'rep', label: 'السمعة', icon: I.star });
         if (D.me.rank === 3) t.push({ id: 'settings', label: 'الإعدادات', icon: I.gear });
         if (D.me.rank >= 2) t.push({ id: 'logs', label: 'السجل', icon: I.list });
@@ -117,7 +118,9 @@
                   <div class="s">${me.collectWait > 0 ? 'الجولة التالية بعد ' + mmss(me.collectWait) : 'جاهز لجولة جمع'} · ربحت اليوم ${money(me.paidToday)}</div></div></div>`;
         if (D.stash) {
             const s = D.stash;
-            const items = [['chop_tools', 'أدوات التفكيك'], ['black_money', 'مال غير نظيف'], ['lockpick', 'مفاتيح فتح'], ['c4', 'C4']];
+            const items = D.gang.type === 'wash'
+                ? [['wash_supplies', 'مواد الغسيل'], ['black_money', 'مال غير نظيف'], ['money', 'نقد'], ['c4', 'C4']]
+                : [['chop_tools', 'أدوات التفكيك'], ['black_money', 'مال غير نظيف'], ['lockpick', 'مفاتيح فتح'], ['c4', 'C4']];
             h += `<div class="h2 sect">المخزن</div><div class="grid g4">${items.map(([k, l]) => `<div class="card"><div class="k">${l}</div><div class="v">${k === 'black_money' ? money(s[k]) : (s[k] || 0)}</div></div>`).join('')}</div>`;
         }
         if (me.rank >= 1) {
@@ -170,6 +173,22 @@
         return h;
     }
 
+    // ------------------------------------------------------------------ money wash
+    function washTab() {
+        const w = D.wash;
+        let h = `<div class="h2">غسيل الأموال <small>نسبة العصابة ${w.cut}% · للغاسل ${w.washerShare}% منها · الباقي لبنك العصابة</small></div>`;
+        if (w.busy) h += `<div class="alert info">دفعة في الآلة الآن: ${money(w.busy.total)} · الخطوة ${w.busy.stage}/3</div>`;
+        h += `<div class="grid g4">
+            <div class="card"><div class="k">غُسل اليوم</div><div class="v">${money(w.washed)}</div><div class="s">من ${money(w.washCap)}</div><div class="bar2"><i style="width:${Math.min(100, w.washed / Math.max(1, w.washCap) * 100)}%"></i></div></div>
+            <div class="card"><div class="k">في الصندوق</div><div class="v">${money(w.queueTotal)}</div><div class="s">${w.queueCount} طلب ينتظر</div></div>
+            <div class="card"><div class="k">الآلة</div><div class="v ${w.cooldown > 0 ? '' : 'gc'}">${w.cooldown > 0 ? mmss(w.cooldown) : 'جاهزة'}</div><div class="s">حتى ${money(w.batchMax)} للدفعة</div></div>
+            <div class="card"><div class="k">مواد الغسيل</div><div class="v">${w.supplies}</div><div class="s">1 لكل ${money(w.supplyPer)}</div></div></div>`;
+        h += `<div class="h2 sect">الطلبات <small>الأقدم يُغسل أولًا</small></div><table class="table"><tr><th>الزبون</th><th>ينتظر</th><th>النسبة</th><th>منذ</th></tr>
+            ${(w.queue || []).map((o) => `<tr><td><b>${esc(o.name)}</b></td><td class="num">${money(o.left)}</td><td>${o.cut}%</td><td>${dt(o.created)}</td></tr>`).join('') || '<tr><td colspan="4">الصندوق فارغ</td></tr>'}</table>
+            <div class="alert info sect">الزبون يضع ماله غير النظيف في صندوق الغسيل خارج المقر، ويأخذه نقدًا نظيفًا من نفس الصندوق. بعض الدفعات فيها أوراق مُعلَّمة تصل بسببها إخبارية للشرطة.</div>`;
+        return h;
+    }
+
     // ------------------------------------------------------------------ rep
     function rep() {
         const r = D.rep;
@@ -181,7 +200,7 @@
         r.levels.forEach((l, i) => {
             const n = i + 1;
             h += `<div class="step ${n < r.level ? 'done' : n === r.level ? 'now' : ''}"><h4>${n} · ${esc(l.name)}</h4>
-                <div>${l.partsDaily} قطعة يوميًا</div><div>${l.chopsDaily} تفكيك يوميًا</div><div>مخزن ${l.stashSlots} خانة · ${Math.round(l.stashWeight / 1000)} كغ</div>
+                <div>${l.partsDaily} قطعة يوميًا</div><div>${D.gang.type === 'wash' ? money(l.washDaily) + ' غسيل يوميًا' : l.chopsDaily + ' تفكيك يوميًا'}</div><div>مخزن ${l.stashSlots} خانة · ${Math.round(l.stashWeight / 1000)} كغ</div>
                 <div>${l.rentOff ? 'خصم إيجار ' + Math.round(l.rentOff * 100) + '%' : 'إيجار كامل'}</div><div style="direction:ltr;text-align:right">${l.xp} XP</div></div>`;
         });
         return h + '</div>';
@@ -197,8 +216,7 @@
         return `<div class="h2">الإعدادات <small>للزعيم فقط</small></div><div class="grid g2">
             ${slider('partPay', 'أجر القطعة للأعضاء', L.partPay, '$')}
             <div class="field"><label>تسليم القطع<b>${S.deposits ? 'مفتوح' : 'مقفل'}</b></label><button class="toggle ${S.deposits ? 'on' : ''}" data-toggle="deposits"></button></div>
-            ${slider('thiefCut', 'حصة سارق السيارة', L.thief)}
-            ${slider('chopperCut', 'حصة المفكك', L.chopper)}
+            ${D.gang.type === 'wash' ? slider('washCut', 'نسبة العصابة من الغسيل', L.wash) : slider('thiefCut', 'حصة سارق السيارة', L.thief) + slider('chopperCut', 'حصة المفكك', L.chopper)}
             <div class="field"><label>لون العصابة</label><div class="swatches">${D.colors.map((c) => `<button class="sw ${c === S.color ? 'on' : ''}" style="background:${c}" data-color="${c}"></button>`).join('')}</div></div>
             <div class="field"><label>رمز العصابة (2–4 حروف إنجليزية)</label><input class="in" id="tag" maxlength="4" value="${esc(S.tag || '')}"></div>
             </div><div class="sect"><button class="btn gc" data-save>حفظ الإعدادات</button></div>`;
@@ -208,7 +226,8 @@
     const ACTION = { parts_in: 'تسليم قطع', chop: 'تفكيك', chop_player_car: 'تفكيك سيارة لاعب', chop_start: 'بدء تفكيك', chop_cancel: 'إلغاء تفكيك', bench_lockpicks: 'مفاتيح فتح',
         bank_deposit: 'إيداع', bank_withdraw: 'سحب', rent_paid: 'دفع الإيجار', rent_unpaid: 'إيجار غير مدفوع', joined: 'انضمام', left: 'مغادرة', kick: 'طرد', promote: 'ترقية',
         demote: 'تخفيض', leader_transfer: 'نقل الزعامة', leader_auto: 'زعامة تلقائية', settings: 'الإعدادات', stash_take: 'أخذ من المخزن', outfit_saved: 'زي العصابة',
-        rep_level: 'مستوى سمعة', gang_created: 'إنشاء العصابة' };
+        rep_level: 'مستوى سمعة', gang_created: 'إنشاء العصابة', wash: 'غسيل دفعة', wash_start: 'بدء غسيل', wash_drop: 'طلب غسيل', wash_collect: 'استلام نظيف',
+        wash_cancel: 'إلغاء طلب', wash_cancel_batch: 'إيقاف الغسيل', door_breach_start: 'محاولة اقتحام', door_breached: 'اقتحام', stolen_report: 'بلاغ سرقة' };
     function logs() {
         return `<div class="h2">السجل <small>آخر 100 عملية</small></div><div class="card" style="padding:4px 4px">${(D.logs || []).map((l) =>
             `<div class="log"><span class="t">${dt(l.created)}</span><span class="a">${esc(ACTION[l.action] || l.action)}</span><span><b>${esc(l.actor)}</b> ${esc(l.details || '')}</span></div>`).join('') || '<div class="log">لا شيء بعد</div>'}</div>`;
@@ -217,7 +236,7 @@
     // ------------------------------------------------------------------ render + clicks
     function render() {
         if (!D) return;
-        const body = tab === 'members' ? members() : tab === 'prod' ? prod() : tab === 'rep' ? rep() : tab === 'settings' ? settings() : tab === 'logs' ? logs() : home();
+        const body = tab === 'members' ? members() : tab === 'prod' ? (D.wash ? washTab() : prod()) : tab === 'rep' ? rep() : tab === 'settings' ? settings() : tab === 'logs' ? logs() : home();
         const scroll = $('.main', lap) ? $('.main', lap).scrollTop : 0;
         lap.innerHTML = shell(body);
         $('.main', lap).scrollTop = scroll;

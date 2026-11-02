@@ -5,7 +5,7 @@
 --   fence    = { x, y, z, h }                     (buys stolen parts)
 -- =====================================================================
 local FILE = 'data/spots.json'
-local KINDS = { laptop = true, stash = true, deposit = true, locker = true, bench = true, garage = true, door_out = true, door_in = true }
+local KINDS = { laptop = true, stash = true, deposit = true, locker = true, bench = true, garage = true, door_out = true, door_in = true, dropbox = true, washer = true }
 local MAX_CRATES = 12
 
 local function num(v) return type(v) == 'number' and v == v and v > -20000 and v < 20000 end

@@ -42,3 +42,28 @@ def c4():
         K.center_text(d, 600, 10, 'C-4', K.font(120, K.FONT_C), (30, 30, 30, 255)); K.center_text(d, 600, 150, 'DEMOLITION CHARGE', K.font(44, K.FONT_B), (30, 30, 30, 255))
     objs.append(K.sticker(K.label_img('c4', 600, 220, (0, 0, 0, 0), dr), 0.34, 0.12, (0.2, -0.05, 0.1205), (0, 0, rad(90))))
     return objs, {'el': 42}
+
+FACE = 43
+@item
+def wash_supplies():
+    # a laundry detergent jug with a stack of paper money bands next to it
+    jug_m = K.plastic((0.01, 0.12, 0.55), 0.25)
+    prof = [(0, 0), (0.24, 0), (0.27, 0.03), (0.27, 0.62), (0.22, 0.72), (0.12, 0.78), (0.1, 0.84), (0, 0.84)]
+    jug = K.lathe(prof, jug_m)
+    cap = K.lathe([(0, 0.83), (0.105, 0.83), (0.105, 0.93), (0.09, 0.95), (0, 0.95)], K.plastic((0.95, 0.45, 0.05), 0.35))
+    handle = K.torus(0.1, 0.03, (0.2, 0, 0.6), jug_m, rot=(rad(90), 0, 0))
+    def dr(d, im):
+        d.rectangle((0, 0, 1200, 420), fill=(250, 250, 250, 255))
+        d.rectangle((0, 0, 1200, 70), fill=(255, 120, 10, 255))
+        K.center_text(d, 1200, 95, 'WASH', K.font(135, K.FONT_C), (10, 60, 170, 255))
+        K.center_text(d, 1200, 290, 'DEEP CLEAN', K.font(48, K.FONT_B), (40, 40, 40, 255))
+    lab = K.wrap(K.label_img('washlab', 1200, 420, (0, 0, 0, 0), dr), 0.2715, 0.34, 0.33, rough=0.3, coat=0.4, face=FACE)
+    objs = [jug, cap, handle, lab]
+    # a stack of banded cash next to it
+    note_m = K.mat('notes', (0.45, 0.6, 0.4), rough=0.8, bump=0.2, bump_scale=400)
+    band_m = K.mat('band', (0.93, 0.86, 0.62), rough=0.7)
+    for i in range(3):
+        z = 0.035 + i * 0.072
+        objs.append(K.box((0.36, 0.17, 0.07), (0.5, -0.2, z), note_m, bevel=0.004, rot=(0, 0, rad(-8 + i * 6))))
+        objs.append(K.box((0.07, 0.175, 0.074), (0.5, -0.2, z), band_m, bevel=0.002, rot=(0, 0, rad(-8 + i * 6))))
+    return objs, {'el': 22}

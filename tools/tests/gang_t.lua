@@ -72,6 +72,31 @@ MySQL = {
 local q = MySQL.query
 MySQL.query = setmetatable({ await = q.await }, getmetatable(q))
 
+-- a small in-memory exti_gang_wash table
+WASH = {}
+local function W_(q, p)
+    if not q:find('exti_gang_wash') then return nil end
+    if q:find('^%s*CREATE') then return true, {} end
+    if q:find('INSERT INTO') then WASH[#WASH + 1] = { id = #WASH + 1, gang = p[1], citizenid = p[2], name = p[3], dirty = p[4], left = p[5], cut = p[6], ready = 0, closed = 0, created = p[7] }; return true, #WASH end
+    local function rows(f) local o = {}; for _, r in ipairs(WASH) do if f(r) then o[#o + 1] = r end end return o end
+    local function copy(r) local c = {}; for k, v in pairs(r) do c[k] = v end return c end
+    if q:find('SELECT `id`, `dirty`') then local o = {}; for _, r in ipairs(rows(function(r) return r.gang == p[1] and r.citizenid == p[2] and r.closed == 0 end)) do o[#o + 1] = copy(r) end return true, o end
+    if q:find('COALESCE') then local t, n = 0, 0; for _, r in ipairs(rows(function(r) return r.gang == p[1] and r.closed == 0 and r.left > 0 end)) do t = t + r.left; n = n + 1 end return true, { total = t, n = n } end
+    if q:find('SELECT `id`, `left`') then local o = {}; for _, r in ipairs(rows(function(r) return r.gang == p[1] and r.closed == 0 and r.left > 0 end)) do o[#o + 1] = copy(r) end return true, o end
+    if q:find('SELECT `citizenid`, `cut`') then local r = WASH[p[1]]; return true, r and copy(r) end
+    if q:find('SELECT `name`, `left`') then local o = {}; for _, r in ipairs(rows(function(r) return r.gang == p[1] and r.closed == 0 and r.left > 0 end)) do o[#o + 1] = copy(r) end return true, o end
+    if q:find('SET `ready` = 0') then local r = WASH[p[1]]; if r and r.ready == p[2] then r.ready = 0; if r.left == 0 then r.closed = 1 end return true, 1 end return true, 0 end
+    if q:find('SET `left` = 0') then local r = WASH[p[1]]; if r and r.left == p[2] then r.left = 0; if r.ready == 0 then r.closed = 1 end return true, 1 end return true, 0 end
+    if q:find('`left` = `left` %+') then local r = WASH[p[2]]; if r then r.left = r.left + p[1]; r.closed = 0 end return true, 1 end
+    if q:find('`left` = `left` %-') then local r = WASH[p[2]]; if r and r.left >= p[3] then r.left = r.left - p[1]; return true, 1 end return true, 0 end
+    if q:find('`ready` = `ready` %+') then local r = WASH[p[2]]; if r then r.ready = r.ready + p[1]; r.closed = 0 end return true, 1 end
+    error('unmocked wash query: ' .. q)
+end
+for _, k in ipairs({ 'query', 'single', 'update', 'insert' }) do
+    local old = MySQL[k].await
+    MySQL[k].await = function(q, p) local hit, v = W_(q, p); if hit then return v end return old(q, p) end
+end
+
 -- players
 local pos, peds, players = {}, {}, {}
 local cash = {}
@@ -169,6 +194,7 @@ dofile(RES .. 'server/collect.lua')
 dofile(RES .. 'server/chop.lua')
 dofile(RES .. 'server/theft.lua')
 dofile(RES .. 'server/door.lua')
+dofile(RES .. 'server/wash.lua')
 for _, f in ipairs(READIES) do f() end
 
 -- ---------------------------------------------------------------- tests
@@ -517,5 +543,60 @@ CB.realDoor(31, 'chopz', 1, 'breachBegin'); advance(11)
 check(CB.realDoor(31, 'chopz', 1, 'breachFinish') == true and isOpenT(), 'after 10 s the police break it open')
 at(30, vec3(900, 0, 0))
 check(select(2, CB.realDoor(30, 'chopz', 1, 'knock')) == 'far', 'nothing from far away')
+
+-- ---------------------------------------------------------------- the Money Wash
+local wl = addPlayer(40, 'CW40', 'WashBoss')
+CMD.creategang(1, { name = 'cleaners', kind = 'wash', leader = 40, label = 'Clean Co' })
+local wg = GANG.gangs.cleaners
+check(wg and wg.type == 'wash' and wg.settings.washCut == 25, 'a Money Wash gang is created (cut 25%)')
+at(1, vec3(600, 0, 0)); CB.spotSave(1, 'hq', 'cleaners', 'dropbox')
+at(1, vec3(610, 0, 0)); CB.spotSave(1, 'hq', 'cleaners', 'washer')
+at(1, vec3(612, 0, 0)); CB.spotSave(1, 'hq', 'cleaners', 'laptop')
+local cust = addPlayer(41, 'CC41', 'Customer'); at(41, vec3(600, 0.5, 0))
+invOf(41).black_money = 12000
+check(select(2, CB.washDrop(41, 'cleaners', 100)) == 'amount', 'under $500 is refused')
+check(select(2, CB.washDrop(41, 'cleaners', 20000)) == 'nomoney', 'he can not drop money he does not have')
+local okD, rD = CB.washDrop(41, 'cleaners', 8000)
+check(okD and rD.back == 6000 and inv[41].black_money == 4000, 'he drops $8,000 dirty: told he gets $6,000 back')
+at(41, vec3(900, 0, 0))
+check(select(2, CB.washDrop(41, 'cleaners', 500)) == 'far', 'the drop box works only at the box')
+at(41, vec3(600, 0.5, 0))
+local okB, b = CB.washBox(41, 'cleaners')
+check(okB and b.waiting == 8000 and b.ready == 0, 'the box shows $8,000 waiting')
+-- a crew member washes
+local wc = addPlayer(42, 'CW42', 'Washer'); at(40, vec3(600, 0, 0)); at(42, vec3(600, 0, 0))
+CB.invite(40, 42); fireNet('exti_gangs:server:inviteAnswer', 42, true)
+at(42, vec3(610, 0, 0))
+check(select(2, CB.washBegin(42)) == 'rank', 'a Runner can not wash')
+CB.setRank(40, 'CW42', 1)
+check(select(2, CB.washBegin(42)) == 'supplies', 'no wash supplies in the stash: refused')
+invOf('gang_cleaners').wash_supplies = 10
+local okW, wi = CB.washBegin(42)
+check(okW and wi.total == 5000 and wi.supplies == 5 and inv.gang_cleaners.wash_supplies == 5, 'a batch: $5,000 of the order, 5 supplies used')
+check(WASH[1].left == 3000, 'the batch is reserved off the order')
+check(CB.washCancel(41, 'cleaners') == true and inv[41].black_money == 7000 and WASH[1].left == 0, 'the customer cancels: only the $3,000 not in the machine comes back')
+check(select(2, CB.washStage(42, wi.token, 2)) == 'order', 'steps go in order')
+check(select(2, CB.washStage(42, wi.token, 1)) == 'fast', 'a step needs its time')
+local bank0, cash0 = wg.bank, cash[42]
+local resW
+for st = 1, 3 do advance(25); local _, r = CB.washStage(42, wi.token, st); if st == 3 then resW = r end end
+check(resW and resW.total == 5000, 'after 3 steps the batch is washed')
+check(WASH[1].ready == 3750, 'the customer gets $3,750 clean (75%)')
+check(wg.bank - bank0 == 1000 and cash[42] - cash0 == 250, 'the cut $1,250: $250 to the washer, $1,000 to the gang bank')
+check(select(2, CB.washBegin(42)) == 'cooldown' or select(2, CB.washBegin(42)) == 'empty', 'the machine waits / nothing left')
+local cashC = cash[41]
+check(CB.washCollect(41, 'cleaners') == true and cash[41] - cashC == 3750 and WASH[1].closed == 1, 'he collects $3,750 clean cash at the box')
+check(CB.washCollect(41, 'cleaners') == false, 'collecting twice gives nothing')
+-- a stopped batch gives the money back
+invOf(41).black_money = 6000; CB.washDrop(41, 'cleaners', 6000)
+advance(200)
+local ok3, w3 = CB.washBegin(42)
+check(ok3 and WASH[2].left == 1000, 'a new batch')
+check(CB.washStop(42) == true and WASH[2].left == 6000, 'the washer stops: the whole order is back in the box')
+-- the daily cap
+GANG.addDaily('g', 'cleaners', 'washed', 40000 - GANG.getDaily('g', 'cleaners', 'washed'))
+advance(200)
+check(select(2, CB.washBegin(42)) == 'daily', 'the daily wash cap stops the machine')
+check(CB.settings(40, { washCut = 50 }) == true and wg.settings.washCut == 35, 'the leader can not set the cut above 35%')
 
 print(('\n%d passed, %d failed'):format(passes, fails))

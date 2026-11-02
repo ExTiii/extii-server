@@ -12,11 +12,14 @@
         lugnuts: 'فكّ الصواميل بترتيب النجمة: اضغط الصامولة المضيئة، الخطأ يضيّع وقتك',
         pry: 'اضغط المسافة عندما يكون المؤشر داخل المنطقة الخضراء (3 مرات)',
         torch: 'اضغط مع الاستمرار وتتبّع الخط المتقطّع بالشعلة من البداية للنهاية',
+        sort: 'ضع كل ورقة في درجها: 1 = 10$ · 2 = 20$ · 3 = 50$ · 4 = 100$ (أو اضغط على الدرج). الخطأ يضيّع وقتك',
+        drum: 'اضغط المسافة مع الاستمرار لترفع السرعة، أفلتها لتنزل. أبقِ المؤشر في المنطقة الخضراء حتى تمتلئ الدورة',
+        band: 'اضغط مع الاستمرار لتعدّ الأوراق، وأفلت عند 50 بالضبط (±2) لتربط الرزمة',
     };
 
-    function frame(game, title) {
+    function frame(game, title, foot) {
         box.innerHTML = `<div class="gcard"><div class="gh"><h3>${title}</h3><span class="cnt" id="gcnt"></span></div><p>${HINT[game]}</p>
-            <div class="garea g-${game}" id="garea"></div><div class="gfoot"><span>ESC للإيقاف</span><span>ورشة التفكيك</span></div></div>`;
+            <div class="garea g-${game}" id="garea"></div><div class="gfoot"><span>ESC للإيقاف</span><span>${foot || 'ورشة التفكيك'}</span></div></div>`;
         box.classList.remove('hidden');
         return document.getElementById('garea');
     }
@@ -161,14 +164,115 @@
         G.cleanup = () => { cancelAnimationFrame(raf); window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
     }
 
-    const GAMES = { bolts, lugnuts, pry, torch };
-    function start(game, title) {
+    // ---------------------------------------------------------------- sort: every bill into its tray
+    function sort(area) {
+        const DEN = [{ v: 10, c: '#8a6d3b' }, { v: 20, c: '#4c7a4c' }, { v: 50, c: '#a0573a' }, { v: 100, c: '#3f6a8a' }];
+        const N = 14;
+        area.innerHTML = `<div class="pile" id="pile"></div><div class="trays">${DEN.map((d, i) => `<button class="tray" data-i="${i}"><b>${i + 1}</b><span class="ltr">$${d.v}</span><em id="tc${i}">0</em></button>`).join('')}</div>`;
+        const pile = document.getElementById('pile');
+        let done = 0, cur = -1, locked = false;
+        const counts = [0, 0, 0, 0];
+        const next = () => {
+            cur = Math.floor(Math.random() * 4);
+            const d = DEN[cur];
+            pile.innerHTML = `<div class="note" style="--nc:${d.c};transform:rotate(${(Math.random() * 10 - 5).toFixed(1)}deg)"><i class="ltr">${d.v}</i><span>EX_Tii · ${d.v} DOLLARS</span><i class="ltr">${d.v}</i></div>`;
+        };
+        const pick = (i) => {
+            if (locked || cur < 0) return;
+            if (i === cur) {
+                counts[i] += 1; document.getElementById('tc' + i).textContent = counts[i];
+                done += 1; cnt(`${done}/${N}`);
+                const n = pile.firstChild; if (n) n.classList.add('go');
+                if (done >= N) return end(true);
+                setTimeout(next, 120);
+            } else {
+                locked = true; area.classList.add('shake');
+                setTimeout(() => { area.classList.remove('shake'); locked = false; }, 800);
+            }
+        };
+        area.querySelectorAll('.tray').forEach((b) => b.addEventListener('click', () => pick(Number(b.dataset.i))));
+        const key = (e) => { const i = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4'].indexOf(e.code); if (i >= 0) pick(i % 4); };
+        window.addEventListener('keydown', key);
+        cnt(`0/${N}`); next();
+        G.cleanup = () => window.removeEventListener('keydown', key);
+    }
+
+    // ---------------------------------------------------------------- drum: keep the spin speed in the green band
+    function drum(area) {
+        area.innerHTML = `<div class="machine"><div class="door"><div class="glass" id="glass"><i></i><i></i><i></i></div></div>
+            <div class="meter"><div class="band" id="band"></div><div class="needle2" id="need"></div></div>
+            <div class="fill"><i id="fill"></i></div></div><div class="key">[ مسافة ]</div>`;
+        const band = document.getElementById('band'), need = document.getElementById('need'), fill = document.getElementById('fill'), glass = document.getElementById('glass');
+        let v = 0.15, held = false, prog = 0, lo = 0.45, hi = 0.65, drift = 0, raf, last = performance.now(), rot = 0;
+        const place = () => { band.style.bottom = (lo * 100) + '%'; band.style.height = ((hi - lo) * 100) + '%'; };
+        place();
+        const tick = (t) => {
+            const dt = Math.min(0.05, (t - last) / 1000); last = t;
+            v += (held ? 0.55 : -0.42) * dt;
+            v = Math.max(0, Math.min(1, v));
+            // the band moves slowly up and down: the load shifts in the drum
+            drift += dt;
+            const mid = 0.55 + Math.sin(drift * 0.9) * 0.2;
+            lo = mid - 0.1; hi = mid + 0.1; place();
+            const inBand = v >= lo && v <= hi;
+            prog = Math.max(0, Math.min(1, prog + (inBand ? dt / 7 : -dt / 14)));
+            need.style.bottom = (v * 100) + '%';
+            need.classList.toggle('ok', inBand);
+            fill.style.width = (prog * 100) + '%';
+            rot += v * 900 * dt; glass.style.transform = `rotate(${rot}deg)`;
+            cnt(`${Math.round(prog * 100)}%`);
+            if (prog >= 1) return end(true);
+            raf = requestAnimationFrame(tick);
+        };
+        const kd = (e) => { if (e.code === 'Space') { e.preventDefault(); held = true; } };
+        const ku = (e) => { if (e.code === 'Space') held = false; };
+        window.addEventListener('keydown', kd); window.addEventListener('keyup', ku);
+        raf = requestAnimationFrame(tick);
+        G.cleanup = () => { cancelAnimationFrame(raf); window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); };
+    }
+
+    // ---------------------------------------------------------------- band: count 50 notes and band the stack
+    function band(area, extra) {
+        const stacks = Math.max(1, Math.min(5, (extra && extra.stacks) || 3));
+        area.innerHTML = `<div class="stacks" id="stacks">${Array.from({ length: stacks }, (_, i) => `<div class="stack" id="st${i}"><i></i></div>`).join('')}</div>
+            <div class="counter"><b id="num">0</b><span>/ 50</span></div><div class="key">اضغط مع الاستمرار · أفلت عند 50</div>`;
+        const num = document.getElementById('num');
+        let k = 0, down = false, n = 0, speed = 9, raf, last = performance.now(), locked = false;
+        document.getElementById('st0').classList.add('on');
+        cnt(`0/${stacks}`);
+        const tick = (t) => {
+            const dt = Math.min(0.05, (t - last) / 1000); last = t;
+            if (down && !locked) { n += speed * dt; speed = Math.min(26, speed + 9 * dt); num.textContent = Math.floor(n); num.classList.toggle('over', n > 52); }
+            raf = requestAnimationFrame(tick);
+        };
+        const press = () => { if (!locked) { down = true; n = 0; speed = 9; num.classList.remove('over'); } };
+        const release = () => {
+            if (!down || locked) return; down = false;
+            const c = Math.floor(n);
+            if (Math.abs(c - 50) <= 2) {
+                const st = document.getElementById('st' + k); st.classList.remove('on'); st.classList.add('done');
+                k += 1; cnt(`${k}/${stacks}`);
+                if (k >= stacks) return end(true);
+                document.getElementById('st' + k).classList.add('on'); num.textContent = '0';
+            } else {
+                locked = true; area.classList.add('shake'); num.textContent = c < 50 ? 'ناقص' : 'زائد';
+                setTimeout(() => { area.classList.remove('shake'); locked = false; num.textContent = '0'; }, 900);
+            }
+        };
+        area.addEventListener('mousedown', press);
+        window.addEventListener('mouseup', release);
+        raf = requestAnimationFrame(tick);
+        G.cleanup = () => { cancelAnimationFrame(raf); window.removeEventListener('mouseup', release); };
+    }
+
+    const GAMES = { bolts, lugnuts, pry, torch, sort, drum, band };
+    function start(game, title, extra) {
         if (G) return;
-        const area = frame(game, title || '');
+        const area = frame(game, title || '', extra && extra.label);
         G = { cleanup: null };
-        (GAMES[game] || bolts)(area);
+        (GAMES[game] || bolts)(area, extra || {});
     }
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && G) end(false); });
-    window.addEventListener('message', (e) => { const m = e.data || {}; if (m.action === 'chopgame') start(m.game, m.title); });
+    window.addEventListener('message', (e) => { const m = e.data || {}; if (m.action === 'chopgame') start(m.game, m.title, m.extra); });
     window.EXG_GAME = { start };
 })();

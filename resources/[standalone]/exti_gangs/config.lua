@@ -19,7 +19,7 @@ C.leaderInactiveDays = 14                   -- then the longest-serving Underbos
 -- the 5 gang types (one gang per type at launch). Only 'chop' is built so far: the others say "soon".
 C.types = {
     chop    = { label = 'ورشة التفكيك', en = 'Chop Shop', part = 'chop_tools', icon = 'wrench', ready = true },
-    wash    = { label = 'غسيل الأموال', en = 'Money Wash', part = 'wash_supplies', icon = 'wash' },
+    wash    = { label = 'غسيل الأموال', en = 'Money Wash', part = 'wash_supplies', icon = 'wash', ready = true },
     ammo    = { label = 'الذخيرة', en = 'Ammo', part = 'ammo_materials', icon = 'ammo' },
     weapons = { label = 'الأسلحة', en = 'Weapons', part = 'gun_parts', icon = 'gun' },
     weed    = { label = 'الحشيش', en = 'Weed', part = 'gang_weed_seeds', icon = 'leaf' },
@@ -47,17 +47,17 @@ C.fence = { price = 40, model = 's_m_y_dealer_01', name = 'المصرّف' } -- 
 
 -- what a Crew member may take out of the stash per day (value of the items). Runners take nothing out.
 C.crewDailyTake = 10000
-C.itemValue = { black_money = 1, lockpick = 150, c4 = 2500, chop_tools = 100 }
+C.itemValue = { black_money = 1, lockpick = 150, c4 = 2500, chop_tools = 100, wash_supplies = 100 }
 
 -- gang reputation: earned by doing the gang's work. Each level unlocks a bit more.
 C.rep = {
-    gain = { part = 1, chop = 12, playerChop = 20, bench = 1 },
+    gain = { part = 1, chop = 12, playerChop = 20, bench = 1, wash = 8 },
     levels = {
-        { xp = 0,     name = 'شارع',     partsDaily = 80,  chopsDaily = 10, stashSlots = 60,  stashWeight = 400000, rentOff = 0.00 },
-        { xp = 600,   name = 'حيّ',      partsDaily = 90,  chopsDaily = 11, stashSlots = 70,  stashWeight = 500000, rentOff = 0.05 },
-        { xp = 2000,  name = 'منطقة',    partsDaily = 100, chopsDaily = 12, stashSlots = 80,  stashWeight = 600000, rentOff = 0.10 },
-        { xp = 5000,  name = 'مدينة',    partsDaily = 110, chopsDaily = 13, stashSlots = 90,  stashWeight = 700000, rentOff = 0.15 },
-        { xp = 10000, name = 'أسطورة',   partsDaily = 120, chopsDaily = 14, stashSlots = 100, stashWeight = 800000, rentOff = 0.20 },
+        { xp = 0,     name = 'شارع',     partsDaily = 80,  chopsDaily = 10, washDaily = 40000, stashSlots = 60,  stashWeight = 400000, rentOff = 0.00 },
+        { xp = 600,   name = 'حيّ',      partsDaily = 90,  chopsDaily = 11, washDaily = 50000, stashSlots = 70,  stashWeight = 500000, rentOff = 0.05 },
+        { xp = 2000,  name = 'منطقة',    partsDaily = 100, chopsDaily = 12, washDaily = 60000, stashSlots = 80,  stashWeight = 600000, rentOff = 0.10 },
+        { xp = 5000,  name = 'مدينة',    partsDaily = 110, chopsDaily = 13, washDaily = 70000, stashSlots = 90,  stashWeight = 700000, rentOff = 0.15 },
+        { xp = 10000, name = 'أسطورة',   partsDaily = 120, chopsDaily = 14, washDaily = 80000, stashSlots = 100, stashWeight = 800000, rentOff = 0.20 },
     },
 }
 
@@ -92,6 +92,26 @@ C.chop = {
     wantedPool = { 'adder', 'zentorno', 't20', 'turismor', 'entityxf', 'comet2', 'carbonizzare', 'jester', 'elegy2', 'sultanrs',
                    'massacro', 'feltzer2', 'banshee', 'ninef', 'dominator', 'gauntlet', 'baller', 'granger', 'schafter2',
                    'oracle', 'tailgater', 'buffalo', 'felon', 'sentinel', 'fugitive', 'kuruma', 'issi2', 'blista' },
+}
+
+-- ------------------------------------------------------------------ Money Wash
+-- Anyone drops dirty money in the gang's drop box (outside the HQ) and gets a ticket. Crew and up wash
+-- it at the machine inside (3 steps: sort the bills, run the machine, count and band the stacks).
+-- The customer's clean cash waits in the box under his name. The gang keeps its cut:
+-- 20% of the cut to the member who washed it (cash), the rest to the gang bank.
+C.wash = {
+    cut = { def = 25, min = 15, max = 35 },   -- the leader sets it (%), fixed on each order when dropped
+    washerShare = 20,                         -- % of the gang's cut to the member who ran the batch
+    batchMax = 5000,                          -- dirty money per batch
+    supplyPer = 1000,                         -- 1 wash supplies per $1,000 (rounded up)
+    dropMin = 500, dropMax = 25000,           -- per order
+    openOrders = 3,                           -- orders a customer can have open at one gang
+    queueMax = 200000,                        -- dirty money waiting at one gang
+    cooldown = 120,                           -- seconds between two batches (one machine)
+    stageSeconds = { 15, 20, 15 },            -- the shortest each step can take: sort, machine, count & band
+    markedChance = 0.10,                      -- marked bills: an anonymous tip to the police (the area, not the spot)
+    tipRadius = 150.0,
+    tipDelay = { 60, 240 },                   -- seconds after the batch (so it isn't a live alarm)
 }
 
 -- ------------------------------------------------------------------ car theft -> police

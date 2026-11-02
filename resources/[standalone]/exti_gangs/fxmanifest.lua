@@ -19,6 +19,7 @@ client_scripts {
     'client/chop.lua',
     'client/theft.lua',
     'client/door.lua',
+    'client/wash.lua',
 }
 
 server_scripts {
@@ -29,6 +30,7 @@ server_scripts {
     'server/chop.lua',
     'server/theft.lua',
     'server/door.lua',
+    'server/wash.lua',
 }
 
 ui_page 'html/index.html'

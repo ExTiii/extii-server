@@ -199,6 +199,7 @@ local function defaultSettings()
         partPay = C.partPay.default,
         thiefCut = C.chop.split.thief.def,
         chopperCut = C.chop.split.chopper.def,
+        washCut = C.wash.cut.def,
         deposits = true,
     }
 end
@@ -578,6 +579,7 @@ lib.callback.register('exti_gangs:server:settings', function(source, s)
     st.partPay = clampInt(s.partPay or st.partPay, C.partPay.min, C.partPay.max)
     st.thiefCut = clampInt(s.thiefCut or st.thiefCut, C.chop.split.thief.min, C.chop.split.thief.max)
     st.chopperCut = clampInt(s.chopperCut or st.chopperCut, C.chop.split.chopper.min, C.chop.split.chopper.max)
+    st.washCut = clampInt(s.washCut or st.washCut, C.wash.cut.min, C.wash.cut.max)
     if s.deposits ~= nil then st.deposits = s.deposits == true end
     if type(s.color) == 'string' then
         for _, c in ipairs(C.colors) do if c == s.color then g.color = c end end
@@ -587,7 +589,9 @@ lib.callback.register('exti_gangs:server:settings', function(source, s)
         if #tag >= 2 then g.tag = tag end
     end
     saveGang(g)
-    log(g, GANG.charName(p), 'settings', ('أجر القطعة $%d · السارق %d%% · المفكك %d%% · التسليم %s'):format(st.partPay, st.thiefCut, st.chopperCut, st.deposits and 'مفتوح' or 'مقفل'))
+    log(g, GANG.charName(p), 'settings', g.type == 'wash'
+        and ('أجر القطعة $%d · نسبة الغسيل %d%% · التسليم %s'):format(st.partPay, st.washCut, st.deposits and 'مفتوح' or 'مقفل')
+        or ('أجر القطعة $%d · السارق %d%% · المفكك %d%% · التسليم %s'):format(st.partPay, st.thiefCut, st.chopperCut, st.deposits and 'مفتوح' or 'مقفل'))
     return true
 end)
 
@@ -664,7 +668,7 @@ lib.callback.register('exti_gangs:server:laptop', function(source)
         rep = { level = lv, name = L.name, xp = g.rep_xp, from = L.xp, to = nextL and nextL.xp or nil, levels = C.rep.levels },
         today = { parts = GANG.getDaily('g', g.name, 'parts'), partsCap = L.partsDaily },
         ranks = C.ranks, slots = { crew = C.rankSlots[1], underboss = C.rankSlots[2] }, colors = C.colors, now = now(),
-        limits = { partPay = C.partPay, thief = C.chop.split.thief, chopper = C.chop.split.chopper },
+        limits = { partPay = C.partPay, thief = C.chop.split.thief, chopper = C.chop.split.chopper, wash = C.wash.cut },
     }
     if m.rank >= 1 then
         data.gang.bank = g.bank
@@ -676,6 +680,7 @@ lib.callback.register('exti_gangs:server:laptop', function(source)
     end
     if m.rank == 3 then data.settings = g.settings end
     if g.type == 'chop' and GANG.chopView then data.chop = GANG.chopView(g, m) end
+    if g.type == 'wash' and GANG.washView then data.wash = GANG.washView(g, m) end
     return data
 end)
 
