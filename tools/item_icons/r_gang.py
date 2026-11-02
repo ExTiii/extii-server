@@ -1,0 +1,44 @@
+import bpy, math, random
+from mathutils import Vector
+import studio as S, kit as K
+R = {}
+def item(f): R[f.__name__] = f; return f
+rad = math.radians
+
+@item
+def chop_tools():
+    # a canvas tool roll with a crowbar and wrenches lying on it
+    canvas = K.mat('canvas', (0.32, 0.26, 0.17), rough=0.95, bump=0.5, bump_scale=500)
+    roll = K.box((1.1, 0.7, 0.02), (0, 0, 0.01), canvas, bevel=0.01)
+    rolled = K.cyl(0.08, 0.7, (0.55, 0, 0.08), canvas, rot=(rad(90), 0, 0))
+    objs = [roll, rolled]
+    for mid, sz, loc, rz in (('crowbar_01', 1.0, (-0.05, -0.12, 0.03), 8), ('adjustable_wrench', 0.6, (-0.1, 0.18, 0.03), -12), ('combination_wrench', 0.55, (0.15, 0.05, 0.03), 20)):
+        o = S.imp(mid); root = S.normalize(o, sz); bpy.context.view_layer.update()
+        lo, hi = S.bounds(o); dz, dx, dy = hi.z - lo.z, hi.x - lo.x, hi.y - lo.y
+        # lay it flat on the cloth (the scans stand up)
+        root.rotation_euler = (rad(90) if dz >= max(dx, dy) * 0.9 and dy <= dx else 0, rad(90) if dz >= max(dx, dy) * 0.9 and dy > dx else 0, 0)
+        bpy.context.view_layer.update()
+        root.rotation_euler.z = rad(rz); bpy.context.view_layer.update()
+        lo, hi = S.bounds(o); root.location += Vector((loc[0], loc[1], 0.02 - lo.z + 0.0)); bpy.context.view_layer.update()
+        objs += o
+    return objs, {'el': 48}
+
+@item
+def c4():
+    putty = K.mat('putty', (0.86, 0.83, 0.74), rough=0.7, bump=0.4, bump_scale=300)
+    wrapm = K.mat('wrapc4', (0.25, 0.27, 0.18), rough=0.6)
+    objs = []
+    for i, x in enumerate((-0.2, 0.0, 0.2)):
+        objs.append(K.box((0.18, 0.5, 0.12), (x, 0, 0.06), putty, bevel=0.015))
+    for y in (-0.15, 0.15):
+        objs.append(K.box((0.64, 0.05, 0.135), (0, y, 0.065), K.mat('tapec4', (0.12, 0.12, 0.12), rough=0.35, coat=0.3), bevel=0.005))
+    det = K.box((0.16, 0.12, 0.06), (0.0, 0.02, 0.15), K.mat('det', (0.05, 0.05, 0.05), rough=0.4), bevel=0.01)
+    led = K.sphere(0.012, (0.05, -0.03, 0.185), K.mat('ledc4', (1, 0.05, 0.05), emit=(1, 0.05, 0.05), emit_k=10))
+    objs += [det, led]
+    for i, c in enumerate(((0.8, 0.05, 0.05), (0.1, 0.2, 0.9), (0.9, 0.8, 0.1))):
+        w = K.torus(0.12 + i * 0.02, 0.008, (-0.12, 0.05 + i * 0.03, 0.15), K.mat('wire', c, rough=0.4), rot=(rad(75), 0, rad(20 * i)))
+        objs.append(w)
+    def dr(d, im):
+        K.center_text(d, 600, 10, 'C-4', K.font(120, K.FONT_C), (30, 30, 30, 255)); K.center_text(d, 600, 150, 'DEMOLITION CHARGE', K.font(44, K.FONT_B), (30, 30, 30, 255))
+    objs.append(K.sticker(K.label_img('c4', 600, 220, (0, 0, 0, 0), dr), 0.34, 0.12, (0.2, -0.05, 0.1205), (0, 0, rad(90))))
+    return objs, {'el': 42}

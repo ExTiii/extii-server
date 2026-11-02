@@ -370,6 +370,7 @@ lib.callback.register('exti_driveschool:server:car', function(source)
         if p and L[k].price > 0 then pcall(function() p.Functions.AddMoney(t.account or 'cash', L[k].price, 'driveschool refund') end) end
         return false, 'nocar'
     end
+    Entity(veh).state:set('exti_job', 'driveschool', true) -- (never chopped by the Chop Shop)
     pcall(function() SetVehicleNumberPlateText(veh, L[k].test.vehicle.plate or 'SCHOOL') end)
     pcall(function() exports.qbx_vehiclekeys:GiveKeys(source, veh, true) end)
     pcall(function() exports.qbx_vehiclekeys:SetLockState(veh, 'unlock') end)

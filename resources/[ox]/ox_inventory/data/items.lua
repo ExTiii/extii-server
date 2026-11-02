@@ -1028,4 +1028,17 @@ return {
         description = 'لوظيفة الزبيب: كرتونة لكل 5 زبيب',
         client = { image = 'nui://exti_jobs/html/items/empty_carton.png' },
     },
+
+    -- EX_Tii gangs: the Chop Shop's part (from the shared collection point) and C4 (only from chops)
+    ['chop_tools'] = {
+        label = 'أدوات تفكيك (Chop Tools)',
+        weight = 1500,
+        description = 'قطعة عصابة ورشة التفكيك: تُستعمل لتفكيك السيارات وصنع مفاتيح الفتح',
+    },
+
+    ['c4'] = {
+        label = 'متفجرات C4',
+        weight = 1000,
+        description = 'لا تأتي إلا من ورشة التفكيك. مطلوبة لعمليات السطو الكبيرة',
+    },
 }

@@ -76,7 +76,10 @@ Config.types = {
         blip = { sprite = 402, colour = 3 },
         products = {
             -- EX_Tii: repair kits are for mechanics only now (they get them at the workshop)
-            { name = 'lockpick', price = 10, category = 'tools', max = 10 },
+            -- EX_Tii gangs: no lockpicks in shops any more (only the Chop Shop gang makes them)
+            { name = 'screwdriverset', price = 120, category = 'tools', max = 2 },
+            { name = 'binoculars', price = 250, category = 'tools', max = 1 },
+            { name = 'lighter', price = 15, category = 'tools', max = 3 },
         },
     },
 
