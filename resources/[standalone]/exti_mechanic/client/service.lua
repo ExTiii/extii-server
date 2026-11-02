@@ -16,6 +16,7 @@ local ERR = {
     no_car = 'لا توجد سيارة بجانبك', too_far = 'اقترب من السيارة', no_part = 'لا تحمل القطعة المطلوبة',
     not_this_car = 'هذه القطعة ليست في هذه السيارة', too_fast = 'لم تكتمل العملية', cancelled = 'أُلغيت العملية',
     off_duty = 'ابدأ مناوبتك في الورشة أولًا', wait = 'انتظر لحظة',
+    gone = 'هذا التعديل لم يعد موجودًا', claimed = 'هذا الطلب مع ميكانيكي آخر', not_workshop = 'التعديل داخل الورشة فقط',
 }
 local function fail(code) lib.notify({ type = 'error', description = ERR[code] or 'حدث خطأ، حاول مرة أخرى' }) end
 
@@ -73,10 +74,14 @@ local ANIM = {
     under = { dict = 'amb@world_human_vehicle_mechanic@male@base', clip = 'base' },
     wheel = { dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@', clip = 'machinic_loop_mechandplayer' },
     wash = { dict = 'timetable@floyd@clean_kitchen@base', clip = 'base' },
+    spray = { dict = 'switch@franklin@lamar_tagging_wall', clip = 'lamar_tagging_wall_loop_lamar' },
 }
 local WHERE = {
     oil = 'under', pour = 'bonnet', filter = 'bonnet', plugs = 'bonnet', brakes = 'wheel', clutch = 'under',
     battery = 'under', wheel = 'wheel', wash = 'wash', wax = 'wash',
+    -- installing the tuning
+    t_engine = 'bonnet', t_brakes = 'wheel', t_trans = 'under', t_susp = 'wheel', t_turbo = 'bonnet',
+    t_paint = 'spray', t_body = 'bonnet', t_tint = 'wash', t_neon = 'under', t_xenon = 'bonnet', t_small = 'bonnet',
 }
 
 -- one animation at a time: a small loop keeps it playing (the progress bars and skill checks may
@@ -164,6 +169,19 @@ local function runJob(veh, start, done)
     if not res then return fail(e2) end
     return res
 end
+MEC.runJob = runJob
+
+-- one change of a tuning order
+local function installTune(veh, orderId, line)
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    local res = runJob(veh,
+        function() return lib.callback.await('exti_mechanic:server:tuneStart', false, netId, orderId, line.i) end,
+        function() return lib.callback.await('exti_mechanic:server:tuneDone', false, true) end)
+    if res then
+        lib.notify({ type = 'success', description = res.left > 0 and ('تم تركيب: %s (بقي %d)'):format(res.label, res.left)
+            or ('تم تركيب: %s. انتهى الطلب #%d كاملًا'):format(res.label, res.id) })
+    end
+end
 
 local function repair(veh, comp, label)
     local netId = NetworkGetNetworkIdFromEntity(veh)
@@ -199,6 +217,30 @@ function MEC.openService(veh)
         description = ('المحرك %d%%  ·  الهيكل %d%%  (يُصلحان بعُدة الإصلاح)'):format(math.max(0, info.engine), math.max(0, info.body)),
         icon = info.ev and 'bolt' or 'car', readOnly = true,
     }
+    -- the car's tuning order (from the bay): every change still to install
+    local tune = info.tune
+    if tune then
+        local left = 0
+        for _, l in ipairs(tune.lines) do if not l.done then left = left + 1 end end
+        options[#options + 1] = {
+            title = ('طلب تعديل #%d · بقي %d من %d'):format(tune.id, left, #tune.lines),
+            description = tune.free and 'لم يستلمه أحد بعد: أول تركيب يجعله طلبك' or tune.mine and 'هذا طلبك' or ('مع %s'):format(tune.mname or '؟'),
+            icon = 'screwdriver-wrench', iconColor = '#f2c230', readOnly = true,
+        }
+        local blocked = not tune.free and not tune.mine and not tune.boss
+        for _, l in ipairs(tune.lines) do
+            local enough = l.count == 0 or l.have >= l.count
+            options[#options + 1] = {
+                title = (l.done and '✓ ' or '') .. l.label,
+                description = l.done and 'تم التركيب' or l.count == 0 and 'لا يحتاج قطعًا'
+                    or enough and ('تحتاج %d× %s (معك %d)'):format(l.count, l.itemLabel or l.item, l.have)
+                    or ('تحتاج %d× %s · معك %d، اطلبها من متجر القطع'):format(l.count, l.itemLabel or l.item, l.have),
+                icon = l.done and 'circle-check' or 'gears', iconColor = l.done and '#3ddc97' or '#f2c230',
+                disabled = l.done or not enough or blocked,
+                onSelect = function() installTune(veh, tune.id, l) end,
+            }
+        end
+    end
     for _, p in ipairs(info.parts) do
         local enough = p.have >= p.count
         options[#options + 1] = {
@@ -231,6 +273,12 @@ function MEC.servicePrompt(p)
     if not veh or not NetworkGetEntityIsNetworked(veh) then return end
     local class = GetVehicleClass(veh)
     if class == 13 or class == 14 or class == 15 or class == 16 or class == 21 then return end
+    local plates = GlobalState.exti_mechanic_tune_plates
+    local plate = GetVehicleNumberPlateText(veh)
+    plate = plate and plate:gsub('^%s+', ''):gsub('%s+$', ''):upper()
+    if type(plates) == 'table' and plate and plates[plate] then
+        return '[E] الصيانة وتركيب التعديل', function() MEC.openService(veh) end
+    end
     return '[E] صيانة المركبة', function() MEC.openService(veh) end
 end
 

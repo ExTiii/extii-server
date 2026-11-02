@@ -1,4 +1,4 @@
-EX_Tii Mechanic (A: the job · B: service)
+EX_Tii Mechanic (A: the job · B: service · C1: tuning)
 ======================================
 
 The workshop (Benny's Original Motor Works, Strawberry — like the video)
@@ -16,7 +16,7 @@ The tablet (F6 while on duty, /mechtablet)
 - Map (the mechanics and the fleet live), chat, calendar, camera + gallery, the form inbox (the public
   forms: application / complaint / repair request REQ with the plate and what is wrong), قوالب الفواتير
   (the price list, read only), management for the manager (money, members, ranks, log, and the price list editor).
-- الطلبات, الفحص, متجر القطع, الداينو are placeholders until delivery B (wear, diagnostics, repairs, parts).
+- الداينو is a placeholder until tuning step C2.
 
 The bill (Z wheel → الورشة → فاتورة, on duty, next to the customer)
 - Tick the services, write a note (the car, the plate, what was done), "إرسال الفاتورة": the bill lands in the
@@ -52,3 +52,25 @@ SERVICE (part B)
 - Items: engine_oil, air_filter, coolant, spark_plugs, brake_pads, brake_fluid, clutch_kit, transmission_fluid,
   car_tire, ev_battery, ev_motor, car_soap, car_wax (pictures in html/items).
 - Admin test: /carwear all 5  ·  /carwear engine_oil 0  (the car you sit in)
+
+TUNING (part C, step 1: performance and looks)
+- Two tuning bays at the workshop (big circles; admins move them: /mechspots → منصة التعديل 1 / 2).
+- The customer drives HIS OWN car (in player_vehicles under his name) onto a bay, as the driver: "[E] قائمة التعديل".
+  Only while at least one mechanic is on duty (Config.tuning.needMechanic).
+- The menu: الأداء (engine / brakes / gearbox / suspension levels, turbo), الصبغ (primary / secondary with 6 finishes and any
+  colour, pearl, wheel colour), الجنوط (every wheel type and wheel), الهيكل (every body part the car has, horn, liveries),
+  الإضاءة (neon on/off + colour, xenon + colour), أخرى (window tint, plate style). Every pick shows on the car; the camera
+  moves to the part (arrows / buttons turn it, mouse wheel zooms). Review → pay (bank, or cash if the bank is short): the
+  money goes to the workshop account. The car goes back to how it was.
+- A car with an open order: the bay shows the order; the customer can cancel (full refund) until the first change is installed.
+- Tablet → الطلبات: open orders (who ordered, the car, every change, the parts still needed and how many you carry),
+  استلم الطلب, إلغاء وإرجاع (the mechanic who took it or the manager: pays back what is not installed), finished orders,
+  and الأسعار (the manager sets what the customer pays for each change).
+- Installing: on duty, inside the workshop (Config.tuning.area), next to the car: "[E] الصيانة وتركيب التعديل" → the order's
+  changes are at the top of the service menu → each one is mini-games with an animation (spray for paint). The parts are used
+  up only on success; the change is put on the car and saved in player_vehicles.mods (stays after parking). The first install
+  takes the order. When all are installed: the order is done, the car's history gets it, the customer is told.
+- Parts (parts shop, category أداء / مظهر): engine_kit, brake_kit, trans_kit, susp_kit (one per level step up; going down
+  needs none), turbo_kit, paint_can (paint, pearl, wheel colour, livery), wheel_set, body_kit (body parts, horn, plate),
+  tint_film, neon_kit, xenon_kit.
+- Tables: exti_mechanic_tune_orders, exti_mechanic_tune_prices. Settings: Config.tuning in config.lua.

@@ -95,7 +95,7 @@ local function buildSpots()
     local list = {}
     for name, st in pairs(Config.stations) do
         for _, kind in ipairs(MEC.POINTS) do
-            if st[kind] then list[#list + 1] = { station = name, kind = kind, coords = st[kind], public = kind == 'forms' } end
+            if st[kind] then list[#list + 1] = { station = name, kind = kind, coords = st[kind], public = kind == 'forms' or MEC.BAYS[kind] == true, bay = MEC.BAYS[kind] == true } end
         end
         if st.garage then list[#list + 1] = { station = name, kind = 'garage', coords = st.garage.coords } end
         if st.cars then list[#list + 1] = { station = name, kind = 'cars', coords = st.cars.coords } end
@@ -113,8 +113,20 @@ end)
 
 -- in a workshop vehicle you can return it from a bit further away
 local function reachOf(spot)
+    if spot.bay then return (Config.tuning and Config.tuning.bayReach) or 3.5 end
     if cache.vehicle and (spot.kind == 'garage' or spot.kind == 'cars') then return Config.vehicleReach or Config.reachPoint end
     return Config.reachPoint
+end
+
+-- the spots you use from inside a car: the garages (to park) and the tuning bays
+local function carSpot(spot)
+    return spot.bay or spot.kind == 'garage' or spot.kind == 'cars'
+end
+
+-- how far: a tuning bay is measured flat (the car sits higher than the circle)
+local function distTo(p, spot)
+    if spot.bay then return #(p.xy - spot.coords.xy) + math.max(0.0, math.abs(p.z - spot.coords.z) - 2.0) end
+    return #(p - spot.coords)
 end
 
 -- who sees / can use this spot: the forms are for everyone, the rest for officers
@@ -175,9 +187,10 @@ do
                 local r, g, b = COLOR[1], COLOR[2], COLOR[3]
                 for i = 1, #near do
                     local s = near[i]
-                    if s.drawZ and (not cache.vehicle or s.kind == 'garage' or s.kind == 'cars') then
-                        local here = #(p - s.coords) < reachOf(s)
-                        local size = here and SIZE * 1.08 or SIZE
+                    if s.drawZ and (not cache.vehicle or carSpot(s)) then
+                        local here = distTo(p, s) < reachOf(s)
+                        local base = s.bay and SIZE * 4.2 or SIZE
+                        local size = here and base * 1.04 or base
                         local alpha = here and 210 or 140
                         DrawMarker(1, s.coords.x, s.coords.y, s.drawZ, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, size, size, 0.3,
                             r, g, b, alpha, false, false, 2, false, nil, nil, false)
@@ -219,6 +232,7 @@ local SPOT_TEXT = {
     garage = '[E] مرآب مركبات الخدمة',
     cars = '[E] مرآب السيارات',
     delivery = '[E] استلام طلبيات القطع',
+    bay = '[E] قائمة التعديل',
 }
 
 local function runSpot(spot)
@@ -226,6 +240,7 @@ local function runSpot(spot)
     if spot.kind == 'duty' then return MEC.openDuty(spot) end
     if spot.kind == 'cloakroom' then return MEC.openCloakroom(spot) end
     if spot.kind == 'locker' then return openLocker(spot) end
+    if spot.bay then return MEC.openTune(spot) end
     if not MEC.onDuty() then return MEC.error('off_duty') end
     if spot.kind == 'armory' then return openArmory() end
     if spot.kind == 'evidence' then return MEC.openShelf(spot) end
@@ -251,16 +266,18 @@ CreateThread(function()
             local best, bestDist
             for i = 1, #spots do
                 local s = spots[i]
-                if canSee(s, cop) then
-                    local d = #(p - s.coords)
+                if canSee(s, cop) and (not s.bay or cache.vehicle) then
+                    local d = distTo(p, s)
                     if d < 12.0 then sleep = math.min(sleep, 150) end
                     if d < reachOf(s) and (not bestDist or d < bestDist) then best, bestDist = s, d end
                 end
             end
-            if best and cache.vehicle and best.kind ~= 'garage' and best.kind ~= 'cars' then best = nil end
+            if best and cache.vehicle and not carSpot(best) then best = nil end
+            -- a tuning bay: only the driver
+            if best and best.bay and GetPedInVehicleSeat(cache.vehicle, -1) ~= cache.ped then best = nil end
             if best then
                 sleep = 0
-                text = (cache.vehicle and (best.kind == 'garage' or best.kind == 'cars')) and '[E] أدخل المركبة للمرآب' or SPOT_TEXT[best.kind]
+                text = best.bay and SPOT_TEXT.bay or (cache.vehicle and (best.kind == 'garage' or best.kind == 'cars')) and '[E] أدخل المركبة للمرآب' or SPOT_TEXT[best.kind]
                 local spot = best
                 action = function() runSpot(spot) end
             elseif cop and MEC.trunkPrompt then

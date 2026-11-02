@@ -39,6 +39,10 @@ Config.stations = {
         cars = { coords = vec3(-190.50, -1310.00, 31.30), spawn = vec4(-190.50, -1310.00, 31.30, 90.0) },
         -- where the parts shop's boxes arrive (move it with /mechspots → نقطة استلام القطع)
         delivery = vec3(-224.00, -1309.00, 30.89),
+        -- the two tuning bays: the customer drives in and picks his upgrades (first guess too:
+        -- /mechspots → منصة التعديل 1 / 2)
+        tune1 = vec3(-211.55, -1324.55, 30.90),
+        tune2 = vec3(-199.50, -1324.50, 30.90),
     },
 }
 
@@ -271,7 +275,103 @@ Config.service = {
         wheel   = { { 'wait', 'رفع السيارة بالرافعة', 2 }, { 'keys', 'فك الصواميل', 4 }, { 'wait', 'تبديل الإطار', 2 }, { 'torque', 'اربط الصواميل', 4 } },
         wash    = { { 'scrub', 'نظّف السيارة بالإسفنجة' } },
         wax     = { { 'scrub', 'وزّع الواكس على السيارة' } },
+        -- installing the tuning (part C)
+        t_engine = { { 'keys', 'فك غطاء المحرك', 6 }, { 'wait', 'تركيب قطع المحرك', 5 }, { 'skill', 'ضبط التوقيت' }, { 'torque', 'اربط البراغي', 6 } },
+        t_brakes = { { 'keys', 'فك العجلة', 5 }, { 'skill', 'فك الكاليبر' }, { 'wait', 'تركيب الأقراص الجديدة', 4 }, { 'torque', 'اربط البراغي', 5 } },
+        t_trans  = { { 'keys', 'فك ناقل الحركة', 6 }, { 'wait', 'تركيب الجير الجديد', 6 }, { 'skill', 'ضبط النقلات' }, { 'torque', 'اربط البراغي', 6 } },
+        t_susp   = { { 'wait', 'رفع السيارة بالرافعة', 2 }, { 'keys', 'فك المساعدات', 5 }, { 'wait', 'تركيب التعليق الجديد', 4 }, { 'torque', 'اربط البراغي', 4 } },
+        t_turbo  = { { 'keys', 'فك مجرى الهواء', 5 }, { 'skill', 'ركّب التيربو' }, { 'skill', 'وصّل الأنابيب' }, { 'torque', 'اربط البراغي', 4 } },
+        t_paint  = { { 'scrub', 'رش الصبغ على السيارة' }, { 'wait', 'انتظار جفاف الصبغ', 5 } },
+        t_body   = { { 'keys', 'فك القطعة القديمة', 4 }, { 'wait', 'تركيب القطعة الجديدة', 3 }, { 'torque', 'اربط البراغي', 3 } },
+        t_tint   = { { 'scrub', 'ألصق فيلم التظليل' } },
+        t_neon   = { { 'keys', 'مدّ الأسلاك', 5 }, { 'skill', 'وصّل الكهرباء' }, { 'wait', 'تثبيت الأضواء', 3 } },
+        t_xenon  = { { 'keys', 'افتح المصابيح', 3 }, { 'skill', 'ركّب لمبات الزينون' } },
+        t_small  = { { 'keys', 'التركيب', 3 }, { 'wait', 'التثبيت', 2 } },
     },
+}
+
+-- =====================================================================
+-- TUNING (part C, step 1): performance and looks.
+-- The customer drives his OWN car into a tuning bay at the workshop and opens the menu: he sees
+-- every change on his car while he picks it, then confirms and pays (bank) — the money goes to the
+-- workshop account. The order lands on the mechanics' tablet (الطلبات). A mechanic on duty takes
+-- it, carries the parts (ordered from the parts shop) and installs each change at the car with the
+-- mini-games. Nothing changes on the car until it is installed. No mechanic on duty = no tuning.
+-- =====================================================================
+Config.tuning = {
+    needMechanic = true,   -- the menu only opens when at least one mechanic is on duty
+    area = 70.0,           -- the mechanic installs within this distance of the workshop (the clock in desk)
+    bayReach = 3.5,        -- how close to the bay circle the car must be (metres)
+    keepDays = 14,         -- the finished orders list shows this many days
+    maxLines = 30,         -- changes in one order
+    -- performance: mod = the GTA mod slot, item = the part the mechanic uses (one per level step up;
+    -- going down needs no part, it costs the "remove" price)
+    perf = {
+        { key = 'engine', mod = 11, prop = 'modEngine', label = 'المحرك', item = 'engine_kit', recipe = 't_engine' },
+        { key = 'brakes', mod = 12, prop = 'modBrakes', label = 'الفرامل', item = 'brake_kit', recipe = 't_brakes' },
+        { key = 'transmission', mod = 13, prop = 'modTransmission', label = 'ناقل الحركة', item = 'trans_kit', recipe = 't_trans' },
+        { key = 'suspension', mod = 15, prop = 'modSuspension', label = 'التعليق', item = 'susp_kit', recipe = 't_susp' },
+    },
+    turbo = { item = 'turbo_kit', recipe = 't_turbo' },
+    -- the body parts (only those the car has show up). price = the price key (see prices)
+    body = {
+        { mod = 0, prop = 'modSpoilers', label = 'الجناح الخلفي' },
+        { mod = 1, prop = 'modFrontBumper', label = 'الصدام الأمامي' },
+        { mod = 2, prop = 'modRearBumper', label = 'الصدام الخلفي' },
+        { mod = 3, prop = 'modSideSkirt', label = 'الجوانب' },
+        { mod = 4, prop = 'modExhaust', label = 'الشكمان' },
+        { mod = 5, prop = 'modFrame', label = 'القفص' },
+        { mod = 6, prop = 'modGrille', label = 'الشبك' },
+        { mod = 7, prop = 'modHood', label = 'الكبوت' },
+        { mod = 8, prop = 'modFender', label = 'الرفرف' },
+        { mod = 9, prop = 'modRightFender', label = 'الرفرف الأيمن' },
+        { mod = 10, prop = 'modRoof', label = 'السقف' },
+        { mod = 25, prop = 'modPlateHolder', label = 'حامل اللوحة' },
+        { mod = 27, prop = 'modTrimA', label = 'الديكور الداخلي' },
+        { mod = 28, prop = 'modOrnaments', label = 'الزينة' },
+        { mod = 29, prop = 'modDashboard', label = 'الطبلون' },
+        { mod = 30, prop = 'modDial', label = 'العدادات' },
+        { mod = 32, prop = 'modSeats', label = 'المقاعد' },
+        { mod = 33, prop = 'modSteeringWheel', label = 'المقود' },
+        { mod = 34, prop = 'modShifterLeavers', label = 'عصا الجير' },
+        { mod = 37, prop = 'modTrunk', label = 'الشنطة' },
+        { mod = 39, prop = 'modEngineBlock', label = 'غطاء المحرك' },
+        { mod = 40, prop = 'modAirFilter', label = 'فلتر الهواء الرياضي' },
+        { mod = 42, prop = 'modArchCover', label = 'أغطية الأقواس' },
+        { mod = 43, prop = 'modAerials', label = 'الهوائيات' },
+        { mod = 45, prop = 'modTank', label = 'خزان الوقود' },
+        { mod = 46, prop = 'modWindows', label = 'النوافذ' },
+        { mod = 14, prop = 'modHorns', label = 'الزامور', price = 'horn', item = 'body_kit' },
+        { mod = 48, prop = 'modLivery', label = 'الملصقات', price = 'livery', item = 'paint_can' },
+    },
+    -- the items the looks use (one per change)
+    items = {
+        paint = 'paint_can', wheels = 'wheel_set', body = 'body_kit', tint = 'tint_film',
+        neon = 'neon_kit', xenon = 'xenon_kit', plate = 'body_kit',
+    },
+    -- the starting prices the customer pays ($). After the first start they live in the database
+    -- and the manager edits them on the tablet (الطلبات → الأسعار).
+    prices = {
+        { 'engine_1', 'المحرك: المستوى 1', 2000 }, { 'engine_2', 'المحرك: المستوى 2', 4500 },
+        { 'engine_3', 'المحرك: المستوى 3', 8000 }, { 'engine_4', 'المحرك: المستوى 4', 13000 },
+        { 'brakes_1', 'الفرامل: المستوى 1', 1200 }, { 'brakes_2', 'الفرامل: المستوى 2', 2800 },
+        { 'brakes_3', 'الفرامل: المستوى 3', 5000 },
+        { 'transmission_1', 'ناقل الحركة: المستوى 1', 1500 }, { 'transmission_2', 'ناقل الحركة: المستوى 2', 3200 },
+        { 'transmission_3', 'ناقل الحركة: المستوى 3', 6000 },
+        { 'suspension_1', 'التعليق: المستوى 1', 800 }, { 'suspension_2', 'التعليق: المستوى 2', 1600 },
+        { 'suspension_3', 'التعليق: المستوى 3', 2800 }, { 'suspension_4', 'التعليق: المستوى 4', 4200 },
+        { 'turbo', 'تيربو', 10000 },
+        { 'remove', 'إرجاع قطعة أداء للأصل', 300 },
+        { 'paint1', 'الصبغ الأساسي', 1500 }, { 'paint2', 'الصبغ الثانوي', 900 },
+        { 'pearl', 'اللمعة (البيرل)', 800 }, { 'wheelColor', 'لون الجنوط', 400 },
+        { 'wheels', 'طقم جنوط', 1800 },
+        { 'body', 'قطعة هيكل', 700 }, { 'horn', 'الزامور', 300 }, { 'livery', 'ملصقات', 1200 },
+        { 'tint', 'تظليل النوافذ', 450 },
+        { 'neon', 'تركيب / إزالة النيون', 1800 }, { 'neonColor', 'لون النيون', 300 },
+        { 'xenon', 'تركيب / إزالة الزينون', 1000 }, { 'xenonColor', 'لون الزينون', 250 },
+        { 'plate', 'شكل اللوحة', 200 },
+    },
+    maxPrice = 250000,     -- the most the manager can set for one change
 }
 
 -- the parts shop on the tablet: paid from the workshop account, the box arrives at the delivery
@@ -298,5 +398,17 @@ Config.parts = {
         { item = 'repairkit',          price = 150,  category = 'عُدد' },
         { item = 'advancedrepairkit',  price = 400,  category = 'عُدد' },
         { item = 'tirekit',            price = 100,  category = 'عُدد' },
+        -- tuning (part C)
+        { item = 'engine_kit',         price = 900,  category = 'أداء' },
+        { item = 'brake_kit',          price = 600,  category = 'أداء' },
+        { item = 'trans_kit',          price = 700,  category = 'أداء' },
+        { item = 'susp_kit',           price = 400,  category = 'أداء' },
+        { item = 'turbo_kit',          price = 3500, category = 'أداء' },
+        { item = 'paint_can',          price = 250,  category = 'مظهر' },
+        { item = 'wheel_set',          price = 600,  category = 'مظهر' },
+        { item = 'body_kit',           price = 200,  category = 'مظهر' },
+        { item = 'tint_film',          price = 120,  category = 'مظهر' },
+        { item = 'neon_kit',           price = 500,  category = 'مظهر' },
+        { item = 'xenon_kit',          price = 300,  category = 'مظهر' },
     },
 }

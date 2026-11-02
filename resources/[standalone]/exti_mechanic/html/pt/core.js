@@ -207,6 +207,10 @@ window.PT = (() => {
         rank_low: 'رتبتك لا تسمح بالطلب',
         empty: 'الطلبية فارغة',
         too_many: 'عدد القطع أكبر من حد الطلبية',
+        claimed: 'هذا الطلب مع ميكانيكي آخر',
+        gone: 'لم يعد هذا الطلب موجودًا',
+        not_yours: 'الإلغاء لمن استلم الطلب أو لمدير الورشة',
+        bad_price: 'سعر غير صحيح',
     };
     const errText = (code) => ERR[code] || ERR.failed;
 
@@ -229,13 +233,13 @@ window.PT = (() => {
 
     // the apps that come in the next updates
     const SOON = {
-        orders: ['later', 'طلبات التعديل من الزبائن: تأتي مع تحديث التعديل.'],
         dyno: ['later', 'الداينو: يأتي مع تحديث التعديل.'],
     };
 
     function badgeOf(id) {
         if (id === 'chat') return S.badges.chat || 0;
         if (id === 'forms') return S.badges.forms || 0;
+        if (id === 'orders') return S.badges.tune || 0;
         return 0;
     }
 

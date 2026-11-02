@@ -9,11 +9,14 @@ MEC = MEC or {}
 MEC.SPOT_KINDS = {
     duty = 'point', cloakroom = 'point', locker = 'point', armory = 'point', forms = 'point', inbox = 'point',
     evidence = 'point', delivery = 'point', garage = 'point', garageSpawn = 'spawn', cars = 'point', carsSpawn = 'spawn',
+    tune1 = 'point', tune2 = 'point',
 }
 -- these can also be removed from a station
-MEC.SPOT_OPTIONAL = { cloakroom = true, locker = true, armory = true, forms = true, inbox = true, evidence = true, delivery = true }
+MEC.SPOT_OPTIONAL = { cloakroom = true, locker = true, armory = true, forms = true, inbox = true, evidence = true, delivery = true, tune1 = true, tune2 = true }
 -- the simple E spots (not the garages)
-MEC.POINTS = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence', 'delivery' }
+MEC.POINTS = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence', 'delivery', 'tune1', 'tune2' }
+-- the tuning bays: used from inside a car, by anyone (the customer)
+MEC.BAYS = { tune1 = true, tune2 = true }
 
 local DEFAULTS = {}
 for name, s in pairs(Config.stations) do

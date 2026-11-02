@@ -282,7 +282,10 @@ lib.callback.register('exti_mechanic:server:serviceInfo', function(source, netId
     if not plate then return false, 'no_car' end
     local rec = loadRecord(plate, type(model) == 'string' and model:sub(1, 40) or nil, ev)
     publish(veh, rec)
-    return report(source, veh, rec, false)
+    local out = report(source, veh, rec, false)
+    -- an open tuning order on this car: its changes are installed from the same menu
+    out.tune = MEC.tuneFor and MEC.tuneFor(source, plate) or nil
+    return out
 end)
 
 -- the diagnostics app on the tablet (the game fills in the car next to the mechanic)
@@ -394,6 +397,7 @@ end)
 
 lib.callback.register('exti_mechanic:server:workCancel', function(source)
     pending[source] = nil
+    if MEC.tuneCancelWork then MEC.tuneCancelWork(source) end
     return true
 end)
 

@@ -63,3 +63,33 @@ b.good { color: var(--ok); } b.mid { color: var(--warn); } b.bad { color: var(--
 .ps-total b { font-size: 20px; color: var(--acc); direction: ltr; }
 .ps-bal b { direction: ltr; }
 .ps-bal b.bad { color: var(--bad); }
+
+/* ---------- tuning orders (الطلبات) ---------- */
+.to-list { display: flex; flex-direction: column; gap: 8px; }
+.to-card { border-radius: 14px; background: var(--card); border: 1px solid var(--line); overflow: hidden; }
+.to-card.open { border-color: rgba(242, 194, 48, 0.45); }
+.to-head { width: 100%; display: grid; grid-template-columns: 48px 1.4fr 1.2fr 90px auto 90px; gap: 12px; align-items: center; padding: 12px 14px; border: 0; background: transparent; color: var(--text); cursor: pointer; text-align: start; font: inherit; }
+.to-head > b { color: var(--acc); font-size: 14px; }
+.to-car { display: flex; flex-direction: column; gap: 3px; }
+.to-car strong { font-size: 14px; }
+.to-plate { align-self: flex-start; padding: 1px 8px; border-radius: 4px; background: #f0ede6; color: #15151a; font: 800 11.5px 'Consolas', monospace; letter-spacing: 1.5px; direction: ltr; }
+.to-who span { display: block; font-size: 13px; }
+.to-who small { color: var(--muted); font-size: 11.5px; }
+.to-prog small { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.to-prog u { display: block; height: 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; direction: ltr; }
+.to-prog s { display: block; height: 100%; background: var(--ok); }
+.to-total { text-align: left; font-size: 15px; }
+.to-body { padding: 0 14px 14px; }
+.to-lines { display: flex; flex-direction: column; gap: 5px; }
+.to-line { display: grid; grid-template-columns: 1fr auto 80px; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--card-2); font-size: 13px; }
+.to-line span { display: flex; align-items: center; gap: 7px; }
+.to-line.done span { color: var(--ok); }
+.to-line small { color: var(--muted); font-size: 11.5px; }
+.to-line b { text-align: left; }
+.to-line u { width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
+.to-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+.to-need { margin-top: 12px; padding: 10px 12px; border-radius: 11px; background: rgba(242, 194, 48, 0.06); border: 1px solid rgba(242, 194, 48, 0.2); }
+.to-need h4 { margin: 0 0 6px; font-size: 13px; }
+.to-need div { display: flex; justify-content: space-between; font-size: 12.5px; padding: 3px 0; }
+.to-need b.ok { color: var(--ok); } .to-need b.bad { color: var(--bad); }
+.to-acts { display: flex; gap: 8px; margin-top: 12px; }

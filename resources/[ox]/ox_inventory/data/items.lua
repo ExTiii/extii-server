@@ -872,4 +872,71 @@ return {
         weight = 600,
         client = { image = 'nui://exti_mechanic/html/items/car_wax.png' },
     },
+
+    -- EX_Tii mechanic: tuning parts (part C)
+    ['engine_kit'] = {
+        label = 'قطع ترقية المحرك (Engine Kit)',
+        weight = 4000,
+        client = { image = 'nui://exti_mechanic/html/items/engine_kit.png' },
+    },
+
+    ['brake_kit'] = {
+        label = 'طقم فرامل رياضية (Brake Kit)',
+        weight = 3000,
+        client = { image = 'nui://exti_mechanic/html/items/brake_kit.png' },
+    },
+
+    ['trans_kit'] = {
+        label = 'طقم ناقل حركة رياضي (Transmission Kit)',
+        weight = 3500,
+        client = { image = 'nui://exti_mechanic/html/items/trans_kit.png' },
+    },
+
+    ['susp_kit'] = {
+        label = 'طقم تعليق رياضي (Suspension Kit)',
+        weight = 3000,
+        client = { image = 'nui://exti_mechanic/html/items/susp_kit.png' },
+    },
+
+    ['turbo_kit'] = {
+        label = 'تيربو (Turbo Kit)',
+        weight = 5000,
+        client = { image = 'nui://exti_mechanic/html/items/turbo_kit.png' },
+    },
+
+    ['paint_can'] = {
+        label = 'علبة صبغ (Paint Can)',
+        weight = 1500,
+        client = { image = 'nui://exti_mechanic/html/items/paint_can.png' },
+    },
+
+    ['wheel_set'] = {
+        label = 'طقم جنوط (Wheel Set)',
+        weight = 8000,
+        client = { image = 'nui://exti_mechanic/html/items/wheel_set.png' },
+    },
+
+    ['body_kit'] = {
+        label = 'قطعة هيكل (Body Part)',
+        weight = 3000,
+        client = { image = 'nui://exti_mechanic/html/items/body_kit.png' },
+    },
+
+    ['tint_film'] = {
+        label = 'فيلم تظليل (Window Tint)',
+        weight = 300,
+        client = { image = 'nui://exti_mechanic/html/items/tint_film.png' },
+    },
+
+    ['neon_kit'] = {
+        label = 'طقم نيون (Neon Kit)',
+        weight = 1200,
+        client = { image = 'nui://exti_mechanic/html/items/neon_kit.png' },
+    },
+
+    ['xenon_kit'] = {
+        label = 'لمبات زينون (Xenon Kit)',
+        weight = 400,
+        client = { image = 'nui://exti_mechanic/html/items/xenon_kit.png' },
+    },
 }

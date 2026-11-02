@@ -5,7 +5,7 @@ lua54 'yes'
 name 'exti_mechanic'
 author 'EX_Tii'
 description 'EX_Tii Mechanic: the workshop (clock in terminal, cloakroom, personal locker, tool storage by rank, garages with the service trucks and cars, public forms), service (wear, diagnostics, repairs with mini-games, wash/wax, parts shop), the mechanic tablet (map, chat, calendar, camera, gallery, form inbox, management, billing) and the bill sheet'
-version '1.1.0'
+version '1.2.0'
 
 dependencies {
     'ox_lib',
@@ -32,6 +32,7 @@ client_scripts {
     'client/charges.lua',
     'client/wear.lua',
     'client/service.lua',
+    'client/tune.lua',
 }
 
 server_scripts {
@@ -45,6 +46,7 @@ server_scripts {
     'server/charges.lua',
     'server/service.lua',
     'server/parts.lua',
+    'server/tune.lua',
     'server/photos.js',
 }
 
@@ -65,6 +67,8 @@ files {
     'html/charge.css',
     'html/mg.js',
     'html/mg.css',
+    'html/tune.js',
+    'html/tune.css',
     'html/items/*.png',
     'html/fonts/*.woff2',
     'html/tablet.html',

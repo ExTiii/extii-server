@@ -170,7 +170,7 @@ cb('open', function(source)
     return {
         me = { cid = cid, name = nameOf(player), grade = job.grade.level, gradeLabel = job.grade.name, isBoss = job.isboss == true },
         settings = settingsOf(cid),
-        badges = { chat = unreadChats(cid), forms = MEC.newForms and MEC.newForms() or 0 },
+        badges = { chat = unreadChats(cid), forms = MEC.newForms and MEC.newForms() or 0, tune = MEC.openTunes and MEC.openTunes() or 0 },
         now = os.time(),
     }
 end)
@@ -178,7 +178,7 @@ end)
 cb('badges', function(source)
     local player = check(source)
     if not player then return false end
-    return { chat = unreadChats(cidOf(player)), forms = MEC.newForms and MEC.newForms() or 0, calls = MEC.openCalls and MEC.openCalls() or 0 }
+    return { chat = unreadChats(cidOf(player)), forms = MEC.newForms and MEC.newForms() or 0, calls = MEC.openCalls and MEC.openCalls() or 0, tune = MEC.openTunes and MEC.openTunes() or 0 }
 end)
 
 ---------------------------------------------------------------------------
@@ -1005,3 +1005,12 @@ end)
 cb('partsOrder', function(source, cart)
     return MEC.partsOrder(source, cart)
 end)
+
+---------------------------------------------------------------------------
+-- tuning (part C): the orders app (server/tune.lua)
+---------------------------------------------------------------------------
+cb('tuneOrders', function(source) return MEC.tuneOrders(source) end)
+cb('tuneClaim', function(source, id) return MEC.tuneClaim(source, id) end)
+cb('tuneCancel', function(source, id) return MEC.tuneCancel(source, id) end)
+cb('tunePrices', function(source) return MEC.tunePrices(source) end)
+cb('tunePriceSave', function(source, key, price) return MEC.tunePriceSave(source, key, price) end)

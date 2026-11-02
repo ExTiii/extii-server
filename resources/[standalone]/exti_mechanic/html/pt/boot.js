@@ -165,7 +165,7 @@
         call('badges').then((res) => {
             if (!res.ok) return;
             const b = res.r || {};
-            if (b.chat !== S.badges.chat || b.forms !== S.badges.forms) { S.badges = b; render(); }
+            if (b.chat !== S.badges.chat || b.forms !== S.badges.forms || b.tune !== S.badges.tune) { S.badges = b; render(); }
         });
     }
 
