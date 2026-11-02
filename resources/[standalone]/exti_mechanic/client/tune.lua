@@ -236,6 +236,7 @@ local function close(keep)
         if orig and not keep then lib.setVehicleProperties(veh, orig) end
         ForceVehicleEngineAudio(veh, (origEngine and origEngine ~= 'stock') and origEngine or GetEntityArchetypeName(veh))
         SetVehicleLights(veh, 0)
+        SetVehicleRadioEnabled(veh, true)
         if frozen then FreezeEntityPosition(veh, false) end
     end
     veh, orig, frozen = nil, nil, false
@@ -279,6 +280,7 @@ function MEC.openTune()
     veh = v
     orig = lib.getVehicleProperties(veh)
     SetVehicleEngineOn(veh, false, true, true)
+    SetVehicleRadioEnabled(veh, false) -- no radio music over the engine sounds while picking
     FreezeEntityPosition(veh, true)
     frozen = true
     open = true
