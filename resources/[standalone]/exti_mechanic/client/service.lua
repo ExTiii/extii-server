@@ -16,7 +16,7 @@ local ERR = {
     no_car = 'لا توجد سيارة بجانبك', too_far = 'اقترب من السيارة', no_part = 'لا تحمل القطعة المطلوبة',
     not_this_car = 'هذه القطعة ليست في هذه السيارة', too_fast = 'لم تكتمل العملية', cancelled = 'أُلغيت العملية',
     off_duty = 'ابدأ مناوبتك في الورشة أولًا', wait = 'انتظر لحظة',
-    gone = 'هذا التعديل لم يعد موجودًا', claimed = 'هذا الطلب مع ميكانيكي آخر', not_workshop = 'التعديل داخل الورشة فقط',
+    gone = 'هذا التعديل لم يعد موجودًا', full = 'أسطوانة النيترو ممتلئة', claimed = 'هذا الطلب مع ميكانيكي آخر', not_workshop = 'التعديل داخل الورشة فقط',
 }
 local function fail(code) lib.notify({ type = 'error', description = ERR[code] or 'حدث خطأ، حاول مرة أخرى' }) end
 
@@ -99,6 +99,7 @@ local WHERE = {
     -- installing the tuning
     t_engine = 'bonnet', t_brakes = 'wheel', t_trans = 'under', t_susp = 'wheel', t_turbo = 'bonnet',
     t_paint = 'spray', t_body = 'bonnet', t_tint = 'wash', t_neon = 'under', t_xenon = 'bonnet', t_small = 'bonnet',
+    t_nitro = 'under', t_refill = 'under', t_swap = 'bonnet',
 }
 
 -- one animation at a time: a small loop keeps it playing (the progress bars and skill checks may
@@ -150,6 +151,25 @@ end
 ---------------------------------------------------------------------------
 local working = false
 
+-- the engine hoist and the new engine on the floor (engine swap only; only this game sees them)
+local function hoist(veh)
+    local list = {}
+    local min, max = GetModelDimensions(GetEntityModel(veh))
+    local function put(model, x, y, h)
+        if not pcall(lib.requestModel, model, 4000) then return end
+        local c = GetOffsetFromEntityInWorldCoords(veh, x, y, 0.0)
+        local o = CreateObject(model, c.x, c.y, c.z, false, false, false)
+        SetEntityHeading(o, GetEntityHeading(veh) + h)
+        PlaceObjectOnGroundProperly(o)
+        FreezeEntityPosition(o, true)
+        SetModelAsNoLongerNeeded(model)
+        list[#list + 1] = o
+    end
+    put(`prop_engine_hoist`, 0.0, max.y + 0.9, 180.0)
+    put(`prop_car_engine_01`, 1.6, max.y + 0.6, 0.0)
+    return list
+end
+
 local function runJob(veh, start, done)
     if working then return end
     working = true
@@ -159,6 +179,7 @@ local function runJob(veh, start, done)
     if where == 'bonnet' then SetVehicleDoorOpen(veh, 4, false, false) end
     faceCar(veh, where)
     local ok = true
+    local props = job.recipe == 't_swap' and hoist(veh) or {}
     playAnim(where)
     -- any error in a step still ends the animation and frees the mechanic
     local okRun = pcall(function()
@@ -175,6 +196,7 @@ local function runJob(veh, start, done)
     end)
     if not okRun then ok = false end
     stopAnim()
+    for _, o in ipairs(props) do if DoesEntityExist(o) then DeleteEntity(o) end end
     if where == 'bonnet' then SetVehicleDoorShut(veh, 4, false) end
     if not ok then
         lib.callback.await('exti_mechanic:server:workCancel', false)
@@ -257,6 +279,24 @@ function MEC.openService(veh)
                 onSelect = function() installTune(veh, tune.id, l) end,
             }
         end
+    end
+    -- the nitro bottle (installed with tuning): a mechanic refills it
+    local nos = info.nitro
+    if nos then
+        options[#options + 1] = {
+            title = ('النيترو  %d%%'):format(nos.amt),
+            description = nos.amt >= 100 and 'الأسطوانة ممتلئة' or nos.bottles > 0 and ('تعبئة بـ 1× %s (معك %d)'):format(nos.bottleLabel, nos.bottles)
+                or ('تحتاج %s · اطلبها من متجر القطع'):format(nos.bottleLabel),
+            progress = nos.amt, colorScheme = 'blue', icon = 'gauge-high', iconColor = '#5ac8fa',
+            disabled = nos.amt >= 100 or nos.bottles < 1,
+            onSelect = function()
+                local netId = NetworkGetNetworkIdFromEntity(veh)
+                local res = runJob(veh,
+                    function() return lib.callback.await('exti_mechanic:server:nitroStart', false, netId) end,
+                    function() return lib.callback.await('exti_mechanic:server:nitroDone', false, true) end)
+                if res then lib.notify({ type = 'success', description = 'امتلأت أسطوانة النيترو: 100%' }) end
+            end,
+        }
     end
     for _, p in ipairs(info.parts) do
         local enough = p.have >= p.count

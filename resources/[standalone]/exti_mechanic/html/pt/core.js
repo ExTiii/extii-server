@@ -209,6 +209,10 @@ window.PT = (() => {
         too_many: 'عدد القطع أكبر من حد الطلبية',
         claimed: 'هذا الطلب مع ميكانيكي آخر',
         gone: 'لم يعد هذا الطلب موجودًا',
+        dyno_far: 'اقترب من الداينو في الورشة',
+        dyno_empty: 'لا توجد سيارة على الداينو',
+        dyno_driver: 'يجب أن يجلس أحد في مقعد السائق',
+        dyno_failed: 'تعذّر القياس، حاول مرة أخرى',
         not_yours: 'الإلغاء لمن استلم الطلب أو لمدير الورشة',
         bad_price: 'سعر غير صحيح',
     };
@@ -233,7 +237,6 @@ window.PT = (() => {
 
     // the apps that come in the next updates
     const SOON = {
-        dyno: ['later', 'الداينو: يأتي مع تحديث التعديل.'],
     };
 
     function badgeOf(id) {

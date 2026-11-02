@@ -74,7 +74,7 @@
         const o = O();
         if (!o.prices) return '<div class="pt-empty"><span class="pt-spin"></span><p>جارٍ التحميل…</p></div>';
         const rows = o.prices.map((p) => `<tr><td>${esc(p.label)}</td>
-            <td class="ltr">${o.pricesBoss ? `<input class="pt-in sm ltr" inputmode="numeric" data-model="tune.edit.${p.key}" data-enter="toPrice" data-k="${p.key}" value="${esc(o.edit[p.key])}">` : money(p.price)}</td>
+            <td class="ltr">${o.pricesBoss ? `<input class="pt-in sm ltr" inputmode="numeric" data-model="tune.edit.${p.key}" data-enter="toPrice" data-k="${p.key}" value="${esc(o.edit[p.key])}">${p.pct ? ' %' : ''}` : p.pct ? `${p.price}%` : money(p.price)}</td>
             ${o.pricesBoss ? `<td class="pt-acts"><button class="pt-mini green" data-act="toPrice" data-k="${p.key}">${I('check', 13, 2.4)} حفظ</button></td>` : ''}</tr>`).join('');
         return `<div class="pt-tablewrap"><table class="pt-table"><thead><tr><th>التعديل</th><th>السعر للزبون</th>${o.pricesBoss ? '<th></th>' : ''}</tr></thead><tbody>${rows}</tbody></table></div>
             <p class="pt-hint">${o.pricesBoss ? `هذا ما يدفعه الزبون عند المنصة (يذهب لحساب الورشة). القطع تُشترى من متجر القطع. الحد $${o.max.toLocaleString('en-US')}.` : 'الأسعار يحددها مدير الورشة.'}</p>`;
@@ -130,7 +130,8 @@
             const o = O();
             const key = el.dataset.k;
             const price = num(o.edit[key]);
-            if (price == null || price > o.max) return toast(`السعر من 0 إلى $${o.max.toLocaleString('en-US')}`, 'error');
+            const isPct = key === 'cut';
+            if (price == null || price > (isPct ? 50 : o.max)) return toast(isPct ? 'الحصة من 0 إلى 50%' : `السعر من 0 إلى $${o.max.toLocaleString('en-US')}`, 'error');
             if (o.busy) return;
             o.busy = true;
             call('tunePriceSave', key, price).then((res) => {

@@ -93,3 +93,28 @@ b.good { color: var(--ok); } b.mid { color: var(--warn); } b.bad { color: var(--
 .to-need div { display: flex; justify-content: space-between; font-size: 12.5px; padding: 3px 0; }
 .to-need b.ok { color: var(--ok); } .to-need b.bad { color: var(--bad); }
 .to-acts { display: flex; gap: 8px; margin-top: 12px; }
+
+/* ---------- the dyno (الداينو) ---------- */
+.dy { position: relative; }
+.dy-top { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.dy-car { display: flex; flex-direction: column; gap: 5px; min-width: 100px; }
+.dy-car small { color: var(--muted); font-size: 11.5px; }
+.dy-stats { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.dy-stat { padding: 8px 10px; border-radius: 11px; background: var(--card-2); }
+.dy-stat small { display: block; font-size: 11px; color: var(--muted); }
+.dy-stat b { font-size: 22px; direction: ltr; display: inline-block; }
+.dy-stat b span { font-size: 11px; color: var(--muted); font-weight: 600; }
+.dy-stat em { display: block; font-style: normal; font-size: 11.5px; font-weight: 700; direction: ltr; text-align: right; }
+.dy-stat em.up { color: var(--ok); } .dy-stat em.down { color: var(--bad); }
+.dy-box { margin-top: 12px; padding: 12px 14px 8px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.dy-chart { width: 100%; height: auto; display: block; }
+.dy-grid { stroke: rgba(255, 255, 255, 0.07); stroke-width: 1; }
+.dy-ax { fill: var(--muted); font-size: 10px; font-family: inherit; }
+.dy-hp, .dy-nm { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.dy-hp { stroke: #f2c230; } .dy-nm { stroke: #5ac8fa; }
+.dy-hp.old, .dy-nm.old { stroke-width: 1.6; stroke-dasharray: 5 5; opacity: 0.55; }
+.dy-legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--muted); margin-top: 4px; align-items: center; }
+.dy-legend i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-inline-end: 6px; vertical-align: middle; }
+.dy-legend i.hp { background: #f2c230; } .dy-legend i.nm { background: #5ac8fa; } .dy-legend i.old { background: repeating-linear-gradient(90deg, #aaa 0 4px, transparent 4px 7px); }
+.dy-rpm { margin-inline-start: auto; }
+.dy-running { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; background: rgba(10, 10, 14, 0.6); border-radius: 16px; font-weight: 700; }

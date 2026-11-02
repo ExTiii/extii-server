@@ -43,6 +43,9 @@ Config.stations = {
         -- /mechspots → منصة التعديل 1 / 2)
         tune1 = vec3(-211.55, -1324.55, 30.90),
         tune2 = vec3(-199.50, -1324.50, 30.90),
+        -- the dyno: the car stands on it while the mechanic runs the test from the tablet
+        -- (first guess: /mechspots → الداينو)
+        dyno = vec3(-205.00, -1316.00, 30.90),
     },
 }
 
@@ -287,6 +290,9 @@ Config.service = {
         t_neon   = { { 'keys', 'مدّ الأسلاك', 5 }, { 'skill', 'وصّل الكهرباء' }, { 'wait', 'تثبيت الأضواء', 3 } },
         t_xenon  = { { 'keys', 'افتح المصابيح', 3 }, { 'skill', 'ركّب لمبات الزينون' } },
         t_small  = { { 'keys', 'التركيب', 3 }, { 'wait', 'التثبيت', 2 } },
+        t_nitro  = { { 'keys', 'ثبّت قاعدة الأسطوانة', 5 }, { 'skill', 'مدّ خط النيترو' }, { 'wait', 'وصّل الحاقن بالمحرك', 4 }, { 'torque', 'اربط الوصلات', 4 } },
+        t_refill = { { 'keys', 'افتح صمام الأسطوانة', 3 }, { 'pour', 'عبّئ النيترو حتى الخط الأخضر' }, { 'torque', 'أغلق الصمام', 1 } },
+        t_swap   = { { 'keys', 'افصل أسلاك المحرك', 6 }, { 'wait', 'رفع المحرك القديم بالرافعة', 6 }, { 'wait', 'إنزال المحرك الجديد', 5 }, { 'skill', 'ثبّت قواعد المحرك' }, { 'skill', 'وصّل ناقل الحركة' }, { 'torque', 'اربط البراغي', 6 } },
     },
 }
 
@@ -313,6 +319,31 @@ Config.tuning = {
         { key = 'suspension', mod = 15, prop = 'modSuspension', label = 'التعليق', item = 'susp_kit', recipe = 't_susp' },
     },
     turbo = { item = 'turbo_kit', recipe = 't_turbo' },
+    -- NITRO (step 2): installed once (nitro_kit); the driver holds LEFT SHIFT while accelerating to
+    -- boost. A full bottle lasts `seconds` of boost; a mechanic refills it with a nitro_bottle (the
+    -- service menu at the car; charge the customer with a bill).
+    nitro = { item = 'nitro_kit', bottle = 'nitro_bottle', seconds = 15, power = 2.2, recipe = 't_nitro', refill = 't_refill' },
+    -- ENGINE SWAP (step 2): the car gets another engine's sound and power (power = how much
+    -- stronger than the car's own engine). One engine_crate per swap; going back to the car's own
+    -- engine needs no part. The prices are swap_<id> (and swap_stock) in the price list.
+    swap = {
+        item = 'engine_crate', recipe = 't_swap',
+        engines = {
+            { id = 'dominator', label = 'V8 مسل', power = 1.12 },
+            { id = 'gauntlet', label = 'V8 كلاسيك', power = 1.08 },
+            { id = 'elegy2', label = 'تونر توربو', power = 1.10 },
+            { id = 'sultanrs', label = 'رالي 4 سلندر', power = 1.12 },
+            { id = 'omnis', label = 'رالي توربو', power = 1.15 },
+            { id = 'zentorno', label = 'V12 سوبر', power = 1.25 },
+            { id = 't20', label = 'هايبر هايبرد', power = 1.30 },
+            { id = 'voltic', label = 'كهربائي', power = 1.15 },
+        },
+    },
+    -- the mechanic who installs a change gets this % of its price from the workshop account (the
+    -- manager changes it on the tablet: الطلبات → الأسعار → حصة الميكانيكي)
+    cut = 15,
+    -- the dyno: how close the car must be to the dyno circle, and the mechanic to the car
+    dyno = { carReach = 3.5, mechReach = 15.0 },
     -- the body parts (only those the car has show up). price = the price key (see prices)
     body = {
         { mod = 0, prop = 'modSpoilers', label = 'الجناح الخلفي' },
@@ -370,6 +401,12 @@ Config.tuning = {
         { 'neon', 'تركيب / إزالة النيون', 1800 }, { 'neonColor', 'لون النيون', 300 },
         { 'xenon', 'تركيب / إزالة الزينون', 1000 }, { 'xenonColor', 'لون الزينون', 250 },
         { 'plate', 'شكل اللوحة', 200 },
+        { 'nitro', 'تركيب نظام النيترو', 12000 },
+        { 'swap_dominator', 'محرك V8 مسل', 9000 }, { 'swap_gauntlet', 'محرك V8 كلاسيك', 7500 },
+        { 'swap_elegy2', 'محرك تونر توربو', 8500 }, { 'swap_sultanrs', 'محرك رالي 4 سلندر', 9000 },
+        { 'swap_omnis', 'محرك رالي توربو', 12000 }, { 'swap_zentorno', 'محرك V12 سوبر', 20000 },
+        { 'swap_t20', 'محرك هايبر هايبرد', 26000 }, { 'swap_voltic', 'محرك كهربائي', 15000 },
+        { 'swap_stock', 'إرجاع المحرك الأصلي', 3000 },
     },
     maxPrice = 250000,     -- the most the manager can set for one change
 }
@@ -410,5 +447,8 @@ Config.parts = {
         { item = 'tint_film',          price = 120,  category = 'مظهر' },
         { item = 'neon_kit',           price = 500,  category = 'مظهر' },
         { item = 'xenon_kit',          price = 300,  category = 'مظهر' },
+        { item = 'nitro_kit',          price = 4000, category = 'أداء' },
+        { item = 'nitro_bottle',       price = 600,  category = 'أداء' },
+        { item = 'engine_crate',       price = 5000, category = 'أداء' },
     },
 }

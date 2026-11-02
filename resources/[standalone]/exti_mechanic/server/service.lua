@@ -182,6 +182,8 @@ lib.callback.register('exti_mechanic:server:wearSync', function(source, netId, e
     if not plate then return false end
     local rec = loadRecord(plate, type(model) == 'string' and model:sub(1, 40) or nil, ev == true)
     publish(veh, rec)
+    -- the nitro and the swapped engine ride on the car too
+    if MEC.carModsPublish then pcall(MEC.carModsPublish, veh, plate) end
     return compact(rec)
 end)
 
@@ -285,6 +287,7 @@ lib.callback.register('exti_mechanic:server:serviceInfo', function(source, netId
     local out = report(source, veh, rec, false)
     -- an open tuning order on this car: its changes are installed from the same menu
     out.tune = MEC.tuneFor and MEC.tuneFor(source, plate) or nil
+    out.nitro = MEC.nitroFor and MEC.nitroFor(source, plate) or nil
     return out
 end)
 

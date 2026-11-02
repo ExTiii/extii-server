@@ -939,4 +939,22 @@ return {
         weight = 400,
         client = { image = 'nui://exti_mechanic/html/items/xenon_kit.png' },
     },
+
+    ['nitro_kit'] = {
+        label = 'نظام نيترو (Nitro Kit)',
+        weight = 6000,
+        client = { image = 'nui://exti_mechanic/html/items/nitro_kit.png' },
+    },
+
+    ['nitro_bottle'] = {
+        label = 'أسطوانة نيترو (Nitro Bottle)',
+        weight = 4000,
+        client = { image = 'nui://exti_mechanic/html/items/nitro_bottle.png' },
+    },
+
+    ['engine_crate'] = {
+        label = 'محرك للتبديل (Engine Crate)',
+        weight = 25000,
+        client = { image = 'nui://exti_mechanic/html/items/engine_crate.png' },
+    },
 }

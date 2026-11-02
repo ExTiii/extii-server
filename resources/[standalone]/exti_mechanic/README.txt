@@ -1,4 +1,4 @@
-EX_Tii Mechanic (A: the job · B: service · C1: tuning)
+EX_Tii Mechanic (A: the job · B: service · C1+C2: tuning)
 ======================================
 
 The workshop (Benny's Original Motor Works, Strawberry — like the video)
@@ -16,7 +16,6 @@ The tablet (F6 while on duty, /mechtablet)
 - Map (the mechanics and the fleet live), chat, calendar, camera + gallery, the form inbox (the public
   forms: application / complaint / repair request REQ with the plate and what is wrong), قوالب الفواتير
   (the price list, read only), management for the manager (money, members, ranks, log, and the price list editor).
-- الداينو is a placeholder until tuning step C2.
 
 The bill (Z wheel → الورشة → فاتورة, on duty, next to the customer)
 - Tick the services, write a note (the car, the plate, what was done), "إرسال الفاتورة": the bill lands in the
@@ -74,3 +73,18 @@ TUNING (part C, step 1: performance and looks)
   needs none), turbo_kit, paint_can (paint, pearl, wheel colour, livery), wheel_set, body_kit (body parts, horn, plate),
   tint_film, neon_kit, xenon_kit.
 - Tables: exti_mechanic_tune_orders, exti_mechanic_tune_prices. Settings: Config.tuning in config.lua.
+- The mechanic who installs a change gets a cut of its price (Config.tuning.cut, 15%) from the workshop account straight to
+  his bank. The manager changes it: الطلبات → الأسعار → حصة الميكانيكي (0-50%).
+
+TUNING step 2: nitro, engine swap, dyno
+- Nitro: picked in the tuning menu (الأداء → النيترو), installed with nitro_kit; the bottle starts full. The driver holds
+  LEFT SHIFT while accelerating: boost, blue flames, a NOS bar at the bottom of the screen. A full bottle = 15 s of boost
+  (Config.tuning.nitro.seconds). Refill: a mechanic at the car → service menu → النيترو → uses one nitro_bottle (bill the
+  customer with the bill sheet).
+- Engine swap: الأداء → تبديل المحرك (8 engines, "اسمع الصوت" plays it). Installed with engine_crate (hoist and engine
+  on the floor during the work). Everyone hears the new engine; the car gets its power (Config.tuning.swap.engines).
+- Nitro and the engine are saved by plate in exti_mechanic_carmods (they stay after parking).
+- Dyno: a circle at the workshop (/mechspots → الداينو). The car on it, someone in the driver seat, the mechanic within
+  15 m opens the tablet → الداينو → ابدأ القياس: the car revs for 8 s; horsepower, torque, top speed, 0-100, the curves
+  (last run dashed), every run saved (exti_mechanic_dyno) and in the car's history.
+- New parts: nitro_kit, nitro_bottle, engine_crate (parts shop → أداء).

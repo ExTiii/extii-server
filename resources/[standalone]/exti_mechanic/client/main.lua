@@ -95,7 +95,7 @@ local function buildSpots()
     local list = {}
     for name, st in pairs(Config.stations) do
         for _, kind in ipairs(MEC.POINTS) do
-            if st[kind] then list[#list + 1] = { station = name, kind = kind, coords = st[kind], public = kind == 'forms' or MEC.BAYS[kind] == true, bay = MEC.BAYS[kind] == true } end
+            if st[kind] then list[#list + 1] = { station = name, kind = kind, coords = st[kind], public = kind == 'forms' or MEC.BAYS[kind] == true, bay = MEC.BAYS[kind] == true, pad = kind == 'dyno' } end
         end
         if st.garage then list[#list + 1] = { station = name, kind = 'garage', coords = st.garage.coords } end
         if st.cars then list[#list + 1] = { station = name, kind = 'cars', coords = st.cars.coords } end
@@ -120,7 +120,7 @@ end
 
 -- the spots you use from inside a car: the garages (to park) and the tuning bays
 local function carSpot(spot)
-    return spot.bay or spot.kind == 'garage' or spot.kind == 'cars'
+    return spot.bay or spot.pad or spot.kind == 'garage' or spot.kind == 'cars'
 end
 
 -- how far: a tuning bay is measured flat (the car sits higher than the circle)
@@ -189,7 +189,7 @@ do
                     local s = near[i]
                     if s.drawZ and (not cache.vehicle or carSpot(s)) then
                         local here = distTo(p, s) < reachOf(s)
-                        local base = s.bay and SIZE * 4.2 or SIZE
+                        local base = (s.bay or s.pad) and SIZE * 4.2 or SIZE
                         local size = here and base * 1.04 or base
                         local alpha = here and 210 or 140
                         DrawMarker(1, s.coords.x, s.coords.y, s.drawZ, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, size, size, 0.3,
@@ -266,7 +266,8 @@ CreateThread(function()
             local best, bestDist
             for i = 1, #spots do
                 local s = spots[i]
-                if canSee(s, cop) and (not s.bay or cache.vehicle) then
+                -- (the dyno circle is only a mark: the test runs from the tablet)
+                if canSee(s, cop) and not s.pad and (not s.bay or cache.vehicle) then
                     local d = distTo(p, s)
                     if d < 12.0 then sleep = math.min(sleep, 150) end
                     if d < reachOf(s) and (not bestDist or d < bestDist) then best, bestDist = s, d end

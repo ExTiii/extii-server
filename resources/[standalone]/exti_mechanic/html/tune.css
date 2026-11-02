@@ -77,3 +77,15 @@
 .tn-camui svg { width: 20px; height: 20px; }
 .tn-keys { position: absolute; bottom: 94px; left: 50%; transform: translateX(-50%); font-size: 12px; color: rgba(255, 255, 255, 0.75); text-shadow: 0 1px 3px #000; white-space: nowrap; }
 .tn-keys kbd { display: inline-block; padding: 1px 6px; border-radius: 5px; background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.25); font-family: inherit; margin: 0 2px; }
+.tn-mini { padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(242, 194, 48, 0.5); background: rgba(242, 194, 48, 0.12); color: #ffe08a; cursor: pointer; font: 600 11.5px 'Kit Plex', sans-serif; }
+/* the nitro gauge while driving */
+#nos { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 10px; padding: 7px 14px; border-radius: 12px;
+    background: rgba(10, 12, 18, 0.72); border: 1px solid rgba(90, 200, 250, 0.35); font-family: 'Kit Plex', sans-serif; color: #e9f6ff; direction: ltr; pointer-events: none; }
+#nos.hidden { display: none; }
+#nos b { font: 800 12px 'Kit Plex', sans-serif; letter-spacing: 1.5px; color: #5ac8fa; }
+#nos u { width: 170px; height: 8px; border-radius: 5px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+#nos s { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, #2f6dff, #5ac8fa); transition: width 0.15s linear; }
+#nos em { font-style: normal; font-weight: 700; font-size: 12px; min-width: 34px; text-align: right; }
+#nos.low s { background: linear-gradient(90deg, #ff7a1f, #ffb92e); }
+#nos.empty { border-color: rgba(255, 95, 109, 0.4); }
+#nos.empty b, #nos.empty em { color: #ff8a8f; }

@@ -254,7 +254,7 @@ for _, name in ipairs({
     'formsList', 'formGet', 'formAction',
     'offences', 'offenceSave', 'offenceDelete',
     'diagScan', 'partsView', 'partsOrder',
-    'tuneOrders', 'tuneClaim', 'tuneCancel', 'tunePrices', 'tunePriceSave',
+    'tuneOrders', 'tuneClaim', 'tuneCancel', 'tunePrices', 'tunePriceSave', 'dynoView', 'dynoRun',
     'bossDashboard', 'bossCashFlow', 'bossFunds', 'bossDeposit', 'bossWithdraw', 'bossMembers',
     'bossSetGrade', 'bossFire', 'bossBonus', 'bossNearby', 'bossInvite', 'bossRoles', 'bossRoleSave', 'bossLogs',
 }) do ALLOWED[name] = true end

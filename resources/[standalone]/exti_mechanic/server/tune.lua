@@ -27,7 +27,11 @@ for _, b in ipairs(T.body) do BODY[b.mod] = b end
 -- tables and the prices
 ---------------------------------------------------------------------------
 local PRICES, PRICE_LABEL, PRICE_ORDER = {}, {}, {}
-for i, p in ipairs(T.prices) do PRICES[p[1]] = p[3] PRICE_LABEL[p[1]] = p[2] PRICE_ORDER[i] = p[1] end
+-- the mechanic's cut (%) rides in the same table, first in the list
+PRICES.cut, PRICE_LABEL.cut, PRICE_ORDER[1] = T.cut or 15, 'حصة الميكانيكي من كل تعديل (%)', 'cut'
+for _, p in ipairs(T.prices) do PRICES[p[1]] = p[3] PRICE_LABEL[p[1]] = p[2] PRICE_ORDER[#PRICE_ORDER + 1] = p[1] end
+local ENGINES = {}
+for _, e in ipairs((T.swap or {}).engines or {}) do ENGINES[e.id] = e end
 
 local OPEN = {}      -- [plate] = the open order
 local ready = false
@@ -79,6 +83,25 @@ CreateThread(function()
         `refunded` INT NOT NULL DEFAULT 0,
         INDEX `status` (`status`),
         INDEX `plate` (`plate`)
+    ) DEFAULT CHARSET=utf8mb4]])
+    -- nitro and engine swap live here (the game's own car properties have no place for them)
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `exti_mechanic_carmods` (
+        `plate` VARCHAR(12) NOT NULL PRIMARY KEY,
+        `nitro` TINYINT NOT NULL DEFAULT 0,
+        `nitro_amt` FLOAT NOT NULL DEFAULT 0,
+        `engine` VARCHAR(30) NULL
+    ) DEFAULT CHARSET=utf8mb4]])
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `exti_mechanic_dyno` (
+        `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        `plate` VARCHAR(12) NOT NULL,
+        `model` VARCHAR(40) NULL,
+        `at` INT NOT NULL,
+        `name` VARCHAR(80) NULL,
+        `hp` INT NOT NULL,
+        `nm` INT NOT NULL,
+        `top` INT NOT NULL,
+        `zero` FLOAT NOT NULL,
+        INDEX `plate_at` (`plate`, `at`)
     ) DEFAULT CHARSET=utf8mb4]])
     -- the prices: the database wins; a new key from config.lua is added with its starting price
     local rows = MySQL.query.await('SELECT `key`, `price` FROM `exti_mechanic_tune_prices`') or {}
@@ -201,6 +224,55 @@ local function playerByCid(cid)
 end
 
 ---------------------------------------------------------------------------
+-- nitro and engine swap of a car (by plate), riding on the car as the state bag exti_carmods
+---------------------------------------------------------------------------
+local CM = {}  -- [plate] = { nitro = bool, amt = 0..100, engine = id|nil, dirty }
+
+local function carMods(plate)
+    local c = CM[plate]
+    if c then return c end
+    local row = MySQL.single.await('SELECT * FROM `exti_mechanic_carmods` WHERE `plate` = ?', { plate })
+    c = { nitro = row and tonumber(row.nitro) == 1 or false, amt = row and tonumber(row.nitro_amt) or 0, engine = row and row.engine or nil }
+    if c.engine and not ENGINES[c.engine] then c.engine = nil end
+    CM[plate] = c
+    return c
+end
+MEC.carMods = carMods
+
+local function saveMods(plate)
+    local c = CM[plate]
+    if not c then return end
+    c.dirty = false
+    MySQL.query('INSERT INTO `exti_mechanic_carmods` (`plate`, `nitro`, `nitro_amt`, `engine`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `nitro` = VALUES(`nitro`), `nitro_amt` = VALUES(`nitro_amt`), `engine` = VALUES(`engine`)',
+        { plate, c.nitro and 1 or 0, math.floor(c.amt * 10) / 10, c.engine })
+end
+
+local function publishMods(veh, plate)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    local c = carMods(plate)
+    local e = c.engine and ENGINES[c.engine]
+    Entity(veh).state:set('exti_carmods', { nitro = c.nitro, amt = math.floor(c.amt + 0.5), engine = c.engine, power = e and e.power or nil }, true)
+end
+
+-- the driver's game asks when getting in (server/service.lua wearSync)
+function MEC.carModsPublish(veh, plate)
+    if not ready or not plate then return end
+    local c = carMods(plate)
+    if c.nitro or c.engine then publishMods(veh, plate) end
+end
+
+CreateThread(function()
+    while true do
+        Wait(30000)
+        for plate, c in pairs(CM) do if c.dirty then saveMods(plate) end end
+    end
+end)
+AddEventHandler('onResourceStop', function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    for plate, c in pairs(CM) do if c.dirty then saveMods(plate) end end
+end)
+
+---------------------------------------------------------------------------
 -- turning the customer's picks into the order's lines (all prices and parts are worked out here)
 --   changes = { engine = 2, turbo = true, paint1 = { t, c = {r,g,b} }, pearl = 5, wheelColor = 0,
 --     wheels = { t, i, bike }, body = { ["0"] = { i, n } }, tint = 1, neon = { on, c }, xenon = { on, c }, plate = 2 }
@@ -209,7 +281,7 @@ end
 local PAINT_TYPES = { [0] = 'عادي', [1] = 'معدني', [2] = 'لؤلؤي', [3] = 'مطفي', [4] = 'معدن', [5] = 'كروم' }
 local TINTS = { [0] = 'بدون', [1] = 'أسود كامل', [2] = 'دخاني غامق', [3] = 'دخاني فاتح', [4] = 'الأصلي', [5] = 'ليموزين', [6] = 'أخضر' }
 
-local function buildLines(changes, cur, stored)
+local function buildLines(changes, cur, stored, cm)
     if type(changes) ~= 'table' then return nil, 'failed' end
     cur = type(cur) == 'table' and cur or {}
     stored = type(stored) == 'table' and stored or {}
@@ -335,6 +407,32 @@ local function buildLines(changes, cur, stored)
         add({ k = 'plate', label = 'شكل اللوحة', price = priceOf('plate'), item = I.plate, count = 1, recipe = 't_small', props = { plateIndex = v } })
     end
 
+    -- nitro and engine swap (cm = what the car has: { nitro, engine })
+    cm = type(cm) == 'table' and cm or {}
+    if changes.nitro ~= nil and T.nitro then
+        local on = changes.nitro == true
+        if on ~= (cm.nitro == true) then
+            if on then
+                add({ k = 'nitro', label = 'نظام النيترو (أسطوانة ممتلئة)', price = priceOf('nitro'), item = T.nitro.item, count = 1, recipe = T.nitro.recipe, custom = { nitro = true } })
+            else
+                add({ k = 'nitro', label = 'إزالة النيترو', price = priceOf('remove'), count = 0, recipe = 't_small', custom = { nitro = false } })
+            end
+        end
+    end
+    if changes.swap ~= nil and T.swap then
+        local id = changes.swap
+        if id ~= 'stock' and not ENGINES[id] then return nil, 'failed' end
+        local now = cm.engine or 'stock'
+        if id ~= now then
+            if id == 'stock' then
+                add({ k = 'swap', label = 'إرجاع المحرك الأصلي', price = priceOf('swap_stock'), count = 0, recipe = T.swap.recipe, custom = { engine = false } })
+            else
+                add({ k = 'swap', label = ('تبديل المحرك: %s'):format(ENGINES[id].label), price = priceOf('swap_' .. id), item = T.swap.item, count = 1,
+                    recipe = T.swap.recipe, custom = { engine = id } })
+            end
+        end
+    end
+
     if #lines == 0 then return nil, 'empty' end
     if #lines > (T.maxLines or 30) then return nil, 'too_many' end
     return lines
@@ -392,12 +490,12 @@ local function shopIn(amount, plate, who)
     return true
 end
 
-local function shopOut(amount, plate, who)
+local function shopOut(amount, plate, who, title, msg)
     if amount <= 0 then return true end
     local ok, done = pcall(function() return exports['Renewed-Banking']:removeAccountMoney(JOB, amount) end)
     if not ok or not done then return false end
     pcall(function()
-        exports['Renewed-Banking']:handleTransaction(JOB, 'إرجاع مبلغ تعديل', amount, ('إلغاء طلب التعديل %s'):format(plate), 'ورشة بيني', who, 'withdraw')
+        exports['Renewed-Banking']:handleTransaction(JOB, title or 'إرجاع مبلغ تعديل', amount, msg or ('إلغاء طلب التعديل %s'):format(plate), 'ورشة بيني', who, 'withdraw')
     end)
     return true
 end
@@ -430,7 +528,11 @@ lib.callback.register('exti_mechanic:server:tuneOpen', function(source, netId)
     local cur = {}
     for _, p in ipairs(T.perf) do cur[p.key] = math.tointeger(tonumber(stored[p.prop])) end
     local money = player.PlayerData.money or {}
-    return { plate = plate, prices = PRICES, bank = tonumber(money.bank) or 0, cash = tonumber(money.cash) or 0, stored = cur }
+    local c = carMods(plate)
+    local engines = {}
+    for i, e in ipairs((T.swap or {}).engines or {}) do engines[i] = { id = e.id, label = e.label } end
+    return { plate = plate, prices = PRICES, bank = tonumber(money.bank) or 0, cash = tonumber(money.cash) or 0, stored = cur,
+        mods = { nitro = c.nitro, amt = math.floor(c.amt + 0.5), engine = c.engine or 'stock' }, engines = engines }
 end)
 
 lib.callback.register('exti_mechanic:server:tuneOrder', function(source, netId, changes, cur, model)
@@ -438,7 +540,7 @@ lib.callback.register('exti_mechanic:server:tuneOrder', function(source, netId, 
     if not player then return false, veh end
     if OPEN[plate] then return false, 'has_order' end
     if T.needMechanic ~= false and mechanicsOnDuty() < 1 then return false, 'no_mechanic' end
-    local lines, err = buildLines(changes, cur, decode(row.mods))
+    local lines, err = buildLines(changes, cur, decode(row.mods), carMods(plate))
     if not lines then return false, err end
     local total = totalOf(lines)
     local kind = total == 0 and 'free' or charge(player, total, ('tuning %s'):format(plate))
@@ -556,7 +658,7 @@ function MEC.tunePrices(src)
     local player = getPlayer(src)
     if not onDuty(player) then return false, 'off_duty' end
     local list = {}
-    for i, key in ipairs(PRICE_ORDER) do list[i] = { key = key, label = PRICE_LABEL[key], price = PRICES[key] } end
+    for i, key in ipairs(PRICE_ORDER) do list[i] = { key = key, label = PRICE_LABEL[key], price = PRICES[key], pct = key == 'cut' or nil } end
     return { list = list, isBoss = isBoss(player), max = T.maxPrice or 250000 }
 end
 
@@ -565,7 +667,7 @@ function MEC.tunePriceSave(src, key, price)
     if not onDuty(player) then return false, 'off_duty' end
     if not isBoss(player) then return false, 'not_boss' end
     if type(key) ~= 'string' or not PRICE_LABEL[key] then return false, 'failed' end
-    price = int(price, 0, T.maxPrice or 250000)
+    price = int(price, 0, key == 'cut' and 50 or (T.maxPrice or 250000))
     if not price then return false, 'bad_price' end
     PRICES[key] = price
     MySQL.prepare.await('INSERT INTO `exti_mechanic_tune_prices` (`key`, `price`, `updated_by`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `price` = VALUES(`price`), `updated_by` = VALUES(`updated_by`)',
@@ -635,7 +737,15 @@ lib.callback.register('exti_mechanic:server:tuneStart', function(source, netId, 
 end)
 
 -- put the change on the car: the car's owner game sets it (ox_lib), and it is saved on the car
-local function applyToCar(veh, plate, props)
+local function applyToCar(veh, plate, props, custom)
+    if type(custom) == 'table' then
+        local c = carMods(plate)
+        if custom.nitro ~= nil then c.nitro = custom.nitro == true c.amt = custom.nitro and 100.0 or 0.0 end
+        if custom.engine ~= nil then c.engine = custom.engine or nil end
+        saveMods(plate)
+        publishMods(veh, plate)
+    end
+    if not next(props) then return end
     Entity(veh).state:set('ox_lib:setVehicleProperties', props, true)
     local row = MySQL.single.await('SELECT `id`, `mods` FROM `player_vehicles` WHERE `plate` = ? OR TRIM(`plate`) = ? LIMIT 1', { plate, plate })
     if not row then return end
@@ -664,7 +774,19 @@ lib.callback.register('exti_mechanic:server:tuneDone', function(source, success)
         if not okR or not removed then return false, 'no_part' end
     end
     l.done, l.by, l.at = true, nameOf(player), os.time()
-    applyToCar(p.veh, p.plate, l.props or {})
+    applyToCar(p.veh, p.plate, l.props or {}, l.custom)
+    -- the mechanic's cut of this change, from the workshop account
+    local cutPct = math.max(0, math.min(50, tonumber(PRICES.cut) or 0))
+    local cut = math.floor((l.price or 0) * cutPct / 100)
+    if cut > 0 then
+        if shopOut(cut, o.plate, nameOf(player), 'حصة ميكانيكي', ('تركيب على %s'):format(o.plate)) and pcall(function() return exports.qbx_core:AddMoney(source, 'bank', cut, 'tuning cut') end) then
+            l.cut = cut
+            MEC.log(source, 'tune_cut', ('#%d · %s'):format(o.id, l.label), cut, 'out')
+            notify(source, 'success', ('حصتك من التركيب: $%d في البنك'):format(cut))
+        else
+            notify(source, 'inform', 'رصيد حساب الورشة لا يكفي لحصتك من هذا التركيب')
+        end
+    end
     saveLines(o)
     MEC.log(source, 'tune_installed', ('#%d · %s · %s'):format(o.id, o.plate, l.label))
     lib.logger(source, 'mechanic', ('installed "%s" on %s (order #%d)'):format(l.label, o.plate, o.id))
@@ -685,3 +807,155 @@ lib.callback.register('exti_mechanic:server:tuneDone', function(source, success)
     end
     return { label = l.label, left = left, id = o.id }
 end)
+
+---------------------------------------------------------------------------
+-- NITRO: the driver's game reports the boost it used; a mechanic refills the bottle
+---------------------------------------------------------------------------
+local lastNos = {}
+RegisterNetEvent('exti_mechanic:server:nitroUse', function(netId, secs)
+    local src = source
+    if not ready or not T.nitro then return end
+    local veh = vehicleOf(netId)
+    local ped = pedOf(src)
+    if not veh or not ped or GetPedInVehicleSeat(veh, -1) ~= ped then return end
+    local plate = plateOf(veh)
+    if not plate then return end
+    local c = carMods(plate)
+    if not c.nitro then return end
+    -- at most what the time since the last report allows
+    local now = os.time()
+    local gap = now - (lastNos[src] or (now - 2))
+    lastNos[src] = now
+    secs = math.max(0, math.min(tonumber(secs) or 0, math.max(1, gap) + 0.5, 3.0))
+    if secs <= 0 then return end
+    c.amt = math.max(0.0, c.amt - secs * 100.0 / (T.nitro.seconds or 15))
+    c.dirty = true
+    publishMods(veh, plate)
+end)
+AddEventHandler('playerDropped', function() lastNos[source] = nil end)
+
+-- the service menu at the car: is there nitro to refill
+function MEC.nitroFor(src, plate)
+    if not T.nitro or not plate then return nil end
+    local c = carMods(plate)
+    if not c.nitro then return nil end
+    return { amt = math.floor(c.amt + 0.5), bottles = itemCount(src, T.nitro.bottle), bottleLabel = itemLabel(T.nitro.bottle) }
+end
+
+lib.callback.register('exti_mechanic:server:nitroStart', function(source, netId)
+    local player, veh, err = mechanicAt(source, netId)
+    if not player then return false, err end
+    local plate = plateOf(veh)
+    local c = plate and carMods(plate)
+    if not c or not c.nitro then return false, 'gone' end
+    if c.amt >= 99.5 then return false, 'full' end
+    if itemCount(source, T.nitro.bottle) < 1 then return false, 'no_part' end
+    local recipe = T.nitro.refill
+    pending[source] = { kind = 'refill', veh = veh, plate = plate, started = os.time(), steps = #S.recipes[recipe] }
+    return { recipe = recipe, times = 1, steps = S.recipes[recipe], label = 'تعبئة النيترو' }
+end)
+
+lib.callback.register('exti_mechanic:server:nitroDone', function(source, success)
+    local p = pending[source]
+    pending[source] = nil
+    if not p or p.kind ~= 'refill' then return false, 'failed' end
+    if success ~= true then return false, 'cancelled' end
+    local player = getPlayer(source)
+    if not onDuty(player) then return false, 'off_duty' end
+    if not DoesEntityExist(p.veh) then return false, 'no_car' end
+    local ped = pedOf(source)
+    if not ped or #(GetEntityCoords(ped) - GetEntityCoords(p.veh)) > (S.reach or 4.0) + 3.0 then return false, 'too_far' end
+    if os.time() - p.started < math.max(3, p.steps) then return false, 'too_fast' end
+    local okR, removed = pcall(function() return exports.ox_inventory:RemoveItem(source, T.nitro.bottle, 1) end)
+    if not okR or not removed then return false, 'no_part' end
+    local c = carMods(p.plate)
+    c.amt = 100.0
+    saveMods(p.plate)
+    publishMods(p.veh, p.plate)
+    MySQL.insert('INSERT INTO `exti_mechanic_service` (`plate`, `at`, `citizenid`, `name`, `what`, `km`) VALUES (?, ?, ?, ?, ?, ?)',
+        { p.plate, os.time(), player.PlayerData.citizenid, nameOf(player), 'تعبئة النيترو', nil })
+    MEC.log(source, 'nitro_refill', p.plate)
+    return { amt = 100 }
+end)
+
+---------------------------------------------------------------------------
+-- THE DYNO: a car on the dyno circle, someone in the driver seat; the mechanic runs it from the
+-- tablet, the driver's game revs the car and measures it
+---------------------------------------------------------------------------
+local D = T.dyno or {}
+local dynoBusy = {}
+
+local function dynoSpot(src)
+    local ped = pedOf(src)
+    if not ped then return nil end
+    local p = GetEntityCoords(ped)
+    local best, bestD
+    for name, st in pairs(Config.stations) do
+        if st.dyno then
+            local d = #(p - vec3(st.dyno.x, st.dyno.y, st.dyno.z))
+            if d <= (D.mechReach or 15.0) and (not bestD or d < bestD) then best, bestD = name, d end
+        end
+    end
+    return best
+end
+
+local function carOnDyno(station)
+    local spot = Config.stations[station].dyno
+    for _, veh in ipairs(GetAllVehicles()) do
+        local c = GetEntityCoords(veh)
+        if #(vec2(c.x, c.y) - vec2(spot.x, spot.y)) <= (D.carReach or 3.5) and math.abs(c.z - spot.z) < 4.0 then return veh end
+    end
+end
+
+local function driverOf(veh)
+    local ped = GetPedInVehicleSeat(veh, -1)
+    if not ped or ped == 0 then return nil end
+    for _, id in ipairs(GetPlayers()) do
+        local s = tonumber(id)
+        if GetPlayerPed(s) == ped then return s end
+    end
+end
+
+local function dynoHistory(plate)
+    return MySQL.query.await('SELECT `at`, `name`, `hp`, `nm`, `top`, `zero` FROM `exti_mechanic_dyno` WHERE `plate` = ? ORDER BY `id` DESC LIMIT 8', { plate }) or {}
+end
+
+function MEC.dynoView(src)
+    local player = getPlayer(src)
+    if not onDuty(player) then return false, 'off_duty' end
+    local station = dynoSpot(src)
+    if not station then return { far = true } end
+    local veh = carOnDyno(station)
+    if not veh then return { station = station, empty = true } end
+    local plate = plateOf(veh)
+    return { station = station, plate = plate, netId = NetworkGetNetworkIdFromEntity(veh), driver = driverOf(veh) ~= nil,
+        history = plate and dynoHistory(plate) or {}, busy = dynoBusy[station] == true }
+end
+
+function MEC.dynoRun(src)
+    local player = getPlayer(src)
+    if not onDuty(player) then return false, 'off_duty' end
+    local station = dynoSpot(src)
+    if not station then return false, 'dyno_far' end
+    if dynoBusy[station] then return false, 'wait' end
+    local veh = carOnDyno(station)
+    if not veh then return false, 'dyno_empty' end
+    local driver = driverOf(veh)
+    if not driver then return false, 'dyno_driver' end
+    local plate = plateOf(veh)
+    dynoBusy[station] = true
+    local ok, r = pcall(lib.callback.await, 'exti_mechanic:client:dynoRun', driver, NetworkGetNetworkIdFromEntity(veh))
+    dynoBusy[station] = nil
+    if not ok or type(r) ~= 'table' then return false, 'dyno_failed' end
+    local hp, nm, top, zero = int(math.floor(tonumber(r.hp) or 0), 20, 5000), int(math.floor(tonumber(r.nm) or 0), 20, 8000),
+        int(math.floor(tonumber(r.top) or 0), 10, 600), tonumber(r.zero)
+    if not hp or not nm or not top or not zero or zero < 1.0 or zero > 60 then return false, 'dyno_failed' end
+    zero = math.floor(zero * 10 + 0.5) / 10
+    local model = type(r.model) == 'string' and r.model:sub(1, 40) or nil
+    MySQL.insert.await('INSERT INTO `exti_mechanic_dyno` (`plate`, `model`, `at`, `name`, `hp`, `nm`, `top`, `zero`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        { plate, model, os.time(), nameOf(player), hp, nm, top, zero })
+    MySQL.insert('INSERT INTO `exti_mechanic_service` (`plate`, `at`, `citizenid`, `name`, `what`, `km`) VALUES (?, ?, ?, ?, ?, ?)',
+        { plate, os.time(), player.PlayerData.citizenid, nameOf(player), ('قياس داينو: %d حصان · %d كم/س · 0-100 في %.1f ث'):format(hp, top, zero), nil })
+    MEC.log(src, 'dyno', ('%s · %d حصان'):format(plate, hp))
+    return { plate = plate, model = model, result = { hp = hp, nm = nm, top = top, zero = zero }, history = dynoHistory(plate) }
+end

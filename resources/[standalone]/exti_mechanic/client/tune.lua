@@ -90,6 +90,8 @@ end
 -- the live preview on the car
 ---------------------------------------------------------------------------
 local veh, orig, frozen, cam = nil, nil, false, nil
+local origEngine = nil -- the engine the car has now (swap), for the sound when the menu closes
+local revving = false
 local view = { a = 210.0, ta = 210.0, d = 5.5, td = 5.5, h = 1.2, th = 1.2, inside = false }
 
 local function preview(k, v)
@@ -133,6 +135,25 @@ local function preview(k, v)
         SetVehicleNumberPlateTextIndex(veh, math.tointeger(v) or 0)
     elseif k == 'lights' then
         SetVehicleLights(veh, v == true and 2 or 0)
+    elseif k == 'swap' then
+        local id = type(v) == 'string' and v or 'stock'
+        ForceVehicleEngineAudio(veh, id == 'stock' and GetEntityArchetypeName(veh) or id)
+    elseif k == 'rev' then
+        -- listen to the engine: a short rev in place (the car stays frozen)
+        if revving then return end
+        revving = true
+        CreateThread(function()
+            local v2 = veh
+            SetVehicleEngineOn(v2, true, true, false)
+            local t0 = GetGameTimer()
+            while v2 and DoesEntityExist(v2) and GetGameTimer() - t0 < 3200 do
+                local k2 = (GetGameTimer() - t0) / 3200
+                SetVehicleCurrentRpm(v2, k2 < 0.6 and 0.2 + k2 / 0.6 * 0.8 or 1.0 - (k2 - 0.6) / 0.4 * 0.8)
+                Wait(0)
+            end
+            if v2 and DoesEntityExist(v2) then SetVehicleEngineOn(v2, false, true, true) end
+            revving = false
+        end)
     elseif k == 'hood' then
         if v == true then SetVehicleDoorOpen(veh, 4, false, false) else SetVehicleDoorShut(veh, 4, false) end
     end
@@ -213,6 +234,7 @@ local function close(keep)
     stopCam()
     if veh and DoesEntityExist(veh) then
         if orig and not keep then lib.setVehicleProperties(veh, orig) end
+        ForceVehicleEngineAudio(veh, (origEngine and origEngine ~= 'stock') and origEngine or GetEntityArchetypeName(veh))
         SetVehicleLights(veh, 0)
         if frozen then FreezeEntityPosition(veh, false) end
     end
@@ -261,6 +283,12 @@ function MEC.openTune()
     frozen = true
     open = true
     local c = catalog(veh)
+    -- nitro and engine swap come from the server (they are not in the game's car properties)
+    local m = type(res.mods) == 'table' and res.mods or {}
+    c.nitro = m.nitro == true
+    c.swap = m.engine or 'stock'
+    c.engines = res.engines or {}
+    origEngine = c.swap
     -- the saved car knows the performance better (the server counts the parts from it)
     for _, p in ipairs(c.perf) do
         local s = res.stored and res.stored[p.key]

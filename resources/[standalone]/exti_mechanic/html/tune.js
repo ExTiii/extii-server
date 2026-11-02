@@ -74,6 +74,11 @@ const Tune = (() => {
                 : { label: `${p.label}: إرجاع إلى ${v < 0 ? 'الأصلي' : `المستوى ${v + 1}`}`, price: P('remove') });
         });
         if (ch.turbo !== undefined && ch.turbo !== c.turbo) out.push({ label: ch.turbo ? 'تيربو' : 'إزالة التيربو', price: ch.turbo ? P('turbo') : P('remove') });
+        if (ch.nitro !== undefined && ch.nitro !== !!c.nitro) out.push({ label: ch.nitro ? 'نظام النيترو' : 'إزالة النيترو', price: ch.nitro ? P('nitro') : P('remove') });
+        if (ch.swap !== undefined && ch.swap !== (c.swap || 'stock')) {
+            const e = arr(c.engines).find((x) => x.id === ch.swap);
+            out.push(ch.swap === 'stock' ? { label: 'إرجاع المحرك الأصلي', price: P('swap_stock') } : { label: `تبديل المحرك: ${e ? e.label : ch.swap}`, price: P(`swap_${ch.swap}`) });
+        }
         if (ch.paint1) out.push({ label: `الصبغ الأساسي (${FINISH[ch.paint1.t]})`, price: P('paint1'), color: hex(ch.paint1.c) });
         if (ch.paint2) out.push({ label: `الصبغ الثانوي (${FINISH[ch.paint2.t]})`, price: P('paint2'), color: hex(ch.paint2.c) });
         if (ch.pearl !== undefined) out.push({ label: 'اللمعة (البيرل)', price: P('pearl') });
@@ -160,6 +165,22 @@ const Tune = (() => {
             ${chip('data-act="turbo" data-v="0"', !tsel, `<b>بدون</b><small>${!c.turbo ? tag('الآن', 'ok') : money(P('remove'))}</small>`, ' lvl')}
             ${chip('data-act="turbo" data-v="1"', tsel, `<b>تيربو</b><small>${c.turbo ? tag('مركّب', 'ok') : money(P('turbo'))}</small>`, ' lvl')}
         </div></div>`);
+        // nitro
+        const nsel = ch.nitro !== undefined ? ch.nitro : !!c.nitro;
+        rows.push(`<div class="tn-row"><h4>النيترو</h4><div class="tn-chips">
+            ${chip('data-act="nitro" data-v="0"', !nsel, `<b>بدون</b><small>${!c.nitro ? tag('الآن', 'ok') : money(P('remove'))}</small>`, ' lvl')}
+            ${chip('data-act="nitro" data-v="1"', nsel, `<b>نيترو</b><small>${c.nitro ? tag('مركّب', 'ok') : money(P('nitro'))}</small>`, ' lvl')}
+        </div><p class="tn-hint">اضغط Shift الأيسر مع البنزين للدفعة. الأسطوانة تكفي 15 ثانية، والميكانيكي يعبّئها.</p></div>`);
+        // engine swap
+        const engines = arr(c.engines);
+        if (engines.length) {
+            const now = c.swap || 'stock';
+            const sel = ch.swap !== undefined ? ch.swap : now;
+            const list = [['stock', 'الأصلي'], ...engines.map((e) => [e.id, e.label])];
+            rows.push(`<div class="tn-row"><h4>تبديل المحرك <button class="tn-mini" data-act="rev">اسمع الصوت</button></h4><div class="tn-chips">
+                ${list.map(([id, label]) => chip(`data-act="swap" data-v="${id}"`, id === sel, `<b>${esc(label)}</b><small>${id === now ? tag(id === 'stock' ? 'الآن' : 'مركّب', 'ok') : money(id === 'stock' ? P('swap_stock') : P(`swap_${id}`))}</small>`, ' lvl')).join('')}
+            </div><p class="tn-hint">صوت المحرك الجديد وقوته. اختر محركًا واضغط "اسمع الصوت".</p></div>`);
+        }
         return rows.join('') + '<p class="tn-hint">كل مستوى أعلى يحتاج قطعة من الميكانيكي. الأداء لا يُرى بالعين: يظهر في القيادة.</p>';
     }
 
@@ -169,7 +190,8 @@ const Tune = (() => {
         let body;
         if (sub === 'paint1' || sub === 'paint2') {
             const v = ch[sub] || c[sub];
-            body = `<div class="tn-row"><h4>نوع الصبغ</h4><div class="tn-chips">${FINISH.map((f, i) => chip(`data-act="finish" data-v="${i}"`, v.t === i, `<b>${f}</b>`)).join('')}</div></div>
+            body = `<div class="tn-row"><h4>نوع الصبغ</h4><div class="tn-chips">${FINISH.map((f, i) => chip(`data-act="finish" data-v="${i}"`, v.t === i, `<b>${f}</b>`)).join('')}</div>
+                ${v.t === 5 ? '<p class="tn-hint">الكروم مرآة: يعكس ما حوله ولا يُظهر اللون كثيرًا. داخل الورشة يبدو غامقًا وفي الشمس فضيًا.</p>' : ''}</div>
                 <div class="tn-row"><h4>اللون <span class="tn-price">${money(P(sub))}</span></h4>
                 <div class="tn-sw">${SWATCH.map((h) => `<button class="${hex(v.c) === h ? 'on' : ''}" data-act="color" data-h="${h}" style="--c:${h}"></button>`).join('')}</div>
                 <label class="tn-pick"><input type="color" value="${hex(v.c)}" data-input="color"><span>لون خاص: <bdi dir="ltr">${hex(v.c).toUpperCase()}</bdi></span></label></div>`;
@@ -284,6 +306,9 @@ const Tune = (() => {
         if (a === 'cat') return goCat(v);
         if (a === 'perf') { const p = arr(c.perf).find((x) => x.key === el.dataset.k); pick(p.key, Number(v), perfNow(p)); }
         else if (a === 'turbo') pick('turbo', v === '1', c.turbo);
+        else if (a === 'nitro') pick('nitro', v === '1', !!c.nitro);
+        else if (a === 'swap') { pick('swap', v, c.swap || 'stock'); post('tunePreview', { k: 'rev', v: true }); }
+        else if (a === 'rev') post('tunePreview', { k: 'rev', v: true });
         else if (a === 'sub') { sub = v; cam(v === 'wheelColor' ? 'wheel' : 'three'); }
         else if (a === 'finish') { const cur = ch[sub] || c[sub]; pick(sub, { t: Number(v), c: arr(cur.c) }, c[sub]); }
         else if (a === 'color') { const cur = ch[sub] || c[sub]; pick(sub, { t: cur.t, c: rgbOf(el.dataset.h) }, c[sub]); }

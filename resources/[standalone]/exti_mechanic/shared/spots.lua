@@ -9,12 +9,12 @@ MEC = MEC or {}
 MEC.SPOT_KINDS = {
     duty = 'point', cloakroom = 'point', locker = 'point', armory = 'point', forms = 'point', inbox = 'point',
     evidence = 'point', delivery = 'point', garage = 'point', garageSpawn = 'spawn', cars = 'point', carsSpawn = 'spawn',
-    tune1 = 'point', tune2 = 'point',
+    tune1 = 'point', tune2 = 'point', dyno = 'point',
 }
 -- these can also be removed from a station
-MEC.SPOT_OPTIONAL = { cloakroom = true, locker = true, armory = true, forms = true, inbox = true, evidence = true, delivery = true, tune1 = true, tune2 = true }
+MEC.SPOT_OPTIONAL = { cloakroom = true, locker = true, armory = true, forms = true, inbox = true, evidence = true, delivery = true, tune1 = true, tune2 = true, dyno = true }
 -- the simple E spots (not the garages)
-MEC.POINTS = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence', 'delivery', 'tune1', 'tune2' }
+MEC.POINTS = { 'duty', 'cloakroom', 'locker', 'armory', 'forms', 'inbox', 'evidence', 'delivery', 'tune1', 'tune2', 'dyno' }
 -- the tuning bays: used from inside a car, by anyone (the customer)
 MEC.BAYS = { tune1 = true, tune2 = true }
 
