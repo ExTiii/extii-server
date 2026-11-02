@@ -1,12 +1,12 @@
 -- =====================================================================
--- EX_Tii crosshair: while you hold a gun, GTA's big crosshair is hidden and a small red dot sits
+-- EX_Tii crosshair: while you hold a gun, GTA's big crosshair is hidden and a small white dot sits
 -- in the middle of the screen (NoPixel style). Melee weapons, the flashlight, throwables and an
 -- empty hand show nothing. Sniper scopes keep their own view.
 -- =====================================================================
 
 local Config = {
     size = 3.0,              -- the dot in pixels (on a 1080p screen)
-    color = { 230, 40, 40 }, -- red
+    color = { 255, 255, 255 }, -- white
     alpha = 235,
     outline = true,          -- a thin dark ring so the dot shows on bright walls
     onlyWhenAiming = false,  -- true = the dot only appears while aiming (right mouse)
