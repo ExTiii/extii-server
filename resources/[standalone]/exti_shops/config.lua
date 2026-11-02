@@ -29,7 +29,7 @@ Config.types = {
             { name = 'redbull', price = 50, category = 'food', max = 10 }, -- 1 minute of sprinting without getting tired
             -- EX_Tii: no bandage here any more: medicine is sold at the two hospital pharmacies
             -- EX_Tii level jobs (exti_jobs): the supplies used up every run
-            { name = 'packing_tray', price = 10, category = 'work', max = 20, desc = 'لوظيفة الدواجن: صينية لكل 5 دجاجات' },
+            { name = 'poultry_kit', price = 3, category = 'work', max = 25, desc = 'لوظيفة الدواجن: كل عدة = دجاجة واحدة' },
             { name = 'empty_carton', price = 6, category = 'work', max = 30, desc = 'لوظيفة الزبيب: كرتونة لكل 5 زبيب' },
         },
     },

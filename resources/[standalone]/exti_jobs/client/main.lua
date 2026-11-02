@@ -552,6 +552,8 @@ exports('isPanelOpen', function() return panelOpen end)
 
 openHqPanel = function(name)
     if panelOpen then return end
+    -- EX_Tii: jobs without a vehicle (chicken): the supervisor just clocks you in / out
+    if config.jobs[name] and config.jobs[name].noVehicle then return EXJ.clockMenu(name) end
     local data = lib.callback.await('exti_jobs:server:hq', false, name)
     if not data then return end
     openPanel('hq', data)
@@ -580,6 +582,40 @@ local ERR = {
     failed = 'حدث خطأ، حاول مرة أخرى',
 }
 EXJ.errors = ERR
+
+-- EX_Tii: clocking in / out with the supervisor (jobs without a vehicle): the uniform goes on / off
+function EXJ.clockMenu(name)
+    local job = config.jobs[name]
+    local data = lib.callback.await('exti_jobs:server:hq', false, name)
+    if not data then return end
+    if not data.isMine then
+        return EXJ.notify(('هذا المكان لموظفي %s فقط. قدّم على الوظيفة من مركز التوظيف'):format(job.label), 'error', 6000)
+    end
+    local opts = {}
+    local rank = ('الرتبة %d · %s'):format(data.level.level, data.level.name)
+    if not data.shift then
+        opts[#opts + 1] = { title = 'سجّل دخولك', description = 'تلبس زي العمل وتبدأ المناوبة', icon = 'right-to-bracket',
+            onSelect = function()
+                local ok, result = lib.callback.await('exti_jobs:server:startShift', false, name)
+                if not ok then return EXJ.notify(ERR[result] or ERR.failed, 'error') end
+                beginShift(result)
+            end }
+        opts[#opts + 1] = { title = rank, description = ('زيادة أجرك +%d%%'):format(math.floor((data.level.bonus or 0) * 100 + 0.5)), icon = 'star', readOnly = true }
+    else
+        local s = data.shift
+        opts[#opts + 1] = { title = ('كسبت %s$ في هذه المناوبة'):format(s.earned), description = ('%d بيعة · %d دقيقة عمل'):format(s.tasks, s.minutes), icon = 'sack-dollar', readOnly = true }
+        opts[#opts + 1] = { title = 'سجّل خروجك', description = 'تنتهي المناوبة وترجع ملابسك', icon = 'right-from-bracket',
+            onSelect = function()
+                local ok, result = lib.callback.await('exti_jobs:server:endShift', false, true)
+                if not ok then return EXJ.notify(ERR[result] or ERR.failed, 'error') end
+                finishShift()
+                EXJ.notify(('سجّلت خروجك: كسبت %s$ في هذه المناوبة'):format(result.earned), 'success', 8000)
+            end }
+        opts[#opts + 1] = { title = rank, icon = 'star', readOnly = true }
+    end
+    lib.registerContext({ id = 'exj_clock', title = ('%s · %s'):format(job.hq.supervisor.name, job.label), options = opts })
+    lib.showContext('exj_clock')
+end
 
 RegisterNUICallback('apply', function(data, cb)
     local ok, err = lib.callback.await('exti_jobs:server:apply', false, data and data.job)

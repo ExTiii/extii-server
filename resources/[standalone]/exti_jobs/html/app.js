@@ -256,7 +256,7 @@ function jobActions(job) {
     if (d.onShift) return `<div class="bottom-note">${ICON.warn(16)} أنهِ مناوبتك الحالية عند المشرف أولًا</div>`;
     if (!d.canSwitch) return `<div class="bottom-note">${ICON.warn(16)} أنت تعمل في ${esc(d.currentLabel)}، ولا يمكنك تغيير وظيفتك من هنا</div>`;
     if (lockedFor(job)) return `<div class="bottom-note">${ICON.lock(16)} تحتاج المستوى ${job.minLevel} (مستواك ${myLevel()})</div>`;
-    if (!d.hasLicence && !job.team) {
+    if (!d.hasLicence && !job.team && !job.noVehicle) {
         return `<div class="bottom-note">${ICON.warn(16)} تحتاج إلى رخصة قيادة لهذه الوظيفة</div>
             <button class="btn primary" disabled>${ICON.briefcase(18)} التقديم على الوظيفة</button>`;
     }
@@ -313,11 +313,12 @@ function jobDetails(job) {
     if (job.team) return teamDetails(job);
     if (job.soon) return soonDetails(job);
     const d = state.data;
+    const noVeh = job.noVehicle || !job.vehicle;
     const steps = job.steps.map((s) => `<div class="step"><i></i><span>${esc(s)}</span></div>`).join('');
     return `
     <div class="scroll">
         <div class="hero">
-            <img src="${IMAGE_URL(job.vehicle.model)}" alt="" onerror="this.remove()" />
+            ${noVeh ? '' : `<img src="${IMAGE_URL(job.vehicle.model)}" alt="" onerror="this.remove()" />`}
             ${d.current === job.name ? `<span class="badge">${ICON.check(14)} وظيفتك الحالية</span>` : ''}
             <div class="hero-text">
                 <span class="company">${jobIcon(job.icon, 15)} ${esc(job.company)}</span>
@@ -329,7 +330,9 @@ function jobDetails(job) {
         <div class="facts">
             <div class="fact"><span>${ICON.cash(14)} الدخل التقريبي</span><b class="gold">${esc(job.hourText)}</b><small>في الساعة، في الرتبة الأولى</small></div>
             <div class="fact"><span>${ICON.list(14)} أجر المهمة</span><b>${esc(job.payText)}</b><small>في حسابك البنكي فورًا</small></div>
-            <div class="fact"><span>${ICON.key(14)} مركبة العمل</span><b>${esc(job.vehicle.label)}</b><small>تأمين ${money(job.deposit)} يُعاد إليك</small></div>
+            ${noVeh
+                ? `<div class="fact"><span>${ICON.user(14)} الزي</span><b>يُلبس عند تسجيل الدخول</b><small>بلا مركبة وبلا تأمين</small></div>`
+                : `<div class="fact"><span>${ICON.key(14)} مركبة العمل</span><b>${esc(job.vehicle.label)}</b><small>تأمين ${money(job.deposit)} يُعاد إليك</small></div>`}
             <div class="fact"><span>${ICON.pin(14)} المقر</span><b>${esc(job.hq.label)}</b><small>${esc(job.hq.place)}</small></div>
         </div>
 
@@ -345,7 +348,7 @@ function jobDetails(job) {
             <div class="box-title"><span>${ICON.gift(16)} المال والمكافآت</span></div>
             <div class="reqs">
                 <span class="req ok">${ICON.check(15)} الأجر بعد كل مهمة مباشرة</span>
-                <span class="req ok">${ICON.check(15)} مكافأة إرجاع المركبة حتى ${money(job.bonusMax)}</span>
+                ${noVeh ? '' : `<span class="req ok">${ICON.check(15)} مكافأة إرجاع المركبة حتى ${money(job.bonusMax)}</span>`}
                 <span class="req ok">${ICON.check(15)} راتب الوظيفة كل 10 دقائق</span>
                 <span class="req ok">${ICON.check(15)} زي العمل يُعطى لك في المقر</span>
             </div>
@@ -354,8 +357,9 @@ function jobDetails(job) {
         <div class="box">
             <div class="box-title"><span>${ICON.shield(16)} الشروط</span></div>
             <div class="reqs">
+                ${noVeh ? `<span class="req ok">${ICON.check(15)} لا تحتاج رخصة قيادة ولا تأمينًا</span>` : `
                 <span class="req ${d.hasLicence ? 'ok' : 'bad'}">${d.hasLicence ? ICON.check(15) : ICON.x(15)} رخصة قيادة</span>
-                <span class="req ok">${ICON.cash(15)} ${money(job.deposit)} تأمين للمركبة (نقدًا أو من البنك)</span>
+                <span class="req ok">${ICON.cash(15)} ${money(job.deposit)} تأمين للمركبة (نقدًا أو من البنك)</span>`}
             </div>
         </div>
     </div>

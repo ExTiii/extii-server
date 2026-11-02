@@ -67,7 +67,8 @@ function M.apply(config, overrides)
                     end
                     step.spots = #list > 0 and list or ds.spots
                 else
-                    step.spot = M.v3(ov.spot) or ds.spot
+                    -- (a step that used to have several circles: the last one placed is the place now)
+                    step.spot = M.v3(ov.spot) or (type(ov.spots) == 'table' and M.v3(ov.spots[#ov.spots])) or ds.spot
                 end
                 step.ped = M.v4(ov.ped) or ds.ped
             end

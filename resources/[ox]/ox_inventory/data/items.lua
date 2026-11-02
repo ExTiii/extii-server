@@ -961,30 +961,37 @@ return {
     -- EX_Tii level jobs (exti_jobs): chicken, raisins
     ['live_chicken'] = {
         label = 'دجاجة حية (Live Chicken)',
-        weight = 800,
-        description = 'تصطادها في مزرعة الدواجن، وتُذبح عند طاولة الذبح',
+        weight = 3000,
+        description = 'من عُدد الدواجن في الحظيرة، تُذبح عند طاولة الذبح. لا تُخزّن، تُحمل فقط',
         client = { image = 'nui://exti_jobs/html/items/live_chicken.png' },
     },
 
     ['slaughtered_chicken'] = {
         label = 'دجاجة مذبوحة (Slaughtered Chicken)',
-        weight = 600,
-        description = 'كل 5 مع صينية تغليف تصبح صينية دجاج معبأ',
+        weight = 2500,
+        description = 'تُعبّأ عند خط التعبئة. لا تُخزّن، تُحمل فقط',
         client = { image = 'nui://exti_jobs/html/items/slaughtered_chicken.png' },
     },
 
     ['packed_chicken'] = {
         label = 'صينية دجاج معبأ (Packed Chicken)',
-        weight = 3000,
-        description = 'تُباع لتاجر الجملة في ليتل سول',
+        weight = 2000,
+        description = 'تُباع لتاجر الدواجن. لا تُخزّن، تُحمل فقط',
         client = { image = 'nui://exti_jobs/html/items/packed_chicken.png' },
     },
 
     ['packing_tray'] = {
         label = 'صينية تغليف (Packing Tray)',
         weight = 100,
-        description = 'لوظيفة الدواجن: صينية لكل 5 دجاجات',
+        description = 'لم تعد مطلوبة لوظيفة الدواجن',
         client = { image = 'nui://exti_jobs/html/items/packing_tray.png' },
+    },
+
+    ['poultry_kit'] = {
+        label = 'عدة دواجن (Poultry Kit)',
+        weight = 3500,
+        description = 'لوظيفة الدواجن: كل عدة تصبح دجاجة واحدة في الحظيرة',
+        client = { image = 'nui://exti_jobs/html/items/poultry_kit.png' },
     },
 
     ['grape_bunch'] = {

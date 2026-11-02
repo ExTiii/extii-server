@@ -448,9 +448,10 @@ local function jobView(player, name)
         extra = job.extra,
         payText = job.payText,
         hourText = job.hourText,
-        deposit = config.deposit,
+        deposit = job.noVehicle and 0 or config.deposit,
         bonusMax = config.returnBonus.max,
-        vehicle = { model = job.vehicle.model, label = job.vehicle.label },
+        vehicle = job.vehicle and { model = job.vehicle.model, label = job.vehicle.label } or nil,
+        noVehicle = job.noVehicle == true,
         hq = { label = job.hq.label, place = job.hq.place },
         perRound = job.perRound,
         taskWord = job.taskWord,
@@ -527,7 +528,7 @@ lib.callback.register('exti_jobs:server:apply', function(source, name)
     if current == name then return false, 'same' end
     if not config.freeJobs[current] then return false, 'locked' end
     if shifts[source] then return false, 'shift' end
-    if not team and not hasLicence(player) then return false, 'licence' end -- EX_Tii: team jobs don't need a driver's licence
+    if not team and not config.jobs[name].noVehicle and not hasLicence(player) then return false, 'licence' end -- EX_Tii: team jobs (and jobs without a vehicle) don't need a driver's licence
     if not team and (config.jobs[name].minLevel or 1) > levelOf(source).level then return false, 'level' end
     player.Functions.SetJob(name, 0)
     lib.logger(source, 'jobs', ('took the job %s (was %s)'):format(name, current))
@@ -595,8 +596,16 @@ lib.callback.register('exti_jobs:server:startShift', function(source, name, road
     local job = config.jobs[name]
     if not job or jobName(player) ~= name then return false, 'notmine' end
     if shifts[source] then return false, 'already' end
-    if not hasLicence(player) then return false, 'licence' end
     if not near(source, job.hq.supervisor.coords.xyz, 8.0) then return false, 'far' end
+    -- EX_Tii: jobs without a vehicle (chicken): clocking in is all (the uniform is put on in the game)
+    if job.noVehicle then
+        local shift = { job = name, cid = player.PlayerData.citizenid, deposit = 0, rounds = 0, tasks = 0, earned = 0, startedAt = os.time() }
+        shifts[source] = shift
+        newRound(source, shift, job.hq.supervisor.coords.xyz)
+        lib.logger(source, 'jobs', ('clocked in: %s'):format(name))
+        return true, { round = roundView(shift), job = name }
+    end
+    if not hasLicence(player) then return false, 'licence' end
 
     local method = (player.PlayerData.money.cash or 0) >= config.deposit and 'cash'
         or (player.PlayerData.money.bank or 0) >= config.deposit and 'bank' or nil
@@ -1197,6 +1206,105 @@ lib.callback.register('exti_jobs:server:chainInfo', function(source)
     for _, st in ipairs(job.chain) do if st.kind == 'sell' then sellStep = st end end
     local list = soldLastHour(sellerKey(source, shift))
     return { sold = #list, perHour = sellStep and sellStep.perHour or 0 }
+end)
+
+---------------------------------------------------------------------------
+-- EX_Tii (Moe's design, chicken): every step does ALL you carry at once with a mini game.
+--   batchBegin: you are at the place with the items -> the game starts (the server remembers when)
+--   batchFinish: the game is over (at least `seconds` later) -> the score decides how many survive
+--   sellall: a progress bar of `seconds`, then everything is sold at once
+---------------------------------------------------------------------------
+local MAX_BATCH = 40
+
+local function batchStep(source, stepIndex)
+    local shift = shifts[source]
+    if not shift then return nil, 'noshift' end
+    local job = config.jobs[shift.job]
+    local player = getPlayer(source)
+    if not job or not job.chain or not player or jobName(player) ~= shift.job then return nil, 'noshift' end
+    if math.type(stepIndex) ~= 'integer' then return nil, 'failed' end
+    local step = job.chain[stepIndex]
+    if not step or (step.kind ~= 'batch' and step.kind ~= 'sellall') then return nil, 'failed' end
+    local here, ped = pedCoords(source)
+    if not here or flat(here, step.spot) > 3.0 or math.abs(here.z - step.spot.z) > 4.0 then return nil, 'far' end
+    if GetVehiclePedIsIn(ped, false) ~= 0 then return nil, 'far' end
+    return shift, step, job
+end
+
+lib.callback.register('exti_jobs:server:batchBegin', function(source, stepIndex)
+    if busy[source] then return false, 'fast' end
+    local shift, step = batchStep(source, stepIndex)
+    if not shift then return false, step end
+    local have = countOf(source, step.take)
+    if have < 1 then return false, 'missing', step.take end
+    shift.pending = { step = stepIndex, count = math.min(have, MAX_BATCH), at = GetGameTimer(), token = math.random(100000, 999999) }
+    return true, { token = shift.pending.token, count = shift.pending.count, seconds = step.seconds }
+end)
+
+local function batchFinish(source, token, score)
+    local shift, step, job = batchStep(source, shifts[source] and shifts[source].pending and shifts[source].pending.step)
+    if not shift then return false, step end
+    local pending = shift.pending
+    shift.pending = nil
+    if not pending or pending.token ~= token then return false, 'failed' end
+    -- the game (or the progress bar) really took its time
+    if GetGameTimer() - pending.at < step.seconds * 1000 - 1500 then return false, 'fast' end
+    local count = math.min(pending.count, countOf(source, step.take))
+    if count < 1 then return false, 'missing', step.take end
+
+    if step.kind == 'sellall' then
+        if not ox:RemoveItem(source, step.take, count) then return false, 'missing', step.take end
+        local paid = payTask(source, shift, count * step.price, 'job-' .. shift.job)
+        shift.rounds = shift.rounds + 1
+        lib.logger(source, 'jobs', ('sold %d %s for %d$'):format(count, step.take, paid))
+        return true, { sold = count, paid = paid }
+    end
+
+    score = tonumber(score) or 0
+    if score ~= score then score = 0 end
+    score = math.max(0.0, math.min(1.0, score))
+    local got = math.floor(count * score + 0.5)
+    local net = weightOf(step.give) * got - weightOf(step.take) * count
+    if net > 0 and not ox:CanCarryWeight(source, net) then return false, 'full' end
+    if not ox:RemoveItem(source, step.take, count) then return false, 'missing', step.take end
+    if got > 0 and not ox:AddItem(source, step.give, got) then
+        ox:AddItem(source, step.take, count) -- nothing is lost
+        return false, 'full'
+    end
+    return true, { got = got, lost = count - got }
+end
+
+lib.callback.register('exti_jobs:server:batchFinish', function(source, token, score)
+    if busy[source] then return false, 'fast' end
+    busy[source] = true
+    local ok, a, b, c = pcall(batchFinish, source, token, score)
+    busy[source] = nil
+    if not ok then
+        lib.print.error(('batchFinish failed for %s: %s'):format(source, a))
+        return false, 'failed'
+    end
+    return a, b, c
+end)
+
+-- the goods of these jobs can't be kept in a trunk, glovebox, stash or on the ground (only carried or given):
+-- the weight of what you carry is what limits a batch
+CreateThread(function()
+    Wait(2000)
+    local goods = {}
+    for _, job in pairs(config.jobs) do
+        for _, item in ipairs(job.noStore or {}) do goods[item] = true end
+    end
+    if not next(goods) then return end
+    local ok, err = pcall(function()
+        ox:registerHook('swapItems', function(payload)
+            if payload.toType ~= 'player' and payload.fromType == 'player' then
+                notify(payload.source, 'لا يمكن تخزين هذه البضاعة، تُحمل باليد فقط أو تُسلّم لشخص', 'error', 5000)
+                return false
+            end
+            return true
+        end, { itemFilter = goods })
+    end)
+    if not ok then lib.print.error('swapItems hook: ' .. tostring(err)) end
 end)
 
 ---------------------------------------------------------------------------

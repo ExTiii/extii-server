@@ -24,6 +24,17 @@ EXJ.uniforms = {
             props = { [0] = { -1 } },
         },
     },
+    -- EX_Tii: the chicken farm (butcher look): white shirt, dark work trousers, work boots, a cap
+    chicken = {
+        male = {
+            components = { [3] = { 0, 0 }, [4] = { 36, 0 }, [6] = { 25, 0 }, [8] = { 15, 0 }, [11] = { 146, 0 } },
+            props = { [0] = { 2, 0 } },
+        },
+        female = {
+            components = { [3] = { 14, 0 }, [4] = { 35, 0 }, [6] = { 25, 0 }, [8] = { 14, 0 }, [11] = { 141, 0 } },
+            props = { [0] = { 4, 0 } },
+        },
+    },
     delivery = {
         male = {
             components = { [3] = { 0, 0 }, [4] = { 10, 0 }, [6] = { 7, 0 }, [8] = { 15, 0 }, [11] = { 0, 0 } },

@@ -40,6 +40,7 @@ files {
     'html/style.css',
     'html/kit.css',
     'html/app.js',
+    'html/minigame.js',
     'html/logo.png',
     'html/fonts/*.woff2',
 }

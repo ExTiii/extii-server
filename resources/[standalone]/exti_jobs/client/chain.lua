@@ -51,14 +51,30 @@ local function allItems(job)
     local list, seen = {}, {}
     local function add(n) if n and not seen[n] then seen[n] = true list[#list + 1] = n end end
     for _, st in ipairs(job.chain) do
-        if st.give and st.give.item then add(st.give.item) end
-        for item in pairs(st.take or {}) do add(item) end
-        if st.kind == 'process' then for item in pairs(st.give or {}) do add(item) end end
+        if type(st.give) == 'table' and st.give.item then add(st.give.item) end
+        if type(st.take) == 'table' then for item in pairs(st.take) do add(item) end end
+        if st.kind == 'process' and type(st.give) == 'table' then for item in pairs(st.give) do add(item) end end
+    end
+    return list
+end
+
+-- (batch steps name one item: take = 'poultry_kit', give = 'live_chicken')
+local function allItemsOf(job)
+    local list = allItems(job)
+    local seen = {}
+    for _, n in ipairs(list) do seen[n] = true end
+    for _, st in ipairs(job.chain) do
+        for _, n in ipairs({ type(st.take) == 'string' and st.take or nil, type(st.give) == 'string' and st.give or nil }) do
+            if n and not seen[n] then seen[n] = true list[#list + 1] = n end
+        end
     end
     return list
 end
 
 local function hasAll(step)
+    if type(step.take) == 'string' then
+        return (C.have[step.take] or 0) >= 1, step.take, 1
+    end
     for item, need in pairs(step.take or {}) do
         if (C.have[item] or 0) < need then return false, item, need end
     end
@@ -186,9 +202,91 @@ local function act(index, spotIndex, spot)
     C.busy = false
 end
 
+-- EX_Tii (Moe's design): everything you carry at once, with the step's own mini game
+local gameWait = nil
+RegisterNUICallback('gameDone', function(data, cb)
+    cb(true)
+    if gameWait then gameWait:resolve(tonumber(data and data.score) or 0) end
+end)
+
+function EXJ.playGame(game, count, seconds)
+    gameWait = promise.new()
+    SendNUIMessage({ action = 'game', game = game, count = count, seconds = seconds })
+    SetNuiFocus(true, true)
+    -- never stuck: the game ends by itself after its time (+ a margin)
+    SetTimeout((seconds + 8) * 1000, function() if gameWait then gameWait:resolve(0) end end)
+    local score = Citizen.Await(gameWait)
+    gameWait = nil
+    SetNuiFocus(false, false)
+    return score
+end
+
+local function playAnim(anim)
+    if not anim or not EXJ.loadDict(anim.dict) then return end
+    TaskPlayAnim(cache.ped, anim.dict, anim.clip, 8.0, -8.0, -1, 1, 0, false, false, false)
+end
+
+local function actBatch(index, spot)
+    local step = C.job.chain[index]
+    C.busy = true
+    EXJ.clearPrompt('chain')
+    TaskTurnPedToFaceCoord(cache.ped, spot.x, spot.y, spot.z, 600)
+    Wait(400)
+    local ok, info, item = lib.callback.await('exti_jobs:server:batchBegin', false, index)
+    if not ok then
+        if info == 'missing' then
+            EXJ.notify(('تحتاج %s'):format(itemLabel(item)), 'error')
+        else
+            EXJ.notify(ERR[info] or ERR.failed, 'error')
+        end
+        C.busy = false
+        return
+    end
+    local score = 1.0
+    if step.kind == 'sellall' then
+        local done = lib.progressBar({
+            duration = info.seconds * 1000, label = step.progress or step.label, useWhileDead = false, canCancel = true,
+            disable = { move = true, car = true, combat = true },
+            anim = step.anim and { dict = step.anim.dict, clip = step.anim.clip, flag = 1 } or nil,
+        })
+        if not done then C.busy = false return end
+    else
+        playAnim(step.anim)
+        FreezeEntityPosition(cache.ped, true)
+        score = EXJ.playGame(step.game, info.count, info.seconds)
+        FreezeEntityPosition(cache.ped, false)
+        ClearPedTasks(cache.ped)
+    end
+    local done, r, why = lib.callback.await('exti_jobs:server:batchFinish', false, info.token, score)
+    if done and step.kind == 'sellall' then
+        EXJ.notify(('بعت %d دجاجة'):format(r.sold), 'success', 5000)
+    elseif done then
+        local text = (step.done or 'أنجزت %d'):format(r.got)
+        if r.lost > 0 then text = text .. ' · ' .. (step.lost or 'خسرت %d'):format(r.lost) end
+        EXJ.notify(text, r.lost > 0 and 'inform' or 'success', 6000)
+    elseif r == 'missing' then
+        EXJ.notify(('تحتاج %s'):format(itemLabel(why)), 'error')
+    else
+        EXJ.notify(ERR[r] or ERR.failed, 'error')
+    end
+    C.busy = false
+end
+
 -- the "[E] ..." text for a step, or why it can't be done yet
 local function promptFor(index)
     local job, step = C.job, C.job.chain[index]
+    if step.kind == 'batch' or step.kind == 'sellall' then
+        local n = C.have[step.take] or 0
+        if n < 1 then
+            local isSupply = false
+            for _, s in ipairs(job.supplies or {}) do if s == step.take then isSupply = true end end
+            return nil, isSupply and ('تحتاج %s من بقالة 24/7'):format(itemLabel(step.take)) or ('تحتاج %s'):format(itemLabel(step.take))
+        end
+        if step.kind == 'sellall' then
+            return ('[E] %s (%d × %d$)'):format(step.label, n, step.price)
+        end
+        return ('[E] %s (%d %s)'):format(step.label, n, itemLabel(step.take))
+    end
     if step.kind == 'collect' then
         local have = C.have[step.give.item] or 0
         if have >= step.cap then return nil, ('معك %d، الحد الأقصى. أكمل الخطوة التالية'):format(have) end
@@ -215,7 +313,7 @@ local function loop()
     if C.running then return end
     C.running = true
     CreateThread(function()
-        local items = allItems(C.job)
+        local items = allItemsOf(C.job)
         local lastCount = 0
         while EXJ.shift and C.job and EXJ.shift.job == C.name do
             local now = GetGameTimer()
@@ -245,7 +343,9 @@ local function loop()
                                 prompted = true
                                 if text then
                                     EXJ.prompt('chain', text)
-                                    if EXJ.pressedE() then act(i, st.kind == 'collect' and si or nil, p) end
+                                    if EXJ.pressedE() then
+                                        if st.kind == 'batch' or st.kind == 'sellall' then actBatch(i, p) else act(i, st.kind == 'collect' and si or nil, p) end
+                                    end
                                 else
                                     EXJ.prompt('chain', why)
                                 end
@@ -253,7 +353,7 @@ local function loop()
                         end
                     end
                 end
-                if st.kind == 'sell' and st.ped then
+                if (st.kind == 'sell' or st.kind == 'sellall') and st.ped then
                     if #(me - st.ped.xyz) < 80.0 then spawnBuyer(st) elseif C.buyer then removeBuyer() end
                 end
             end
@@ -283,11 +383,15 @@ for name, job in pairs(config.jobs) do
             end,
             start = function()
                 C.name, C.job, C.rest = name, job, {}
-                C.have = counts(allItems(job))
+                C.have = counts(allItemsOf(job))
                 drawBlips(nextStep())
                 local supplies = {}
                 for _, item in ipairs(job.supplies or {}) do supplies[#supplies + 1] = itemLabel(item) end
-                EXJ.notify(('بدأت المناوبة! خذ الشاحنة واتبع الخط الذهبي. لا تنسَ %s من بقالة 24/7'):format(table.concat(supplies, '، ')), 'success', 10000)
+                if job.noVehicle then
+                    EXJ.notify(('سجّلت دخولك ولبست زي العمل. اشترِ %s من بقالة 24/7 ثم اتبع الخط الذهبي'):format(table.concat(supplies, '، ')), 'success', 10000)
+                else
+                    EXJ.notify(('بدأت المناوبة! خذ الشاحنة واتبع الخط الذهبي. لا تنسَ %s من بقالة 24/7'):format(table.concat(supplies, '، ')), 'success', 10000)
+                end
                 loop()
             end,
             update = function() end,
@@ -351,9 +455,11 @@ local function openSpots(name)
     local opts = {
         { title = ('المشرف يقف هنا (%s)'):format(job.hq.supervisor.name), icon = 'user', description = 'قف مكانه وانظر إلى الجهة التي يجب أن ينظر إليها',
           onSelect = function() save(name, 'supervisor', nil, nil, 'نُقل المشرف إلى مكانك') end },
-        { title = 'مكان شاحنة العمل هنا', icon = 'truck', description = 'اجلس في مركبة على الطريق في الاتجاه الصحيح، أو قف مكانها',
-          onSelect = function() save(name, 'vehicle', nil, nil, 'حُفظ مكان الشاحنة') end },
     }
+    if not job.noVehicle then
+        opts[#opts + 1] = { title = 'مكان شاحنة العمل هنا', icon = 'truck', description = 'اجلس في مركبة على الطريق في الاتجاه الصحيح، أو قف مكانها',
+            onSelect = function() save(name, 'vehicle', nil, nil, 'حُفظ مكان الشاحنة') end }
+    end
     for _, st in ipairs(job.chain) do
         if st.kind == 'collect' then
             opts[#opts + 1] = { title = ('%s: أضف دائرة هنا (%d الآن)'):format(st.label, #st.spots), icon = 'plus',
@@ -365,7 +471,7 @@ local function openSpots(name)
         else
             opts[#opts + 1] = { title = ('%s (%s): انقل الدائرة هنا'):format(st.label, st.place), icon = 'location-dot',
                 onSelect = function() save(name, 'step', st.id, 'move', 'نُقلت الدائرة إلى مكانك') end }
-            if st.kind == 'sell' then
+            if st.kind == 'sell' or st.kind == 'sellall' then
                 opts[#opts + 1] = { title = 'التاجر (شخص) يقف هنا', icon = 'user-tie', description = 'قف مكانه خلف الدائرة وانظر إلى الزبائن',
                     onSelect = function() save(name, 'step', st.id, 'ped', 'وُضع التاجر في مكانك') end }
             end
