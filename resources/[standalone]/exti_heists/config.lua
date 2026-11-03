@@ -53,7 +53,7 @@ Config.heatMinutes = 30              -- after any robbery: no new Tier 4+ job
 Config.combatLog = {
     graceSeconds = 180,  -- a crash: back within 3 min = keep everything
     xp = -15,            -- logged out with heat for longer: the loot is deleted and this XP
-    lootItems = { 'black_money', 'marked_bills', 'rolex', 'diamond_ring', 'goldchain', 'diamond', 'small_tv', 'stolen_laptop', 'stolen_console', 'painting', 'vault_goldbar' },
+    lootItems = { 'black_money', 'marked_bills', 'rolex', 'diamond_ring', 'goldchain', 'diamond', 'small_tv', 'stolen_laptop', 'stolen_console', 'painting', 'vault_goldbar', 'bearer_bonds', 'mw_electronics' },
 }
 
 ---------------------------------------------------------------------------
@@ -65,6 +65,8 @@ Config.npc = {
         house   = { delay = 60,  cars = { 1, 1 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_PISTOL' } },
         atm     = { delay = 60,  cars = { 1, 2 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_PUMPSHOTGUN' } },
         jewelry = { delay = 120, cars = { 2, 3 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_CARBINERIFLE' } },
+        bank    = { delay = 120, cars = { 2, 3 }, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_PUMPSHOTGUN' } },
+        truck   = { delay = 75,  cars = { 2, 2 }, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_SMG' } },
     },
     lostSeconds = 60,        -- out of their sight this long: they lose you (like GTA's wanted stars)
     giveUpDistance = 220.0,  -- nobody this close to the spot when they arrive: they don't come
@@ -151,6 +153,8 @@ Config.fence = {
         stolen_console = { price = 400,  daily = 20 },
         painting       = { price = 1400, daily = 8 },
         vault_goldbar  = { price = 15000, daily = 5 },
+        bearer_bonds   = { price = 4000, daily = 10 },
+        mw_electronics = { price = 1800, daily = 12 },
     },
 }
 
@@ -302,6 +306,8 @@ Config.contracts = {
         { id = 'rings',     kind = 'sell', item = 'diamond_ring', need = { 1, 2 }, text = 'بِعني %d خواتم ألماس' },
         { id = 'laptops',   kind = 'sell', item = 'stolen_laptop', need = 1,       text = 'أحضر لي حاسوبًا مسروقًا (%d)' },
         { id = 'tv',        kind = 'sell', item = 'small_tv',     need = 1,        text = 'أحضر لي تلفازًا (%d)' },
+        { id = 'fleeca',    kind = 'fleeca', need = { 2, 3 }, text = 'افتح %d صناديق أمانات في فليكا', minRep = 4 },
+        { id = 'truck',     kind = 'armored', need = 1,       text = 'أفرغ شاحنة مصفّحة (%d)', minRep = 5 },
     },
 }
 
@@ -353,3 +359,275 @@ Config.crew = {
         cop  = { 'شرطي الشهر', 'ثاني شرطيي الشهر', 'ثالث شرطيي الشهر' },
     },
 }
+
+---------------------------------------------------------------------------
+-- M3: the minigames' minimum times (the server refuses a faster result)
+---------------------------------------------------------------------------
+Config.games.c4 = { minSeconds = 4.0 }
+Config.games.wirecut = { minSeconds = 3.0 }
+Config.games.keypad = { minSeconds = 4.0 }
+
+Config.calls.fleeca = 'سطو على بنك فليكا'
+Config.calls.fleecaQuiet = 'إنذار متأخر: بنك فليكا'
+Config.calls.truck = 'سطو على شاحنة مصفّحة'
+Config.calls.convoy = 'هجوم على قافلة ميري ويذر'
+Config.calls.stash = 'إطلاق نار في مزرعة الكارتيل'
+Config.calls.prep = 'سرقة من سيارة'
+
+-- one bank at a time in the whole city (Fleeca, Paleto, Pacific)
+Config.bankLock = true
+
+---------------------------------------------------------------------------
+-- banks (vaults). Every step is a minigame at a spot; some open a door, some start a time lock.
+-- alarm: 'start' = the alarm goes off when the step starts, 'fail' = only if it fails, 'quiet' = a late alarm
+-- (quietSeconds after the step) unless a wire-cut step before it worked. GTA's own Fleeca interiors.
+---------------------------------------------------------------------------
+local function fleeca(label, area, door, doorModel, closed, open, panel, lockers)
+    return {
+        kind = 'fleeca', tier = 4, label = label, area = area, center = door, radius = 18.0,
+        cooldownMinutes = 120, crew = { 2, 4 },
+        steps = {
+            { id = 'alarm', label = '[E] افتح لوحة الإنذار واقطع الأسلاك', at = panel, game = 'wirecut', params = {}, alarm = 'fail', quiet = true, optional = true },
+            { id = 'vault', label = '[E] اخترق قفل الخزنة (فلاشة خضراء)', at = door, game = 'hack', params = { tier = 1 }, item = 'usb_green', alarm = 'quiet',
+              timelock = 90, opens = 'vault' },
+        },
+        doors = { vault = { model = doorModel, pos = door, closed = closed, open = open } },
+        lockers = lockers, lockerGame = 'drill',
+        loot = { item = 'marked_bills', money = { 3200, 5000 }, usb = { item = 'usb_blue', chance = 0.15 } },
+        quietSeconds = 90,   -- the alarm panel cut: the bank's alarm only goes off this long after the vault hack
+    }
+end
+Config.vaults = {
+    fleeca_legion = fleeca('فليكا · ليجن سكوير', 'ليجن سكوير', vec3(146.92, -1046.11, 29.36), `v_ilev_gb_vauldr`, 250.0, 160.0, vec3(147.75, -1044.40, 29.37), {
+        vec3(149.84, -1044.9, 29.34), vec3(151.16, -1046.64, 29.34), vec3(147.16, -1047.72, 29.34), vec3(146.54, -1049.28, 29.34),
+        vec3(146.88, -1050.33, 29.34), vec3(150.0, -1050.67, 29.34), vec3(149.47, -1051.28, 29.34), vec3(150.58, -1049.09, 29.34) }),
+    fleeca_alta = fleeca('فليكا · ألتا', 'ألتا', vec3(311.15, -284.49, 54.16), `v_ilev_gb_vauldr`, 250.0, 160.0, vec3(311.98, -282.78, 54.17), {
+        vec3(311.16, -287.71, 54.14), vec3(311.86, -286.21, 54.14), vec3(313.39, -289.15, 54.14), vec3(311.7, -288.45, 54.14),
+        vec3(314.23, -288.77, 54.14), vec3(314.83, -287.33, 54.14), vec3(315.24, -284.85, 54.14), vec3(314.08, -283.38, 54.14) }),
+    fleeca_hawick = fleeca('فليكا · هاويك', 'بيرتون', vec3(-353.82, -55.37, 49.03), `v_ilev_gb_vauldr`, 250.0, 160.0, vec3(-352.99, -53.66, 49.04), {
+        vec3(-350.99, -54.13, 49.01), vec3(-349.53, -55.77, 49.01), vec3(-353.54, -56.94, 49.01), vec3(-354.09, -58.55, 49.01),
+        vec3(-353.81, -59.48, 49.01), vec3(-349.8, -58.3, 49.01), vec3(-351.14, -60.37, 49.01), vec3(-350.4, -59.92, 49.01) }),
+    fleeca_delperro = fleeca('فليكا · ديل بيرو', 'روكفورد هيلز', vec3(-1210.77, -336.57, 37.78), `v_ilev_gb_vauldr`, 296.863, 206.863, vec3(-1211.70, -334.94, 37.79), {
+        vec3(-1209.68, -333.65, 37.75), vec3(-1207.46, -333.77, 37.75), vec3(-1209.45, -337.47, 37.75), vec3(-1208.65, -339.06, 37.75),
+        vec3(-1207.75, -339.42, 37.75), vec3(-1205.28, -338.14, 37.75), vec3(-1205.08, -337.28, 37.75), vec3(-1205.92, -335.75, 37.75) }),
+    fleeca_ocean = fleeca('فليكا · الطريق الساحلي', 'بانهام كانيون', vec3(-2956.55, 481.74, 15.69), `hei_prop_heist_sec_door`, 357.542, 267.542, vec3(-2958.21, 482.53, 15.70), {
+        vec3(-2958.54, 484.1, 15.67), vec3(-2957.3, 485.95, 15.67), vec3(-2955.09, 482.43, 15.67), vec3(-2953.26, 482.42, 15.67),
+        vec3(-2952.63, 483.09, 15.67), vec3(-2952.45, 485.66, 15.67), vec3(-2953.13, 486.26, 15.67), vec3(-2954.98, 486.37, 15.67) }),
+    fleeca_route68 = fleeca('فليكا · الطريق 68', 'هارموني', vec3(1175.96, 2712.87, 38.09), `v_ilev_gb_vauldr`, 89.458, -10.542, vec3(1176.40, 2711.03, 38.10), {
+        vec3(1173.69, 2710.76, 38.07), vec3(1171.78, 2711.94, 38.07), vec3(1175.25, 2714.51, 38.07), vec3(1175.26, 2715.97, 38.07),
+        vec3(1174.27, 2716.83, 38.07), vec3(1172.32, 2716.82, 38.07), vec3(1171.25, 2716.08, 38.07), vec3(1171.23, 2714.44, 38.07) }),
+}
+Config.hotBranch = { mult = 2.0 }   -- one Fleeca a day holds double (the fence hints which: text him "بنك")
+
+---------------------------------------------------------------------------
+-- guards (stash house, convoy, big banks): server-made people who patrol, see and hear, call for help.
+---------------------------------------------------------------------------
+Config.guards = {
+    sight = 38.0, cone = 70,          -- metres, degrees (each side)
+    noticeSeconds = 2.2,              -- seen this long in the open (faster if armed, masked, running)
+    hearShots = 70.0, hearRun = 9.0,
+    accuracy = 30, armour = 60,
+    rel = 'EXTI_GUARD',
+}
+
+---------------------------------------------------------------------------
+-- the armored truck (Tier 5) and the Merryweather convoy (Tier 6): text the fence "شاحنة" / "قافلة"
+---------------------------------------------------------------------------
+Config.trucks = {
+    armored = {
+        tier = 5, label = 'شاحنة غروبه 6 المصفّحة', cooldownMinutes = 180, cost = 0, needs = {},
+        model = 'stockade', guardModel = 's_m_m_security_01',
+        crew = { { seat = -1, weapon = 'WEAPON_COMBATPISTOL' }, { seat = 0, weapon = 'WEAPON_PUMPSHOTGUN' }, { seat = 1, weapon = 'WEAPON_SMG' } },
+        escorts = {},
+        speed = 16.0,
+        bags = 4, bagSeconds = 6, money = { 7500, 11200 }, item = 'marked_bills', usb = { item = 'usb_blue', chance = 0.10 },
+        gpsSeconds = 180, fuseSeconds = 30,
+    },
+    convoy = {
+        tier = 6, label = 'قافلة ميري ويذر', cooldownMinutes = 360, cost = 8000, needs = { usb = 'usb_blue', prep = 'blueprints' },
+        model = 'mule', guardModel = 's_m_y_blackops_01',
+        crew = { { seat = -1, weapon = 'WEAPON_CARBINERIFLE' }, { seat = 0, weapon = 'WEAPON_CARBINERIFLE' } },
+        escorts = { { model = 'mesa3', crew = { { seat = -1, weapon = 'WEAPON_CARBINERIFLE' }, { seat = 0, weapon = 'WEAPON_CARBINERIFLE' } } },
+                    { model = 'mesa3', crew = { { seat = -1, weapon = 'WEAPON_CARBINERIFLE' }, { seat = 0, weapon = 'WEAPON_SPECIALCARBINE' } } } },
+        speed = 14.0,
+        bags = 6, bagSeconds = 7, money = { 6500, 9500 }, item = 'black_money', extra = { item = 'mw_electronics', amount = { 2, 4 } }, usb = { item = 'usb_red', chance = 0.10 },
+        gpsSeconds = 0, fuseSeconds = 30,
+    },
+    -- the roads they drive (start, then the way points); the server picks one
+    routes = {
+        { vec4(-281.05, -617.55, 33.35, 276.51), vec3(-74.0, -610.0, 36.0), vec3(135.0, -560.0, 43.0), vec3(240.0, -365.0, 44.0), vec3(395.0, -350.0, 46.5), vec3(560.0, -400.0, 44.0) },
+        { vec4(2.55, -671.9, 32.34, 181.81), vec3(10.0, -860.0, 30.0), vec3(110.0, -1020.0, 29.0), vec3(220.0, -1060.0, 29.0), vec3(400.0, -1060.0, 29.0), vec3(500.0, -1240.0, 29.0) },
+        { vec4(147.24, -1081.15, 29.19, 1.6), vec3(150.0, -950.0, 30.0), vec3(250.0, -650.0, 42.0), vec3(320.0, -470.0, 43.0), vec3(220.0, -200.0, 54.0), vec3(110.0, 30.0, 80.0) },
+        { vec4(-1187.67, -321.86, 37.61, 22.79), vec3(-1100.0, -260.0, 37.5), vec3(-950.0, -240.0, 37.8), vec3(-760.0, -220.0, 37.0), vec3(-650.0, -320.0, 35.0), vec3(-570.0, -480.0, 34.5) },
+        { vec4(1226.0, 2690.0, 37.6, 90.0), vec3(1000.0, 2690.0, 39.0), vec3(700.0, 2700.0, 40.0), vec3(450.0, 2640.0, 43.0), vec3(250.0, 2620.0, 45.0), vec3(-20.0, 2860.0, 57.0) },
+    },
+}
+
+---------------------------------------------------------------------------
+-- the cartel stash house (Tier 6): La Fuente Blanca. Guards in the yard, the money in the barn.
+---------------------------------------------------------------------------
+Config.stash = {
+    tier = 6, label = 'مزرعة الكارتيل', area = 'لا فوينتي بلانكا', cooldownMinutes = 360, cost = 6000,
+    needs = { usb = 'usb_blue', prep = 'guard_keycard' },
+    center = vec3(1440.0, 1120.0, 114.3), radius = 120.0,
+    model = 'g_m_m_mexboss_01', models = { 'g_m_y_mexgoon_01', 'g_m_y_mexgoon_02', 'g_m_y_mexgoon_03' },
+    guards = {   -- where each stands; patrol = the points he walks between
+        { pos = vec4(1394.6, 1141.7, 114.3, 90.0), weapon = 'WEAPON_ASSAULTRIFLE', patrol = { vec3(1394.6, 1141.7, 114.3), vec3(1394.0, 1120.0, 114.3), vec3(1410.0, 1110.0, 114.3) } },
+        { pos = vec4(1420.0, 1150.0, 114.3, 180.0), weapon = 'WEAPON_MICROSMG', patrol = { vec3(1420.0, 1150.0, 114.3), vec3(1450.0, 1150.0, 114.3) } },
+        { pos = vec4(1455.0, 1125.0, 114.3, 270.0), weapon = 'WEAPON_ASSAULTRIFLE', patrol = { vec3(1455.0, 1125.0, 114.3), vec3(1455.0, 1100.0, 114.3), vec3(1435.0, 1095.0, 114.3) } },
+        { pos = vec4(1462.0, 1112.0, 114.3, 0.0), weapon = 'WEAPON_PUMPSHOTGUN' },
+        { pos = vec4(1405.0, 1095.0, 114.3, 45.0), weapon = 'WEAPON_ASSAULTRIFLE', patrol = { vec3(1405.0, 1095.0, 114.3), vec3(1430.0, 1080.0, 114.3) } },
+        { pos = vec4(1470.0, 1140.0, 114.3, 200.0), weapon = 'WEAPON_MACHINEPISTOL' },
+    },
+    waves = { { delay = 45, from = vec4(1370.0, 1180.0, 113.5, 200.0), count = 3, weapon = 'WEAPON_ASSAULTRIFLE' },
+              { delay = 110, from = vec4(1500.0, 1180.0, 112.0, 140.0), count = 3, weapon = 'WEAPON_CARBINERIFLE' } },
+    -- the gate camera box: the blue USB keeps the yard blind (no instant alert at first sight)
+    camera = vec3(1388.6, 1150.6, 114.3),
+    crates = { vec4(1468.2, 1131.0, 114.3, 90.0), vec4(1468.2, 1129.0, 114.3, 90.0), vec4(1466.5, 1127.2, 114.3, 0.0), vec4(1464.4, 1127.2, 114.3, 0.0), vec4(1466.0, 1133.4, 114.3, 180.0) },
+    crateModel = 'prop_box_wood05a', crateSeconds = 8,
+    money = { 8000, 12000 }, usb = { item = 'usb_red', chance = 0.10 },
+}
+
+---------------------------------------------------------------------------
+-- prep missions: a car parked somewhere with what the big job needs, sometimes guarded
+---------------------------------------------------------------------------
+Config.preps = {
+    guard_keycard = { label = 'بطاقة حارس الكارتيل', model = 'cavalcade', guards = 2, guardModel = 'g_m_y_mexgoon_01', weapon = 'WEAPON_PISTOL' },
+    blueprints    = { label = 'مخططات قافلة ميري ويذر', model = 'baller', guards = 2, guardModel = 's_m_y_blackops_01', weapon = 'WEAPON_CARBINERIFLE' },
+    catering_uniform = { label = 'زي شركة التموين', model = 'pony', guards = 0 },
+    spots = {
+        vec4(-1153.0, -1561.0, 4.4, 35.0), vec4(-339.0, -1530.0, 27.5, 0.0), vec4(1217.0, -1385.0, 35.2, 180.0), vec4(-1324.0, -421.0, 34.5, 120.0),
+        vec4(872.0, -2196.0, 30.5, 85.0), vec4(-97.0, 6340.0, 31.5, 225.0), vec4(1695.0, 3594.0, 35.4, 210.0), vec4(-3175.0, 1090.0, 20.8, 245.0),
+    },
+    minutes = 45, cooldownMinutes = 30, lockpickPins = 5, itemHours = 24,
+}
+
+---------------------------------------------------------------------------
+-- M4: the Broker (الوسيط)
+---------------------------------------------------------------------------
+Config.broker = {
+    number = '555-0420',
+    minRep = 4,
+    usbs = {   -- clean money from the bank; a few a day for the whole city
+        usb_green = { price = 2500, rep = 4, daily = 5 },
+        usb_blue  = { price = 6000, rep = 5, daily = 2 },
+    },
+    pacificSpecials = {   -- one each week, in two of Pacific's boxes
+        { item = 'diamond', amount = { 3, 5 }, label = 'ألماس خام' },
+        { item = 'painting', amount = { 1, 1 }, label = 'لوحة لا تُقدّر بثمن' },
+        { item = 'bearer_bonds', amount = { 2, 3 }, label = 'سندات لحاملها' },
+    },
+    bigScore = {
+        rep = 10,
+        preps = { 'guard_keycard', 'blueprints', 'catering_uniform' },
+        utcOffset = 3,    -- the Gulf (Moe: "Fri-Sat 20:00-02:00 Gulf"; 3 = Saudi/Kuwait/Qatar time, 4 = UAE)
+        windows = { { day = 6, from = 20, to = 2 }, { day = 7, from = 20, to = 2 } },   -- 6 = Friday, 7 = Saturday (night into the next day)
+    },
+    -- the story: one text when you reach each level
+    story = {
+        [4] = 'سمعت عنك. لا تبحث عني، أنا أجدك. حين تريد شيئًا أكبر من البيوت والمحلات، اكتب. ولا تكتب أسماء أبدًا.',
+        [5] = 'البنوك الصغيرة كانت بداية جيدة. الشاحنات المصفّحة تمر كل يوم. المصرّف يعرف متى.',
+        [6] = 'الكارتيل لا يحب من يدخل مزرعته. لكن المال هناك لا ينام. احضر طاقمًا، لا أصدقاء.',
+        [7] = 'باليتو. بنك صغير في بلدة نائمة، وخزنة أكبر مما تظن. لا يُسرق بلا شرطة في الخدمة: هم جزء من اللعبة.',
+        [8] = 'باسيفيك ستاندرد. كثيرون حاولوا. اسألني كل أسبوع ماذا في الخزنة.',
+        [9] = 'هناك يخت قبالة الساحل لا يرسو أبدًا. صاحبه يحب الحفلات. التموين هو الطريق.',
+        [10] = 'الآن تعرف كيف تعمل المدينة. الكبيرة كل أسبوع، لطاقم واحد فقط. اكتب "الكبيرة".',
+    },
+}
+
+---------------------------------------------------------------------------
+-- M4: the big banks (the same engine as Fleeca, more steps). Police only (Tier 7+).
+-- door: closed / open = headings; or swing = turn this many degrees from where the map has it
+---------------------------------------------------------------------------
+Config.vaults.paleto = {
+    kind = 'paleto', tier = 7, label = 'بنك بلين كاونتي (باليتو)', area = 'باليتو باي', center = vec3(-104.0, 6470.0, 31.6), radius = 22.0,
+    cooldownMinutes = 360, crew = { 4, 6 }, cost = 10000, prep = 'blueprints',
+    steps = {
+        { id = 'alarm', label = '[E] اقطع حلقة الإنذار', at = vec3(-109.9, 6469.2, 31.63), game = 'wirecut', params = {}, alarm = 'fail', quiet = true, optional = true },
+        { id = 'gate',  label = '[E] اخترق بوابة الخزنة (فلاشة زرقاء)', at = vec3(-106.11, 6475.36, 31.62), game = 'hack', params = { tier = 2 }, item = 'usb_blue', alarm = 'quiet', opens = 'gate' },
+        { id = 'vault', label = '[E] ضع C4 على باب الخزنة', at = vec3(-104.6, 6473.9, 31.62), game = 'c4', params = { leads = 4 }, item = 'c4', alarm = 'start', blast = 20, opens = 'vault' },
+    },
+    doors = {
+        gate = { model = `v_ilev_cbankvaulgate02`, pos = vec3(-106.11, 6475.36, 31.62), swing = -90.0 },
+        vault = { model = -1185205679, pos = vec3(-105.61, 6472.03, 31.62), closed = 45.45, open = 130.45 },
+    },
+    lockers = { vec3(-107.4, 6473.87, 31.62), vec3(-107.66, 6475.61, 31.62), vec3(-103.52, 6475.03, 31.62), vec3(-102.3, 6476.13, 31.66),
+                vec3(-102.43, 6477.45, 31.67), vec3(-103.97, 6478.97, 31.62), vec3(-105.39, 6479.19, 31.67), vec3(-106.57, 6478.01, 31.62) },
+    lockerGame = 'drill',
+    loot = { item = 'marked_bills', money = { 7500, 11200 }, usb = { item = 'usb_red', chance = 0.20 }, extra = { { item = 'vault_goldbar', amount = { 1, 1 }, chance = 0.4 } } },
+    quietSeconds = 60,
+}
+Config.vaults.pacific = {
+    kind = 'pacific', tier = 8, label = 'بنك باسيفيك ستاندرد', area = 'وسط فاينوود', center = vec3(255.0, 220.0, 104.0), radius = 35.0,
+    cooldownMinutes = 1440, crew = { 4, 8 }, cost = 25000, prep = 'blueprints', prep2 = 'guard_keycard', special = true, lasers = true,
+    steps = {
+        { id = 'stairs', label = '[E] اخترق باب الدرج (فلاشة حمراء)', at = vec3(261.95, 223.11, 106.28), game = 'hack', params = { tier = 3 }, item = 'usb_red', alarm = 'fail', opens = 'stairs' },
+        { id = 'gate1',  label = '[E] أدخل رمز البوابة الأولى', at = vec3(252.55, 221.15, 101.68), game = 'keypad', params = { tries = 6 }, alarm = 'fail', opens = 'gate1' },
+        { id = 'vault',  label = '[E] ضع C4 على باب الخزنة الكبير (اثنتان)', at = vec3(253.25, 228.44, 101.68), game = 'c4', params = { leads = 4 }, item = 'c4', count = 2, alarm = 'start', blast = 25, opens = 'vault' },
+        { id = 'gate2',  label = '[E] افتح البوابة الداخلية (أسلاك الإنذار)', at = vec3(261.15, 215.21, 101.68), game = 'wirecut', params = {}, alarm = 'fail', opens = 'gate2' },
+    },
+    doors = {
+        stairs = { model = `hei_v_ilev_bk_gate2_pris`, pos = vec3(261.95, 223.11, 106.28), swing = -90.0, radius = 4.0 },
+        gate1 = { model = `hei_v_ilev_bk_safegate_pris`, pos = vec3(252.55, 221.15, 101.68), swing = -90.0, radius = 4.0 },
+        vault = { model = 961976194, pos = vec3(253.25, 228.44, 101.68), closed = 160.0, open = 70.0, radius = 20.0 },
+        gate2 = { model = `hei_v_ilev_bk_safegate_pris`, pos = vec3(261.15, 215.21, 101.68), swing = -90.0, radius = 4.0 },
+    },
+    lockers = { vec3(258.57, 218.36, 101.68), vec3(260.82, 217.62, 101.68), vec3(259.33, 213.76, 101.68), vec3(257.09, 214.55, 101.68), vec3(263.7, 216.48, 101.68),
+                vec3(265.81, 215.81, 101.68), vec3(266.43, 214.37, 101.68), vec3(265.71, 212.49, 101.68), vec3(264.24, 211.92, 101.68), vec3(262.21, 212.67, 101.68) },
+    lockerGame = 'drill',
+    loot = { item = 'marked_bills', money = { 15000, 25000 }, usb = { item = 'usb_gold', chance = 0.25 }, extra = { { item = 'vault_goldbar', amount = { 1, 2 }, chance = 0.35 } } },
+    quietSeconds = 45,
+    -- the downstairs hallway: red beams that sweep; touch one = the alarm
+    laserArea = { a = vec3(250.0, 223.5, 101.7), b = vec3(258.5, 229.5, 101.7) },
+    guards = {
+        center = vec3(243.0, 220.0, 106.3), radius = 40.0, models = { 's_m_m_security_01' },
+        guards = {
+            { pos = vec4(241.3, 225.6, 106.3, 160.0), weapon = 'WEAPON_PISTOL', patrol = { vec3(241.3, 225.6, 106.3), vec3(250.0, 222.0, 106.3) } },
+            { pos = vec4(234.5, 215.0, 106.3, 250.0), weapon = 'WEAPON_PISTOL' },
+            { pos = vec4(255.8, 207.6, 110.3, 340.0), weapon = 'WEAPON_CARBINERIFLE' },
+        },
+    },
+}
+Config.calls.paleto = 'سطو على بنك باليتو'
+Config.calls.pacific = 'سطو على بنك باسيفيك ستاندرد'
+Config.calls.yacht = 'هجوم على اليخت'
+Config.calls.bigscore = 'سطو على شاحنة ذهب مستودع الاتحاد'
+
+---------------------------------------------------------------------------
+-- M4: the yacht (Tier 9) — the heist yacht off Banham Canyon (GTA's own, loaded on demand)
+---------------------------------------------------------------------------
+Config.yacht = {
+    tier = 9, label = 'اليخت', cooldownMinutes = 2880, cost = 35000, needs = { usb = 'usb_red', c4 = 2, prep = 'catering_uniform' },
+    ipls = { 'hei_yacht_heist', 'hei_yacht_heist_Bar', 'hei_yacht_heist_Bedrm', 'hei_yacht_heist_Bridge', 'hei_yacht_heist_DistantLights', 'hei_yacht_heist_enginrm', 'hei_yacht_heist_LODLights', 'hei_yacht_heist_Lounge' },
+    center = vec3(-2043.97, -1031.58, 11.98), radius = 60.0, model = 's_m_y_blackops_01', models = { 's_m_y_blackops_01', 's_m_y_blackops_02' },
+    guards = {
+        { pos = vec4(-2032.0, -1036.0, 8.97, 70.0), weapon = 'WEAPON_CARBINERIFLE', patrol = { vec3(-2032.0, -1036.0, 8.97), vec3(-2060.0, -1028.0, 8.97) } },
+        { pos = vec4(-2090.0, -1015.0, 8.97, 250.0), weapon = 'WEAPON_CARBINERIFLE', patrol = { vec3(-2090.0, -1015.0, 8.97), vec3(-2070.0, -1022.0, 8.97) } },
+        { pos = vec4(-2050.0, -1033.0, 11.9, 160.0), weapon = 'WEAPON_SPECIALCARBINE' },
+        { pos = vec4(-2070.0, -1025.0, 11.9, 340.0), weapon = 'WEAPON_CARBINERIFLE', patrol = { vec3(-2070.0, -1025.0, 11.9), vec3(-2045.0, -1032.0, 11.9) } },
+        { pos = vec4(-2080.0, -1020.0, 14.9, 250.0), weapon = 'WEAPON_MARKSMANRIFLE' },
+        { pos = vec4(-2040.0, -1036.0, 14.9, 70.0), weapon = 'WEAPON_CARBINERIFLE' },
+    },
+    waves = { { delay = 50, from = vec4(-2096.0, -1012.0, 5.9, 250.0), count = 3, weapon = 'WEAPON_CARBINERIFLE' } },
+    steps = {
+        { id = 'bridge', label = '[E] اخترق قفل غرفة القيادة (فلاشة حمراء)', at = vec3(-2085.6, -1018.1, 12.78), game = 'hack', params = { tier = 3 }, item = 'usb_red' },
+        { id = 'safe', label = '[E] ضع C4 على خزنة القبطان (اثنتان)', at = vec3(-2084.0, -1016.6, 12.78), game = 'c4', params = { leads = 4 }, item = 'c4', count = 2, blast = 20 },
+    },
+    loot = { spots = { vec3(-2084.0, -1016.6, 12.78) }, money = { 120000, 180000 }, bars = { 4, 8 }, usb = { item = 'usb_gold', chance = 0.15 } },
+}
+
+---------------------------------------------------------------------------
+-- M4: the Big Score (Tier 10): the Union Depository gold truck. Weekly, claimed through the Broker.
+---------------------------------------------------------------------------
+Config.trucks.bigscore = {
+    tier = 10, label = 'شاحنة ذهب مستودع الاتحاد', cooldownMinutes = 60, cost = 0, needs = { usb = 'usb_gold' }, c4 = 3,
+    model = 'stockade', guardModel = 's_m_m_chemsec_01',
+    crew = { { seat = -1, weapon = 'WEAPON_CARBINERIFLE' }, { seat = 0, weapon = 'WEAPON_CARBINERIFLE' }, { seat = 1, weapon = 'WEAPON_SPECIALCARBINE' }, { seat = 2, weapon = 'WEAPON_PUMPSHOTGUN' } },
+    escorts = { { model = 'mesa3', crew = { { seat = -1, weapon = 'WEAPON_CARBINERIFLE' }, { seat = 0, weapon = 'WEAPON_CARBINERIFLE' }, { seat = 1, weapon = 'WEAPON_CARBINERIFLE' } } },
+                { model = 'mesa3', crew = { { seat = -1, weapon = 'WEAPON_CARBINERIFLE' }, { seat = 0, weapon = 'WEAPON_SPECIALCARBINE' }, { seat = 1, weapon = 'WEAPON_CARBINERIFLE' } } },
+                { model = 'mesa3', crew = { { seat = -1, weapon = 'WEAPON_CARBINERIFLE' }, { seat = 0, weapon = 'WEAPON_CARBINERIFLE' } } } },
+    speed = 13.0, bags = 6, bagSeconds = 9, money = { 0, 0 }, item = 'vault_goldbar', perBag = { 4, 5 }, usb = nil,
+    gpsSeconds = 300, fuseSeconds = 30,
+    route = { vec4(2.55, -671.9, 32.34, 181.81), vec3(10.0, -860.0, 30.0), vec3(110.0, -1020.0, 29.0), vec3(220.0, -1060.0, 29.0), vec3(400.0, -1060.0, 29.0), vec3(500.0, -1240.0, 29.0), vec3(780.0, -1300.0, 26.0), vec3(1050.0, -1400.0, 33.0) },
+}
+-- the fence's limit for gold bars (5 a day for the whole city) already lives in Config.fence.goods

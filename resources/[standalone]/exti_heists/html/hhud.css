@@ -24,6 +24,9 @@
 .hh.quiet .ic { color: #3ddc97; } .hh.quiet .t { color: #3ddc97; } .hh.quiet .prog i { background: #3ddc97; }
 /* hiding: they lost sight of you, the clock runs */
 .hh.hiding .ic { color: #8ab8ff; } .hh.hiding .t { color: #8ab8ff; } .hh.hiding .prog i { background: #3d8bfd; }
+/* lock: a bank's time lock / fuse: a C4 counting down */
+.hh.lock .ic { color: #e8b547; } .hh.lock .t { color: #e8b547; }
+.hh.fuse { border-color: rgba(229,72,77,.5); } .hh.fuse .ic { color: #ff6b6f; } .hh.fuse .t { color: #ff6b6f; } .hh.fuse .prog i { background: #e5484d; }
 /* hold: NPC security holds its fire (hostages / a deal) */
 .hh.hold { border-color: rgba(255,255,255,.18); }
 .hh.hold .ic { color: #f4f3ef; background: rgba(255,255,255,.12); } .hh.hold .t { color: #f4f3ef; } .hh.hold .prog i { background: #f4f3ef; }

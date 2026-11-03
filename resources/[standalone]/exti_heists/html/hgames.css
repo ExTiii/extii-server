@@ -112,3 +112,33 @@ html, body { margin: 0; height: 100%; background: transparent !important; overfl
 .h-hack .m-screen.ok { box-shadow: inset 0 0 60px rgba(90,255,150,.35); }
 .h-hack .m-screen.bad { background: radial-gradient(ellipse at 50% 40%, #2a0707, #0b0202 75%); color: #ff6b6b; }
 .h-hack .m-screen.bad .hd { color: #ff6b6b; }
+
+/* ---- M3: C4, alarm panel, keypad */
+.m-cables { position: absolute; inset: 0; width: 1200px; height: 690px; pointer-events: none; }
+.m-lcd { position: absolute; padding: 5px 9px; box-sizing: border-box; color: #9dffb8; font: 700 15px/1.3 'Kit Plex', monospace; direction: ltr; letter-spacing: 1px;
+         text-shadow: 0 0 6px rgba(120,255,160,.55); background: rgba(10,40,22,.35); pointer-events: none; }
+.m-lcd .l1 { font-size: 13px; opacity: .85; } .m-lcd .l2 { display: flex; gap: 10px; font-size: 16px; } .m-lcd .l2 b { margin-left: auto; opacity: .7; }
+.m-lcd.ok { color: #c6ffd6; } .m-lcd.err { color: #ff8b80; text-shadow: 0 0 6px rgba(255,90,80,.6); }
+.m-lcd.kp { color: #a9d8ff; text-shadow: 0 0 6px rgba(120,190,255,.55); background: rgba(8,24,40,.4); }
+.m-lcd.kp .l2 { font-size: 22px; letter-spacing: 6px; }
+.m-led { position: absolute; width: 18px; height: 18px; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity .15s; }
+.m-led.r { background: radial-gradient(circle, rgba(255,90,70,.95) 0 25%, rgba(255,40,20,.35) 45%, transparent 70%); }
+.m-led.g { background: radial-gradient(circle, rgba(110,255,140,.95) 0 25%, rgba(40,255,90,.35) 45%, transparent 70%); }
+.m-led.on { opacity: 1; } .m-led.blink { animation: ledb .35s steps(2) infinite; } @keyframes ledb { 50% { opacity: .2; } }
+.m-snips { z-index: 5; filter: drop-shadow(0 6px 6px rgba(0,0,0,.55)); }
+.h-wirecut { cursor: none; }
+.m-strobe { position: absolute; width: 80px; height: 80px; border-radius: 50%; pointer-events: none; opacity: 0; }
+.m-strobe.on { animation: strobe .3s steps(2) infinite; background: radial-gradient(circle, rgba(255,60,40,.95) 0 20%, rgba(255,30,20,.45) 40%, transparent 70%); }
+@keyframes strobe { 50% { opacity: 0; } 0%, 100% { opacity: 1; } }
+.m-kpkey { position: absolute; cursor: pointer; border-radius: 6px; }
+.m-kpkey:hover { box-shadow: inset 0 0 0 2px rgba(255,255,255,.12); }
+.m-kpkey.down { animation: kpd .16s; } @keyframes kpd { 40% { background: rgba(0,0,0,.18); transform: translateY(1px); } }
+/* worn keys: a greasy, shiny finger mark (no outline, just a dulled sheen) */
+.m-smudge { position: absolute; pointer-events: none; border-radius: 8px; opacity: .95;
+            background: radial-gradient(ellipse 30% 25% at var(--x) var(--y), rgba(255,252,240,.55), rgba(255,250,235,.18) 50%, transparent 72%),
+                        radial-gradient(ellipse 46% 40% at var(--x) var(--y), transparent 40%, rgba(70,58,40,.22) 62%, transparent 82%),
+                        repeating-radial-gradient(ellipse at var(--x) var(--y), rgba(40,30,20,.16) 0 1.4px, transparent 1.4px 3.4px);
+            transform: rotate(var(--a)); }
+.m-kplog { position: absolute; right: 34px; top: 60px; width: 220px; color: #e9e6df; font: 600 15px/1.7 'Kit Plex', monospace; direction: ltr; text-align: right;
+           text-shadow: 0 1px 2px rgba(0,0,0,.9); pointer-events: none; }
+.m-kplog div:first-child { color: #ffd36a; }

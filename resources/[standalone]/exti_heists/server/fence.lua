@@ -118,7 +118,30 @@ end)
 ---------------------------------------------------------------------------
 local function onText(src, msg)
     msg = tostring(msg or '')
-    if msg:find('شغل') or msg:lower():find('job') then
+    local function say(ok, res, okText)
+        if ok then H.text(src, okText(res), res and res.pos) else H.text(src, type(res) == 'string' and #res > 6 and res or 'لا شيء لك الآن.') end
+    end
+    if msg:find('تحضير') then
+        -- the prep for a big job
+        local kind = msg:find('قافل') and 'blueprints' or ((msg:find('مزرع') or msg:find('كارتيل')) and 'guard_keycard' or ((msg:find('يخت') or msg:find('تموين')) and 'catering_uniform' or ((msg:find('باليتو') or msg:find('باسيفيك') or msg:find('بنك')) and 'blueprints' or nil)))
+        if not kind then return H.text(src, 'تحضير لأي شغل؟ "تحضير مزرعة"، "تحضير قافلة"، "تحضير بنك"، "تحضير يخت".') end
+        local ok, res = H.startPrep(src, kind)
+        return say(ok, res, function(r) return ('%s في سيارة واقفة هنا. معك %d دقيقة. افتح الباب وخذها من الدرج. قد يكون عندها رجال.'):format(r.label, r.minutes) end)
+    elseif msg:find('شاحن') then
+        local ok, res = H.startTruck(src, 'armored')
+        return say(ok, res, function() return 'شاحنة غروبه 6 تخرج من هنا الآن. أوقفها، فجّر الباب الخلفي، خذ الحقائب. GPS الشاحنة يكلّم الشرطة ثلاث دقائق بعد أن توقفها.' end)
+    elseif msg:find('قافل') then
+        local ok, res = H.startTruck(src, 'convoy')
+        return say(ok, res, function() return 'الفلاشة دلّتني عليها: قافلة ميري ويذر تتحرك من هنا. سيارتان حراسة وشاحنة. لا تتأخر.' end)
+    elseif msg:find('مزرع') or msg:find('كارتيل') then
+        local ok, res = H.startStash(src)
+        return say(ok, res and type(res) ~= 'string' and { pos = res } or res, function() return 'المال في الحظيرة خلف البيت. ستة رجال في الساحة. كاميرا البوابة أولًا، بالفلاشة الزرقاء. لا تُرى.' end)
+    elseif msg:find('بنك') then
+        if H.repLevel(src) < 4 then return H.text(src, 'البنوك ليست لك بعد.') end
+        local hot = H.hotBranch and H.hotBranch()
+        local v = hot and C.vaults[hot]
+        return H.text(src, v and ('سمعت أن %s فيه ضعف المال اليوم. فلاشة خضراء ومثقاب، ولا تنسَ لوحة الإنذار.'):format(v.label) or 'لا أعرف شيئًا عن البنوك اليوم.', v and v.center)
+    elseif msg:find('شغل') or msg:lower():find('job') then
         local ok, lead = giveLead(src)
         if ok then
             H.text(src, ('%s في %s. بالليل فقط. معك ساعة.'):format(lead.label, lead.area), lead.pos)
@@ -131,7 +154,7 @@ local function onText(src, msg)
         local f = H.fenceSpot()
         if f then H.text(src, 'هنا اليوم. تعال وحدك.', f) else H.text(src, 'لست في المدينة اليوم.') end
     else
-        H.text(src, 'اكتب "شغل" إن كنت تريد بيتًا، "مهام" لشغل اليوم، أو "مكان" لتعرف أين أنا اليوم. لا تتصل.')
+        H.text(src, 'اكتب "شغل" لبيت، "مهام" لشغل اليوم، "مكان" لتعرف أين أنا. للكبار: "بنك"، "شاحنة"، "مزرعة"، "قافلة"، "تحضير ...". لا تتصل.')
     end
 end
 local function hook()

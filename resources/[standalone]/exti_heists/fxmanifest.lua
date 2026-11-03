@@ -29,6 +29,13 @@ client_scripts {
     'client/atm.lua',
     'client/jewelry.lua',
     'client/hostages.lua',
+    'client/guards.lua',
+    'client/vaults.lua',
+    'client/preps.lua',
+    'client/trucks.lua',
+    'client/stash.lua',
+    'client/lasers.lua',
+    'client/yacht.lua',
 }
 
 server_scripts {
@@ -44,6 +51,15 @@ server_scripts {
     'server/contracts.lua',
     'server/hostages.lua',
     'server/negotiate.lua',
+    'server/guards.lua',
+    'server/vaults.lua',
+    'server/preps.lua',
+    'server/trucks.lua',
+    'server/stash.lua',
+    'server/titles.lua',
+    'server/broker.lua',
+    'server/yacht.lua',
+    'server/bigscore.lua',
 }
 
 ui_page 'html/index.html'

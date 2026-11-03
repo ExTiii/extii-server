@@ -156,6 +156,7 @@ function H.addXP(src, n, why)
     local after = H.levelOf(r.xp)
     if n > 0 then H.notify(src, ('سمعة إجرامية +%d'):format(n), 'success', 3500)
     else H.notify(src, ('سمعة إجرامية %d'):format(n), 'error', 3500) end
+    if after > before and H.brokerLevel then for l = before + 1, after do H.brokerLevel(src, l) end end
     if after ~= before then
         H.notify(src, after > before and ('وصلت إلى مستوى السمعة %d'):format(after) or ('نزلت إلى مستوى السمعة %d'):format(after), after > before and 'success' or 'error', 7000)
     end
@@ -429,6 +430,10 @@ exports('Admin', function(src, what, value)
         H.clearAllCooldowns()
         if H.resetStores then H.resetStores() end
         if H.resetJewelry then H.resetJewelry() end
+        if H.resetVaults then H.resetVaults() end
+        if H.resetTrucks then H.resetTrucks() end
+        if H.resetStash then H.resetStash() end
+        if H.resetYacht then H.resetYacht() end
         return true, 'صُفّرت كل أوقات انتظار السطو'
     elseif what == 'force' then
         H.force = (value == 'police' or value == 'npc') and value or nil
@@ -439,7 +444,8 @@ exports('Admin', function(src, what, value)
         if not H.adminHouseLead or not H.adminHouseLead(src, size) then return false, 'لا بيت فاضٍ من هذا الحجم' end
         return true, 'وصلك بيت (تجربة: يعمل في أي وقت)'
     elseif what == 'kit' then
-        for _, it in ipairs({ { 'lockpick', 5 }, { 'usb_green', 1 }, { 'drill', 1 }, { 'drill_bit', 3 }, { 'zip_ties', 3 }, { 'tow_chain', 1 } }) do
+        for _, it in ipairs({ { 'lockpick', 5 }, { 'usb_green', 2 }, { 'usb_blue', 2 }, { 'usb_red', 1 }, { 'drill', 1 }, { 'drill_bit', 6 }, { 'zip_ties', 3 }, { 'tow_chain', 1 },
+                              { 'c4', 4 }, { 'usb_gold', 1 }, { 'guard_keycard', 1 }, { 'blueprints', 2 }, { 'catering_uniform', 1 } }) do
             if exports.ox_inventory:Items(it[1]) then exports.ox_inventory:AddItem(src, it[1], it[2]) end
         end
         return true, 'أخذت عُدّة السطو'

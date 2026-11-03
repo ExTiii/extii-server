@@ -84,8 +84,14 @@
         el.style.transform = `translate(${x - ax}px, ${y - ay}px) rotate(${rot}rad) scale(${sx}, ${sy})`;
     }
     const A = (name) => META[name] || { ax: 0, ay: 0, w: 0, h: 0 };
+    // the server refuses a pass faster than this (config.lua Config.games): never send one sooner
+    const MIN_S = { lockpick: 6.3, safedial: 12.3, drill: 8.3, glasscut: 4.3, hack: 6.3, c4: 4.3, wirecut: 3.3, keypad: 4.3 };
     function finish(passed) {
         if (!G) return;
+        if (passed && G.game && G.t0) {
+            const wait = (MIN_S[G.game] || 0) * 1000 - (performance.now() - G.t0);
+            if (wait > 0) { const g0 = G; setTimeout(() => { if (G === g0) finish(true); }, wait); return; }
+        }
         const g = G; G = null;
         g.off.forEach((f) => { try { f(); } catch (e) {} });
         setTimeout(() => {
@@ -527,19 +533,214 @@
         G.dbg = () => ({ grid: grid.map((row) => row.slice()), solved, sr, tr, left: time.left(), turn: (i, j) => tiles[i][j].onmousedown({ button: 0 }) });
     }
 
+
+    // ------------------------------------------------------------- cables (C4 leads, panel wires): drawn like real insulated wire
+    const WIRE = { red: ['#b3191a', '#e8463c'], blue: ['#1d4fa8', '#4f86e8'], yellow: ['#c9a10c', '#f5d54a'], green: ['#1d7a32', '#3fbf5f'],
+                   white: ['#c9c9c4', '#f6f6f2'], black: ['#141416', '#45464b'], orange: ['#c4560e', '#f2873c'] };
+    const WNAME = { red: 'أحمر', blue: 'أزرق', yellow: 'أصفر', green: 'أخضر', white: 'أبيض', black: 'أسود', orange: 'برتقالي' };
+    function cable(g, pts, col, w = 7, cut = null) {
+        const [dark, light] = WIRE[col] || WIRE.black;
+        const path = () => { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); if (pts.length === 4) g.bezierCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1], pts[3][0], pts[3][1]); else g.quadraticCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1]); };
+        g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+        if (cut) { g.beginPath(); g.rect(0, 0, SW, SH); g.arc(cut[0], cut[1], 9, 0, Math.PI * 2, true); g.clip('evenodd'); }
+        g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 6; g.shadowOffsetY = 3;
+        path(); g.strokeStyle = 'rgba(0,0,0,.85)'; g.lineWidth = w + 2.5; g.stroke();
+        g.shadowColor = 'transparent';
+        path(); g.strokeStyle = dark; g.lineWidth = w; g.stroke();
+        path(); g.strokeStyle = light; g.lineWidth = w * 0.32; g.globalAlpha = 0.75; g.translate(-w * 0.12, -w * 0.18); g.stroke();
+        g.restore();
+        if (cut) {   // the cut: two bright copper ends
+            g.save(); g.fillStyle = '#d58a3c';
+            g.beginPath(); g.arc(cut[0] - 7, cut[1], 2.4, 0, Math.PI * 2); g.arc(cut[0] + 7, cut[1], 2.4, 0, Math.PI * 2); g.fill(); g.restore();
+        }
+    }
+    const bez = (p, t) => { const u = 1 - t; return p.length === 4
+        ? [u * u * u * p[0][0] + 3 * u * u * t * p[1][0] + 3 * u * t * t * p[2][0] + t * t * t * p[3][0], u * u * u * p[0][1] + 3 * u * u * t * p[1][1] + 3 * u * t * t * p[2][1] + t * t * t * p[3][1]]
+        : [u * u * p[0][0] + 2 * u * t * p[1][0] + t * t * p[2][0], u * u * p[0][1] + 2 * u * t * p[1][1] + t * t * p[2][1]]; };
+
+    // ===================================================================== C4 (wire the detonator)
+    // The detonator's screen says which coloured lead goes on which numbered post. Drag each lead from the
+    // blasting cap to its post. A wrong post = an error beep (two and it's off). All four = armed.
+    function c4(c, p) {
+        const m = META.c4_bg;
+        c.bg('c4_bg.webp');
+        const n = Math.max(3, Math.min(4, p.leads || 4));
+        const cols = shuffle(['red', 'blue', 'yellow', 'green', 'white', 'orange']).slice(0, n);
+        const order = shuffle([0, 1, 2, 3]).slice(0, n);                        // lead k goes on post order[k]
+        const cv = c.el('canvas', 'm-cables'); cv.width = SW; cv.height = SH; const g = cv.getContext('2d');
+        const [[lx0, ly0], [lx1, ly1]] = m.lcd;
+        const lcd = c.el('div', 'm-lcd'); lcd.style.cssText = `left:${lx0}px;top:${ly0}px;width:${lx1 - lx0}px;height:${ly1 - ly0}px`;
+        const want = Array(4).fill(null); order.forEach((post, k) => { want[post] = k; });
+        lcd.innerHTML = `<div class="l1">ARM SEQ · ${n} LEADS</div><div class="l2">${[0, 1, 2, 3].map((i) => want[i] === null ? `<span>${i + 1}·—</span>` : `<span>${i + 1}·${cols[want[i]].slice(0, 3).toUpperCase()}</span>`).join('')}</div>`;
+        const leds = m.leds.map(([x, y], i) => { const e = c.el('div', `m-led ${i ? 'g' : 'r'}`); e.style.left = `${x - 9}px`; e.style.top = `${y - 9}px`; return e; });
+        leds[0].classList.add('on');
+        const leads = cols.map((col, k) => ({ col, from: m.leads[k], end: [m.leads[k][0] + 30 + k * 62, 545 + k * 24], post: null }));
+        let drag = null, strikes = 0, done = false, mx = 0, my = 0;
+        const dragLoop = c.loop('c4_drag', 0.6);
+        function draw() {
+            g.clearRect(0, 0, SW, SH);
+            leads.forEach((L, k) => {
+                const e = drag === k ? [mx, my] : (L.post !== null ? m.terms[L.post] : L.end);
+                const sag = Math.min(110, Math.hypot(e[0] - L.from[0], e[1] - L.from[1]) * 0.35);
+                cable(g, [L.from, [(L.from[0] + e[0]) / 2, Math.max(L.from[1], e[1]) + sag], e], L.col, 6.5);
+                // the bare copper end (or the clamped end under the post)
+                g.save(); g.fillStyle = L.post !== null ? '#9a7a3a' : '#d58a3c'; g.beginPath(); g.arc(e[0], e[1], L.post !== null ? 4 : 3.2, 0, Math.PI * 2); g.fill(); g.restore();
+            });
+        }
+        draw();
+        c.on(c.stage, 'mousemove', (e) => { [mx, my] = c.at(e); if (drag !== null) { draw(); dragLoop.set(0.5); } });
+        c.on(window, 'mousedown', (e) => {
+            if (done || e.button !== 0) return;
+            const [x, y] = c.at(e);
+            let best = null, bd = 30;
+            leads.forEach((L, k) => { if (L.post !== null) return; const d = Math.hypot(L.end[0] - x, L.end[1] - y); if (d < bd) { bd = d; best = k; } });
+            if (best !== null) { drag = best; mx = x; my = y; draw(); }
+        });
+        c.on(window, 'mouseup', () => {
+            if (drag === null || done) return;
+            const k = drag; drag = null; dragLoop.set(0);
+            let post = null, bd = 26;
+            m.terms.forEach(([tx, ty], i) => { const d = Math.hypot(tx - mx, ty - my); if (d < bd && !leads.some((L) => L.post === i)) { bd = d; post = i; } });
+            if (post === null) { draw(); return; }
+            if (order[k] === post) {
+                leads[k].post = post; sfx('c4_clip'); c.flash('good'); draw();
+                c.prog(leads.filter((L) => L.post !== null).length / n);
+                if (leads.every((L) => L.post !== null)) {
+                    done = true; sfx('c4_arm'); leds[0].classList.remove('on'); leds[1].classList.add('on', 'blink');
+                    lcd.innerHTML = '<div class="l1">ARMED</div><div class="l2"><span>TIMER 00:30</span></div>'; lcd.classList.add('ok');
+                    c.later(() => finish(true), 1100);
+                }
+            } else {
+                strikes++; sfx('c4_err'); c.flash('bad'); c.jolt(true); draw();
+                lcd.classList.add('err'); c.later(() => lcd.classList.remove('err'), 600);
+                if (strikes >= 2) { done = true; lcd.innerHTML = '<div class="l1">FAULT</div><div class="l2"><span>CIRCUIT ERROR</span></div>'; c.later(() => finish(false), 900); }
+            }
+        });
+        const time = c.timer(Math.round(35 * (p.time || 1)), () => { if (!done) { done = true; sfx('c4_err'); finish(false); } });
+        G.dbg = () => ({ order, cols, terms: m.terms, leads: leads.map((L) => ({ end: L.end, post: L.post })), strikes, left: time.left(),
+            wire: (k, post) => { drag = k; [mx, my] = m.terms[post]; window.dispatchEvent(new MouseEvent('mouseup')); } });
+    }
+
+    // ===================================================================== ALARM PANEL (cut the alarm loop)
+    // Six wires run from the numbered posts on the left to the posts on the right, crossing on the way.
+    // Follow them with your eye and cut ONLY the two that end on ALM. Cut a power or tamper line: the siren.
+    function wirecut(c, p) {
+        const m = META.panel_bg;
+        c.bg('panel_bg.webp');
+        const N = m.left.length;
+        const perm = shuffle([...Array(N).keys()]);                                    // left i -> right perm[i]
+        const palette = shuffle(['red', 'blue', 'yellow', 'green', 'white', 'black', 'orange']);
+        // (two wires share a colour sometimes: you must follow them, not read them)
+        const cols = Array.from({ length: N }, (_, i) => palette[i < 4 ? i : Math.floor(Math.random() * 4)]);
+        const wires = perm.map((r, i) => {
+            const a = [m.left[i][0] + 14, m.left[i][1]], b = [m.right[r][0] - 14, m.right[r][1]];
+            const midY = () => rnd(Math.min(a[1], b[1]) - 60, Math.max(a[1], b[1]) + 60);
+            return { i, r, col: cols[i], pts: [a, [a[0] + rnd(70, 150), midY()], [b[0] - rnd(70, 150), midY()], b], cut: null, alarm: m.labels[r].startsWith('ALM') };
+        });
+        const need = wires.filter((w) => w.alarm).length;
+        const cv = c.el('canvas', 'm-cables'); cv.width = SW; cv.height = SH; const g = cv.getContext('2d');
+        const snips = c.img('snips.webp', 'm-snips'); const sA = A('snips');
+        const strobe = c.el('div', 'm-strobe'); strobe.style.left = `${m.strobe[0] - 40}px`; strobe.style.top = `${m.strobe[1] - 40}px`;
+        let done = false, mx = 600, my = 345, cutN = 0;
+        function draw() { g.clearRect(0, 0, SW, SH); wires.forEach((w) => cable(g, w.pts, w.col, 6, w.cut)); }
+        draw();
+        const near = (x, y) => {
+            let best = null, bd = 9;
+            wires.forEach((w) => { if (w.cut) return; for (let t = 0.04; t <= 0.96; t += 0.01) { const [px, py] = bez(w.pts, t); const d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; best = w; } } });
+            return best;
+        };
+        c.on(c.stage, 'mousemove', (e) => { [mx, my] = c.at(e); });
+        c.on(window, 'mousedown', (e) => {
+            if (done || e.button !== 0) return;
+            const w = near(mx, my); if (!w) return;
+            w.cut = [mx, my]; sfx('wc_snip'); draw(); c.jolt(true);
+            if (!w.alarm) {
+                done = true; c.later(() => { sfx('wc_alarm'); strobe.classList.add('on'); c.flash('bad'); }, 180);
+                c.later(() => finish(false), 1500); return;
+            }
+            cutN++; c.prog(cutN / need);
+            if (cutN >= need) { done = true; c.later(() => { sfx('wc_done'); c.flash('good'); }, 250); c.later(() => finish(true), 900); }
+        });
+        c.raf(() => { put(snips, mx, my, sA.ax, sA.ay, 0, 0.62); if (done && !G) return false; });
+        const time = c.timer(Math.round(40 * (p.time || 1)), () => { if (!done) { done = true; sfx('wc_alarm'); strobe.classList.add('on'); finish(false); } });
+        G.dbg = () => ({ wires: wires.map((w) => ({ i: w.i, r: w.r, label: m.labels[w.r], alarm: w.alarm, cut: !!w.cut, samples: Array.from({ length: 17 }, (_, q) => bez(w.pts, 0.1 + q * 0.05)) })), left: time.left(),
+            snip: (x, y) => { mx = x; my = y; window.dispatchEvent(new MouseEvent('mousedown', { button: 0 })); } });
+    }
+
+    // ===================================================================== KEYPAD (worn keys)
+    // Four keys are worn and greasy: the code is those four digits, in an order you have to find. After each
+    // try the screen says how many are in the right place. Run out of tries and it locks you out.
+    function keypad(c, p) {
+        const m = META.keypad_bg;
+        c.bg('keypad_bg.webp');
+        const digits = shuffle(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']).slice(0, 4);
+        const code = digits.slice();                      // (already random order)
+        const tries = Math.max(5, Math.min(8, p.tries || 6));   // (5 always solves it with good play)
+        const [[x0, y0], [x1, y1]] = m.lcd;
+        const lcd = c.el('div', 'm-lcd kp'); lcd.style.cssText = `left:${x0}px;top:${y0}px;width:${x1 - x0}px;height:${y1 - y0}px`;
+        const leds = m.leds.map(([x, y], i) => { const e = c.el('div', `m-led ${i ? 'g' : 'r'}`); e.style.left = `${x - 8}px`; e.style.top = `${y - 8}px`; return e; });
+        const [kw, kh] = m.key;
+        const keyEls = {};
+        m.keys.forEach(([ch, x, y]) => {
+            if (digits.includes(ch)) {
+                const s = c.el('div', 'm-smudge'); s.style.cssText = `left:${x - kw / 2}px;top:${y - kh / 2}px;width:${kw}px;height:${kh}px;--a:${rnd(-30, 30)}deg;--x:${rnd(30, 70)}%;--y:${rnd(30, 70)}%`;
+            }
+            const k = c.el('div', 'm-kpkey'); k.style.cssText = `left:${x - kw / 2}px;top:${y - kh / 2}px;width:${kw}px;height:${kh}px`; keyEls[ch] = k;
+        });
+        let typed = '', left = tries, done = false, log = [];
+        if (p.hint) log.push(`${code[0]}___ (المخطط)`);
+        const show = (msg) => {
+            lcd.innerHTML = `<div class="l1">${msg || 'ENTER CODE'}</div><div class="l2">${'●'.repeat(typed.length)}${'○'.repeat(4 - typed.length)}<b>${left}</b></div>`;
+        };
+        show(p.hint ? `FIRST: ${code[0]}` : null);
+        const hist = c.el('div', 'm-kplog');
+        const renderLog = () => { hist.innerHTML = log.map((l) => `<div>${l}</div>`).join(''); };
+        renderLog();
+        function press(ch) {
+            if (done) return;
+            const k = keyEls[ch]; if (k) { k.classList.remove('down'); void k.offsetWidth; k.classList.add('down'); }
+            sfx('kp_key');
+            if (ch === '*') { typed = ''; show(); return; }
+            if (ch === '#' || typed.length >= 4) return;
+            typed += ch; show();
+            if (typed.length < 4) return;
+            const right = [...typed].filter((d, i) => code[i] === d).length;
+            if (right === 4) {
+                done = true; sfx('kp_ok'); leds[1].classList.add('on'); lcd.classList.add('ok'); show('ACCESS GRANTED'); c.flash('good');
+                c.later(() => finish(true), 900); return;
+            }
+            left--; log.unshift(`${typed}  →  ${right} ✓`); if (log.length > 5) log.pop(); renderLog();
+            sfx('kp_bad'); leds[0].classList.add('on', 'blink'); c.later(() => leds[0].classList.remove('on', 'blink'), 900);
+            const t = typed; typed = '';
+            if (left <= 0) {
+                done = true; sfx('kp_lock'); lcd.classList.add('err'); show('LOCKED OUT'); c.flash('bad'); c.jolt();
+                c.later(() => finish(false), 1300); return;
+            }
+            show(`${t}: ${right} OK`);
+            c.prog(1 - left / tries);
+        }
+        m.keys.forEach(([ch]) => { keyEls[ch].onmousedown = (e) => { if (e.button === 0) press(ch); }; });
+        c.on(window, 'keydown', (e) => { if (/^[0-9]$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') press('*'); });
+        const time = c.timer(Math.round(60 * (p.time || 1)), () => { if (!done) { done = true; sfx('kp_lock'); show('TIMEOUT'); finish(false); } });
+        G.dbg = () => ({ digits, code, left, typed, time: time.left(), press });
+    }
+
     // ===================================================================== registry
-    const GAMES = { lockpick, safedial, drill, glasscut, hack };
+    const GAMES = { lockpick, safedial, drill, glasscut, hack, c4, wirecut, keypad };
     const TEXT = {
         lockpick: ['اضغط الشدّ مع الاستمرار، ضع المفتاح تحت كل مسمار وارفعه حتى تسمع النقرة. المسمار العالق: خفّف الشدّ وأعد', [['', 'ارفع', true], ['SPACE', 'الشدّ (أو الزر الأيمن)']]],
         safedial: ['أدر القرص بالاتجاه المطلوب، استمع للنقرة الأقوى، توقّف عليها واضغط المسافة. الخطأ يعيد الأقراص', [['A', 'يسار'], ['D', 'يمين'], ['SHIFT', 'ببطء'], ['SPACE', 'ثبّت الرقم']]],
         drill: ['اضغط لتدفع المثقاب وخفّف لتبرّده. كل طبقة تريد ضغطًا مختلفًا (الخط الأصفر). إن وصلت الحرارة للأحمر ينكسر الرأس', [['', 'ادفع', true], ['SPACE', 'أو المسافة']]],
         glasscut: ['اضغط مع الاستمرار على الدائرة ودُر بالقاطعة دورة كاملة ببطء. خارج الخط أو بسرعة = ينكسر الزجاج', [['', 'اقطع', true]]],
         hack: ['أدر القطع (انقر عليها) لتصل الإشارة من المدخل يسارًا إلى المخرج يمينًا قبل انتهاء الوقت', [['', 'أدر القطعة', true]]],
+        c4: ['الشاشة تقول أي سلك على أي مسمار. اسحب كل سلك من الصاعق إلى مسماره. خطأ مرتين = عطل', [['', 'اسحب السلك', true]]],
+        wirecut: ['تتبّع الأسلاك بعينك من اليسار إلى اليمين. اقطع فقط السلكين اللذين ينتهيان عند ALM. أي سلك آخر = صفارة الإنذار', [['', 'اقطع', true]]],
+        keypad: ['الأزرار الأربعة المستعملة (عليها آثار أصابع) هي الرمز. جرّب ترتيبًا، والشاشة تقول كم رقمًا في مكانه الصحيح', [['0-9', 'رقم'], ['', 'أو انقر', true], ['⌫', 'امسح']]],
     };
     function start(game, title, params, cb) {
         if (G || !GAMES[game]) return false;
         const [hint, keys] = TEXT[game];
-        G = { off: [], cb };
+        G = { off: [], cb, game, t0: performance.now() };
         const c = shell(game, title || '', params && params.where, hint, keys);
         try { GAMES[game](c, params || {}); } catch (e) { console.error('[heist game]', game, e); finish(false); }
         return true;
