@@ -322,6 +322,8 @@ Config.hostages = {
     tieDistance = 1.8,
     tieSeconds = 4,
     leaveDistance = 150.0,    -- the robber is this far from his hostage: he goes free
+    playerMaxMinutes = 40,    -- a PLAYER hostage is never kept longer than this (nobody stuck tied for good)
+    playerFreeDownMinutes = 3, -- his robber is down this long: the player hostage goes free
     copFreeBonus = 250,       -- an officer who frees a hostage (bank): not his own, held 60 s+, 5 a day
     minHoldForBonus = 60, copFreeDaily = 5,
     hurtMinutes = 60,         -- a robber who hurt a hostage: double arrest bonus this long

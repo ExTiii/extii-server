@@ -140,6 +140,20 @@ end
 local function holdUnits(u, alive, tgt, dist)
     -- they hold their fire: guns on him; if he drives off (a hostage with him), they follow his car close,
     -- sirens on, and never shoot. A head start: they stay where they are.
+    for _, ped in ipairs(alive) do
+        SetBlockingOfNonTemporaryEvents(ped, true)
+        if not own.attackSent and HasEntityBeenDamagedByAnyPed(ped) then
+            for _, s in ipairs(own.targets) do
+                local tp = pedOfServerId(s)
+                if tp and HasEntityBeenDamagedByEntity(ped, tp, true) then
+                    own.attackSent = true
+                    TriggerServerEvent('exti_heists:server:npcAttacked', own.id, s)
+                    break
+                end
+            end
+            ClearEntityLastDamageEntity(ped)
+        end
+    end
     local tgtCar = tgt and GetVehiclePedIsIn(tgt, false) or 0
     local canDrive = DoesEntityExist(u.veh) and IsVehicleDriveable(u.veh, false)
     if own.holdWhy ~= 'headstart' and tgtCar ~= 0 and dist and dist > 30.0 and canDrive and not u.block then
@@ -171,7 +185,41 @@ local function holdUnits(u, alive, tgt, dist)
     if dist and dist < 45.0 and tgtCar == 0 then u.leaving = GetGameTimer() + 4000 end
 end
 
+local function adopt()
+    -- units that were too far from this game when it took them over: picked up once they're around
+    if not own.pending or #own.pending == 0 then return end
+    local left = {}
+    for _, n in ipairs(own.pending) do
+        local ent = NetworkDoesNetworkIdExist(n) and NetworkGetEntityFromNetworkId(n) or 0
+        if ent ~= 0 and DoesEntityExist(ent) then
+            NetworkRequestControlOfEntity(ent)
+            if IsEntityAVehicle(ent) then
+                local u = { veh = ent, peds = {}, stage = 'fight', since = GetGameTimer(), park = own.pos }
+                for seat = -1, GetVehicleMaxNumberOfPassengers(ent) - 1 do
+                    local p = GetPedInVehicleSeat(ent, seat)
+                    if p ~= 0 and Entity(p).state.exti_npcsec == own.id then u.peds[#u.peds + 1] = p end
+                end
+                own.units[#own.units + 1] = u
+            elseif IsEntityAPed(ent) then
+                local known = false
+                for _, u in ipairs(own.units) do for _, p in ipairs(u.peds) do if p == ent then known = true end end end
+                if not known then
+                    local veh = GetVehiclePedIsIn(ent, true)
+                    local into
+                    for _, u in ipairs(own.units) do if u.veh == veh then into = u break end end
+                    if into then into.peds[#into.peds + 1] = ent
+                    else own.units[#own.units + 1] = { veh = veh, peds = { ent }, stage = 'fight', since = GetGameTimer(), park = own.pos } end
+                end
+            end
+        else
+            left[#left + 1] = n
+        end
+    end
+    own.pending = left
+end
+
 local function think()
+    adopt()
     local holding = (own.holdUntil or 0) > GetGameTimer()
     for _, u in ipairs(own.units) do
         for _, e in ipairs(u.peds) do if DoesEntityExist(e) and not NetworkHasControlOfEntity(e) then NetworkRequestControlOfEntity(e) end end
@@ -189,6 +237,7 @@ local function think()
                 local inCar = DoesEntityExist(u.veh) and IsPedInVehicle(alive[1], u.veh, false)
                 local tgtCar = tgt and GetVehiclePedIsIn(tgt, false) or 0
                 u.holding = false; u.target = nil; u.chasing = nil; u.shooting = nil; u.aimed = nil; u.followCar = nil
+                for _, ped in ipairs(alive) do SetBlockingOfNonTemporaryEvents(ped, false) end
                 if inCar and tgtCar ~= 0 and not u.block then
                     u.stage, u.chaseAt = 'chase', nil
                 else
@@ -304,7 +353,10 @@ RegisterNetEvent('exti_heists:client:npcTargets', function(id, targets)
 end)
 
 RegisterNetEvent('exti_heists:client:npcTakeOver', function(id, netIds, targets, pos)
-    own = { id = id, units = {}, targets = targets, pos = vec3(pos.x, pos.y, pos.z) }
+    own = { id = id, units = {}, targets = targets, pos = vec3(pos.x, pos.y, pos.z), pending = {} }
+    for _, n in ipairs(netIds) do
+        if not (NetworkDoesNetworkIdExist(n) and NetworkGetEntityFromNetworkId(n) ~= 0) then own.pending[#own.pending + 1] = n end
+    end
     local byVeh = {}
     for _, n in ipairs(netIds) do
         local ent = NetworkGetEntityFromNetworkId(n)
@@ -334,7 +386,11 @@ end)
 RegisterNetEvent('exti_heists:client:npcHold', function(id, seconds, why)
     if not own or own.id ~= id then return end
     if (seconds or 0) <= 0 then own.holdUntil, own.holdWhy = 0, nil
-    else own.holdUntil, own.holdWhy = GetGameTimer() + seconds * 1000, why end
+    else
+        own.holdUntil, own.holdWhy = GetGameTimer() + seconds * 1000, why
+        -- (old hits from before the hold don't count as "he shot at us")
+        for _, u in ipairs(own.units) do for _, ped in ipairs(u.peds) do if DoesEntityExist(ped) then ClearEntityLastDamageEntity(ped) end end end
+    end
     own.pullBack = false
     for _, u in ipairs(own.units) do if u.holding then u.holding = 'redo' end end
 end)
@@ -422,7 +478,7 @@ end)
 
 CreateThread(function()
     while true do
-        if own and #own.units > 0 then pcall(think) end
+        if own and (#own.units > 0 or (own.pending and #own.pending > 0)) then pcall(think) end
         Wait(1000)
     end
 end)
@@ -509,7 +565,9 @@ CreateThread(function()
         if own and own.chase and (own.rbCount or 0) < RB.max and GetGameTimer() > (own.rbNext or 0) then
             for _, s in ipairs(own.targets) do
                 local p = pedOfServerId(s)
-                if p and not IsPedDeadOrDying(p, true) and own and pcall(roadblock, p) then
+                local made = false
+                if p and not IsPedDeadOrDying(p, true) and own then local okr, res = pcall(roadblock, p); made = okr and res == true end
+                if made then
                     own.rbCount = (own.rbCount or 0) + 1
                     own.rbNext = GetGameTimer() + RB.every * 1000
                     break

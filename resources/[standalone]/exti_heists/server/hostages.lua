@@ -55,6 +55,17 @@ local function isCuffed(src)
 end
 local function busyBody(src) return caps[src] ~= nil or isCuffed(src) or isDown(src) end
 
+-- the robber himself, a member of his crew, or someone in the same NPC police response
+local function sameSide(a, b)
+    if not a or not b then return false end
+    if a == b then return true end
+    local ra = H.npcOf and H.npcOf(a)
+    if ra and ra == H.npcOf(b) then return true end
+    local ca, cb = H.crewOf and H.crewOf(H.cid(a)), H.crewOf and H.crewOf(H.cid(b))
+    return ca ~= nil and cb ~= nil and ca.id == cb.id
+end
+H.sameSide = sameSide
+
 -- where a hostage is (NPC or player)
 local function posOf(kind, id)
     if kind == 'npc' then local e = entOf(id); return e and GetEntityCoords(e) or nil end
@@ -138,6 +149,7 @@ local function canTie(src, kind, id)
     end
     -- a player: only with his hands up, never downed, never cuffed by the police
     if not alive(id) or id == src or caps[id] then return false end
+    if sameSide(src, id) then return false, 'لا تستطيع أخذ أحد أفراد طاقمك رهينة' end
     if isDown(id) then return false, 'لا يمكن تقييد شخص مصاب على الأرض' end
     if isCuffed(id) then return false, 'مقيّد بالأصفاد' end
     if Player(id).state.handsup ~= true then return false, 'يجب أن يرفع يديه أولًا' end
@@ -154,7 +166,7 @@ lib.callback.register('exti_heists:server:tieBegin', function(src, kind, id)
     local ok, why = canTie(src, kind, id)
     if not ok then return false, why end
     local tok = math.random(100000, 999999)
-    tieTokens[src] = { kind = kind, id = id, at = os.clock(), token = tok }
+    tieTokens[src] = { kind = kind, id = id, at = GetGameTimer(), token = tok }
     if kind == 'player' then TriggerClientEvent('exti_heists:client:beingTied', id, src, HG.tieSeconds) end
     return true, tok
 end)
@@ -164,7 +176,7 @@ lib.callback.register('exti_heists:server:tieEnd', function(src, token, done)
     if not t or t.token ~= token then return false end
     if t.kind == 'player' and not done and alive(t.id) then TriggerClientEvent('exti_heists:client:beingTied', t.id, nil) end
     if not done then return false end
-    if os.clock() - t.at < HG.tieSeconds - 0.6 then return false end
+    if GetGameTimer() - t.at < (HG.tieSeconds - 0.6) * 1000 then return false end
     -- (a player keeps "hands up" while he's being tied: his game holds him still)
     local ok, why = canTie(src, t.kind, t.id)
     if not ok then
@@ -195,12 +207,6 @@ end)
 ---------------------------------------------------------------------------
 -- everything else on the wheel: one callback
 ---------------------------------------------------------------------------
-local function seatFree(veh)
-    -- the back seats first (1, 2), then the front passenger (0)
-    for _, seat in ipairs({ 1, 2, 0 }) do if GetPedInVehicleSeat(veh, seat) == 0 then return seat end end
-    return nil
-end
-
 lib.callback.register('exti_heists:server:hostageAct', function(src, action, kind, id, extra)
     kind = kind == 'player' and 'player' or 'npc'
     id = math.tointeger(id)
@@ -210,7 +216,7 @@ lib.callback.register('exti_heists:server:hostageAct', function(src, action, kin
     local at = posOf(kind, id)
     if not at then return false end
     local cop = H.isCopOnDuty(src)
-    local reach = (action == 'carOut' and 4.5) or (extra == 'aim' and HG.aimDistance) or 3.0
+    local reach = (action == 'carOut' and 4.5) or (action == 'prone' and extra == 'aim' and HG.aimDistance) or 3.0
     if not H.near(src, at, reach) then return false, 'اقترب منه أكثر' end
     local function sync() if kind == 'npc' then publish() else bagsOf(id) end end
 
@@ -235,7 +241,7 @@ lib.callback.register('exti_heists:server:hostageAct', function(src, action, kin
             H.log(src, 'hostage_freed_cop', ('%s $%d'):format(kind, pay))
             return true, pay
         end
-        free(kind, id, h.by == src and 'released' or ('cut by %d'):format(src), src)
+        free(kind, id, sameSide(h.by, src) and 'released' or ('cut by %d'):format(src), src)
         return true, 0
 
     elseif action == 'blind' then
@@ -253,7 +259,7 @@ lib.callback.register('exti_heists:server:hostageAct', function(src, action, kin
         return true
 
     -- the rest is the robber's (and his crewmates', not an officer's)
-    elseif cop then return false
+    elseif cop or not sameSide(h.by, src) then return false
 
     elseif action == 'escort' then
         if h.veh then return false, 'أخرجه من المركبة أولًا' end
@@ -273,11 +279,13 @@ lib.callback.register('exti_heists:server:hostageAct', function(src, action, kin
 
     elseif action == 'carIn' then
         if h.veh then return false end
-        local veh = entOf(extra)
+        local vnet = type(extra) == 'table' and math.tointeger(extra.net) or nil
+        local want = type(extra) == 'table' and math.tointeger(extra.seat) or nil
+        local veh = entOf(vnet)
         if not veh or GetEntityType(veh) ~= 2 or #(GetEntityCoords(veh) - at) > 6.0 or not H.near(src, GetEntityCoords(veh), 6.0) then return false, 'لا توجد مركبة قريبة' end
-        local seat = seatFree(veh)
+        local seat = want and want >= 0 and want <= 6 and GetPedInVehicleSeat(veh, want) == 0 and want or nil
         if not seat then return false, 'المركبة ممتلئة' end
-        h.veh, h.seat, h.escort, h.prone = math.tointeger(extra), seat, nil, nil; sync()
+        h.veh, h.seat, h.escort, h.prone = vnet, seat, nil, nil; sync()
         if kind == 'player' then TriggerClientEvent('exti_heists:client:captiveCar', id, h.veh, seat) end
         return true
 
@@ -444,8 +452,13 @@ CreateThread(function()
         for t, h in pairs(caps) do
             local by = h.escort or h.by
             local here = alive(by) and H.coords(by)
+            local there = alive(t) and H.coords(t)
+            -- (a player is never left tied for good: his robber down for a few minutes, or the hard cap)
+            if alive(h.by) and isDown(h.by) then h.downAt = h.downAt or H.now() else h.downAt = nil end
             if not alive(t) then caps[t] = nil
-            elseif here and #(here - H.coords(t)) > HG.leaveDistance then free('player', t, 'left')
+            elseif here and there and #(here - there) > HG.leaveDistance then free('player', t, 'left')
+            elseif h.downAt and H.now() - h.downAt > HG.playerFreeDownMinutes * 60 then free('player', t, 'robber down')
+            elseif H.now() - h.at > HG.playerMaxMinutes * 60 then free('player', t, 'time')
             elseif h.escort and not alive(h.escort) then h.escort = nil; bagsOf(t) end
         end
     end

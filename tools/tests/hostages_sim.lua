@@ -110,7 +110,9 @@ function H.modeFor() return { police = false } end
 function H.phoneOf(s) return 'P' .. s end
 function H.addXP() end
 function H.player() return nil end
-os.clock = function() return T / 1000 end
+crews = {}
+function H.crewOf(cid) return cid and crews[cid] and { id = crews[cid] } or nil end
+function GetGameTimer() return T end
 cfx(R .. '/server/npc.lua')
 cfx(R .. '/server/hostages.lua')
 cfx(R .. '/server/negotiate.lua')

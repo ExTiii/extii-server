@@ -112,25 +112,29 @@ end
 ---------------------------------------------------------------------------
 -- the standoff, the storm, the head start, the chase
 ---------------------------------------------------------------------------
-local function standoff(r)
-    if r.standoff or r.rage or r.chase or r.chasePending or r.phase ~= 'on scene' then return end
-    r.standoff = { untilT = H.now() + HG.standoffMinutes * 60 }
-    H.npcHold(r, HG.standoffMinutes * 60, 'hostages')
-    H.log(r.owner, 'npc_standoff', r.kind)
-    if H.negotiateStart then SetTimeout(C.negotiator.textAfter * 1000, function() if active[r.id] == r and r.standoff then H.negotiateStart(r) end end) end
-end
-
 local function storm(r, why)
     if r.rage then return end
-    r.rage, r.standoff, r.deal, r.chasePending = true, nil, nil, nil
+    r.rage, r.standoff, r.deal, r.chasePending, r.rageAt = true, nil, nil, nil, H.now()
     unhold(r)
     if r.owner then
         TriggerClientEvent('exti_heists:client:npcRage', r.owner, r.id)
         TriggerClientEvent('exti_heists:client:npcSwat', r.owner, r.id, HG.swat)
     end
     each(r, function(s) TriggerClientEvent('exti_heists:client:npcHoldBar', s, r.id, 0, 'rage') end)
-    negotiator(r, why == 'hurt' and 'آذيت أحدهم. انتهى الكلام. فريق التدخل قادم.' or 'انتهى الوقت. فريق التدخل يقتحم الآن.')
+    negotiator(r, (why == 'hurt' and 'آذيت أحدهم. انتهى الكلام. فريق التدخل قادم.')
+        or (why == 'attacked' and 'أطلقت النار على رجالنا. انتهى الكلام.')
+        or 'انتهى الوقت. فريق التدخل يقتحم الآن.')
     H.log(r.owner, 'npc_storm', ('%s · %s'):format(r.kind, why))
+end
+
+local function standoff(r)
+    if r.standoff or r.rage or r.chase or r.chasePending or r.phase ~= 'on scene' then return end
+    r.standoffEnd = r.standoffEnd or (H.now() + HG.standoffMinutes * 60)
+    if r.standoffEnd <= H.now() then return storm(r, 'time') end
+    r.standoff = { untilT = r.standoffEnd }
+    H.npcHold(r, r.standoffEnd - H.now(), 'hostages')
+    H.log(r.owner, 'npc_standoff', r.kind)
+    if H.negotiateStart then SetTimeout(C.negotiator.textAfter * 1000, function() if active[r.id] == r and r.standoff then H.negotiateStart(r) end end) end
 end
 
 local function chase(r, quiet)
@@ -167,27 +171,27 @@ function H.npcOnRelease(by, at, why)
     local r = H.npcOf(by)
     if not r or not r.deal or r.deal.kind ~= 'drop' then return end
     if why == 'released' then
-        local s = r.deal.spot
-        if #(at - vec3(s.x, s.y, s.z)) > HG.dropRadius then
-            -- not where we said: the deal is off
-            r.deal = nil; r.standoff = nil
+        local sp = r.deal.spot
+        if #(at - vec3(sp.x, sp.y, sp.z)) > HG.dropRadius and not r.deal.broken then
+            -- not where we said: the deal is off (they still won't shoot while he holds the others)
+            r.deal.broken = true
             each(r, function(x) TriggerClientEvent('exti_heists:client:dropSpotClear', x, r.id) end)
             negotiator(r, 'هذا ليس المكان الذي اتفقنا عليه. الاتفاق انتهى.')
             H.log(by, 'npc_deal_broken', r.kind)
-            return chase(r, true)
         end
     end
     if heldBy(r) > 0 then return end
-    if why == 'released' then
+    local broken = r.deal.broken
+    if why == 'released' and not broken then
         -- everyone's out at the spot: the head start
         negotiator(r, ('رأيناه. معك %d ثانية.'):format(HG.dropHeadStart))
         H.log(by, 'npc_deal_done', r.kind)
         headStart(r, HG.dropHeadStart)
     else
-        -- the last one got away some other way (cut loose, the robber left him): no hostage, no deal
+        -- let go at the wrong place, or the last one got away some other way: no hostage, no deal
         r.deal = nil; r.standoff = nil
         each(r, function(x) TriggerClientEvent('exti_heists:client:dropSpotClear', x, r.id) end)
-        negotiator(r, 'لم يعد معك أحد. الاتفاق انتهى.')
+        if not broken then negotiator(r, 'لم يعد معك أحد. الاتفاق انتهى.') end
         chase(r, true)
     end
 end
@@ -200,13 +204,18 @@ function H.npcDeal(src, kind)
     if kind == 'surrender' then return H.npcSurrender(src) end
     if not r.standoff then return false, r.chase and 'chase' or 'nohostage' end
     if kind == 'time' then
-        if r.standoff.more then return false, 'once' end
-        r.standoff.more = true
-        r.standoff.untilT = r.standoff.untilT + HG.moreTimeMinutes * 60
+        if r.moreUsed then return false, 'once' end
+        r.moreUsed = true
+        local add = HG.moreTimeMinutes * 60
+        r.standoff.untilT = r.standoff.untilT + add
+        r.standoffEnd = r.standoff.untilT
+        if r.deal then r.deal.deadline = r.deal.deadline + add end
         H.npcHold(r, r.standoff.untilT - H.now(), r.deal and 'deal' or 'hostages')
         return true, math.ceil((r.standoff.untilT - H.now()) / 60)
     elseif kind == 'release' then
         if heldBy(r) == 0 then return false, 'nohostage' end
+        r.deal = nil
+        each(r, function(x) TriggerClientEvent('exti_heists:client:dropSpotClear', x, r.id) end)
         for s in pairs(r.targets) do H.releaseAll(s, 'deal') end
         H.log(src, 'npc_deal_release', r.kind)
         headStart(r, HG.releaseHeadStart)
@@ -219,6 +228,8 @@ function H.npcDeal(src, kind)
             return lib.callback.await('exti_heists:client:dropSpot', src, { x = here.x, y = here.y, z = here.z }, HG.dropDistance[1], HG.dropDistance[2])
         end)
         if not ok or type(spot) ~= 'table' or not tonumber(spot.x) then return false, 'nospot' end
+        if active[r.id] ~= r or not r.standoff or r.rage or r.chasePending or r.chase then return false, 'none' end
+        if r.deal then return true, r.deal.spot, true end
         local p = vec3(spot.x + 0.0, spot.y + 0.0, spot.z + 0.0)
         local d = #(p - here)
         if d < HG.dropDistance[1] * 0.75 or d > HG.dropDistance[2] * 1.4 then return false, 'nospot' end
@@ -280,6 +291,14 @@ function H.npcRespond(players, pos, kind)
         TriggerClientEvent('exti_heists:client:npcSpawn', owner, id, { x = r.pos.x, y = r.pos.y, z = r.pos.z }, r.cars, targetsList(r), spec.weapons)
         for s in pairs(r.targets) do if s ~= owner then TriggerClientEvent('exti_heists:client:npcHunted', s, id) end end
         tellMode(r)
+        if r.rage then
+            SetTimeout(1500, function()
+                if active[id] == r and r.owner then
+                    TriggerClientEvent('exti_heists:client:npcRage', r.owner, id)
+                    TriggerClientEvent('exti_heists:client:npcSwat', r.owner, id, HG.swat)
+                end
+            end)
+        end
         -- they see his face (a warrant without a mask), and his hostages (they hold their fire and talk)
         SetTimeout(20000, function() if active[id] == r then faceSeen(r) end end)
         if heldBy(r) > 0 then standoff(r)
@@ -316,6 +335,16 @@ RegisterNetEvent('exti_heists:server:npcSpawned', function(id, netIds)
         for _, n in ipairs(r.units) do if DoesEntityExist(NetworkGetEntityFromNetworkId(n)) then alive = alive + 1 end end
         if alive == 0 then H.log(src, 'flag_npc_missing', ('%s: units never appeared'):format(r.kind)) end
     end)
+end)
+
+-- the owner's game: a robber shot one of them while they held their fire -> the storm
+RegisterNetEvent('exti_heists:server:npcAttacked', function(id, by)
+    local src = source
+    local r = active[id]
+    by = math.tointeger(by)
+    if not r or r.owner ~= src or not by or not r.targets[by] then return end
+    if not (r.standoff or r.chasePending) or r.rage then return end
+    storm(r, 'attacked')
 end)
 
 -- the owner's game: lost them (out of sight long enough)
@@ -393,17 +422,19 @@ CreateThread(function()
                     for tgt in pairs(r.targets) do if byPlayer[tgt] == id then byPlayer[tgt] = nil end end
                     H.log(cop, 'npc_stand_down', r.kind)
                 elseif r.standoff then
-                    if r.deal and t > r.deal.deadline then
+                    if r.deal and not r.deal.broken and t > r.deal.deadline then
                         storm(r, 'deal time')
                     elseif t > r.standoff.untilT then
                         storm(r, 'time')
                     elseif heldBy(r) == 0 and not r.deal then
                         -- no hostage any more and no deal: nothing holds them back
-                        r.standoff = nil; unhold(r)
+                        r.standoff = nil; unhold(r); r.spawnedAt = t
                         negotiator(r, 'لا رهائن معك الآن. لا شيء يمنعنا.')
                     end
                 elseif r.chase then
                     if t > r.chase.endT then endResponse(id, 'time') end
+                elseif r.rage then
+                    if t - (r.rageAt or t) > N.maxMinutes * 60 then endResponse(id, 'time') end
                 elseif not r.chasePending and t - (r.spawnedAt or t) > N.maxMinutes * 60 then
                     endResponse(id, 'time')
                 end

@@ -188,7 +188,11 @@ AddEventHandler('exti_heists:client:radial', function(action, kind, id)
     if action == 'carIn' then
         local veh = lib.getClosestVehicle(GetEntityCoords(cache.ped), 5.0, false)
         if not veh then working = false; return HC.notify('لا توجد مركبة قريبة', 'error') end
-        extra = NetworkGetNetworkIdFromEntity(veh)
+        -- a free seat this car really has: the back first, then the front passenger
+        local max, seat = GetVehicleMaxNumberOfPassengers(veh), nil
+        for _, s in ipairs({ 1, 2, 0 }) do if s < max and IsVehicleSeatFree(veh, s) then seat = s break end end
+        if not seat then working = false; return HC.notify('المركبة ممتلئة', 'error') end
+        extra = { net = NetworkGetNetworkIdFromEntity(veh), seat = seat }
     end
     -- the hands: a short tie/untie movement (the sack, the ties)
     if action == 'free' or action == 'blind' or action == 'unblind' then

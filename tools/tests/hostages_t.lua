@@ -151,4 +151,59 @@ local hs3; for _, e in ipairs(events) do if e.name == 'exti_heists:client:npcHol
 ok(not hs3, 'no head start when released at the wrong place')
 ok(has('exti_heists:client:npcChase', 1), 'deal broken -> chase now')
 ok(lastText('P1'):find('اتفقنا عليه'), 'told the deal is off')
+print('H review fixes')
+nr2 = H.npcOf(1); if nr2 then H.npcEnd(nr2.id, 'test') end
+reset()
+-- the storm keeps going past the 12 min mark
+players[2].state.handsup = true; players[1].pos = vec3(0, 0, 0); players[2].pos = vec3(1, 0, 0); players[1].items.zip_ties = 5
+b3, t3 = call('exti_heists:server:tieBegin', 1, 'player', 2); run(T + 4200); ok(call('exti_heists:server:tieEnd', 1, t3, true), 'tied')
+H.npcRespond({ 1 }, vec3(0, 0, 0), 'store'); run(T + 95000)
+run(T + 15 * 60000 + 4000)
+ok(has('exti_heists:client:npcSwat', 1), 'storm at 15 min')
+run(T + 60000)
+local endedEarly = false; for _, e in ipairs(events) do if e.name == 'exti_heists:client:npcEnd' then endedEarly = true end end
+ok(not endedEarly and H.npcOf(1) ~= nil, 'the storm is not cancelled right after')
+H.npcEnd(H.npcOf(1).id, 'test')
+-- a stranger can't walk someone else's hostage
+players[3] = { pos = vec3(1.5, 0, 0), bucket = 0, hp = 200, cid = 'S3', name = 'Stranger', state = {}, items = {} }
+ok(not call('exti_heists:server:hostageAct', 3, 'escort', 'player', 2), 'stranger cannot escort')
+ok(not call('exti_heists:server:hostageAct', 3, 'carOut', 'player', 2), 'stranger cannot take him out of a car')
+ok(call('exti_heists:server:hostageAct', 3, 'prone', 'player', 2) == false, 'stranger cannot put him down')
+-- far "aim" only works for lying him down
+players[1].pos = vec3(9, 0, 0)
+ok(not call('exti_heists:server:hostageAct', 1, 'blind', 'player', 2, 'aim'), 'no blindfold from 9 m')
+ok(call('exti_heists:server:hostageAct', 1, 'prone', 'player', 2, 'aim'), 'aim again from 9 m -> down')
+players[1].pos = vec3(0, 0, 0)
+-- a crewmate can't be the hostage
+crews.R1, crews.C4 = 1, 1
+players[4] = { pos = vec3(1, 1, 0), bucket = 0, hp = 200, cid = 'C4', name = 'Crew', state = { handsup = true }, items = {} }
+ok(not call('exti_heists:server:tieBegin', 1, 'player', 4), 'crewmate cannot be tied as a hostage')
+-- release and tie again: the standoff clock doesn't start over
+call('exti_heists:server:hostageAct', 1, 'free', 'player', 2)
+reset()
+players[2].state.handsup = true
+b3, t3 = call('exti_heists:server:tieBegin', 1, 'player', 2); run(T + 4200); call('exti_heists:server:tieEnd', 1, t3, true)
+H.npcRespond({ 1 }, vec3(0, 0, 0), 'store'); run(T + 95000)
+local first; for _, e in ipairs(events) do if e.name == 'exti_heists:client:npcHold' and e.args[3] == 'hostages' then first = e.args[2] end end
+call('exti_heists:server:hostageAct', 1, 'free', 'player', 2); run(T + 4000)
+run(T + 60000)
+players[2].state.handsup = true
+b3, t3 = call('exti_heists:server:tieBegin', 1, 'player', 2); run(T + 4200); call('exti_heists:server:tieEnd', 1, t3, true)
+local second; for _, e in ipairs(events) do if e.name == 'exti_heists:client:npcHold' and e.args[3] == 'hostages' then second = e.args[2] end end
+ok(first and second and second < first - 50, 'second standoff keeps the first clock')
+H.npcEnd(H.npcOf(1).id, 'test')
+-- hurt before they arrive: they come with the SWAT team
+reset()
+H.npcRespond({ 1 }, vec3(0, 0, 0), 'store'); run(T + 10000)
+players[2].hp = 120; GetPedSourceOfDamage = function() return 1001 end
+fire('exti_heists:server:captiveHurt', 2, 1); GetPedSourceOfDamage = function() return 0 end
+run(T + 90000)
+ok(has('exti_heists:client:npcSwat', 1), 'hurt before arrival -> SWAT on arrival')
+-- a player is never stuck tied: his robber down 3 min
+H.npcEnd(H.npcOf(1).id, 'test')
+players[2].hp = 200
+players[1].state['qbx_medical:deathState'] = 2
+run(T + 4 * 60000)
+ok(players[2].state.exti_tied == nil, 'robber down 3 min -> player hostage free')
+players[1].state['qbx_medical:deathState'] = 1
 print(fails == 0 and 'ALL OK' or ('FAILS: ' .. fails))

@@ -100,7 +100,7 @@ function HC.coverProne(ped) goProne(ped) end
 function HC.covered(ped)
     local c = covered[ped]
     if not c then return nil end
-    if c.prone then return (GetGameTimer() - (c.proneAt or c.at) < 180000) and 'prone' or nil end
+    if c.prone then return 'prone' end
     return (c.at + 9000 > GetGameTimer()) and 'up' or nil
 end
 
@@ -147,7 +147,7 @@ CreateThread(function()
             if not DoesEntityExist(ped) or IsPedDeadOrDying(ped, true) or isHostage(ped) then covered[ped] = nil
             elseif c.prone then
                 local far = #(GetEntityCoords(ped) - me) > 40.0
-                if far or GetGameTimer() - (c.proneAt or c.at) > 180000 then
+                if far then
                     covered[ped] = nil
                     if NetworkHasControlOfEntity(ped) then
                         ClearPedTasks(ped); SetBlockingOfNonTemporaryEvents(ped, false)
