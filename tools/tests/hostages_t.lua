@@ -41,8 +41,8 @@ local fr = call('exti_heists:server:hostageAct', 1, 'free', 'npc', 77)
 ok(fr, 'released at the spot')
 local hs = nil
 for _, e in ipairs(events) do if e.name == 'exti_heists:client:npcHold' and e.args[3] == 'headstart' then hs = e end end
-ok(hs and hs.args[2] == 30, 'head start 30 s')
-run(T + 31000)
+ok(hs and hs.args[2] == 10, 'head start 10 s')
+run(T + 11000)
 ok(has('exti_heists:client:npcChase', 1), 'chase started')
 local m; for _, e in ipairs(events) do if e.name == 'exti_heists:client:npcMode' and e.args[2].chase then m = e end end
 ok(m and m.args[2].lost == 120, 'lose them in 2 min during the chase')
@@ -131,7 +131,7 @@ H.npcRespond({ 1 }, vec3(0, 0, 0), 'store'); run(T + 95000)
 say(1, '2'); run(T + 4000)
 ok(players[2].state.exti_tied == nil, 'release here frees him')
 local hs2; for _, e in ipairs(events) do if e.name == 'exti_heists:client:npcHold' and e.args[3] == 'headstart' then hs2 = e end end
-ok(hs2 and hs2.args[2] == 15, 'head start 15 s')
+ok(hs2 and hs2.args[2] == 10, 'head start 10 s (release here)')
 run(T + 16000)
 ok(has('exti_heists:client:npcChase', 1), 'chase after release')
 say(1, '4'); run(T + 9000)
