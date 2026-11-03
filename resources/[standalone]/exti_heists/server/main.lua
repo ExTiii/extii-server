@@ -175,8 +175,10 @@ function H.skillTime(src, skill)
     return 1.0 + (H.skillLevel(r, skill) - 1) * C.skills.timeBonus
 end
 
-function H.setHeat(src)
+function H.setHeat(src, tier)
     local r, cid = H.rec(src); if not r then return end
+    if r.heat_until <= now() then r.lastTier = 0 end
+    if tier then r.lastTier = math.max(r.lastTier or 0, tier) end
     r.heat_until = now() + C.heatMinutes * 60
     save(cid)
 end
@@ -255,6 +257,8 @@ end
 function H.modeText(m) return m.police and ('وضع الشرطة (%d شرطي)'):format(m.counted) or 'بلا شرطة: حراسة الحي' end
 
 function H.repFor(src, tier, mode)
+    local r = H.rec(src); if r then r.lastTier = math.max(r.lastTier or 0, tier) end
+    if H.boardAdd then H.boardAdd('crew', src, math.max(1, math.floor((C.rep.xp[tier] or 0) * (mode and mode.rep or 1.0)))) end
     local base = C.rep.xp[tier] or 0
     H.addXP(src, math.max(1, math.floor(base * (mode and mode.rep or 1.0))), ('tier %d %s'):format(tier, mode and (mode.police and 'police' or 'npc') or ''))
 end
@@ -337,8 +341,46 @@ CreateThread(function()
     end
 end)
 
--- arrested by the police
-AddEventHandler('exti_police:server:jailed', function(src) if H.cid(src) then H.addXP(src, C.rep.arrest, 'arrested') end end)
+-- arrested by the police: the robber loses Rep; the officer who jailed a robber with heat gets a bonus
+-- (per tier of his last robbery, double if he hurt a hostage) and a point on the police board
+AddEventHandler('exti_police:server:jailed', function(src, minutes, officer)
+    local r, cid = H.rec(src)
+    if not r then return end
+    local hot = r.heat_until > now()
+    local tier = math.max(1, r.lastTier or 1)
+    -- (the arrest ends the heat: a second jailing of the same robber pays nothing)
+    r.heat_until, r.lastTier, r.loot = 0, 0, {}
+    save(cid)
+    H.addXP(src, C.rep.arrest, 'arrested')
+    officer = tonumber(officer)
+    if hot and officer and GetPlayerName(officer) then
+        local bonus = math.floor(C.copBonus.perTier * tier * ((H.hurtHostage and H.hurtHostage(src)) and C.copBonus.hostageHurtMult or 1.0))
+        local p = H.player(officer)
+        if p and bonus > 0 then
+            p.Functions.AddMoney('bank', bonus, 'police-robbery-arrest')
+            H.notify(officer, ('قبضت على لص مطلوب · مكافأة $%d'):format(bonus), 'success', 7000)
+        end
+        if H.boardAdd then H.boardAdd('cop', officer, 10 * tier) end
+        H.log(officer, 'cop_bonus', ('$%d for %s (tier %d)'):format(bonus, H.name(src), tier))
+    end
+end)
+
+-- a robbery touched with bare hands leaves a partial print there (exti_police evidence)
+local touched = {}   -- ['src:x:y'] = time
+function H.touch(src, pos)
+    if not pos or Player(src).state.exti_gloves == true or GetResourceState('exti_police') ~= 'started' then return end
+    local key = ('%d:%d:%d'):format(src, math.floor(pos.x), math.floor(pos.y))
+    if (touched[key] or 0) + 120 > now() then return end
+    touched[key] = now()
+    pcall(function() exports.exti_police:DropEvidence('print', { x = pos.x, y = pos.y, z = pos.z }, { src = src }) end)
+end
+CreateThread(function()
+    while true do
+        Wait(600000)
+        local t = now()
+        for k, v in pairs(touched) do if t - v > 300 then touched[k] = nil end end
+    end
+end)
 
 ---------------------------------------------------------------------------
 -- what the phone app / F1 read

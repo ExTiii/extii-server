@@ -23,6 +23,9 @@ local function handOver(r, leaving)
     nxt = nxt or next(r.targets)
     r.owner = nxt
     TriggerClientEvent('exti_heists:client:npcTakeOver', nxt, r.id, r.units or {}, targetsList(r), { x = r.pos.x, y = r.pos.y, z = r.pos.z })
+    -- (whatever the units were doing goes with them: a hold, a pull-back, the rage)
+    if r.rage then TriggerClientEvent('exti_heists:client:npcRage', nxt, r.id)
+    elseif (r.holdUntil or 0) > H.now() then TriggerClientEvent('exti_heists:client:npcHold', nxt, r.id, r.holdUntil - H.now(), r.pullUntil and r.pullUntil > H.now() and 'pullback' or 'hold') end
 end
 local function tellTargets(r)
     if r.phase == 'on scene' and r.owner then TriggerClientEvent('exti_heists:client:npcTargets', r.owner, r.id, targetsList(r)) end
@@ -92,6 +95,10 @@ function H.npcRespond(players, pos, kind)
         r.spawnedAt = H.now()
         TriggerClientEvent('exti_heists:client:npcSpawn', owner, id, { x = r.pos.x, y = r.pos.y, z = r.pos.z }, r.cars, targetsList(r), spec.weapons)
         for s in pairs(r.targets) do if s ~= owner then TriggerClientEvent('exti_heists:client:npcHunted', s, id) end end
+        -- hostages: they arrive, see them, and hold their fire while they talk
+        local n = H.hostageCount and H.hostageCount(targetsList(r)) or 0
+        if n > 0 then H.npcHold(r, C.hostages.arriveDrive + math.min(C.hostages.holdMax, n * C.hostages.holdPerHostage), 'hostages') end
+        if H.negotiateStart then SetTimeout(C.negotiator.textAfter * 1000, function() if active[id] == r then H.negotiateStart(r) end end) end
     end
     SetTimeout(spec.delay * 1000, function() r.retry() end)
     return id
@@ -204,3 +211,48 @@ AddEventHandler('playerDropped', function()
 end)
 
 exports('NpcActive', function(src) return byPlayer[src] ~= nil end)
+
+---------------------------------------------------------------------------
+-- hostages and the negotiator (hostages.lua / negotiate.lua)
+---------------------------------------------------------------------------
+-- the response hunting this robber (or nil)
+function H.npcOf(src) local id = byPlayer[src]; return id and active[id] or nil end
+function H.npcTargets(r) return targetsList(r) end
+
+-- the units hold their fire (they aim, they don't shoot, they don't chase) for this long
+function H.npcHold(r, seconds, why)
+    if not r then return end
+    local untilT = math.max(r.holdUntil or 0, H.now() + seconds)
+    r.holdUntil = untilT
+    if why == 'pullback' then r.pullUntil = H.now() + seconds end
+    if r.owner then TriggerClientEvent('exti_heists:client:npcHold', r.owner, r.id, untilT - H.now(), why) end
+    for s in pairs(r.targets) do TriggerClientEvent('exti_heists:client:npcHoldBar', s, r.id, untilT - H.now(), why) end
+    H.log(r.owner, 'npc_hold', ('%ds (%s)'):format(seconds, why or ''))
+end
+-- a hostage was hurt: no more talking, they come in hard
+function H.npcRage(src)
+    local r = H.npcOf(src); if not r then return end
+    r.holdUntil, r.rage = 0, true
+    if r.owner then TriggerClientEvent('exti_heists:client:npcRage', r.owner, r.id) end
+    for s in pairs(r.targets) do TriggerClientEvent('exti_heists:client:npcHoldBar', s, r.id, 0, 'rage') end
+end
+-- he gives himself up: the loot of this robbery is gone, the units leave him
+function H.npcSurrender(src)
+    local id = byPlayer[src]; local r = id and active[id]
+    if not r then return false end
+    local rec = H.rec(src)
+    local gone = {}
+    if rec then
+        for item, n in pairs(rec.loot or {}) do
+            local have = exports.ox_inventory:Search(src, 'count', item) or 0
+            local take = math.min(have, n)
+            if take > 0 then exports.ox_inventory:RemoveItem(src, item, take); gone[#gone + 1] = ('%dx %s'):format(take, item) end
+        end
+        rec.loot = {}
+    end
+    H.log(src, 'npc_surrender', table.concat(gone, ', '))
+    r.targets[src] = nil; byPlayer[src] = nil
+    TriggerClientEvent('exti_heists:client:npcEnd', src, id, r.owner == src and next(r.targets) and 'handover' or 'surrender')
+    if not next(r.targets) then endResponse(id, 'surrender') else handOver(r, src); tellTargets(r) end
+    return true
+end

@@ -133,7 +133,22 @@ local function nearestTarget(from)
     return best, bd
 end
 
+local function holdUnits(u, alive, tgt)
+    -- (they aim, they don't shoot, they don't chase; pulled back = they sit in their cars)
+    if u.holding then return end
+    u.holding = true
+    for i, ped in ipairs(alive) do
+        ClearPedTasks(ped)
+        if own.pullBack and DoesEntityExist(u.veh) and IsVehicleDriveable(u.veh, false) then
+            TaskEnterVehicle(ped, u.veh, 10000, i == 1 and -1 or 0, 1.2, 1, 0)
+        elseif tgt then
+            TaskAimGunAtEntity(ped, tgt, -1, false)
+        end
+    end
+end
+
 local function think()
+    local holding = (own.holdUntil or 0) > GetGameTimer()
     for _, u in ipairs(own.units) do
         for _, e in ipairs(u.peds) do if DoesEntityExist(e) and not NetworkHasControlOfEntity(e) then NetworkRequestControlOfEntity(e) end end
         if u.veh and DoesEntityExist(u.veh) and not NetworkHasControlOfEntity(u.veh) then NetworkRequestControlOfEntity(u.veh) end
@@ -143,7 +158,14 @@ local function think()
         if #alive > 0 then
             local here = GetEntityCoords(alive[1])
             local tgt, dist = nearestTarget(here)
-            if tgt then
+            if holding and u.stage ~= 'drive' then
+                holdUnits(u, alive, tgt)
+            elseif u.holding then
+                -- the hold is over: back to work
+                u.holding = false; u.target = nil; u.chasing = nil; u.shooting = nil
+                if u.stage == 'chase' then u.stage = 'fight' end
+                for _, ped in ipairs(alive) do if IsPedInVehicle(ped, u.veh, false) then TaskLeaveVehicle(ped, u.veh, 256) end end
+            elseif tgt then
                 local tgtCar = GetVehiclePedIsIn(tgt, false)
                 if u.stage == 'drive' then
                     -- arrived (or stuck for 45 s): out and into cover
@@ -250,6 +272,36 @@ RegisterNetEvent('exti_heists:client:npcTakeOver', function(id, netIds, targets,
     for _, u in pairs(byVeh) do own.units[#own.units + 1] = u end
 end)
 
+-- the server: hold your fire for this long (hostages, a deal, pulled back)
+RegisterNetEvent('exti_heists:client:npcHold', function(id, seconds, why)
+    if not own or own.id ~= id then return end
+    local untilT = GetGameTimer() + math.max(0, seconds) * 1000
+    if why == 'pullback' then own.pullUntil = untilT end
+    own.holdUntil = math.max(own.holdUntil or 0, untilT)
+    own.pullBack = (own.pullUntil or 0) > GetGameTimer()
+    for _, u in ipairs(own.units) do u.holding = false end
+end)
+RegisterNetEvent('exti_heists:client:npcPullBack', function(id)
+    if own and own.id == id then own.pullBack = true; for _, u in ipairs(own.units) do u.holding = false end end
+end)
+-- a hostage was hurt: no hold, sharper, pushing in
+RegisterNetEvent('exti_heists:client:npcRage', function(id)
+    if not own or own.id ~= id then return end
+    own.holdUntil, own.pullBack, own.pullUntil, own.rage = 0, false, 0, true
+    for _, u in ipairs(own.units) do
+        u.holding = false; u.target = nil
+        for _, ped in ipairs(u.peds) do
+            if DoesEntityExist(ped) then SetPedAccuracy(ped, C.hostages.rageAccuracy); SetPedCombatMovement(ped, 2); SetPedCombatAbility(ped, 2) end
+        end
+    end
+end)
+-- every hunted robber: the bar says they hold their fire
+RegisterNetEvent('exti_heists:client:npcHoldBar', function(id, seconds, why)
+    if not hunt or hunt.id ~= id then return end
+    if why == 'rage' then hunt.rageUntil = GetGameTimer() + 6000; hunt.holdUntil = 0; return end
+    hunt.holdUntil, hunt.holdWhy = GetGameTimer() + math.max(0, seconds) * 1000, why
+end)
+
 RegisterNetEvent('exti_heists:client:npcEnd', function(id, why)
     if hunt and hunt.id == id then hunt = nil; bar(nil); clearBlips() end
     if why == 'handover' then
@@ -258,7 +310,8 @@ RegisterNetEvent('exti_heists:client:npcEnd', function(id, why)
     end
     if own and own.id == id then cleanUp(true) end
     if why == 'police' then HC.notify('وصلت الشرطة: انسحبت حراسة الحي', 'warning', 7000)
-    elseif why == 'time' then HC.notify('توقفت حراسة الحي عن البحث', 'inform') end
+    elseif why == 'time' then HC.notify('توقفت حراسة الحي عن البحث', 'inform')
+    elseif why == 'surrender' then HC.notify('استسلمت: أخذت حراسة الحي الغنيمة وتركتك', 'warning', 8000) end
 end)
 
 ---------------------------------------------------------------------------
@@ -294,7 +347,13 @@ CreateThread(function()
                 local from = hunt.lastSeen or ((GetGameTimer() - hunt.onAt > 90000) and (hunt.onAt + 90000) or GetGameTimer())
                 local hidden = (GetGameTimer() - from) / 1000
                 local left = math.max(0, N.lostSeconds - hidden)
-                bar({ kind = seen and 'seen' or 'hiding', seconds = math.ceil(left), units = #peds })
+                if (hunt.rageUntil or 0) > GetGameTimer() then
+                    bar({ kind = 'rage', seconds = 0 })
+                elseif (hunt.holdUntil or 0) > GetGameTimer() then
+                    bar({ kind = 'hold', seconds = math.ceil((hunt.holdUntil - GetGameTimer()) / 1000), why = hunt.holdWhy })
+                else
+                    bar({ kind = seen and 'seen' or 'hiding', seconds = math.ceil(left), units = #peds })
+                end
                 if left <= 0 and not hunt.lostSent then hunt.lostSent = true; TriggerServerEvent('exti_heists:server:npcLost', hunt.id) end
                 -- (sent again every 2 s until the server agrees: the death state may reach it a moment later)
                 if HC.isDown() and GetGameTimer() > (hunt.downNext or 0) then hunt.downNext = GetGameTimer() + 2000; TriggerServerEvent('exti_heists:server:npcDowned', hunt.id) end

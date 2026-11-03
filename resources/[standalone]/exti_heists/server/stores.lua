@@ -112,7 +112,7 @@ RegisterNetEvent('exti_heists:server:holdUp', function(i)
     local mode = H.modeFor(R.tier)
     if not mode then return end
     state[i] = { phase = 'held', by = src, mode = mode, at = H.now(), alarm = false, rolled = false }
-    H.setHeat(src)
+    H.setHeat(src, R.tier)
     publish()
     TriggerClientEvent('exti_heists:client:holdUp', src, i, R.aimSeconds, H.modeText(mode))
     H.log(src, 'store_holdup', ('%s #%d · %s'):format(st.area, i, H.modeText(mode)))
@@ -163,6 +163,7 @@ lib.callback.register('exti_heists:server:grabTill', function(src, i)
     if not H.near(src, clerkPos(stores[i]), 3.2) then return false end
     if H.now() - (st.openAt or 0) < R.grabSeconds - 1 then return false end
     st.phase = 'emptied'; publish()
+    H.touch(src, clerkPos(stores[i]))
     local pay = H.payOf(R.pay, st.mode)
     H.giveLoot(src, 'black_money', pay)
     H.setCooldown(storeKey(i, 'till'), R.cooldownMinutes * 60)
@@ -195,7 +196,7 @@ lib.callback.register('exti_heists:server:tillPickBegin', function(src, i)
         local mode = H.modeFor(R.tier); if not mode then return false end
         st = { phase = 'cower', by = src, mode = mode, at = H.now(), alarm = true, rolled = true }
         state[i] = st; publish()
-        H.setHeat(src)
+        H.setHeat(src, R.tier)
         cowerTimeout(i)
         call(i, C.calls.registerQuiet, 'إنذار صامت', src, 'يكسر قفل الصندوق', mode)
         H.log(src, 'store_till_pick', ('%s · %s'):format(s.area, H.modeText(mode)))
@@ -220,6 +221,7 @@ lib.callback.register('exti_heists:server:tillPickEnd', function(src, token, pas
     end
     if not H.near(src, clerkPos(stores[i]), 3.5) then return false end
     st.phase = 'emptied'; publish()
+    H.touch(src, clerkPos(stores[i]))
     local pay = H.payOf(R.pay, st.mode)
     H.giveLoot(src, 'black_money', pay)
     H.setCooldown(storeKey(i, 'till'), R.cooldownMinutes * 60)
@@ -261,9 +263,10 @@ lib.callback.register('exti_heists:server:safeEnd', function(src, token, passed)
     if not i or safes[i] or H.cooldownLeft(storeKey(i, 'safe')) > 0 then return false end
     if not passed then return false, 'failed' end
     if not H.near(src, safeSpot(i), 2.6) then return false end
+    H.touch(src, safeSpot(i))
     safes[i] = { phase = 'timelock', by = src, mode = ctx.mode, readyAt = H.now() + S.timelockSeconds }
     publish()
-    H.setHeat(src)
+    H.setHeat(src, S.tier)
     H.addSkill(src, 'breaching')
     call(i, C.calls.safe, 'إنذار الخزنة', src, 'قفل الوقت يعمل', ctx.mode)
     H.log(src, 'store_safe_open', ('%s · %s'):format(stores[i].area, H.modeText(ctx.mode)))
@@ -370,3 +373,7 @@ AddEventHandler('playerDropped', function()
     for i, st in pairs(state) do if st.by == src and st.phase ~= 'emptied' then state[i] = nil end end
     publish()
 end)
+
+-- the Crew app's heist board
+H.registerHeist({ id = 'register', label = 'صندوق محل', tier = R.tier, where = '20 محلًا', status = function() return 'ready', 0, ('كل محل كل %d دقيقة'):format(R.cooldownMinutes) end })
+H.registerHeist({ id = 'storesafe', label = 'خزنة محل', tier = S.tier, where = 'الغرفة الخلفية', status = function() return 'ready', 0, ('كل خزنة كل %d دقيقة'):format(S.cooldownMinutes) end })

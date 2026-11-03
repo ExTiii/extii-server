@@ -78,6 +78,7 @@ Config.armory = {
         { name = 'radio', grade = 0, max = 1 },
         { name = 'armour', grade = 0, max = 2 },
         { name = 'bandage', grade = 0, max = 5 },
+        { name = 'evidence_bag', grade = 0, max = 10 },
         { name = 'WEAPON_COMBATPISTOL', grade = 1, serial = true },
         { name = 'ammo-9', grade = 1, max = 120 },
         { name = 'WEAPON_PUMPSHOTGUN', grade = 2, serial = true },
@@ -324,6 +325,8 @@ Config.dispatch = {
         { match = 'بيع مخدرات', code = '10-66', icon = 'pill' },
         { match = 'كتابة على الجدران', code = '10-31', icon = 'spray' },
         { match = 'بلاغ مجهول', code = '10-31', icon = 'eye' },
+        { match = 'رهين', code = '10-90', icon = 'user', urgent = true },     -- (exti_heists: hostages taken / a hostage hurt)
+        { match = 'تتبّع', code = '10-62', icon = 'arrow' },                  -- (marked bills: the bank's trace)
         { match = 'سطو', code = '10-90', icon = 'store', urgent = true },   -- (exti_heists: stores; more specific robberies go above this)
     },
     kindCodes = { phone = { code = '911', icon = 'phone' }, chat = { code = '911', icon = 'phone' }, alarm = { code = '10-90', icon = 'bell' } },
@@ -361,4 +364,34 @@ Config.cctv = {
         { label = 'سجن بولينغبروك · البوابة', area = 'بولينغبروك', kind = 'city', coords = vec3(1845.0, 2595.0, 50.0), rot = vec3(-28.0, 0.0, 200.0) },
         { label = 'مجوهرات فانجيليكو', area = 'روكفورد هيلز', kind = 'city', coords = vec3(-623.0, -230.0, 42.0), rot = vec3(-22.0, 0.0, 215.0) },
     },
+}
+
+-- =====================================================================
+-- evidence (server/evidence.lua): what a crime leaves behind. Officers on duty see the small marks on
+-- the ground within showDistance, bag them ([E], one evidence bag each, from the armory) and hand the
+-- bags in at the lab (the seized items room of a station). The lab answers after labMinutes, on the
+-- case they picked and on their phone.
+--   print  = a partial fingerprint (a robber with no gloves touched the till, a safe, a case, a door)
+--   blood  = someone bled here (shot, stabbed)
+--   casing = a shell casing (the gun's serial and owner, or "no serial")
+-- marked bills (exti_heists: banks, the armored truck) send a trace to the police for a while.
+-- =====================================================================
+Config.evidence = {
+    lifeMinutes = 90,        -- a mark nobody bagged washes away after this
+    showDistance = 10.0,     -- officers see the marks this close
+    pickDistance = 1.6,
+    labMinutes = 10,         -- the lab's answer comes this long after the bag is handed in
+    bagItem = 'evidence_bag',
+    item = 'police_evidence',
+    maxMarks = 400,          -- oldest go first
+    bonus = { named = 100, daily = 5 }, -- an officer whose bag (on a case) named someone gets this (bank), up to 5 a day
+    blood = { minDamage = 15, everySeconds = 20 },
+    casing = { everySeconds = 6 },
+    trace = { everySeconds = 45, radius = 160.0, offset = 90.0 },   -- marked bills: a circle on the cops' map
+    -- arms (component 3) with NO gloves on the freemode models: any other number = gloves
+    noGloves = {
+        male = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 26, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 112, 113, 114, 118, 125, 132 },
+        female = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 19, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 129, 130, 131, 135, 142, 149, 153, 157, 161, 165 },
+    },
+    labels = { print = 'بصمة جزئية', blood = 'عينة دم', casing = 'ظرف رصاصة' },
 }

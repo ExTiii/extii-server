@@ -227,7 +227,14 @@ local function runSpot(spot)
     if spot.kind == 'locker' then return openLocker(spot) end
     if not POL.onDuty() then return POL.error('off_duty') end
     if spot.kind == 'armory' then return openArmory() end
-    if spot.kind == 'evidence' then return POL.openSeized(spot) end
+    if spot.kind == 'evidence' then
+        -- the seized items room is also where the lab takes the evidence bags
+        lib.registerContext({ id = 'exti_police_evroom', title = 'غرفة المصادرات', options = {
+            { title = 'المصادرات', description = 'الأسلحة والأغراض المصادرة', icon = 'box-archive', onSelect = function() POL.openSeized(spot) end },
+            { title = 'مختبر الأدلة', description = 'سلّم أكياس الأدلة، وشاهد النتائج', icon = 'flask', onSelect = function() POL.openLab() end },
+        } })
+        return lib.showContext('exti_police_evroom')
+    end
     if spot.kind == 'inbox' then return POL.openInbox(spot) end
     if spot.kind == 'garage' or spot.kind == 'heli' then
         if cache.vehicle then return POL.parkIn(spot) end
@@ -261,6 +268,10 @@ CreateThread(function()
                 text = (cache.vehicle and (best.kind == 'garage' or best.kind == 'heli')) and '[E] أدخل المركبة للمرآب' or SPOT_TEXT[best.kind]
                 local spot = best
                 action = function() runSpot(spot) end
+            elseif cop and POL.evidencePrompt and POL.evidencePrompt(p) then
+                -- a mark on the ground (evidence)
+                text, action = POL.evidencePrompt(p)
+                sleep = 0
             elseif cop and POL.trunkPrompt then
                 -- the trunk of one of the team's vehicles
                 local tText, tAction = POL.trunkPrompt(p)

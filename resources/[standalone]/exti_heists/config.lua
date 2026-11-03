@@ -304,3 +304,52 @@ Config.contracts = {
         { id = 'tv',        kind = 'sell', item = 'small_tv',     need = 1,        text = 'أحضر لي تلفازًا (%d)' },
     },
 }
+
+---------------------------------------------------------------------------
+-- hostages (zip ties): aim at a person on the street or in a store, walk up, [G] tie him up.
+-- With real cops: a hostage call; it's roleplay from there. With NPC security: they hold their fire
+-- while you have hostages, and each one you let go buys a head start. Hurt one: no more talking.
+---------------------------------------------------------------------------
+Config.hostages = {
+    maxPerRobber = 4,
+    aimDistance = 12.0,       -- aim at a person this close: hands up
+    tieDistance = 1.8,
+    tieSeconds = 4,
+    holdPerHostage = 30,      -- NPC security: seconds of no shooting per hostage when they arrive
+    holdMax = 120,
+    arriveDrive = 25,         -- (they need about this long to drive in: the hold starts counting after)
+    releaseHold = 20,         -- let one go: they hold this long (a head start)
+    autoReleaseMinutes = 15,  -- nobody keeps a hostage longer than this
+    leaveDistance = 150.0,    -- the robber is this far from his hostage: he goes free
+    copFreeBonus = 250,       -- an officer who frees a hostage (bank): not his own, held 60 s+, 5 a day
+    minHoldForBonus = 60, copFreeDaily = 5,
+    hurtMinutes = 60,         -- a robber who hurt a hostage: double arrest bonus this long
+    rageAccuracy = 35,        -- NPC security after a hostage was hurt
+}
+Config.calls.hostages = 'احتجاز رهائن'
+Config.calls.hostageHurt = 'رهينة أُصيبت'
+
+-- the NPC negotiator (no-police mode): texts you when the units are on scene
+Config.negotiator = {
+    number = '555-0119',      -- shows as the sender in the phone
+    textAfter = 6,            -- seconds after they arrive
+    pullBackHostages = 2,     -- "انسحبوا" needs this many hostages
+    pullBackSeconds = 60,
+    headStartSeconds = 30,    -- "مهلة": let one hostage go, this long
+    surrenderXp = -5,
+}
+
+-- cop bonuses (bank): an arrest of a robber with heat, per tier of his last robbery
+Config.copBonus = { perTier = 150, hostageHurtMult = 2.0 }
+
+---------------------------------------------------------------------------
+-- crews and the monthly boards (the phone's Crew app)
+---------------------------------------------------------------------------
+Config.crew = {
+    maxMembers = 6,
+    titles = {   -- the top 3 of each board on the 1st of the month (kept forever)
+        crew = { 'أخطر طاقم في المدينة', 'ثاني أخطر طاقم', 'ثالث أخطر طاقم' },
+        rob  = { 'لص الشهر', 'ثاني لصوص الشهر', 'ثالث لصوص الشهر' },
+        cop  = { 'شرطي الشهر', 'ثاني شرطيي الشهر', 'ثالث شرطيي الشهر' },
+    },
+}

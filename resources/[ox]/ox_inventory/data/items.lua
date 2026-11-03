@@ -1307,4 +1307,60 @@ return {
         description = 'ثقيلة: تُحمل بيديك ببطء. تُباع للمصرّف',
         client = { image = 'nui://exti_heists/html/items/painting.png' },
     },
+
+    ['evidence_bag'] = {
+        label = 'كيس أدلة (Evidence Bag)',
+        weight = 20,
+        description = 'للشرطة: يجمع دليلًا واحدًا من مكان الجريمة (بصمة، دم، ظرف رصاصة). من مستودع الأسلحة',
+        client = { image = 'nui://exti_heists/html/items/evidence_bag.png' },
+    },
+
+    ['police_evidence'] = {
+        label = 'كيس أدلة مختوم',
+        weight = 30,
+        description = 'سلّمه لمختبر الأدلة في غرفة المصادرات',
+        client = { image = 'nui://exti_heists/html/items/police_evidence.png' },
+    },
+
+    ['vault_goldbar'] = {
+        label = 'سبيكة ذهب مختومة (Vault Gold Bar)',
+        weight = 1000,
+        description = 'من خزائن البنوك الكبيرة. المصرّف يشتري 5 فقط في اليوم من المدينة كلها',
+        client = { image = 'nui://exti_heists/html/items/vault_goldbar.png' },
+    },
+
+    ['guard_keycard'] = {
+        label = 'بطاقة حارس (Guard Keycard)',
+        weight = 20,
+        description = 'من مهمة تحضير. تفتح باب الموظفين في عملية واحدة',
+        client = { image = 'nui://exti_heists/html/items/guard_keycard.png' },
+    },
+
+    ['blueprints'] = {
+        label = 'مخططات المبنى (Blueprints)',
+        weight = 200,
+        description = 'من مهمة تحضير: تكشف الحرّاس والكاميرات في عملية واحدة',
+        client = { image = 'nui://exti_heists/html/items/blueprints.png' },
+    },
+
+    ['catering_uniform'] = {
+        label = 'زي شركة التموين (Catering Uniform)',
+        weight = 800,
+        description = 'من مهمة تحضير: يُدخلك اليخت بلا إنذار',
+        client = { image = 'nui://exti_heists/html/items/catering_uniform.png' },
+    },
+
+    ['bearer_bonds'] = {
+        label = 'سندات لحاملها (Bearer Bonds)',
+        weight = 100,
+        description = 'غنيمة باسيفيك النادرة. يشتريها المصرّف',
+        client = { image = 'nui://exti_heists/html/items/bearer_bonds.png' },
+    },
+
+    ['mw_electronics'] = {
+        label = 'أجهزة ميري ويذر (Military Electronics)',
+        weight = 2500,
+        description = 'من قافلة ميري ويذر. يشتريها المصرّف',
+        client = { image = 'nui://exti_heists/html/items/mw_electronics.png' },
+    },
 }

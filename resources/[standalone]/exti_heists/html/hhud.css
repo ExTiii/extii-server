@@ -24,6 +24,12 @@
 .hh.quiet .ic { color: #3ddc97; } .hh.quiet .t { color: #3ddc97; } .hh.quiet .prog i { background: #3ddc97; }
 /* hiding: they lost sight of you, the clock runs */
 .hh.hiding .ic { color: #8ab8ff; } .hh.hiding .t { color: #8ab8ff; } .hh.hiding .prog i { background: #3d8bfd; }
+/* hold: NPC security holds its fire (hostages / a deal) */
+.hh.hold { border-color: rgba(255,255,255,.18); }
+.hh.hold .ic { color: #f4f3ef; background: rgba(255,255,255,.12); } .hh.hold .t { color: #f4f3ef; } .hh.hold .prog i { background: #f4f3ef; }
+/* rage: a hostage was hurt */
+.hh.rage { border-color: rgba(229,72,77,.7); }
+.hh.rage .ic { color: #ff6b6f; background: rgba(229,72,77,.2); animation: hhpulse .6s ease-in-out infinite; } .hh.rage .prog i { background: #e5484d; }
 /* the noise meter (inside a house): bottom centre, above the hotbar */
 #hnoise { position: fixed; left: 50%; bottom: 118px; transform: translateX(-50%); width: 260px; pointer-events: none; font-family: 'Kit Plex', sans-serif; direction: rtl; }
 #hnoise.off { display: none; }

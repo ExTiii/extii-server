@@ -77,7 +77,7 @@ lib.callback.register('exti_heists:server:jewelHackBegin', function(src)
     -- the USB is used up the moment it goes in (two tries with it)
     if not st.usbIn then exports.ox_inventory:RemoveItem(src, 'usb_green', 1); st.usbIn = true; H.log(src, 'usb_used', 'green · jewelry') end
     st.crew[src] = true
-    H.setHeat(src)
+    H.setHeat(src, J.tier)
     local lv = H.skillLevel(H.rec(src), 'hacking')
     return true, H.gameBegin(src, 'hack', { jewel = true }), { tier = 1, time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
 end)
@@ -115,6 +115,7 @@ local function rollCase()
 end
 local function lootCase(src, i)
     st.cases[i] = true; publish()
+    H.touch(src, J.cases[i].pos)
     local got = {}
     for _ = 1, math.random(J.rolls[1], J.rolls[2]) do
         local item, n = rollCase()
@@ -139,7 +140,7 @@ lib.callback.register('exti_heists:server:jewelCaseBegin', function(src, i, how)
     if GetSelectedPedWeapon(GetPlayerPed(src)) == `WEAPON_UNARMED` then return false, 'تحتاج شيئًا في يدك' end
     local ok, why = begin(src); if not ok then return false, why end
     st.crew[src] = true
-    H.setHeat(src)
+    H.setHeat(src, J.tier)
     working[src] = { i = i, at = GetGameTimer() }
     TriggerClientEvent('exti_heists:client:jewelSmashFx', -1, i, src)
     return true, 'smash'
@@ -192,3 +193,10 @@ AddEventHandler('playerDropped', function() working[source] = nil end)
 
 -- admins (F1): the store ready again
 function H.resetJewelry() H.clearCooldown(KEY); reset() end
+
+H.registerHeist({ id = 'jewelry', label = 'مجوهرات فانجيليكو', tier = J.tier, where = 'روكفورد هيلز', status = function()
+    if st.phase ~= 'idle' then return 'busy', 0, 'يُسرق الآن' end
+    local left = H.cooldownLeft(KEY)
+    if left > 0 then return 'cooldown', left end
+    return 'ready', 0, 'فلاشة خضراء للطريق الهادئ'
+end })

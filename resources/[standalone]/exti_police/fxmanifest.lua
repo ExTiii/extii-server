@@ -35,6 +35,7 @@ client_scripts {
     'client/cctv.lua',
     'client/doors.lua',
     'client/dispatch.lua',
+    'client/evidence.lua',
 }
 
 server_scripts {
@@ -50,6 +51,7 @@ server_scripts {
     'server/prison.lua',
     'server/witness.lua',
     'server/dispatch.lua',
+    'server/evidence.lua',
     'server/cctv.lua',
     'server/doors.lua',
     'server/records.lua',

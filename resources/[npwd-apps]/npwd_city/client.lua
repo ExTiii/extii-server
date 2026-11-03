@@ -216,3 +216,14 @@ end)
 RegisterNUICallback('level:get', function(_, cb)
     cb(lib.callback.await('npwd_city:level:get', false) or {})
 end)
+
+---------------------------------------------------------------------
+-- الطاقم (exti_heists): السمعة، الطاقم، لوحة السرقات، الترتيب
+---------------------------------------------------------------------
+for _, action in ipairs({ 'get', 'create', 'invite', 'accept', 'decline', 'leave', 'kick', 'lead', 'fence' }) do
+    RegisterNUICallback('crew:' .. action, function(data, cb)
+        if GetResourceState('exti_heists') ~= 'started' then return cb(action == 'get' and {} or { ok = false }) end
+        local ok, res = pcall(lib.callback.await, 'exti_heists:server:crew', false, action, data)
+        cb(ok and res or (action == 'get' and {} or { ok = false }))
+    end)
+end

@@ -28,11 +28,13 @@ client_scripts {
     'client/houses.lua',
     'client/atm.lua',
     'client/jewelry.lua',
+    'client/hostages.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    'server/crew.lua',
     'server/npc.lua',
     'server/stores.lua',
     'server/fence.lua',
@@ -40,6 +42,8 @@ server_scripts {
     'server/atm.lua',
     'server/jewelry.lua',
     'server/contracts.lua',
+    'server/hostages.lua',
+    'server/negotiate.lua',
 }
 
 ui_page 'html/index.html'

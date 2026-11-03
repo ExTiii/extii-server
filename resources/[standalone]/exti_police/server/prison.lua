@@ -207,8 +207,8 @@ end
 ---------------------------------------------------------------------------
 -- in and out
 ---------------------------------------------------------------------------
---- jail(src, minutes, officerName, chargeId) -> ok
-local function jail(src, minutes, officerName, chargeId)
+--- jail(src, minutes, officerName, chargeId, officerSrc) -> ok
+local function jail(src, minutes, officerName, chargeId, officerSrc)
     local player = getPlayer(src)
     minutes = tonumber(minutes)
     if not player or not minutes or minutes < 1 then return false end
@@ -230,7 +230,7 @@ local function jail(src, minutes, officerName, chargeId)
     tellClient(src, inmate)
     POL.log(nil, 'jailed', ('%s: %d دقيقة (%s)'):format(name, inmate.minutes, officerName or ''))
     lib.print.info(('[prison] %s (%s) jailed %d min by %s'):format(name, cid, inmate.minutes, officerName or '?'))
-    TriggerEvent('exti_police:server:jailed', src, inmate.minutes)   -- (exti_heists: an arrest costs criminal Rep)
+    TriggerEvent('exti_police:server:jailed', src, inmate.minutes, officerSrc)   -- (exti_heists: an arrest costs criminal Rep, the officer gets a bonus)
     return true
 end
 

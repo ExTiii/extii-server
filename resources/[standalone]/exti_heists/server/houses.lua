@@ -123,8 +123,9 @@ lib.callback.register('exti_heists:server:houseBreakBegin', function(src, id, ho
     local mode = H.modeFor(sz.tier); if not mode then return false end
     l.mode = mode
     if how == 'window' then
+        H.touch(src, l.pos)
         l.phase = 'open'; l.loud = true; l.openedAt = H.now(); publish()
-        H.setHeat(src)
+        H.setHeat(src, sz.tier)
         H.log(src, 'house_window', ('%s · %s'):format(l.area, H.modeText(mode)))
         SetTimeout(4000, function() alarm(l, 'كُسرت نافذة', true) end)
         return true, 'open'
@@ -144,8 +145,9 @@ lib.callback.register('exti_heists:server:houseBreakEnd', function(src, token, p
         return false, 'failed'
     end
     if not H.near(src, l.pos, 3.5) then return false end
+    H.touch(src, l.pos)
     l.phase = 'open'; l.openedAt = H.now(); publish()
-    H.setHeat(src)
+    H.setHeat(src, HS.sizes[l.size].tier)
     H.addSkill(src, 'lockpick')
     H.log(src, 'house_open', ('%s · %s'):format(l.area, H.modeText(l.mode)))
     return true
@@ -191,7 +193,7 @@ lib.callback.register('exti_heists:server:houseEnter', function(src, id)
     local cop = H.isCopOnDuty(src)
     if cop and not l.alarm then return false end   -- (the police come in once the alarm has gone off)
     setInside(src, l)
-    if not cop then H.setHeat(src) else l.members[src] = nil; l.cops = l.cops or {}; l.cops[src] = true end
+    if not cop then H.setHeat(src, HS.sizes[l.size].tier) else l.members[src] = nil; l.cops = l.cops or {}; l.cops[src] = true end
     local it = HS.interiors[HS.sizes[l.size].interior]
     -- the spots are rolled once per break-in: which drawers have something in them
     if not l.spots then
@@ -457,3 +459,11 @@ function H.adminHouseLead(src, size)
     return false
 end
 H.isNightOrAdmin = function(l) return isNight() or (l and l.admin) end
+
+H.registerHeist({ id = 'house', label = 'سطو على منزل', tier = 1, where = 'عنوان من المصرّف', status = function(src)
+    local cid = H.cid(src)
+    local left = cid and H.cooldownLeft(playerKey(cid)) or 0
+    if left > 0 then return 'cooldown', left end
+    if not isNight() then return 'night', 0, 'بالليل فقط (10 مساءً - 5 صباحًا)' end
+    return 'ready', 0, 'اكتب للمصرّف "شغل"'
+end })

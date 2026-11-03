@@ -32,6 +32,10 @@ RegisterNetEvent('exti_weapons:server:shots', function(c, street, zone, silenced
     local here = GetEntityCoords(ped)
     if #(here - vec3(c.x, c.y, c.z)) > 30.0 then return end     -- (he must be where he says)
     if isCop(src) then return end
+    -- a shell casing on the ground (evidence: the gun's serial, or none)
+    if GetResourceState('exti_police') == 'started' and GetPlayerRoutingBucket(src) == 0 then
+        pcall(function() exports.exti_police:Casing(src, here) end)
+    end
     local cell = ('%d:%d'):format(math.floor(here.x / S.areaSize), math.floor(here.y / S.areaSize))
     if (lastArea[cell] or 0) + S.areaSeconds > now then return end
     zone = type(zone) == 'string' and zone or ''

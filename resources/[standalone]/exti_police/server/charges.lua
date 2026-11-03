@@ -259,7 +259,7 @@ lib.callback.register('exti_police:server:chargeIssue', function(source, targetI
         lib.logger(source, 'police', ('fined player %d (%s) $%d: %s'):format(tid, cid, fine, table.concat(labels, ', ')))
     end
     if wantJail then
-        if not POL.jail(tid, jail, officer, chargeId) then
+        if not POL.jail(tid, jail, officer, chargeId, source) then
             if billId then pcall(function() exports.exti_bank:CancelBill(billId) end) end
             MySQL.query.await('DELETE FROM `exti_police_charges` WHERE `id` = ?', { chargeId })
             return false, 'failed'

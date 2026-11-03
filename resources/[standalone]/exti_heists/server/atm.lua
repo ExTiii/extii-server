@@ -55,8 +55,9 @@ lib.callback.register('exti_heists:server:atmHook', function(src, pos, modelName
     local mode = H.modeFor(AT.tier); if not mode then return false end
     atms[key] = { key = key, pos = pos, model = MODEL[mh], by = src, veh = vehNet, phase = 'hooked', mode = mode, at = H.now() }
     exports.ox_inventory:RemoveItem(src, 'tow_chain', 1)   -- (the chain goes with the ATM)
+    H.touch(src, pos)
     publish()
-    H.setHeat(src)
+    H.setHeat(src, AT.tier)
     H.log(src, 'atm_hook', ('%s · %s'):format(key, H.modeText(mode)))
     -- not pulled within 2 minutes: the chain comes off (and comes back)
     local a = atms[key]
@@ -84,7 +85,7 @@ RegisterNetEvent('exti_heists:server:atmRip', function(key)
     H.atmHidden[key] = H.now() + AT.hiddenMinutes * 60
     H.atmHiddenPos[key] = { x = a.pos.x, y = a.pos.y, z = a.pos.z, model = a.model }
     H.setCooldown(key, AT.cooldownHours * 3600)
-    H.setHeat(src)
+    H.setHeat(src, AT.tier)
     publish()
     TriggerClientEvent('exti_heists:client:atmDrag', src, key)
     -- the alarm: loud, right away
@@ -136,6 +137,7 @@ lib.callback.register('exti_heists:server:atmDrillBegin', function(src, key)
     if (exports.ox_inventory:Search(src, 'count', 'drill') or 0) < 1 then return false, 'تحتاج مثقابًا (من متجر العدد)' end
     if (exports.ox_inventory:Search(src, 'count', 'drill_bit') or 0) < 1 then return false, 'تحتاج رأس مثقاب' end
     a.phase = 'drilling'; a.driller = src; a.at = H.now(); publish()
+    H.touch(src, GetEntityCoords(obj))
     local lv = H.skillLevel(H.rec(src), 'breaching')
     return true, H.gameBegin(src, 'drill', { atm = key }), { time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
 end)
@@ -191,3 +193,12 @@ AddEventHandler('onResourceStop', function(res)
     for _, a in pairs(atms) do local o = entityOf(a.obj); if o then DeleteEntity(o) end end
 end)
 CreateThread(function() Wait(2000); publish() end)
+
+H.registerHeist({ id = 'atm', label = 'جهاز صراف', tier = AT.tier, where = 'بشاحنة وسلسلة', status = function()
+    local n = lastHour()
+    if n >= AT.perHour then
+        local oldest = recent[1] or H.now()
+        return 'cooldown', 3600 - (H.now() - oldest), 'الشرطة متيقّظة هذه الساعة'
+    end
+    return 'ready', 0, ('%d من %d هذه الساعة'):format(n, AT.perHour)
+end })
