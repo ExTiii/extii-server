@@ -56,7 +56,7 @@ local function autoSpot(st)
     local to = from - fwd * 4.0
     local ray = StartExpensiveSynchronousShapeTestLosProbe(from.x, from.y, from.z, to.x, to.y, to.z, 1 | 16, PlayerPedId(), 7)
     local _, hit, pos, normal = GetShapeTestResult(ray)
-    if hit == 1 and #(pos - from) > 0.4 and math.abs(normal.z) < 0.4 then
+    if (hit == 1 or hit == true) and #(pos - from) > 0.4 and math.abs(normal.z) < 0.4 then
         st.auto = { p = vec3(pos.x, pos.y, from.z + 0.25), n = vec3(normal.x, normal.y, 0.0) }
         return st.auto
     end
@@ -75,7 +75,7 @@ local function snapped(st, s)
     local from, to = p + n * 0.8, p - n * 0.8
     local ray = StartExpensiveSynchronousShapeTestLosProbe(from.x, from.y, from.z, to.x, to.y, to.z, 1 | 16, PlayerPedId(), 7)
     local _, hit, pos, normal = GetShapeTestResult(ray)
-    if hit == 1 and math.abs(normal.z) < 0.4 then
+    if (hit == 1 or hit == true) and math.abs(normal.z) < 0.4 then
         st.snap = { p = vec3(pos.x, pos.y, p.z), n = vec3(normal.x, normal.y, 0.0) }
         return st.snap
     end

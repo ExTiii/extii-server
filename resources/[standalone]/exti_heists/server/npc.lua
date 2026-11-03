@@ -26,9 +26,22 @@ local function tellTargets(r)
     if r.phase == 'on scene' and r.owner then TriggerClientEvent('exti_heists:client:npcTargets', r.owner, r.id, targetsList(r)) end
 end
 
+-- the server removes the units itself 40 s after the end (the owner's game may be gone, and they are
+-- mission entities the game never cleans up): time for them to drive off first
+local function sweep(r)
+    local units = r.units or {}
+    SetTimeout(40000, function()
+        for _, n in ipairs(units) do
+            local ent = NetworkGetEntityFromNetworkId(n)
+            if ent ~= 0 and DoesEntityExist(ent) then DeleteEntity(ent) end
+        end
+    end)
+end
+
 local function endResponse(id, why)
     local r = active[id]; if not r then return end
     active[id] = nil
+    sweep(r)
     for s in pairs(r.targets) do
         if byPlayer[s] == id then byPlayer[s] = nil end
         TriggerClientEvent('exti_heists:client:npcEnd', s, id, why)
@@ -81,6 +94,13 @@ RegisterNetEvent('exti_heists:server:npcSpawned', function(id, netIds)
     if not r or r.owner ~= src or type(netIds) ~= 'table' then return end
     r.units = {}
     for _, n in ipairs(netIds) do if math.type(n) == 'integer' then r.units[#r.units + 1] = n end end
+    -- tag them on the server (a tag set by the game right after creating them may not reach the others)
+    SetTimeout(1500, function()
+        for _, n in ipairs(r.units) do
+            local ent = NetworkGetEntityFromNetworkId(n)
+            if ent ~= 0 and DoesEntityExist(ent) then Entity(ent).state:set('exti_npcsec', id, true) end
+        end
+    end)
     SetTimeout(8000, function()
         if active[id] ~= r then return end
         local alive = 0
@@ -152,6 +172,7 @@ CreateThread(function()
                 if cop then
                     for tgt in pairs(r.targets) do TriggerClientEvent('exti_heists:client:npcEnd', tgt, id, 'police') end
                     active[id] = nil
+                    sweep(r)
                     for tgt in pairs(r.targets) do if byPlayer[tgt] == id then byPlayer[tgt] = nil end end
                     H.log(cop, 'npc_stand_down', r.kind)
                 elseif t - (r.spawnedAt or t) > N.maxMinutes * 60 then

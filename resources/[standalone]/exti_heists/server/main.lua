@@ -13,7 +13,13 @@ H.now = now
 -- helpers
 ---------------------------------------------------------------------------
 function H.player(src) return exports.qbx_core:GetPlayer(src) end
-function H.cid(src) local p = H.player(src); return p and p.PlayerData.citizenid end
+local cidOf = {}   -- [src] = citizenid (still known in playerDropped, after qbx_core forgot him)
+function H.cid(src)
+    local p = H.player(src)
+    local cid = p and p.PlayerData.citizenid
+    if cid then cidOf[src] = cid end
+    return cid or cidOf[src]
+end
 function H.name(src)
     local p = H.player(src); local ci = p and p.PlayerData.charinfo
     return ci and ((ci.firstname or '') .. ' ' .. (ci.lastname or '')) or GetPlayerName(src) or '?'
@@ -105,8 +111,12 @@ function H.mmss(s) s = math.max(0, math.floor(s)); return ('%d:%02d'):format(s /
 -- criminal Rep, skills, heat (per character)
 ---------------------------------------------------------------------------
 local recs = {}   -- [citizenid] = { xp, lockpick, hacking, breaching, heat_until, loot = {}, dropped_at }
+local loadingCid = {}
 local function load(cid)
     if recs[cid] then return recs[cid] end
+    while loadingCid[cid] do Wait(50) end
+    if recs[cid] then return recs[cid] end
+    loadingCid[cid] = true
     local r = MySQL.single.await('SELECT * FROM `exti_heist_rep` WHERE `citizenid` = ?', { cid })
     if not r then
         r = { xp = 0, lockpick = 0, hacking = 0, breaching = 0, heat_until = 0, dropped_at = 0 }
@@ -115,6 +125,7 @@ local function load(cid)
     local ok, loot = pcall(json.decode, r.loot or '')
     r.loot = ok and type(loot) == 'table' and loot or {}
     recs[cid] = r
+    loadingCid[cid] = nil
     return r
 end
 local function save(cid)
@@ -266,6 +277,7 @@ function H.gameEnd(src, kind, id, passed)
     local t = tokens[src]; tokens[src] = nil
     if not t or t.id ~= id or t.kind ~= kind then return nil, 'token' end
     local took = (GetGameTimer() - t.at) / 1000
+    if took > (C.games.maxSeconds or 240) then return nil, 'old' end   -- (a token kept for later is worthless)
     local min = (C.games[kind] and C.games[kind].minSeconds) or 2.0
     if passed and took < min then
         H.log(src, 'flag_fast_game', ('%s in %.2fs'):format(kind, took))
@@ -280,14 +292,19 @@ AddEventHandler('playerDropped', function() tokens[source] = nil end)
 ---------------------------------------------------------------------------
 AddEventHandler('playerDropped', function()
     local src = source
-    local cid = H.cid(src); if not cid then return end
+    local cid = H.cid(src); cidOf[src] = nil
+    if not cid then return end
     local r = recs[cid]
     if r and r.heat_until > now() and next(r.loot) then
         r.dropped_at = now(); save(cid)
-        H.log(('%s (%s)'):format(H.name(src), cid), 'drop_with_heat', json.encode(r.loot))
+        H.log(('%s (%s)'):format(GetPlayerName(src) or '?', cid), 'drop_with_heat', json.encode(r.loot))
     end
 end)
+local loading = {}
 local function onLoaded(src)
+    if loading[src] then return end
+    loading[src] = true
+    SetTimeout(5000, function() loading[src] = nil end)
     local r, cid = H.rec(src); if not r then return end
     if r.dropped_at > 0 then
         local away = now() - r.dropped_at

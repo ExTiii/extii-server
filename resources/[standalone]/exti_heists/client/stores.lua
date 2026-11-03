@@ -110,6 +110,7 @@ local function pickTill(i, s)
     HC.prompt(nil)
     local ok, token, params = lib.callback.await('exti_heists:server:tillPickBegin', false, i)
     if not ok then if token then HC.notify(token, 'error') end return end
+    if not mine or mine.i ~= i then mine = { i = i, lookAway = 0, sent2 = true, sentCower = true, untilOpen = 0 } end
     local ped = cache.ped
     TaskTurnPedToFaceCoord(ped, tillPos(s).x, tillPos(s).y, tillPos(s).z, 600)
     Wait(500)
@@ -148,7 +149,7 @@ local function crackSafe(i, s, pos)
             local to = p + vec3(-math.sin(r), math.cos(r), 0.0) * 1.2
             local ray = StartExpensiveSynchronousShapeTestLosProbe(p.x, p.y, p.z + 0.4, to.x, to.y, to.z + 0.4, 1, cache.ped, 7)
             local _, hit, pos = GetShapeTestResult(ray)
-            if hit == 1 then local d = #(pos - p); if not bd or d < bd then best, bd = a, d end end
+            if hit == 1 or hit == true then local d = #(pos - p); if not bd or d < bd then best, bd = a, d end end
         end
         if best then SetEntityHeading(cache.ped, best + 0.0) end
     end
@@ -195,7 +196,7 @@ CreateThread(function()
             local clerk = clerkOf(near)
 
             -- 1) a gun on the clerk starts it
-            if not ph and not mine and clerk and HC.aimingAt(clerk, 11.0) and GetGameTimer() - lastTry > 4000 then
+            if not ph and not mine and clerk and HC.aimingAt(clerk, 9.0) and GetGameTimer() - lastTry > 4000 then
                 lastTry = GetGameTimer()
                 TriggerServerEvent('exti_heists:server:holdUp', near)
             end

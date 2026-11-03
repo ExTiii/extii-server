@@ -80,8 +80,9 @@ Config.npc = {
 -- the minigames: the server refuses a result faster than this (seconds)
 ---------------------------------------------------------------------------
 Config.games = {
-    lockpick = { minSeconds = 3.0 },
-    safedial = { minSeconds = 5.0 },
+    maxSeconds = 240,                -- a game result later than this after its start is refused
+    lockpick = { minSeconds = 6.0 },
+    safedial = { minSeconds = 12.0 },
 }
 
 ---------------------------------------------------------------------------

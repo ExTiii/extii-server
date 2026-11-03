@@ -134,6 +134,8 @@ end
 
 local function think()
     for _, u in ipairs(own.units) do
+        for _, e in ipairs(u.peds) do if DoesEntityExist(e) and not NetworkHasControlOfEntity(e) then NetworkRequestControlOfEntity(e) end end
+        if u.veh and DoesEntityExist(u.veh) and not NetworkHasControlOfEntity(u.veh) then NetworkRequestControlOfEntity(u.veh) end
         local veh = u.veh
         local alive = {}
         for _, ped in ipairs(u.peds) do if DoesEntityExist(ped) and not IsPedDeadOrDying(ped, true) then alive[#alive + 1] = ped end end
@@ -211,14 +213,14 @@ end)
 
 RegisterNetEvent('exti_heists:client:npcSpawn', function(id, pos, cars, targets, weapons)
     if not hunt or hunt.id ~= id then hunt = { id = id } end
-    hunt.phase, hunt.lastSeen = 'on', GetGameTimer()
+    hunt.phase, hunt.lastSeen, hunt.onAt = 'on', nil, GetGameTimer()
     own = { id = id, units = {}, targets = targets, pos = vec3(pos.x, pos.y, pos.z) }
     CreateThread(function() spawnUnits(id, own.pos, cars, weapons or { 'WEAPON_PISTOL' }) end)
 end)
 
 RegisterNetEvent('exti_heists:client:npcHunted', function(id)
     if not hunt or hunt.id ~= id then hunt = { id = id } end
-    hunt.phase, hunt.lastSeen = 'on', GetGameTimer()
+    hunt.phase, hunt.lastSeen, hunt.onAt = 'on', nil, GetGameTimer()
 end)
 
 RegisterNetEvent('exti_heists:client:npcTargets', function(id, targets)
@@ -283,13 +285,16 @@ CreateThread(function()
                     if not seen and #(GetEntityCoords(ped) - myPos) < 140.0 and HasEntityClearLosToEntity(ped, me, 17) then seen = true end
                 end
                 for ent, b in pairs(blips) do if not alive[ent] then if DoesBlipExist(b) then RemoveBlip(b) end blips[ent] = nil end end
-                -- (while they are still driving in, nobody has seen you yet: the clock starts when they look)
+                -- (while they are still driving in, nobody has seen you yet: the clock starts when they first see you,
+                -- or 90 s after they are out if they never do)
                 if seen then hunt.lastSeen = GetGameTimer() end
-                local hidden = (GetGameTimer() - hunt.lastSeen) / 1000
+                local from = hunt.lastSeen or ((GetGameTimer() - hunt.onAt > 90000) and (hunt.onAt + 90000) or GetGameTimer())
+                local hidden = (GetGameTimer() - from) / 1000
                 local left = math.max(0, N.lostSeconds - hidden)
                 bar({ kind = seen and 'seen' or 'hiding', seconds = math.ceil(left), units = #peds })
                 if left <= 0 and not hunt.lostSent then hunt.lostSent = true; TriggerServerEvent('exti_heists:server:npcLost', hunt.id) end
-                if HC.isDown() and not hunt.downSent then hunt.downSent = true; TriggerServerEvent('exti_heists:server:npcDowned', hunt.id) end
+                -- (sent again every 2 s until the server agrees: the death state may reach it a moment later)
+                if HC.isDown() and GetGameTimer() > (hunt.downNext or 0) then hunt.downNext = GetGameTimer() + 2000; TriggerServerEvent('exti_heists:server:npcDowned', hunt.id) end
             end
         end
         Wait(sleep)

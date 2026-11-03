@@ -64,7 +64,7 @@ local function storeKey(i, what) return ('store:%s:%d'):format(what, i) end
 -- the alarm: the police card always (cops below the minimum still hear it); no-police mode also sends the NPC security
 local function call(i, label, number, src, extra, mode)
     local st = stores[i]
-    if mode and not mode.police and src then H.npcRespond({ src }, clerkPos(st), 'store') end
+    if mode and not mode.police and src and not mode.npcSent then mode.npcSent = true; H.npcRespond({ src }, clerkPos(st), 'store') end
     if GetResourceState('exti_police') ~= 'started' then return end
     pcall(function()
         exports.exti_police:AddCall({
@@ -200,7 +200,7 @@ lib.callback.register('exti_heists:server:tillPickBegin', function(src, i)
         H.log(src, 'store_till_pick', ('%s · %s'):format(s.area, H.modeText(mode)))
     end
     local lv = H.skillLevel(H.rec(src), 'lockpick')
-    return true, H.gameBegin(src, 'lockpick', { store = i }), { pins = 4, time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
+    return true, H.gameBegin(src, 'lockpick', { store = i }), { pins = 5, time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
 end)
 
 lib.callback.register('exti_heists:server:tillPickEnd', function(src, token, passed)
@@ -256,7 +256,7 @@ end)
 lib.callback.register('exti_heists:server:safeEnd', function(src, token, passed)
     local ctx = H.gameEnd(src, 'safedial', token, passed == true)
     local i = ctx and ctx.store
-    if not i or safes[i] then return false end
+    if not i or safes[i] or H.cooldownLeft(storeKey(i, 'safe')) > 0 then return false end
     if not passed then return false, 'failed' end
     if not H.near(src, safeSpot(i), 2.6) then return false end
     safes[i] = { phase = 'timelock', by = src, mode = ctx.mode, readyAt = H.now() + S.timelockSeconds }
@@ -280,7 +280,7 @@ lib.callback.register('exti_heists:server:safeLoot', function(src, i)
     i = math.tointeger(i)
     local sf = i and safes[i]
     if not sf or sf.phase ~= 'ready' or H.now() < sf.readyAt then return false end
-    if not H.near(src, safeSpot(i), 2.4) then return false end
+    if not H.near(src, safeSpot(i), 2.4) or H.isCopOnDuty(src) then return false end
     safes[i] = nil; publish()
     H.setCooldown(storeKey(i, 'safe'), S.cooldownMinutes * 60)
     local pay = H.payOf(S.pay, sf.mode)
@@ -339,13 +339,13 @@ lib.callback.register('exti_heists:server:spotSave', function(src, what, i)
         local r0, f0 = frame(s.clerk)
         local dx, dy = sp.x - s.clerk.x, sp.y - s.clerk.y
         local a, b, up = dx * r0.x + dy * r0.y, dx * f0.x + dy * f0.y, sp.z - s.clerk.z
-        local dh = (sp.h or 0.0) - s.clerk.w
+        local dh = sp.h and (sp.h - s.clerk.w) or nil
         local n = 0
         for _, o in pairs(stores) do
-            if o ~= s and o.layout == s.layout and not (spots.safes[o.key] and not spots.safes[o.key].copied and not spots.safes[o.key].builtin) then
+            if o ~= s and o.layout == s.layout and not (spots.safes[o.key] and not spots.safes[o.key].copied) then
                 local r, f = frame(o.clerk)
                 local p = vec3(o.clerk.x, o.clerk.y, o.clerk.z) + r * a + f * b
-                spots.safes[o.key] = { x = p.x, y = p.y, z = o.clerk.z + up, h = (o.clerk.w + dh) % 360, copied = true }
+                spots.safes[o.key] = { x = p.x, y = p.y, z = o.clerk.z + up, h = dh and (o.clerk.w + dh) % 360 or nil, copied = true }
                 n = n + 1
             end
         end
