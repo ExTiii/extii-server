@@ -177,8 +177,36 @@ AddEventHandler('onResourceStart', function(res) if res == 'npwd' then SetTimeou
 lib.callback.register('exti_heists:server:fenceHello', function(src)
     if not atFence(src) then return false end
     local cid = H.cid(src); if cid then SetResourceKvpInt('fencemet:' .. cid, 1) end
+    TriggerClientEvent('exti_heists:client:fenceArea', src, nil)
     H.text(src, 'هذا رقمي. احفظه. اكتب "شغل" حين تريد بيتًا، و"مكان" لتعرف أين أجدك.')
     return F.number
 end)
+
+-- someone who never met him, after a robbery: an unknown number tips him off about where to look today
+-- (a rough area on the map, never the spot; once a day until he has met the fence)
+local AREAS = {
+    { vec3(-468.0, -1716.0, 18.7), 'ساحة روجرز للخردة' }, { vec3(1003.5, -3105.0, 5.9), 'الميناء، بين الحاويات' },
+    { vec3(1380.0, -2055.0, 52.0), 'حقول النفط في إل بورو' }, { vec3(1993.0, 3050.0, 47.2), 'ساندي شورز، خلف اليلو جاك' },
+    { vec3(2416.0, 4993.0, 46.2), 'المزرعة في غريبسيد' }, { vec3(-569.0, 5326.0, 70.2), 'منشرة الخشب في باليتو' },
+}
+function H.fenceHint(src)
+    local cid = H.cid(src); if not cid or H.isCopOnDuty(src) then return end
+    if GetResourceKvpInt('fencemet:' .. cid) == 1 then return end
+    local day = os.date('%Y-%m-%d')
+    if GetResourceKvpString('fencehint:' .. cid) == day then return end
+    local f = H.fenceSpot(); if not f then return end
+    local name, bd = nil, nil
+    for _, a in ipairs(AREAS) do local d = #(a[1] - f); if not bd or d < bd then name, bd = a[2], d end end
+    SetResourceKvp('fencehint:' .. cid, day)
+    local to = H.phoneOf(src)
+    if to and GetResourceState('npwd') == 'started' then
+        pcall(function() exports.npwd:emitMessage({ senderNumber = F.hintNumber, targetNumber = to,
+            message = ('سمعت أن معك أشياء تريد بيعها. هناك رجل يشتري كل شيء ولا يسأل. اليوم تجده في مكان ما قرب %s. ابحث عن رجل يدخن وحده.'):format(bd and bd < 300 and name or 'المكان الذي على خريطتك') }) end)
+    end
+    -- a wide circle on the map, the fence somewhere inside it (not in the middle)
+    local a, r = math.random() * math.pi * 2, math.random(40, 110)
+    TriggerClientEvent('exti_heists:client:fenceArea', src, { x = f.x + math.cos(a) * r, y = f.y + math.sin(a) * r, z = f.z }, F.hintRadius, F.hintMinutes)
+    H.log(src, 'fence_hint', name or '?')
+end
 
 exports('FenceNumber', function() return F.number end)

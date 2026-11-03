@@ -262,6 +262,7 @@ function H.repFor(src, tier, mode)
     if H.boardAdd then H.boardAdd('crew', src, math.max(1, math.floor((C.rep.xp[tier] or 0) * (mode and mode.rep or 1.0)))) end
     local base = C.rep.xp[tier] or 0
     H.addXP(src, math.max(1, math.floor(base * (mode and mode.rep or 1.0))), ('tier %d %s'):format(tier, mode and (mode.police and 'police' or 'npc') or ''))
+    if H.fenceHint then SetTimeout(math.random(20, 45) * 1000, function() if GetPlayerName(src) then H.fenceHint(src) end end) end
 end
 function H.canTier(src, tier, isLeader)
     local need = math.ceil(tier * (isLeader == false and C.rep.memberNeeds or C.rep.leaderNeeds))

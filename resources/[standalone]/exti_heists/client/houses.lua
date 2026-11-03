@@ -38,6 +38,17 @@ end)
 
 RegisterNetEvent('exti_heists:client:waypoint', function(p) if p and p.x then SetNewWaypoint(p.x + 0.0, p.y + 0.0) end end)
 
+-- the stranger's tip: a wide circle where the fence is today
+local fenceArea
+RegisterNetEvent('exti_heists:client:fenceArea', function(p, radius, minutes)
+    if fenceArea and DoesBlipExist(fenceArea) then RemoveBlip(fenceArea) end
+    if not p then fenceArea = nil return end   -- (he found him)
+    fenceArea = AddBlipForRadius(p.x + 0.0, p.y + 0.0, p.z + 0.0, radius + 0.0)
+    SetBlipColour(fenceArea, 5); SetBlipAlpha(fenceArea, 110)
+    local mine = fenceArea
+    SetTimeout((minutes or 30) * 60000, function() if DoesBlipExist(mine) then RemoveBlip(mine) end end)
+end)
+
 RegisterNetEvent('exti_heists:client:houseDone', function(id, why)
     if lead and lead.id == id then
         if why == 'expired' then HC.notify('انتهت مهلة البيت. اطلب غيره من المصرّف', 'error', 7000) end
