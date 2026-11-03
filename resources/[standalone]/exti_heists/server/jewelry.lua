@@ -56,7 +56,11 @@ local function begin(src)
     publish()
     H.log(src, 'jewel_start', H.modeText(mode))
     -- the store is done 12 minutes after it started, whatever happened
-    SetTimeout(12 * 60 * 1000, function() if st.leader == src then reset() end end)
+    SetTimeout(12 * 60 * 1000, function()
+        if st.leader ~= src then return end
+        for s in pairs(st.looted or {}) do if not (st.repDone and st.repDone[s]) and GetPlayerName(s) then H.repFor(s, J.tier, st.mode) end end
+        reset()
+    end)
     return true
 end
 
@@ -66,6 +70,7 @@ end
 lib.callback.register('exti_heists:server:jewelHackBegin', function(src)
     if H.isCopOnDuty(src) or not H.near(src, J.panel, 2.5) then return false end
     if st.quietUntil > H.now() or st.alarm then return false, 'الأنظمة معطّلة أو الإنذار يرن' end
+    if st.hacked then return false, 'رجعت الأنظمة وغيّرت رموزها: لا اختراق ثانٍ الليلة' end
     if st.hackFails >= J.hackTries then return false end
     if (exports.ox_inventory:Search(src, 'count', 'usb_green') or 0) < 1 and not st.usbIn then return false, 'تحتاج فلاشة اختراق خضراء' end
     local ok, why = begin(src); if not ok then return false, why end
@@ -86,13 +91,14 @@ lib.callback.register('exti_heists:server:jewelHackEnd', function(src, token, pa
         return false, 'again'
     end
     st.quietUntil = H.now() + J.quietSeconds
+    st.hacked = true
     publish()
     H.addSkill(src, 'hacking')
     H.log(src, 'jewel_hacked', ('%ds quiet'):format(J.quietSeconds))
     -- the cameras come back: if cases were opened, now the alarm
     local mark = st.quietUntil
     SetTimeout(J.quietSeconds * 1000, function()
-        if st.quietUntil == mark and st.phase == 'on' and next(st.cases) then alarm(src, true) end
+        if st.quietUntil == mark and st.phase ~= 'idle' and next(st.cases) then alarm(src, true) end
     end)
     return true, J.quietSeconds
 end)
@@ -130,6 +136,7 @@ lib.callback.register('exti_heists:server:jewelCaseBegin', function(src, i, how)
         return true, H.gameBegin(src, 'glasscut', { case = i }), { time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
     end
     -- smash: needs something in your hands
+    if GetSelectedPedWeapon(GetPlayerPed(src)) == `WEAPON_UNARMED` then return false, 'تحتاج شيئًا في يدك' end
     local ok, why = begin(src); if not ok then return false, why end
     st.crew[src] = true
     H.setHeat(src)

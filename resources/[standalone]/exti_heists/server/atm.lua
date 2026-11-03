@@ -13,7 +13,7 @@ for _, m in ipairs(AT.trucks) do TRUCK[joaat(m)] = true end
 local MODEL = {}
 for _, m in ipairs(AT.models) do MODEL[joaat(m)] = m end
 
-local function keyOf(p) return ('atm:%d:%d:%d'):format(math.floor(p.x * 2), math.floor(p.y * 2), math.floor(p.z)) end
+local function keyOf(p) return ('atm:%d:%d'):format(math.floor(p.x / 3), math.floor(p.y / 3)) end
 
 local function publish()
     local out = {}
@@ -71,6 +71,7 @@ RegisterNetEvent('exti_heists:server:atmRip', function(key)
     local src = source
     local a = atms[key]
     if not a or a.phase ~= 'hooked' then return end
+    if lastHour() >= AT.perHour then return end
     local veh = entityOf(a.veh)
     if not veh then return end
     local d = #(GetEntityCoords(veh) - a.pos)
@@ -78,7 +79,7 @@ RegisterNetEvent('exti_heists:server:atmRip', function(key)
     -- whoever drives the truck (the hooker or a crew mate)
     local drv = GetPedInVehicleSeat(veh, -1)
     if drv == 0 or NetworkGetEntityOwner(veh) ~= src then return end
-    a.phase = 'dragging'; a.dragger = src
+    a.phase = 'dragging'; a.dragger = src; a.at = H.now()
     recent[#recent + 1] = H.now()
     H.atmHidden[key] = H.now() + AT.hiddenMinutes * 60
     H.atmHiddenPos[key] = { x = a.pos.x, y = a.pos.y, z = a.pos.z, model = a.model }
@@ -102,22 +103,27 @@ end)
 -- the dragging game made the ATM object (networked) behind the truck
 RegisterNetEvent('exti_heists:server:atmObject', function(key, objNet)
     local a = atms[key]
-    if not a or a.dragger ~= source or math.type(objNet) ~= 'integer' then return end
-    a.obj = objNet; publish()
+    if not a or a.dragger ~= source or a.phase ~= 'dragging' or a.obj or math.type(objNet) ~= 'integer' then return end
+    local obj, veh = entityOf(objNet), entityOf(a.veh)
+    if not obj or GetEntityModel(obj) ~= joaat(a.model) or (veh and GetEntityAttachedTo(obj) ~= veh) then return end
+    a.obj = objNet; a.at = H.now(); publish()
 end)
 
 -- unhook it somewhere quiet
 lib.callback.register('exti_heists:server:atmDrop', function(src, key)
     local a = atms[key]
     if not a or a.phase ~= 'dragging' then return false end
-    local obj = entityOf(a.obj)
+    local obj, veh = entityOf(a.obj), entityOf(a.veh)
     local here = H.coords(src)
-    if not obj or not here or #(GetEntityCoords(obj) - here) > 6.0 then return false end
-    if #(GetEntityCoords(obj) - a.pos) < AT.quietDistance then return false, ('ابتعد أكثر (%d م على الأقل من البنك)'):format(math.floor(AT.quietDistance)) end
-    a.phase = 'down'; publish()
-    -- the game that made it (the driver's) lets go of it
-    if a.dragger then TriggerClientEvent('exti_heists:client:atmDetach', a.dragger, key) end
-    if a.dragger ~= src then TriggerClientEvent('exti_heists:client:atmDetach', src, key) end
+    -- (while it hangs on the chain the server may still think it's at the bank: measure from the truck)
+    local at = veh and GetEntityCoords(veh) or (obj and GetEntityCoords(obj))
+    if not obj or not here or not at or #(at - here) > 9.0 then return false end
+    if #(at - a.pos) < AT.quietDistance then return false, ('ابتعد أكثر (%d م على الأقل من مكانه)'):format(math.floor(AT.quietDistance)) end
+    a.phase = 'down'; a.at = H.now(); publish()
+    -- the game that owns it now lets go of it
+    local owner = NetworkGetEntityOwner(obj)
+    if owner and owner > 0 then TriggerClientEvent('exti_heists:client:atmDetach', owner, key) end
+    if owner ~= src then TriggerClientEvent('exti_heists:client:atmDetach', src, key) end
     return true
 end)
 
@@ -129,14 +135,18 @@ lib.callback.register('exti_heists:server:atmDrillBegin', function(src, key)
     if not obj or not H.near(src, GetEntityCoords(obj), 2.6) then return false end
     if (exports.ox_inventory:Search(src, 'count', 'drill') or 0) < 1 then return false, 'تحتاج مثقابًا (من متجر العدد)' end
     if (exports.ox_inventory:Search(src, 'count', 'drill_bit') or 0) < 1 then return false, 'تحتاج رأس مثقاب' end
-    a.phase = 'drilling'; a.driller = src; publish()
+    a.phase = 'drilling'; a.driller = src; a.at = H.now(); publish()
     local lv = H.skillLevel(H.rec(src), 'breaching')
     return true, H.gameBegin(src, 'drill', { atm = key }), { time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
 end)
 
 lib.callback.register('exti_heists:server:atmDrillEnd', function(src, token, passed)
     local ctx = H.gameEnd(src, 'drill', token, passed == true)
-    local a = ctx and atms[ctx.atm]
+    if not ctx then
+        for _, x in pairs(atms) do if x.phase == 'drilling' and x.driller == src then x.phase = 'down'; publish() end end
+        return false
+    end
+    local a = atms[ctx.atm]
     if not a or a.phase ~= 'drilling' or a.driller ~= src then return false end
     if not passed then
         a.phase = 'down'; publish()
@@ -171,6 +181,10 @@ CreateThread(function()
         end
         publish()
     end
+end)
+AddEventHandler('playerDropped', function()
+    local src = source
+    for _, a in pairs(atms) do if a.phase == 'drilling' and a.driller == src then a.phase = 'down'; a.driller = nil end end
 end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end

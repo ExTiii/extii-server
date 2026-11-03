@@ -37,7 +37,15 @@ local quietShown = false
 RegisterNetEvent('exti_heists:client:jewelAlarm', function()
     HC.notify('الإنذار يرن في المحل! الشرطة في الطريق', 'error', 8000)
 end)
-RegisterNetEvent('exti_heists:client:jewelReset', function() end)
+-- the store is ready again: the smashed cases are whole again in my game
+RegisterNetEvent('exti_heists:client:jewelReset', function()
+    for _, cs in ipairs(J.cases) do
+        if cs.ray then
+            local obj = GetRayfireMapObject(cs.pos.x, cs.pos.y, cs.pos.z, 1.4, cs.ray)
+            if obj ~= 0 then SetStateOfRayfireMapObject(obj, 2) end
+        end
+    end
+end)
 
 local function itemsText(got)
     local parts = {}
@@ -121,14 +129,15 @@ CreateThread(function()
                     else text = 'تحتاج شيئًا في يدك لتحطّم الزجاج (أو عطّل الكاميرات من السطح)' end
                 end
             end
-            -- the quiet window on the bar at the top (unless the NPC chase is using it)
-            if quiet and not (HC.hunted and HC.hunted()) then
-                SendNUIMessage({ action = 'hud', state = { kind = 'quiet', seconds = (st.quietUntil or 0) - GetCloudTimeAsInt() } })
-            elseif not (HC.hunted and HC.hunted()) and quietShown then
-                SendNUIMessage({ action = 'hud', state = nil })
-            end
-            quietShown = quiet
         end
+        -- the quiet window on the bar at the top, near the store only (unless the NPC chase is using it)
+        local showQuiet = near and (st.quietUntil or 0) > GetCloudTimeAsInt()
+        if showQuiet and not (HC.hunted and HC.hunted()) then
+            SendNUIMessage({ action = 'hud', state = { kind = 'quiet', seconds = (st.quietUntil or 0) - GetCloudTimeAsInt() } })
+        elseif quietShown and not (HC.hunted and HC.hunted()) then
+            SendNUIMessage({ action = 'hud', state = nil })
+        end
+        quietShown = showQuiet
         HC.prompt(text, 'jewel')
         if act and IsControlJustReleased(0, 38) then act() end
         Wait(sleep)

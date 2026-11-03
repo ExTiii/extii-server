@@ -65,7 +65,7 @@ RegisterNetEvent('exti_heists:client:atmDrag', function(key)
     local obj = CreateObject(m, a.x, a.y, a.z, true, true, false)
     SetModelAsNoLongerNeeded(m)
     SetEntityAsMissionEntity(obj, true, true)
-    AttachEntityToEntity(obj, veh, 0, 0.0, mn.y - 1.9, -0.35, 90.0, 0.0, 0.0, false, false, true, false, 2, true)
+    AttachEntityToEntity(obj, veh, 0, 0.0, mn.y - 1.9, -0.35, 90.0, 0.0, 0.0, false, false, false, false, 2, true)
     TriggerServerEvent('exti_heists:server:atmObject', key, NetworkGetNetworkIdFromEntity(obj))
     ShakeGameplayCam('SMALL_EXPLOSION_SHAKE', 0.4)
     PlaySoundFromEntity(-1, 'Crash', veh, 'DLC_Exec_Office_Non_Player_Sounds', false, 0)
@@ -116,13 +116,14 @@ CreateThread(function()
         -- keep the pulled ATMs off the wall in my game
         for key, a in pairs(atms) do
             if a.phase ~= 'hooked' and not hidden[key] and a.model then
-                CreateModelHide(a.x, a.y, a.z, 1.5, joaat(a.model), true); hidden[key] = { x = a.x, y = a.y, z = a.z, model = a.model }
+                CreateModelHideExcludingScriptObjects(a.x, a.y, a.z, 1.5, joaat(a.model), true); hidden[key] = { x = a.x, y = a.y, z = a.z, model = a.model }
             end
         end
         for key, h in pairs(hidden) do
             if not atms[key] then RemoveModelHide(h.x, h.y, h.z, 1.5, joaat(h.model), false); hidden[key] = nil end
         end
 
+        for key in pairs(ripSent) do if not atms[key] or atms[key].phase ~= 'hooked' then ripSent[key] = nil end end
         for key, a in pairs(atms) do
             local pos = v3(a)
             local veh = ent(a.veh)
@@ -155,6 +156,11 @@ CreateThread(function()
         -- a wall ATM in front of me, a chain in my bag, a pickup close by
         if not text and not cache.vehicle and HC.canAct() and HC.count('tow_chain') > 0 then
             local obj, model = closestAtm(here)
+            if obj then
+                -- (an ATM already pulled out is hidden: no prompt for it)
+                local op = GetEntityCoords(obj)
+                for _, h in pairs(hidden) do if #(op - v3(h)) < 2.0 then obj = nil break end end
+            end
             if obj then
                 sleep = 0
                 local veh = lib.getClosestVehicle(here, 10.0, false)
