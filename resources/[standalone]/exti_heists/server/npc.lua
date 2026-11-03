@@ -221,6 +221,7 @@ function H.npcDeal(src, kind)
         headStart(r, HG.releaseHeadStart)
         return true, HG.releaseHeadStart
     elseif kind == 'drop' then
+        if r.deal and r.deal.broken then return false, 'broken' end
         if r.deal then return true, r.deal.spot, true end
         if heldBy(r) == 0 then return false, 'nohostage' end
         local here = H.coords(src); if not here then return false end
@@ -229,7 +230,7 @@ function H.npcDeal(src, kind)
         end)
         if not ok or type(spot) ~= 'table' or not tonumber(spot.x) then return false, 'nospot' end
         if active[r.id] ~= r or not r.standoff or r.rage or r.chasePending or r.chase then return false, 'none' end
-        if r.deal then return true, r.deal.spot, true end
+        if r.deal then if r.deal.broken then return false, 'broken' end return true, r.deal.spot, true end
         local p = vec3(spot.x + 0.0, spot.y + 0.0, spot.z + 0.0)
         local d = #(p - here)
         if d < HG.dropDistance[1] * 0.75 or d > HG.dropDistance[2] * 1.4 then return false, 'nospot' end

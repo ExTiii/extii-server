@@ -64,7 +64,7 @@ local function setupPed(ped, weapon, opts)
     opts = opts or {}
     SetPedRelationshipGroupHash(ped, REL)
     SetPedArmour(ped, opts.armour or 50)
-    SetPedAccuracy(ped, opts.accuracy or (own and own.chase and C.hostages.chaseAccuracy) or N.accuracy)
+    SetPedAccuracy(ped, opts.accuracy or (own and own.rage and C.hostages.rageAccuracy) or (own and own.chase and C.hostages.chaseAccuracy) or N.accuracy)
     SetPedCombatAbility(ped, opts.swat and 2 or 1)
     SetPedCombatMovement(ped, opts.swat and 2 or 1)   -- defensive: hold the line (the SWAT team pushes in)
     SetPedCombatRange(ped, 1)
@@ -185,6 +185,11 @@ local function holdUnits(u, alive, tgt, dist)
     if dist and dist < 45.0 and tgtCar == 0 then u.leaving = GetGameTimer() + 4000 end
 end
 
+local function knownPed(p)
+    for _, u in ipairs(own.units) do for _, x in ipairs(u.peds) do if x == p then return true end end end
+    return false
+end
+
 local function adopt()
     -- units that were too far from this game when it took them over: picked up once they're around
     if not own.pending or #own.pending == 0 then return end
@@ -194,22 +199,33 @@ local function adopt()
         if ent ~= 0 and DoesEntityExist(ent) then
             NetworkRequestControlOfEntity(ent)
             if IsEntityAVehicle(ent) then
-                local u = { veh = ent, peds = {}, stage = 'fight', since = GetGameTimer(), park = own.pos }
+                -- the car: its unit if there is one, or the car-less units of its men join it (never one man in two units)
+                local u
+                for _, x in ipairs(own.units) do if x.veh == ent then u = x break end end
+                local keep = {}
+                for _, x in ipairs(own.units) do
+                    local carless = x ~= u and (not x.veh or x.veh == 0 or not DoesEntityExist(x.veh))
+                    local mine = false
+                    if carless then for _, p in ipairs(x.peds) do if DoesEntityExist(p) and GetVehiclePedIsIn(p, true) == ent then mine = true end end end
+                    if mine then
+                        if not u then u = x; x.veh = ent; keep[#keep + 1] = x
+                        else for _, p in ipairs(x.peds) do u.peds[#u.peds + 1] = p end end
+                    else
+                        keep[#keep + 1] = x
+                    end
+                end
+                own.units = keep
+                if not u then u = { veh = ent, peds = {}, stage = 'fight', since = GetGameTimer(), park = own.pos }; own.units[#own.units + 1] = u end
                 for seat = -1, GetVehicleMaxNumberOfPassengers(ent) - 1 do
                     local p = GetPedInVehicleSeat(ent, seat)
-                    if p ~= 0 and Entity(p).state.exti_npcsec == own.id then u.peds[#u.peds + 1] = p end
+                    if p ~= 0 and Entity(p).state.exti_npcsec == own.id and not knownPed(p) then u.peds[#u.peds + 1] = p end
                 end
-                own.units[#own.units + 1] = u
-            elseif IsEntityAPed(ent) then
-                local known = false
-                for _, u in ipairs(own.units) do for _, p in ipairs(u.peds) do if p == ent then known = true end end end
-                if not known then
-                    local veh = GetVehiclePedIsIn(ent, true)
-                    local into
-                    for _, u in ipairs(own.units) do if u.veh == veh then into = u break end end
-                    if into then into.peds[#into.peds + 1] = ent
-                    else own.units[#own.units + 1] = { veh = veh, peds = { ent }, stage = 'fight', since = GetGameTimer(), park = own.pos } end
-                end
+            elseif IsEntityAPed(ent) and not knownPed(ent) then
+                local veh = GetVehiclePedIsIn(ent, true)
+                local into
+                if veh ~= 0 then for _, u in ipairs(own.units) do if u.veh == veh then into = u break end end end
+                if into then into.peds[#into.peds + 1] = ent
+                else own.units[#own.units + 1] = { veh = veh, peds = { ent }, stage = 'fight', since = GetGameTimer(), park = own.pos } end
             end
         else
             left[#left + 1] = n
@@ -369,8 +385,8 @@ RegisterNetEvent('exti_heists:client:npcTakeOver', function(id, netIds, targets,
         local ent = NetworkGetEntityFromNetworkId(n)
         if ent ~= 0 and IsEntityAPed(ent) then
             local veh = GetVehiclePedIsIn(ent, true)
-            local u = byVeh[veh]
-            if not u then u = { veh = veh, peds = {}, stage = 'fight', since = GetGameTimer(), park = own.pos }; byVeh[veh] = u end
+            local u = veh ~= 0 and byVeh[veh] or nil
+            if not u then u = { veh = veh, peds = {}, stage = 'fight', since = GetGameTimer(), park = own.pos }; byVeh[veh ~= 0 and veh or ('p' .. ent)] = u end
             u.peds[#u.peds + 1] = ent
         end
     end
@@ -399,9 +415,9 @@ RegisterNetEvent('exti_heists:client:npcRage', function(id)
     if not own or own.id ~= id then return end
     own.holdUntil, own.pullBack, own.pullUntil, own.rage = 0, false, 0, true
     for _, u in ipairs(own.units) do
-        u.holding = false; u.target = nil
+        u.holding = u.holding and 'redo' or false; u.target = nil
         for _, ped in ipairs(u.peds) do
-            if DoesEntityExist(ped) then SetPedAccuracy(ped, C.hostages.rageAccuracy); SetPedCombatMovement(ped, 2); SetPedCombatAbility(ped, 2) end
+            if DoesEntityExist(ped) then SetBlockingOfNonTemporaryEvents(ped, false); SetPedAccuracy(ped, C.hostages.rageAccuracy); SetPedCombatMovement(ped, 2); SetPedCombatAbility(ped, 2) end
         end
     end
 end)
