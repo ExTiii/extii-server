@@ -157,7 +157,9 @@ RegisterNUICallback('self', function(req, cb)
     if what == 'coords' then
         if not lib.callback.await('exti_admin:self', false, 'tp') then return cb({ ok = false }) end
         local c = req.c or {}
-        close(); teleport({ x = tonumber(c.x) or 0.0, y = tonumber(c.y) or 0.0, z = tonumber(c.z) or 0.0 })
+        local x, y, z = tonumber(c.x), tonumber(c.y), tonumber(c.z)
+        if not x or not y or not z then lib.notify({ type = 'error', description = 'اكتب X و Y و Z' }) return cb({ ok = false }) end
+        close(); teleport({ x = x, y = y, z = z })
         return cb({ ok = true })
     end
     if what == 'mycoords' then

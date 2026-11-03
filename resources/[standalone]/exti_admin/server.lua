@@ -64,7 +64,7 @@ local function rightsOf(src)
 end
 
 ---------------------------------------------------------------------------
--- log (database + Discord if set: setr exti_admin_webhook "https://discord.com/api/webhooks/...")
+-- log (database + Discord if set: set exti_admin_webhook "https://discord.com/api/webhooks/..."  -- use set, not setr: setr sends it to every player)
 ---------------------------------------------------------------------------
 local function log(src, action, target, details)
     local actor = src == 0 and 'الكونسول' or (GetPlayerName(src) or '?')
@@ -477,8 +477,14 @@ end }
 -- tests (for me)
 A.kit = { 'test', function(src, d)
     local k = Config.kits[num(d.kit, 1, #Config.kits) or 0]; if not k then return false end
-    for _, it in ipairs(k.items) do if ox:Items(it[1]) then ox:AddItem(src, it[1], it[2]) end end
-    log(src, 'test_kit', k.label); return true, 'أعطيتك ' .. k.label
+    local got, missed = 0, 0
+    for _, it in ipairs(k.items) do
+        if ox:Items(it[1]) and ox:CanCarryItem(src, it[1], it[2]) and ox:AddItem(src, it[1], it[2]) then got = got + 1 else missed = missed + 1 end
+    end
+    log(src, 'test_kit', k.label, missed > 0 and ('%d items did not fit'):format(missed) or nil)
+    if got == 0 then return false, 'لا مكان في حقيبتك' end
+    if missed > 0 then return true, ('أعطيتك جزءًا من %s (حقيبتك ممتلئة)'):format(k.label) end
+    return true, 'أعطيتك ' .. k.label
 end }
 A.mycool = { 'test', function(src)
     local p = getPlayer(src); local cid = p and p.PlayerData.citizenid
