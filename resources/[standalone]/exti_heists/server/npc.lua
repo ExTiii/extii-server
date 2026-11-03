@@ -115,7 +115,10 @@ RegisterNetEvent('exti_heists:server:npcSpawned', function(id, netIds)
     SetTimeout(1500, function()
         for _, n in ipairs(r.units) do
             local ent = NetworkGetEntityFromNetworkId(n)
-            if ent ~= 0 and DoesEntityExist(ent) then Entity(ent).state:set('exti_npcsec', id, true) end
+            if ent ~= 0 and DoesEntityExist(ent) then
+                Entity(ent).state:set('exti_npcsec', id, true)
+                pcall(SetEntityOrphanMode, ent, 2)   -- (they stay when the game that made them leaves, runs off or goes inside; we delete them ourselves)
+            end
         end
     end)
     SetTimeout(8000, function()
@@ -195,6 +198,15 @@ CreateThread(function()
                     H.log(cop, 'npc_stand_down', r.kind)
                 elseif t - (r.spawnedAt or t) > N.maxMinutes * 60 then
                     endResponse(id, 'time')
+                elseif r.owner and GetPlayerRoutingBucket(r.owner) ~= 0 then
+                    -- the robber whose game drives them went inside a house: a crewmate still outside drives them
+                    local outside
+                    for s in pairs(r.targets) do if s ~= r.owner and GetPlayerRoutingBucket(s) == 0 then outside = s break end end
+                    if outside then
+                        local old = r.owner
+                        TriggerClientEvent('exti_heists:client:npcRelease', old, id)
+                        handOver(r, old)
+                    end
                 end
             end
         end
@@ -211,6 +223,17 @@ AddEventHandler('playerDropped', function()
 end)
 
 exports('NpcActive', function(src) return byPlayer[src] ~= nil end)
+
+-- the resource stops: every unit goes (they are kept even when their game leaves, so the server deletes them)
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for _, r in pairs(active) do
+        for _, n in ipairs(r.units or {}) do
+            local ent = NetworkGetEntityFromNetworkId(n)
+            if ent ~= 0 and DoesEntityExist(ent) then DeleteEntity(ent) end
+        end
+    end
+end)
 
 ---------------------------------------------------------------------------
 -- hostages and the negotiator (hostages.lua / negotiate.lua)

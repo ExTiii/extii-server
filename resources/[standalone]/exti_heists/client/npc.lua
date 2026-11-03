@@ -180,10 +180,26 @@ local function think()
                         u.stage = 'chase'
                         for seat, ped in ipairs(alive) do TaskEnterVehicle(ped, veh, 8000, seat - 2, 2.0, 1, 0) end
                     elseif u.target ~= tgt then
-                        u.target = tgt
+                        u.target, u.recheck = tgt, GetGameTimer() + 8000
                         for _, ped in ipairs(alive) do ClearPedTasks(ped); TaskCombatPed(ped, tgt, 0, 16) end
+                    elseif GetGameTimer() > (u.recheck or 0) then
+                        -- (a unit that dropped its order, e.g. after it moved to another player's game: fight again)
+                        u.recheck = GetGameTimer() + 8000
+                        for _, ped in ipairs(alive) do
+                            if not IsPedInCombat(ped, tgt) and not IsPedInAnyVehicle(ped, false) then TaskCombatPed(ped, tgt, 0, 16) end
+                        end
                     end
                 elseif u.stage == 'chase' then
+                    u.chaseAt = u.chaseAt or GetGameTimer()
+                    local drivable = DoesEntityExist(veh) and IsVehicleDriveable(veh, false)
+                    local inside = 0
+                    for _, ped in ipairs(alive) do if drivable and IsPedInVehicle(ped, veh, false) then inside = inside + 1 end end
+                    if not drivable or (inside == 0 and GetGameTimer() - u.chaseAt > 12000) then
+                        -- their car is wrecked, or they never got back in: on foot, after him
+                        u.stage = 'fight'; u.target = nil; u.chasing = nil; u.shooting = nil; u.chaseAt = nil
+                        for _, ped in ipairs(alive) do if DoesEntityExist(veh) and IsPedInVehicle(ped, veh, false) then TaskLeaveVehicle(ped, veh, 256) end end
+                        goto nextUnit
+                    end
                     local drv = GetPedInVehicleSeat(veh, -1)
                     if drv ~= 0 and u.chasing ~= tgt then u.chasing = tgt; TaskVehicleChase(drv, tgt); SetTaskVehicleChaseBehaviorFlag(drv, 1, true) end
                     for _, ped in ipairs(alive) do
@@ -191,12 +207,13 @@ local function think()
                     end
                     u.shooting = tgt
                     if tgtCar == 0 and dist < 30.0 then
-                        u.stage = 'fight'; u.target = nil; u.chasing = nil; u.shooting = nil
+                        u.stage = 'fight'; u.target = nil; u.chasing = nil; u.shooting = nil; u.chaseAt = nil
                         for _, ped in ipairs(alive) do TaskLeaveVehicle(ped, veh, 256) end
                     end
                 end
             end
         end
+        ::nextUnit::
     end
 end
 
@@ -270,6 +287,11 @@ RegisterNetEvent('exti_heists:client:npcTakeOver', function(id, netIds, targets,
         end
     end
     for _, u in pairs(byVeh) do own.units[#own.units + 1] = u end
+end)
+
+-- I went inside a house: a crewmate outside drives the units now (I'm still hunted)
+RegisterNetEvent('exti_heists:client:npcRelease', function(id)
+    if own and own.id == id then own = nil end
 end)
 
 -- the server: hold your fire for this long (hostages, a deal, pulled back)
