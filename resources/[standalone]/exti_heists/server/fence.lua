@@ -131,9 +131,7 @@ local function onText(src, msg)
         H.text(src, 'اكتب "شغل" إن كنت تريد بيتًا، أو "مكان" لتعرف أين أنا اليوم. لا تتصل.')
     end
 end
-CreateThread(function()
-    while GetResourceState('npwd') ~= 'started' do Wait(2000) end
-    Wait(3000)
+local function hook()
     pcall(function()
         exports.npwd:onMessage(F.number, function(ctx)
             local src = ctx and ctx.source
@@ -141,7 +139,13 @@ CreateThread(function()
             if type(src) == 'number' and src > 0 then SetTimeout(math.random(2500, 6000), function() onText(src, msg) end) end
         end)
     end)
+end
+CreateThread(function()
+    while GetResourceState('npwd') ~= 'started' do Wait(2000) end
+    Wait(3000); hook()
 end)
+-- (npwd restarted: tell it again who answers his number)
+AddEventHandler('onResourceStart', function(res) if res == 'npwd' then SetTimeout(5000, hook) end end)
 
 -- the first time he meets you, he gives his number
 lib.callback.register('exti_heists:server:fenceHello', function(src)

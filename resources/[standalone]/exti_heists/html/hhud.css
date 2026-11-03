@@ -20,6 +20,8 @@
 .hh.seen .ic { color: #ff6b6f; background: rgba(229,72,77,.16); animation: hhpulse .9s ease-in-out infinite; }
 .hh.seen .prog i { background: #e5484d; }
 @keyframes hhpulse { 50% { box-shadow: 0 0 0 6px rgba(229,72,77,.0), 0 0 0 0 rgba(229,72,77,.4); transform: scale(1.08); } }
+/* quiet: the jewelry store's systems are off */
+.hh.quiet .ic { color: #3ddc97; } .hh.quiet .t { color: #3ddc97; } .hh.quiet .prog i { background: #3ddc97; }
 /* hiding: they lost sight of you, the clock runs */
 .hh.hiding .ic { color: #8ab8ff; } .hh.hiding .t { color: #8ab8ff; } .hh.hiding .prog i { background: #3d8bfd; }
 /* the noise meter (inside a house): bottom centre, above the hotbar */

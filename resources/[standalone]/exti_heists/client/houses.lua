@@ -14,6 +14,7 @@ AddStateBagChangeHandler('exti_heists:houses', 'global', function(_, _, v) openD
 local carry = nil       -- { prop, item }
 
 local function v3(t) return vec3(t.x + 0.0, t.y + 0.0, t.z + 0.0) end
+function HC.insideHouse() return inHouse ~= nil end
 
 ---------------------------------------------------------------------------
 -- the lead
@@ -56,7 +57,7 @@ CreateThread(function()
     while true do
         if inHouse and not inHouse.alarm then
             local ped = cache.ped
-            if IsPedSprinting(ped) or IsPedRunning(ped) then addNoise(HS.noise.sprint * 0.25) end
+            if IsPedSprinting(ped) then addNoise(HS.noise.sprint * 0.25) elseif IsPedRunning(ped) then addNoise(HS.noise.run * 0.25) end
             if IsPedJumping(ped) then addNoise(HS.noise.jump * 0.25) end
             if IsPedShooting(ped) then addNoise(100) end
             inHouse.noise = math.max(0, inHouse.noise - HS.noise.decay * 0.25)
@@ -242,7 +243,7 @@ RegisterNetEvent('exti_heists:client:houseOut', function(p)
     while not HasCollisionLoadedAroundEntity(cache.ped) and GetGameTimer() < t do Wait(50) end
     Wait(200); DoScreenFadeIn(400)
     -- the big item comes out with him (made again in the street, so everyone sees it)
-    if wasCarrying then carry.prop = attachCarry(wasCarrying) end
+    if wasCarrying and carry then carry.prop = attachCarry(wasCarrying) end
 end)
 
 local function leave()
@@ -360,7 +361,7 @@ CreateThread(function()
                 if IsControlJustReleased(0, 73) then dropCarry() end
             end
         end
-        HC.prompt(text)
+        HC.prompt(text, 'houses')
         if act and IsControlJustReleased(0, 38) then act() end
         if alt and IsControlJustReleased(0, 47) then alt() end
         Wait(sleep)

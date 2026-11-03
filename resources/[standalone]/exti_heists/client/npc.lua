@@ -22,6 +22,7 @@ local blips = {}
 -- the bar at the top (html/hhud.js)
 ---------------------------------------------------------------------------
 local function bar(state) SendNUIMessage({ action = 'hud', state = state }) end
+function HC.hunted() return hunt ~= nil end
 
 ---------------------------------------------------------------------------
 -- helpers
@@ -288,6 +289,8 @@ CreateThread(function()
                 -- (while they are still driving in, nobody has seen you yet: the clock starts when they first see you,
                 -- or 90 s after they are out if they never do)
                 if seen then hunt.lastSeen = GetGameTimer() end
+                -- (inside a house nobody can see you, but they wait at the door: the clock doesn't run in there)
+                if HC.insideHouse and HC.insideHouse() then hunt.lastSeen = GetGameTimer() end
                 local from = hunt.lastSeen or ((GetGameTimer() - hunt.onAt > 90000) and (hunt.onAt + 90000) or GetGameTimer())
                 local hidden = (GetGameTimer() - from) / 1000
                 local left = math.max(0, N.lostSeconds - hidden)

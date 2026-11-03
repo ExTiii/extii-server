@@ -18,7 +18,9 @@ local function targetsList(r) local t = {} for s in pairs(r.targets) do t[#t + 1
 -- the robber whose game drives the units is out of it: another robber's game takes them over
 local function handOver(r, leaving)
     if r.owner ~= leaving or not next(r.targets) then return end
-    local nxt = next(r.targets)
+    local nxt
+    for s in pairs(r.targets) do if GetPlayerRoutingBucket(s) == 0 then nxt = s break end end
+    nxt = nxt or next(r.targets)
     r.owner = nxt
     TriggerClientEvent('exti_heists:client:npcTakeOver', nxt, r.id, r.units or {}, targetsList(r), { x = r.pos.x, y = r.pos.y, z = r.pos.z })
 end
@@ -122,6 +124,7 @@ RegisterNetEvent('exti_heists:server:npcLost', function(id)
     local src = source
     local r = active[id]
     if not r or not r.targets[src] then return end
+    if GetPlayerRoutingBucket(src) ~= 0 then return end   -- (hiding inside a house doesn't lose them)
     r.targets[src] = nil; byPlayer[src] = nil
     H.notify(src, 'أضعتهم: توقفت حراسة الحي عن البحث', 'success', 6000)
     H.log(src, 'npc_lost', r.kind)

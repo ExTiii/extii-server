@@ -165,7 +165,7 @@ Config.house = {
     maxMinutes = 15,                      -- inside longer than this: the owner comes home (alarm)
     searchSeconds = { 6, 9 },
     noise = {                             -- the noise meter (0-100): full = the owner wakes up and calls
-        sprint = 9, jump = 14, search = 3, safeFail = 18, pickFail = 10, window = 55, decay = 4, -- per second
+        sprint = 9, run = 3, jump = 14, search = 3, safeFail = 18, pickFail = 10, window = 55, decay = 4, -- per second
     },
     sizes = {
         small   = { tier = 1, label = 'شقة صغيرة', interior = 1, spots = { 5, 7 }, rolls = { 0, 2 }, safe = false, dog = false, pickup = 'small_tv' },
@@ -230,3 +230,57 @@ Config.house = {
         { pos = vec3(-174.65, 502.47, 137.42), size = 'mansion', area = 'فاينوود هيلز (وايلد أوتس)' },
     },
 }
+Config.calls.atm = 'سرقة جهاز صراف آلي'
+Config.calls.jewelry = 'سطو على محل المجوهرات'
+Config.calls.jewelryQuiet = 'إنذار متأخر: محل المجوهرات'
+
+---------------------------------------------------------------------------
+-- ATM pull (Tier 2): a tow chain from a pickup truck to a wall ATM, floor it, drag it somewhere quiet, drill it
+---------------------------------------------------------------------------
+Config.atm = {
+    tier = 2,
+    models = { 'prop_atm_02', 'prop_atm_03', 'prop_fleeca_atm' },
+    trucks = { 'bison', 'bison2', 'bison3', 'bobcatxl', 'sadler', 'sandking', 'sandking2', 'rebel', 'rebel2', 'guardian', 'kamacho',
+               'caracara2', 'everon', 'yosemite', 'yosemite3', 'riata', 'contender', 'dubsta3', 'towtruck', 'towtruck2', 'flatbed', 'mesa3', 'bodhi2' },
+    perHour = 2,              -- ATM pulls in the whole city per hour
+    cooldownHours = 6,        -- the same ATM
+    hiddenMinutes = 30,       -- a pulled ATM is gone from the wall this long (then it's "replaced")
+    hookSeconds = 6,
+    quietDistance = 120.0,    -- drill it at least this far from where it was
+    pay = { 3000, 5000 },     -- black_money
+}
+
+---------------------------------------------------------------------------
+-- the jewelry store (Tier 3): Vangelico, 20 cases (GTA's own store; the spots come from Qbox's qbx_jewelery data)
+---------------------------------------------------------------------------
+Config.jewelry = {
+    tier = 3,
+    cooldownMinutes = 120,    -- the whole store
+    quietSeconds = 180,       -- the green USB at the panel: cameras and alarm off this long
+    hackTries = 2,            -- 2 failed hacks = the alarm
+    panel = vec4(-624.295, -215.22, 52.54, 118.0),   -- the security box on the roof
+    area = vec3(-622.6, -231.0, 38.0),
+    rolls = { 1, 2 },         -- loot rolls per case
+    loot = {
+        { item = 'rolex', amount = { 1, 2 }, weight = 30 },
+        { item = 'diamond_ring', amount = { 1, 1 }, weight = 25 },
+        { item = 'goldchain', amount = { 1, 2 }, weight = 30 },
+        { item = '10kgoldchain', amount = { 1, 3 }, weight = 25 },
+        { item = 'diamond', amount = { 1, 1 }, weight = 8 },
+    },
+    cases = {
+        { pos = vec3(-626.83, -235.35, 38.05), h = 36.17, ray = 'DES_Jewel_Cab3' }, { pos = vec3(-625.81, -234.7, 38.05), h = 36.17, ray = 'DES_Jewel_Cab4' },
+        { pos = vec3(-626.95, -233.14, 38.05), h = 216.17, ray = 'DES_Jewel_Cab' }, { pos = vec3(-628.0, -233.86, 38.05), h = 216.17, ray = 'DES_Jewel_Cab' },
+        { pos = vec3(-625.7, -237.8, 38.05), h = 216.17, ray = 'DES_Jewel_Cab3' }, { pos = vec3(-626.7, -238.58, 38.05), h = 216.17, ray = 'DES_Jewel_Cab2' },
+        { pos = vec3(-624.55, -231.06, 38.05), h = 305.0, ray = 'DES_Jewel_Cab4' }, { pos = vec3(-623.13, -232.94, 38.05), h = 305.0, ray = 'DES_Jewel_Cab' },
+        { pos = vec3(-620.29, -234.44, 38.05), h = 216.17, ray = 'DES_Jewel_Cab' }, { pos = vec3(-619.15, -233.66, 38.05), h = 216.17, ray = 'DES_Jewel_Cab3' },
+        { pos = vec3(-620.19, -233.44, 38.05), h = 36.17, ray = 'DES_Jewel_Cab4' }, { pos = vec3(-617.63, -230.58, 38.05), h = 305.0, ray = 'DES_Jewel_Cab2' },
+        { pos = vec3(-618.33, -229.55, 38.05), h = 305.0, ray = 'DES_Jewel_Cab3' }, { pos = vec3(-619.7, -230.33, 38.05), h = 125.0, ray = 'DES_Jewel_Cab' },
+        { pos = vec3(-620.95, -228.6, 38.05), h = 125.0, ray = 'DES_Jewel_Cab3' }, { pos = vec3(-619.79, -227.6, 38.05), h = 305.0, ray = 'DES_Jewel_Cab2' },
+        { pos = vec3(-620.42, -226.6, 38.05), h = 305.0, ray = 'DES_Jewel_Cab' }, { pos = vec3(-623.94, -227.18, 38.05), h = 36.17, ray = 'DES_Jewel_Cab4' },
+        { pos = vec3(-624.91, -227.87, 38.05), h = 36.17, ray = 'DES_Jewel_Cab3' }, { pos = vec3(-623.94, -228.05, 38.05), h = 216.17, ray = 'DES_Jewel_Cab2' },
+    },
+}
+Config.games.drill = { minSeconds = 8.0 }
+Config.games.glasscut = { minSeconds = 4.0 }
+Config.games.hack = { minSeconds = 6.0 }

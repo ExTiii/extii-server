@@ -305,11 +305,236 @@
         G.dbg = () => ({ combo: combo.slice(), k, angle, value: valueOf(angle), lastDir, need: dirOf(k), left: time.left() });
     }
 
+
+    // ===================================================================== DRILL (pressure and heat)
+    // Hold the left mouse (or SPACE) to push the drill, let go to ease off. Every layer wants its own
+    // pressure: too little and you barely move, too much and the bit heats up. At the red line it snaps.
+    function drill(c, p) {
+        const m = META.drill_bg;
+        c.bg('drill_bg.webp');
+        const level = p.level || 1;
+        const heatMul = 1 - (level - 1) * 0.08;                  // breaching skill: the bit heats slower
+        const L = [   // [from, to, sweet pressure, hardness, sparks]
+            [m.skin, m.hard, 0.45, 0.8, true], [m.hard, m.fill, 0.82, 1.6, true], [m.fill, m.relock, 0.40, 0.7, false],
+            [m.relock, m.case, 0.70, 1.3, true], [m.case, m.target, 0.55, 0.9, true],
+        ].map((l) => ({ from: l[0], to: l[1], sweet: Math.min(0.92, Math.max(0.25, l[2] + rnd(-0.12, 0.12))), hard: l[3], sparks: l[4] }));
+        const start = m.skin - 26;
+        const bore = c.el('div', 'm-bore'); bore.style.top = `${m.bore_y - 9}px`; bore.style.left = `${m.skin}px`;
+        const tool = c.img('drill.webp', 'm-drill');
+        const dA = A('drill');
+        const glow = c.el('div', 'm-glow');
+        const sparks = c.el('div', 'm-sparks');
+        // the gauges: heat (needle in a bezel) and pressure
+        const gauge = c.el('div', 'm-gauge', '<img src="mg/bezel.webp"><i class="n"></i><b>HEAT</b><em class="red"></em>');
+        const press = c.el('div', 'm-press', '<b>الضغط</b><div class="tr"><i class="sw"></i><i class="v"></i></div>');
+        const layerTxt = c.el('div', 'm-layer', '');
+        const NAMES = ['الغلاف', 'الصفيحة المقسّاة', 'الحشوة', 'قفل الأمان', 'علبة القفل'];
+        const motor = c.loop('dr_motor', 0.9), grind = c.loop('dr_grind', 0.8);
+        let pressure = 0, heat = 0, x = start, held = false, done = false, li = 0, hiss = 0;
+        const down = (e) => { if (e.button === 0 || e.code === 'Space') { held = true; e.preventDefault(); } };
+        const up = (e) => { if (e.button === 0 || e.code === 'Space') held = false; };
+        c.on(window, 'mousedown', down); c.on(window, 'mouseup', up); c.on(window, 'keydown', down); c.on(window, 'keyup', up);
+        c.on(window, 'contextmenu', (e) => e.preventDefault());
+        const time = c.timer(Math.round(70 * (p.time || 1)), () => { if (!done) { done = true; motor.set(0); grind.set(0); c.flash('bad'); sfx('lp_drop', 0.6); finish(false); } });
+        c.raf((dt) => {
+            if (done) return false;
+            pressure += ((held ? 1 : 0) - pressure) * Math.min(1, dt * (held ? 1.6 : 2.6));
+            const touching = x >= m.skin - 1;
+            while (li < L.length - 1 && x >= L[li].to) li++;
+            const ly = L[li];
+            let speed = 0;
+            if (touching || held) {
+                const off = pressure - ly.sweet;
+                const good = Math.max(0, 1 - Math.abs(off) / 0.22);
+                speed = touching ? (10 + 62 * good * pressure) / ly.hard : 60 * pressure;
+                if (touching) heat += dt * (pressure * pressure * 26 * ly.hard + Math.max(0, off) * 120 * ly.hard) * heatMul;
+            }
+            heat -= dt * (held ? 6 : 22);
+            heat = Math.max(0, heat);
+            x = Math.min(m.target, x + speed * dt);
+            motor.set(0.25 + pressure * 0.75);
+            grind.set(touching && pressure > 0.08 ? (ly.sparks ? 0.4 + pressure * 0.6 : 0.25) : 0);
+            put(tool, x, m.bore_y, dA.ax, dA.ay, 0, 1);
+            const jitter = touching ? pressure * 1.4 : 0.4;
+            tool.style.marginTop = `${(Math.random() - 0.5) * jitter * 2}px`;
+            bore.style.width = `${Math.max(0, x - m.skin)}px`;
+            const h = Math.min(1, heat / 100);
+            glow.style.left = `${x - 30}px`; glow.style.top = `${m.bore_y - 30}px`; glow.style.opacity = touching ? (0.15 + h * 0.85).toFixed(2) : 0;
+            glow.style.setProperty('--h', h.toFixed(2));
+            sparks.style.left = `${x}px`; sparks.style.top = `${m.bore_y}px`;
+            sparks.classList.toggle('on', touching && ly.sparks && pressure > 0.2);
+            gauge.querySelector('.n').style.transform = `rotate(${-120 + h * 240}deg)`;
+            press.querySelector('.v').style.height = `${pressure * 100}%`;
+            press.querySelector('.sw').style.bottom = `${(ly.sweet - 0.11) * 100}%`;
+            layerTxt.textContent = touching ? NAMES[li] : '';
+            if (h > 0.8 && (hiss -= dt) < 0) { hiss = 0.6; sfx('dr_hiss', 0.4 + h * 0.4); c.jolt(true); }
+            c.prog((x - start) / (m.target - start));
+            if (heat >= 100) {
+                done = true; motor.set(0); grind.set(0); sfx('dr_snap'); c.flash('bad'); c.jolt();
+                c.later(() => finish(false), 500); return false;
+            }
+            if (x >= m.target) {
+                done = true; motor.set(0); grind.set(0); sfx('dr_through'); c.flash('good');
+                c.later(() => finish(true), 300); return false;
+            }
+        });
+        G.dbg = () => ({ x, target: m.target, heat, pressure, sweet: L[li].sweet, li, left: time.left(), hold: (v) => { held = v; } });
+    }
+
+    // ===================================================================== GLASS CUTTING (a steady hand)
+    // Hold the left mouse on the dashed circle and go once round it with the cutter. Off the line, or
+    // too fast, and the glass is stressed; too much and it cracks loudly.
+    function glasscut(c, p) {
+        const m = META.glass_bg;
+        c.bg('glass_bg.webp');
+        const [cx, cy] = [m.center[0] + rnd(-120, 120), m.center[1] + rnd(-40, 40)];
+        const R = 118, tol = 11 * (p.time || 1);
+        const guide = c.el('div', 'm-guide'); guide.style.left = `${cx - R}px`; guide.style.top = `${cy - R}px`; guide.style.width = guide.style.height = `${R * 2}px`;
+        const cv = c.el('canvas', 'm-score'); cv.width = SW; cv.height = SH; const g2 = cv.getContext('2d');
+        const tool = c.img('cutter.webp', 'm-cutter'); const tA = A('cutter');
+        const stressEl = c.el('div', 'm-stress', '<b>إجهاد الزجاج</b><div class="tr"><i></i></div>');
+        const scoreLoop = c.loop('gl_score', 0.8);
+        let held = false, last = null, ang = null, swept = 0, stress = 0, done = false, mx = cx + R, my = cy, rot = 0;
+        c.on(c.stage, 'mousemove', (e) => { [mx, my] = c.at(e); });
+        c.on(window, 'mousedown', (e) => { if (e.button === 0) held = true; });
+        c.on(window, 'mouseup', (e) => { if (e.button === 0) { held = false; last = null; } });
+        const time = c.timer(Math.round(35 * (p.time || 1)), () => { if (!done) { done = true; scoreLoop.set(0); finish(false); } });
+        g2.strokeStyle = 'rgba(235,245,255,.85)'; g2.lineWidth = 1.6; g2.shadowColor = 'rgba(255,255,255,.7)'; g2.shadowBlur = 3; g2.lineCap = 'round';
+        c.raf((dt) => {
+            if (done) return false;
+            const dx = mx - cx, dy = my - cy, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+            let moving = 0;
+            if (held && last) {
+                const sp = Math.hypot(mx - last[0], my - last[1]) / Math.max(dt, 0.001);
+                moving = sp;
+                if (Math.abs(r - R) > tol) stress += dt * (60 + Math.abs(r - R) * 4);
+                else if (sp > 520) stress += dt * (sp - 520) * 0.35;
+                else {
+                    if (ang !== null) {
+                        let d = a - ang; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
+                        if (Math.abs(d) < 0.5) swept += d;
+                    }
+                    g2.beginPath(); g2.moveTo(last[0], last[1]); g2.lineTo(mx, my); g2.stroke();
+                }
+                if (sp > 4) rot = Math.atan2(my - last[1], mx - last[0]);
+            }
+            ang = a;
+            if (held) last = [mx, my];
+            stress = Math.max(0, stress - dt * 9);
+            scoreLoop.set(held && moving > 15 && Math.abs(r - R) <= tol ? Math.min(1, moving / 300) : 0);
+            put(tool, mx, my, tA.ax, tA.ay, rot + Math.PI / 2, 1);
+            stressEl.querySelector('i').style.width = `${Math.min(100, stress)}%`;
+            stressEl.classList.toggle('hot', stress > 65);
+            c.prog(Math.abs(swept) / (2 * Math.PI));
+            if (stress >= 100) {
+                done = true; scoreLoop.set(0); sfx('gl_crack'); c.flash('bad'); c.jolt();
+                c.el('div', 'm-crack').style.cssText = `left:${mx - 160}px;top:${my - 160}px`;
+                c.later(() => finish(false), 700); return false;
+            }
+            if (Math.abs(swept) >= 2 * Math.PI - 0.08) {
+                done = true; scoreLoop.set(0); sfx('gl_free'); c.flash('good');
+                guide.classList.add('free');
+                c.later(() => finish(true), 400); return false;
+            }
+        });
+        G.dbg = () => ({ cx, cy, R, swept, stress, left: time.left(), move: (x, y) => { mx = x; my = y; }, hold: (v) => { held = v; if (!v) last = null; } });
+    }
+
+    // ===================================================================== LAPTOP HACK (route the signal)
+    // Click the tiles on the board to turn them and make one unbroken line from the input on the left to
+    // the output on the right before the clock runs out. Harder with each USB colour.
+    function hack(c, p) {
+        const m = META.laptop_bg;
+        c.bg('laptop_bg.webp');
+        const [[x0, y0], [x1, y1]] = m.screen;
+        const tier = Math.max(1, Math.min(4, p.tier || 1));
+        const COLS = [7, 8, 9, 10][tier - 1], ROWS = [4, 4, 5, 5][tier - 1];
+        const scr = c.el('div', 'm-screen'); scr.style.cssText = `left:${x0}px;top:${y0}px;width:${x1 - x0}px;height:${y1 - y0}px`;
+        const W = x1 - x0, H = y1 - y0, pad = 34;
+        const cell = Math.floor(Math.min((W - 60) / COLS, (H - pad - 14) / ROWS));
+        const ox = Math.floor((W - cell * COLS) / 2), oy = pad + Math.floor((H - pad - cell * ROWS) / 2);
+        scr.innerHTML = `<div class="hd"><span>ICE // ${['GRN', 'BLU', 'RED', 'AU'][tier - 1]}-${tier}</span><span id="hkst">ROUTING…</span></div><div class="scan"></div>`;
+        // a path from the left edge to the right edge, then the rest random; every tile scrambled
+        const N = 1, E = 2, S = 4, Wd = 8;
+        const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+        const sr = Math.floor(Math.random() * ROWS); let r = sr, col = 0, prev = Wd;
+        const seen = new Set();
+        while (col < COLS) {
+            seen.add(`${r},${col}`);
+            let next;
+            const opts = [];
+            if (col === COLS - 1) next = E;
+            else {
+                opts.push(E, E);
+                if (r > 0 && !seen.has(`${r - 1},${col}`) && prev !== N) opts.push(N);
+                if (r < ROWS - 1 && !seen.has(`${r + 1},${col}`) && prev !== S) opts.push(S);
+                next = opts[Math.floor(Math.random() * opts.length)];
+            }
+            grid[r][col] = prev | next;
+            if (next === E) { col++; prev = Wd; } else if (next === N) { r--; prev = S; } else { r++; prev = N; }
+        }
+        const tr = r;
+        const SHAPES = [N | S, N | E, N | E | S];
+        for (let i = 0; i < ROWS; i++) for (let j = 0; j < COLS; j++) if (!grid[i][j]) grid[i][j] = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+        const rotr = (v) => ((v << 1) | (v >> 3)) & 15;
+        const solved = grid.map((row) => row.slice());
+        for (let i = 0; i < ROWS; i++) for (let j = 0; j < COLS; j++) { const k = 1 + Math.floor(Math.random() * 3); for (let q = 0; q < k; q++) grid[i][j] = rotr(grid[i][j]); }
+        const tiles = [];
+        const svgOf = (v) => {
+            const seg = [];
+            if (v & N) seg.push('M50 50 L50 0'); if (v & E) seg.push('M50 50 L100 50'); if (v & S) seg.push('M50 50 L50 100'); if (v & Wd) seg.push('M50 50 L0 50');
+            return `<svg viewBox="0 0 100 100"><path d="${seg.join(' ')}" /><circle cx="50" cy="50" r="7"/></svg>`;
+        };
+        for (let i = 0; i < ROWS; i++) {
+            tiles[i] = [];
+            for (let j = 0; j < COLS; j++) {
+                const t = document.createElement('div'); t.className = 'tile';
+                t.style.cssText = `left:${ox + j * cell}px;top:${oy + i * cell}px;width:${cell}px;height:${cell}px`;
+                t.innerHTML = svgOf(grid[i][j]);
+                t.onmousedown = (e) => { if (done || e.button !== 0) return; grid[i][j] = rotr(grid[i][j]); t.innerHTML = svgOf(grid[i][j]); sfx('lt_turn', 0.8); flow(); };
+                scr.appendChild(t); tiles[i][j] = t;
+            }
+        }
+        const port = (cls, row) => { const e = document.createElement('div'); e.className = `port ${cls}`; e.style.top = `${oy + row * cell + cell / 2 - 7}px`; scr.appendChild(e); };
+        port('in', sr); port('out', tr);
+        let done = false;
+        function flow() {
+            const lit = new Set(); const q = [];
+            if (grid[sr][0] & Wd) { q.push([sr, 0]); lit.add(`${sr},0`); }
+            while (q.length) {
+                const [i, j] = q.shift(); const v = grid[i][j];
+                for (const [d, di, dj, back] of [[N, -1, 0, S], [E, 0, 1, Wd], [S, 1, 0, N], [Wd, 0, -1, E]]) {
+                    const ni = i + di, nj = j + dj;
+                    if (!(v & d) || ni < 0 || nj < 0 || ni >= ROWS || nj >= COLS) continue;
+                    if ((grid[ni][nj] & back) && !lit.has(`${ni},${nj}`)) { lit.add(`${ni},${nj}`); q.push([ni, nj]); }
+                }
+            }
+            for (let i = 0; i < ROWS; i++) for (let j = 0; j < COLS; j++) tiles[i][j].classList.toggle('lit', lit.has(`${i},${j}`));
+            c.prog(lit.size / (ROWS * COLS) * 1.4);
+            if (lit.has(`${tr},${COLS - 1}`) && (grid[tr][COLS - 1] & E) && !done) {
+                done = true; sfx('lt_ok'); c.flash('good');
+                document.getElementById('hkst').textContent = 'ACCESS GRANTED';
+                scr.classList.add('ok');
+                c.later(() => finish(true), 700);
+            }
+        }
+        flow();
+        const time = c.timer(Math.round([50, 45, 40, 35][tier - 1] * (p.time || 1)), () => {
+            if (done) return; done = true; sfx('lt_wrong'); c.flash('bad');
+            document.getElementById('hkst').textContent = 'TRACE COMPLETE'; scr.classList.add('bad');
+            c.later(() => finish(false), 700);
+        });
+        G.dbg = () => ({ grid: grid.map((row) => row.slice()), solved, sr, tr, left: time.left(), turn: (i, j) => tiles[i][j].onmousedown({ button: 0 }) });
+    }
+
     // ===================================================================== registry
-    const GAMES = { lockpick, safedial };
+    const GAMES = { lockpick, safedial, drill, glasscut, hack };
     const TEXT = {
         lockpick: ['اضغط الشدّ مع الاستمرار، ضع المفتاح تحت كل مسمار وارفعه حتى تسمع النقرة. المسمار العالق: خفّف الشدّ وأعد', [['', 'ارفع', true], ['SPACE', 'الشدّ (أو الزر الأيمن)']]],
         safedial: ['أدر القرص بالاتجاه المطلوب، استمع للنقرة الأقوى، توقّف عليها واضغط المسافة. الخطأ يعيد الأقراص', [['A', 'يسار'], ['D', 'يمين'], ['SHIFT', 'ببطء'], ['SPACE', 'ثبّت الرقم']]],
+        drill: ['اضغط لتدفع المثقاب وخفّف لتبرّده. كل طبقة تريد ضغطًا مختلفًا (الخط الأصفر). إن وصلت الحرارة للأحمر ينكسر الرأس', [['', 'ادفع', true], ['SPACE', 'أو المسافة']]],
+        glasscut: ['اضغط مع الاستمرار على الدائرة ودُر بالقاطعة دورة كاملة ببطء. خارج الخط أو بسرعة = ينكسر الزجاج', [['', 'اقطع', true]]],
+        hack: ['أدر القطع (انقر عليها) لتصل الإشارة من المدخل يسارًا إلى المخرج يمينًا قبل انتهاء الوقت', [['', 'أدر القطعة', true]]],
     };
     function start(game, title, params, cb) {
         if (G || !GAMES[game]) return false;

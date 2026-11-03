@@ -30,11 +30,17 @@ function HC.busy() return playing ~= nil end
 ---------------------------------------------------------------------------
 -- the [E] prompt (left side, like the gangs and the jobs)
 ---------------------------------------------------------------------------
+-- several loops (stores, houses, ATMs, the jewelry store) each own a prompt; the first one that has
+-- something to say is shown. HC.prompt(nil) with no owner (an action starting) clears them all.
 local shown = nil
-function HC.prompt(text)
-    if text == shown then return end
-    shown = text
-    if text then lib.showTextUI(text, { position = 'left-center' }) else lib.hideTextUI() end
+local owners, ORDER = {}, { 'jewel', 'atm', 'houses', 'stores' }
+function HC.prompt(text, owner)
+    if owner then owners[owner] = text else owners = {} end
+    local want
+    for _, o in ipairs(ORDER) do if owners[o] then want = owners[o] break end end
+    if want == shown then return end
+    shown = want
+    if want then lib.showTextUI(want, { position = 'left-center' }) else lib.hideTextUI() end
 end
 
 function HC.notify(text, kind, duration)
@@ -49,7 +55,7 @@ function HC.anim(ped, dict, clip, flag, duration)
 end
 
 function HC.canAct()
-    return not HC.busy() and not cache.vehicle and not IsPedDeadOrDying(cache.ped, true) and not IsPauseMenuActive()
+    return not HC.busy() and not lib.progressActive() and not cache.vehicle and not IsPedDeadOrDying(cache.ped, true) and not IsPauseMenuActive()
         and not HC.isDown()
 end
 function HC.isDown()

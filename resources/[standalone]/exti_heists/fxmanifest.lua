@@ -26,6 +26,8 @@ client_scripts {
     'client/stores.lua',
     'client/npc.lua',
     'client/houses.lua',
+    'client/atm.lua',
+    'client/jewelry.lua',
 }
 
 server_scripts {
@@ -35,6 +37,8 @@ server_scripts {
     'server/stores.lua',
     'server/fence.lua',
     'server/houses.lua',
+    'server/atm.lua',
+    'server/jewelry.lua',
 }
 
 ui_page 'html/index.html'

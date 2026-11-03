@@ -178,6 +178,7 @@ local function finish(l, why)
         if inside[s] == l.id then setOutside(s, l) end
         TriggerClientEvent('exti_heists:client:houseDone', s, l.id)
     end
+    for s in pairs(l.cops or {}) do if inside[s] == l.id then setOutside(s, l) end end
     if l.holder then TriggerClientEvent('exti_heists:client:houseDone', l.holder, l.id) end
     H.log(l.holder, 'house_done', ('%s · %s'):format(l.area, why or ''))
     SetTimeout(5000, function() if leads[l.id] == l then leads[l.id] = nil; if leadOf[l.cid] == l.id then leadOf[l.cid] = nil end end end)
@@ -186,10 +187,11 @@ end
 lib.callback.register('exti_heists:server:houseEnter', function(src, id)
     local l = leadFor(src, id)
     if not l or l.phase ~= 'open' then return false end
-    if not H.near(src, l.pos, 3.5) or H.isCopOnDuty(src) then return false end
-    if inside[src] then return false end
+    if not H.near(src, l.pos, 3.5) or inside[src] then return false end
+    local cop = H.isCopOnDuty(src)
+    if cop and not l.alarm then return false end   -- (the police come in once the alarm has gone off)
     setInside(src, l)
-    H.setHeat(src)
+    if not cop then H.setHeat(src) else l.members[src] = nil; l.cops = l.cops or {}; l.cops[src] = true end
     local it = HS.interiors[HS.sizes[l.size].interior]
     -- the spots are rolled once per break-in: which drawers have something in them
     if not l.spots then
@@ -251,6 +253,7 @@ end
 
 lib.callback.register('exti_heists:server:houseSearchBegin', function(src, id, spot)
     local l = leadFor(src, id)
+    if H.isCopOnDuty(src) then return false end
     spot = math.tointeger(spot)
     if not l or inside[src] ~= l.id or not spot or l.searched[spot] then return false end
     local it = HS.interiors[HS.sizes[l.size].interior]
@@ -286,6 +289,7 @@ end)
 
 lib.callback.register('exti_heists:server:houseSafeBegin', function(src, id)
     local l = leadFor(src, id)
+    if H.isCopOnDuty(src) then return false end
     if not l or inside[src] ~= l.id or l.safeDone then return false end
     local it = HS.interiors[HS.sizes[l.size].interior]
     if not it.safe or not HS.sizes[l.size].safe or not H.near(src, it.safe, 2.4) then return false end
@@ -299,6 +303,8 @@ lib.callback.register('exti_heists:server:houseSafeEnd', function(src, token, pa
     if not l or inside[src] ~= l.id or l.safeDone then return false end
     if not passed then
         l.noise = math.min(100, l.noise + HS.noise.safeFail)
+        l.safeFails = (l.safeFails or 0) + 1
+        if l.noise >= 100 or l.safeFails >= 3 then alarm(l, 'رنّ جرس الخزنة') end
         return false, 'failed'
     end
     local it = HS.interiors[HS.sizes[l.size].interior]
@@ -322,6 +328,7 @@ end)
 local carrying = {}   -- [src] = { item, id }
 lib.callback.register('exti_heists:server:housePickup', function(src, id)
     local l = leadFor(src, id)
+    if H.isCopOnDuty(src) then return false end
     if not l or inside[src] ~= l.id or l.pickupTaken or carrying[src] then return false end
     local it = HS.interiors[HS.sizes[l.size].interior]
     if not it.pickup or not H.near(src, it.pickup.pos, 2.4) then return false end
@@ -389,15 +396,43 @@ AddEventHandler('playerDropped', function()
     for _, x in pairs(leads) do if x.holder == src and x.phase == 'lead' then x.holder = nil end end
 end)
 
+-- out of the house for any reason (downed inside, switching character, the script stopping)
+local function forceOut(src, why)
+    local id = inside[src]; if not id then return end
+    local l = leads[id]
+    searching[src] = nil; carrying[src] = nil
+    if l then l.members[src] = nil end
+    setOutside(src, l or { pos = vec3(0, 0, 0) })
+    H.log(src, 'house_forced_out', why or '')
+end
+-- downed inside: out at the door, where the medics can reach him (the house is a private copy of the world)
+AddStateBagChangeHandler('qbx_medical:deathState', nil, function(bag, _, value)
+    local src = GetPlayerFromStateBagName(bag)
+    if src and src ~= 0 and inside[src] and value ~= nil and value ~= 1 then
+        SetTimeout(1500, function() forceOut(src, 'downed') end)
+    end
+end)
+RegisterNetEvent('QBCore:Server:OnPlayerUnload', function(s) forceOut(tonumber(s) or source, 'unload') end)
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for src, id in pairs(inside) do
+        local l = leads[id]
+        SetPlayerRoutingBucket(src, 0)
+        if l then SetEntityCoords(GetPlayerPed(src), l.pos.x, l.pos.y, l.pos.z, false, false, false, false) end
+    end
+end)
+
 -- back in after a crash inside a house: out at its front door
 function H.houseOnLoaded(src)
+    if inside[src] then forceOut(src, 'loaded again') return end
     local cid = H.cid(src); if not cid then return end
     local raw = GetResourceKvpString('housedoor:' .. cid)
     if not raw then return end
     DeleteResourceKvp('housedoor:' .. cid)
     local ok, p = pcall(json.decode, raw)
     SetPlayerRoutingBucket(src, 0)
-    if ok and type(p) == 'table' and p.x then TriggerClientEvent('exti_heists:client:houseOut', src, p) end
+    -- (after the spawn screen has put him where he left: then out at the door)
+    if ok and type(p) == 'table' and p.x then SetTimeout(8000, function() TriggerClientEvent('exti_heists:client:houseOut', src, p) end) end
     -- a lead he still holds comes back to his game
     local l = leadOf[cid] and leads[leadOf[cid]]
     if l and l.phase ~= 'done' then l.holder = src; TriggerClientEvent('exti_heists:client:houseLead', src, view(l)) end

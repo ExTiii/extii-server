@@ -386,6 +386,7 @@ exports('Admin', function(src, what, value)
     elseif what == 'cooldowns' then
         H.clearAllCooldowns()
         if H.resetStores then H.resetStores() end
+        if H.resetJewelry then H.resetJewelry() end
         return true, 'صُفّرت كل أوقات انتظار السطو'
     elseif what == 'force' then
         H.force = (value == 'police' or value == 'npc') and value or nil
