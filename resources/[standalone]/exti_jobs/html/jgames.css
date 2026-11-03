@@ -1,0 +1,170 @@
+/* =====================================================================
+   EX_Tii jobs — the mini games (workshop look). The scene is a real render, 1200 x 690 "scene pixels",
+   scaled to the screen; everything moving is placed in those same pixels.
+   (No backdrop-filter: FiveM draws it as a black box.)
+   ===================================================================== */
+#jg { display: none; }
+#jg.on { display: grid; position: fixed; inset: 0; z-index: 60; place-items: center; font-family: 'Kit Plex', sans-serif; direction: rtl;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,.35), rgba(0,0,0,.72)); animation: jgin .22s ease-out; }
+#jg.out { opacity: 0; transition: opacity .25s; }
+@keyframes jgin { from { opacity: 0; } }
+.jg-wrap { position: relative; width: calc(1200px * var(--k)); }
+.jg-top { display: flex; align-items: baseline; gap: 12px; margin: 0 2px 8px; color: #f1eee8; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+.jg-top h3 { margin: 0; font-size: 19px; font-weight: 700; }
+.jg-where { font-size: 13px; color: #b8b3a9; }
+.jg-cnt { margin-inline-start: auto; font-size: 15px; font-weight: 600; direction: ltr; font-variant-numeric: tabular-nums; }
+.jg-box { position: relative; width: calc(1200px * var(--k)); height: calc(690px * var(--k)); overflow: hidden; border-radius: 3px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.9), 0 24px 60px rgba(0,0,0,.65); background: #111; }
+.jg-stage { position: absolute; left: 0; top: 0; width: 1200px; height: 690px; transform: scale(var(--k)); transform-origin: 0 0; user-select: none; touch-action: none; overflow: hidden; }
+.jg-stage > img.bg { position: absolute; inset: 0; width: 1200px; height: 690px; pointer-events: none; }
+.jg-stage .spr { position: absolute; left: 0; top: 0; width: auto; height: auto; max-width: none; max-height: none; pointer-events: none; will-change: transform; -webkit-user-drag: none; }
+.jg-stage .spr.layer { width: 1200px; height: 690px; transform: none; }
+.jg-stage .spr.hit { pointer-events: auto; cursor: pointer; }
+.jg-stage.jolt { animation: jgjolt .28s; }
+@keyframes jgjolt { 20% { transform: scale(var(--k)) translate(5px, -2px); } 45% { transform: scale(var(--k)) translate(-4px, 2px); } 70% { transform: scale(var(--k)) translate(2px, -1px); } }
+.jg-stage::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 75% 85% at 45% 40%, transparent 55%, rgba(0,0,0,.34)); z-index: 40; }
+.jg-time { position: relative; height: 4px; margin-top: 7px; background: rgba(255,255,255,.12); }
+.jg-time i { position: absolute; inset: 0 0 0 auto; width: 100%; background: #e8b547; }
+.jg-time i.late { background: #e0573a; }
+.jg-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 8px; padding: 0 2px; min-height: 30px; color: #d9d5cc; font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,.9); }
+.jg-bar .hint { flex: 1 1 320px; }
+.jg-bar .keys { display: flex; align-items: center; gap: 8px; }
+.jg-key { display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px 4px 7px; border-radius: 2px; background: rgba(0,0,0,.72); font-size: 13px; color: #fff; text-shadow: none; white-space: nowrap; }
+.jg-key kbd { min-width: 22px; height: 22px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 3px; background: #f2f2f2; color: #111; font: 700 12px/1 'Kit Plex', sans-serif; direction: ltr; }
+.jg-key kbd.mouse { width: 16px; min-width: 16px; height: 22px; padding: 0; border-radius: 8px; position: relative; }
+.jg-key kbd.mouse::before { content: ''; position: absolute; left: 7px; top: 3px; width: 2px; height: 6px; border-radius: 1px; background: #111; }
+.jg-flash { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+.jg-flash.ok { animation: jgok .5s; } .jg-flash.bad { animation: jgbad .45s; }
+@keyframes jgok { 0% { box-shadow: inset 0 0 0 3px rgba(120,220,150,.9); } 100% { box-shadow: inset 0 0 0 3px rgba(120,220,150,0); } }
+@keyframes jgbad { 0% { box-shadow: inset 0 0 120px rgba(200,30,30,.5); } 100% { box-shadow: inset 0 0 120px rgba(200,30,30,0); } }
+.jg-end { position: absolute; inset: 0; z-index: 60; display: grid; place-content: center; text-align: center; gap: 2px; color: #fff; background: rgba(0,0,0,.55); animation: jgin .3s; }
+.jg-end b { font-size: 64px; font-weight: 700; direction: ltr; color: #f3c35b; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+.jg-end span { font-size: 18px; }
+.jg-ring { position: absolute; pointer-events: none; z-index: 30; }
+.jg-ring circle { fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 100; transform: rotate(-90deg); transform-origin: 50% 50%; filter: drop-shadow(0 0 2px rgba(0,0,0,.9)); }
+.jg-hintbox { position: absolute; top: 14px; left: 0; right: 0; z-index: 30; text-align: center; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 3px #000, 0 0 12px #000; pointer-events: none; }
+.jg-stage .spr { filter: drop-shadow(4px 8px 6px rgba(0,0,0,.45)); }
+.jg-stage .spr.layer { filter: none; }
+
+/* ---- chicken */
+.jg-catch .hen { transition: opacity .3s; }
+.jg-catch .hen.got { transition: transform .38s ease-out, opacity .38s; opacity: 0; }
+.jg-slaughter .bird { filter: drop-shadow(3px 6px 5px rgba(0,0,0,.35)); }
+.jg-slaughter .bird.late { filter: drop-shadow(3px 6px 5px rgba(0,0,0,.35)) brightness(.8); }
+.jg-zone { position: absolute; height: 14px; z-index: 5; border-left: 3px solid rgba(255,214,90,.95); border-right: 3px solid rgba(255,214,90,.95); box-sizing: border-box; pointer-events: none; }
+.jg-pack .piece.held { filter: drop-shadow(10px 20px 12px rgba(0,0,0,.5)); z-index: 20; }
+.jg-pack .piece.in { transition: transform .15s ease-out; }
+.jg-pack .piece.wrapped { transition: opacity .5s; opacity: 0; }
+.jg-pack .piece.spoil { transition: opacity .6s, filter .6s; filter: grayscale(.8) brightness(.6) sepia(.4); opacity: 0; }
+
+/* ---- raisins */
+.jg-pick .bunch { transition: opacity .4s; filter: drop-shadow(3px 8px 6px rgba(0,0,0,.4)); }
+.jg-pick .bunch.picked { transition: transform .5s cubic-bezier(.4,0,.8,.6), opacity .5s .3s; opacity: 0; }
+.jg-pick .bunch.fall { transition: transform .45s cubic-bezier(.5,0,1,.6), opacity .45s; opacity: 0; }
+.jg-pick .bunch.grow { animation: jggrow .6s ease-out; }
+@keyframes jggrow { from { opacity: 0; } }
+.jg-tag { position: absolute; z-index: 31; width: 38px; height: 38px; margin: -19px 0 0 -19px; display: grid; place-items: center; border-radius: 4px; background: #f2f2f2; color: #111; font: 700 20px/1 'Kit Plex', sans-serif; direction: ltr; box-shadow: 0 2px 6px rgba(0,0,0,.6); pointer-events: none; }
+.jg-dry .lay { transition: opacity .3s; }
+.jg-dial { position: absolute; }
+.jg-dial svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.jg-dial .bez { position: absolute; inset: -11px; width: calc(100% + 22px); height: calc(100% + 22px); pointer-events: none; }
+.jg-dial .glass { position: absolute; inset: 8px; border-radius: 50%; pointer-events: none; background: radial-gradient(ellipse 60% 38% at 38% 22%, rgba(255,255,255,.32), rgba(255,255,255,0) 70%), radial-gradient(circle at 50% 50%, transparent 62%, rgba(0,0,0,.22)); }
+.jg-dry .jg-dial { right: 42px; top: 40px; z-index: 20; }
+.jg-smoke { position: absolute; inset: 0; pointer-events: none; z-index: 15; opacity: 0; transition: opacity .3s;
+    background: radial-gradient(ellipse 30% 25% at 30% 40%, rgba(200,200,200,.35), transparent 70%), radial-gradient(ellipse 25% 20% at 55% 60%, rgba(190,190,190,.3), transparent 70%); }
+.jg-box .scoop.held, .jg-icepack .scoop.held { filter: drop-shadow(10px 20px 12px rgba(0,0,0,.5)); z-index: 20; }
+.jg-box .fill, .jg-box .shut { transition: opacity .35s; }
+.jg-box .ship, .jg-icepack .ship { transition: opacity .5s, transform .5s; opacity: 0 !important; transform: translateX(140px) !important; }
+
+/* ---- bread */
+.jg-harvest { cursor: none; }
+.jg-harvest .clump { animation: jggrow .5s ease-out; transition: filter 1s; }
+.jg-harvest .clump.cut { transition: transform .35s ease-in, opacity .35s; opacity: 0; }
+.jg-harvest .clump.wilt { transition: opacity .7s; opacity: 0; }
+.jg-harvest .sheaf { animation: jggrow .2s; transition: opacity .7s; }
+.jg-harvest .sheaf.gone { opacity: 0; }
+.jg-harvest .sickle { z-index: 30; filter: drop-shadow(6px 12px 8px rgba(0,0,0,.5)); }
+.jg-mill .runner { filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)); }
+.jg-grain { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+.jg-sack { position: absolute; right: 40px; bottom: 60px; width: 14px; height: 200px; background: rgba(0,0,0,.55); box-shadow: 0 0 0 1px rgba(0,0,0,.8); z-index: 20; }
+.jg-sack i { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(0deg, #efe6d2, #fffaf0); transition: height .3s; }
+.jg-bake .loaf { filter: drop-shadow(2px 4px 4px rgba(0,0,0,.6)); }
+.jg-bake .loaf.out, .jg-bake .peel.out { transition: transform .5s ease-in, opacity .5s; opacity: 0 !important; }
+.jg-bake .peel.go { transition: transform .26s ease-out; }
+.jg-glow { position: absolute; left: 240px; top: 160px; width: 720px; height: 420px; pointer-events: none; z-index: 12; mix-blend-mode: screen;
+    background: radial-gradient(ellipse 50% 45% at 35% 55%, rgba(255,120,40,.35), transparent 70%); }
+
+/* ---- fish */
+.jg-line { position: absolute; inset: 0; pointer-events: none; z-index: 8; }
+.jg-line path { fill: none; stroke: rgba(235,235,230,.75); stroke-width: 1.3; }
+.jg-fish .rod { z-index: 9; }
+.jg-ripple { position: absolute; width: 10px; height: 4px; margin: -2px 0 0 -5px; border-radius: 50%; pointer-events: none; z-index: 6; }
+.jg-ripple.go { animation: jgrip .9s ease-out; }
+@keyframes jgrip { from { box-shadow: 0 0 0 2px rgba(255,255,255,.7); width: 10px; height: 4px; margin: -2px 0 0 -5px; } to { box-shadow: 0 0 0 1px rgba(255,255,255,0); width: 140px; height: 50px; margin: -25px 0 0 -70px; } }
+.jg-meter { position: absolute; left: 350px; right: 350px; bottom: 40px; height: 22px; background: rgba(10,12,14,.78); box-shadow: 0 0 0 1px rgba(0,0,0,.9), 0 4px 12px rgba(0,0,0,.6); z-index: 30; direction: ltr; }
+.jg-meter .zone { position: absolute; top: 3px; bottom: 3px; width: 24%; background: rgba(90,180,120,.55); box-shadow: inset 0 0 0 1px rgba(140,230,170,.7); }
+.jg-meter .mark { position: absolute; top: -5px; bottom: -5px; width: 4px; margin-left: -2px; background: #fff; box-shadow: 0 0 4px #000; }
+.jg-meter .mark.in { background: #9cf0b8; }
+.jg-meter b { position: absolute; left: 0; right: 0; top: -12px; height: 4px; background: rgba(255,255,255,.12); }
+.jg-meter b s { display: block; height: 100%; width: 0; background: #e8b547; }
+.jg-fillet { cursor: none; }
+.jg-cut { position: absolute; inset: 0; pointer-events: none; z-index: 12; }
+.jg-cut .chalk { fill: none; stroke: rgba(255,255,255,.8); stroke-width: 2.5; stroke-dasharray: 8 7; filter: drop-shadow(0 0 2px rgba(0,0,0,.8)); }
+.jg-cut .done { fill: none; stroke: rgba(150,20,20,.7); stroke-width: 2; }
+.jg-fillet .knife { z-index: 30; filter: drop-shadow(6px 10px 6px rgba(0,0,0,.5)); }
+.jg-fillet .fishtop.slide, .jg-fillet .fl.slide { transition: transform .45s cubic-bezier(.3,.7,.3,1); }
+.jg-fillet .fishtop.off { transition: transform .5s ease-in, opacity .5s; opacity: 0; }
+.jg-fillet .fl.gone { transition: opacity .5s; opacity: 0; }
+.jg-icepack .icel { transition: opacity .35s; }
+.jg-stamp { position: absolute; z-index: 25; width: 120px; height: 120px; margin: -60px 0 0 -60px; display: grid; place-items: center; border-radius: 50%; opacity: 0; transform: rotate(-14deg) scale(1.3); pointer-events: none;
+    box-shadow: inset 0 0 0 4px rgba(30,70,150,.75); color: rgba(30,70,150,.8); font: 700 13px/1.25 'Kit Plex', sans-serif; text-align: center; direction: ltr; }
+.jg-stamp b { font-size: 24px; letter-spacing: 2px; }
+.jg-stamp.on { opacity: 1; transform: rotate(-14deg) scale(1); transition: transform .12s ease-out, opacity .12s; }
+.jg-stamp.ship { transition: opacity .5s; opacity: 0; }
+
+/* ---- metals */
+.jg-mine { cursor: none; }
+.jg-dark { position: absolute; inset: 0; pointer-events: none; z-index: 20; --mx: 600px; --my: 345px;
+    background: radial-gradient(circle 250px at var(--mx) var(--my), rgba(0,0,0,0) 0, rgba(0,0,0,.15) 110px, rgba(2,2,3,.94) 250px); }
+.jg-mine .pickx { z-index: 25; transform-origin: 70% 90%; }
+.jg-mine .pickx.hitnow { animation: jgswing .22s; }
+@keyframes jgswing { 40% { margin-left: -40px; margin-top: 20px; } }
+.jg-mine .nod { z-index: 10; }
+.jg-mine .nod.fall { transition: transform .8s cubic-bezier(.5,0,1,.6), opacity .8s; opacity: 0; }
+.jg-mine .nod.fade { transition: opacity .7s; opacity: 0; }
+.jg-crack { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; pointer-events: none; z-index: 11; }
+.jg-crack path { fill: none; stroke: rgba(10,8,6,.9); stroke-width: 2.2; stroke-linecap: round; filter: drop-shadow(1px 1px 0 rgba(255,230,190,.25)); }
+.jg-glint { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; pointer-events: none; z-index: 12; animation: jgglint 1.6s ease-in-out infinite;
+    background: radial-gradient(circle, rgba(255,240,200,.95), rgba(255,200,120,.4) 30%, transparent 60%); }
+@keyframes jgglint { 0%, 100% { opacity: .1; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+.jg-belt { position: absolute; left: 0; right: 0; height: 260px; pointer-events: none; z-index: 2; opacity: .5;
+    background: repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 74px, rgba(0,0,0,.55) 74px 77px, rgba(255,255,255,.05) 77px 80px); }
+.jg-sort_ore .rock { z-index: 5; }
+.jg-sort_ore .rock.toss { transition: transform .5s cubic-bezier(.3,.6,.6,1), opacity .5s .1s; opacity: 0; }
+.jg-sort_ore .rock.fade { transition: opacity .4s; opacity: 0; }
+.jg-smelt .cru { z-index: 20; filter: drop-shadow(10px 18px 10px rgba(0,0,0,.55)); }
+.jg-smelt .molt { filter: drop-shadow(0 0 10px rgba(255,130,30,.7)); transition: opacity .2s; }
+.jg-smelt .molt.spill { filter: drop-shadow(0 0 22px rgba(255,90,20,.9)); transform-origin: center; }
+.jg-smelt .molt.short { filter: brightness(.6); }
+.jg-smelt .cast { transition: opacity .8s; }
+.jg-stream { position: absolute; width: 10px; height: 100px; margin-left: -5px; pointer-events: none; z-index: 15; opacity: 0; transition: opacity .1s; border-radius: 5px;
+    background: linear-gradient(180deg, rgba(255,240,170,.95), rgba(255,140,30,.95)); box-shadow: 0 0 14px 4px rgba(255,120,30,.6); }
+.jg-fill { position: absolute; width: 8px; height: 80px; background: rgba(0,0,0,.6); box-shadow: 0 0 0 1px rgba(0,0,0,.8); z-index: 18; opacity: 0; transition: opacity .2s; }
+.jg-fill i { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(0deg, #ff7a1a, #ffd36b); }
+.jg-fill::after { content: ''; position: absolute; left: -6px; right: -6px; top: calc(100% - 85% / 1.05 * 1); height: 2px; background: #9cf0b8; }
+
+/* ---- fabrics */
+.jg-shear { cursor: none; }
+.jg-wool { position: absolute; pointer-events: none; z-index: 6; filter: drop-shadow(3px 6px 5px rgba(0,0,0,.35)); }
+.jg-shear .sheep { z-index: 5; }
+.jg-shear .clip { z-index: 30; }
+.jg-tuft { position: absolute; width: 18px; height: 14px; margin: -7px 0 0 -9px; border-radius: 50%; pointer-events: none; z-index: 7;
+    background: radial-gradient(circle at 40% 40%, #e9e3d2, #c9bfa8 70%, rgba(200,190,170,0)); }
+.jg-weave .shuttle, .jg-weave .reed { z-index: 10; }
+.jg-win { position: absolute; z-index: 31; width: 34px; height: 34px; margin-left: -17px; display: grid; place-items: center; border-radius: 4px; background: #f2f2f2; color: #111; font: 700 18px/1 'Kit Plex', sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.6); pointer-events: none; animation: jgpulse .5s ease-in-out infinite; }
+@keyframes jgpulse { 50% { transform: scale(1.12); } }
+.jg-sew { cursor: ew-resize; }
+.jg-fabric { position: absolute; left: 240px; right: 240px; top: -20px; bottom: -20px; z-index: 2; pointer-events: none; --tint: #2f4f7a;
+    background-color: var(--tint); background-image: url('mg/fabric.webp'); background-size: 360px 360px; background-blend-mode: multiply; box-shadow: 0 0 30px rgba(0,0,0,.5); }
+.jg-seam { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.jg-sew .head { z-index: 10; }

@@ -5,7 +5,7 @@ use_experimental_fxv2_oal 'yes'
 
 name 'exti_jobs'
 author 'EX_Tii Roleplay'
-description 'EX_Tii jobs: job center tablet, HQs with supervisors, tow / garbage / delivery, level jobs (chicken, raisins)'
+description 'EX_Tii jobs: job center tablet, HQs with supervisors, tow / garbage / delivery, level jobs (chicken, raisins, bread, fish, metals, fabrics)'
 version '1.0.0'
 
 shared_scripts {
@@ -40,7 +40,11 @@ files {
     'html/style.css',
     'html/kit.css',
     'html/app.js',
-    'html/minigame.js',
+    'html/jgames.js',
+    'html/jgames.css',
+    'html/jmeta.js',
+    'html/mg/*.webp',
+    'html/mg/sfx/*.ogg',
     'html/logo.png',
     'html/fonts/*.woff2',
 }

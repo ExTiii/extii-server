@@ -75,7 +75,9 @@ end
 
 local function hasAll(step)
     if type(step.take) == 'string' then
-        return (C.have[step.take] or 0) >= 1, step.take, 1
+        local n = C.have[step.take] or 0
+        for item in pairs(step.takeAlso or {}) do n = n + (C.have[item] or 0) end   -- metals: iron / gold bars sell there too
+        return n >= 1, step.take, 1
     end
     for item, need in pairs(step.take or {}) do
         if (C.have[item] or 0) < need then return false, item, need end
@@ -242,15 +244,20 @@ RegisterNUICallback('gameDone', function(data, cb)
     if gameWait then gameWait:resolve(tonumber(data and data.score) or 0) end
 end)
 
+-- returns the score (0..1), or nil when the game never reported back (then nothing is taken)
 function EXJ.playGame(game, count, seconds)
-    gameWait = promise.new()
+    local p = promise.new()
+    gameWait = p
     SendNUIMessage({ action = 'game', game = game, count = count, seconds = seconds })
     SetNuiFocus(true, true)
-    -- never stuck: the game ends by itself after its time (+ a margin)
-    SetTimeout((seconds + 8) * 1000, function() if gameWait then gameWait:resolve(0) end end)
-    local score = Citizen.Await(gameWait)
-    gameWait = nil
+    -- never stuck: if the page never answers, give up after its time (+ a margin). Only this game's own wait.
+    SetTimeout((seconds + 8) * 1000, function()
+        if gameWait == p then SendNUIMessage({ action = 'gameStop' }); p:resolve(false) end
+    end)
+    local score = Citizen.Await(p)
+    if gameWait == p then gameWait = nil end
     SetNuiFocus(false, false)
+    if score == false then return nil end
     return score
 end
 
@@ -289,6 +296,7 @@ local function actBatch(index, spot)
         score = EXJ.playGame(step.game, info.count, info.seconds)
         FreezeEntityPosition(cache.ped, false)
         ClearPedTasks(cache.ped)
+        if score == nil then EXJ.notify(ERR.failed, 'error') C.busy = false return end   -- the game didn't run: nothing taken
     end
     local done, r, why = lib.callback.await('exti_jobs:server:batchFinish', false, info.token, score)
     if done and step.kind == 'sellall' then

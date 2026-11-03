@@ -17,7 +17,7 @@ return {
     returnBonus = { base = 65, perRound = 33, max = 260 },
 
     -- jobs anyone may switch away from at the job center (police, EMS and other team jobs can't)
-    freeJobs = { unemployed = true, tow = true, garbage = true, delivery = true, chicken = true, raisin = true, taxi = true, bus = true, trucker = true, reporter = true, vineyard = true },
+    freeJobs = { unemployed = true, tow = true, garbage = true, delivery = true, chicken = true, raisin = true, bread = true, fishing = true, metals = true, fabrics = true, taxi = true, bus = true, trucker = true, reporter = true, vineyard = true },
 
     -- the order on the tablet
     order = { 'delivery', 'garbage', 'tow', 'chicken', 'raisin', 'bread', 'fishing', 'metals', 'fabrics' },
