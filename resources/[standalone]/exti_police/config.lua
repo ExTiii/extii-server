@@ -327,7 +327,8 @@ Config.dispatch = {
     },
     kindCodes = { phone = { code = '911', icon = 'phone' }, chat = { code = '911', icon = 'phone' }, alarm = { code = '10-90', icon = 'bell' } },
     cardSeconds = 12,        -- a card stays this long (urgent ones a bit longer)
-    blipSeconds = 180,       -- the flashing map icon at the call
+    blipSeconds = 180,
+    recentSeconds = 120,   -- coming on duty: the open calls of the last 2 minutes pop up too (no beep)       -- the flashing map icon at the call
 }
 
 -- CCTV (الكاميرات): the tablet looks through them. The list builds itself: one camera in every

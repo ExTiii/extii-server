@@ -156,6 +156,20 @@ cb('calls', function(source)
     return { calls = list(source) }
 end)
 
+-- an officer who just came on duty: the calls of the last few minutes still open, as cards (oldest first)
+cb('dispatchRecent', function(source)
+    local player = getPlayer(source)
+    if not onDuty(player) then return false, 'off_duty' end
+    local out, t = {}, os.time()
+    for _, c in pairs(calls) do
+        if t - c.time <= (D.recentSeconds or 120) then
+            local v = cardView(c); v.ago = t - c.time; out[#out + 1] = v
+        end
+    end
+    table.sort(out, function(a, b) return a.time < b.time end)
+    return out
+end)
+
 cb('callTake', function(source, id)
     local player = getPlayer(source)
     if not onDuty(player) then return false, 'off_duty' end

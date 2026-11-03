@@ -83,7 +83,8 @@ local function addBlip(c)
     end)
 end
 
-RegisterNetEvent('exti_police:client:dispatchCard', function(card)
+-- quiet = a call from before you came on duty: no beep, and it keeps its real age
+local function addCard(card, quiet)
     if type(card) ~= 'table' or not card.id or not card.x then return end
     local old = find(card.id)
     if old then removeBlip(old) end
@@ -92,15 +93,16 @@ RegisterNetEvent('exti_police:client:dispatchCard', function(card)
     local c = {
         id = card.id, code = card.code, icon = card.icon, urgent = card.urgent == true, label = card.label, text = card.text,
         x = card.x + 0.0, y = card.y + 0.0, z = (card.z or 0.0) + 0.0, takenBy = card.takenBy or false, mine = false,
-        street = street, area = area, at = now(), shownUntil = now() + (D.cardSeconds or 12) * 1000 * (card.urgent and 1.5 or 1),
+        street = street, area = area, at = now() - (tonumber(card.ago) or 0) * 1000, shownUntil = now() + (D.cardSeconds or 12) * 1000 * (card.urgent and 1.5 or 1),
     }
     table.insert(list, 1, c)
     while #list > MAX do removeBlip(list[#list]); table.remove(list) end
     addBlip(c)
-    SendNUIMessage({ action = 'dispatch:sound', urgent = c.urgent })
+    if not quiet then SendNUIMessage({ action = 'dispatch:sound', urgent = c.urgent }) end
     if flip.on then flip.index = 1 end
     tick()
-end)
+end
+RegisterNetEvent('exti_police:client:dispatchCard', function(card) addCard(card, false) end)
 
 RegisterNetEvent('exti_police:client:dispatchTaken', function(id, name, by)
     local c = find(id); if not c then return end
@@ -164,6 +166,26 @@ local function clearAll()
     list = {}; flip.on = false
     SendNUIMessage({ action = 'dispatch:render', cards = {} })
 end
-RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job) if not (job and job.name == 'police' and job.onduty) then clearAll() end end)
-RegisterNetEvent('QBCore:Client:SetDuty', function(on) if not on then clearAll() end end)
-RegisterNetEvent('qbx_core:client:playerLoggedOut', clearAll)
+-- coming on duty: the calls of the last 2 minutes that are still open pop up too (once, without a beep)
+local wasOn = false
+local function dutyNow(on)
+    if not on then wasOn = false; clearAll(); return end
+    if wasOn then return end
+    wasOn = true
+    SetTimeout(800, function()
+        if not wasOn then return end
+        local cards = lib.callback.await('exti_police:server:tab_dispatchRecent', false)
+        if type(cards) ~= 'table' then return end
+        for _, card in ipairs(cards) do
+            if not find(card.id) then addCard(card, true) end
+        end
+    end)
+end
+local function jobOn(job) return job and job.name == 'police' and job.onduty == true end
+RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job) dutyNow(jobOn(job)) end)
+RegisterNetEvent('QBCore:Client:SetDuty', function(on) local j = QBX.PlayerData and QBX.PlayerData.job; dutyNow(on == true and j ~= nil and j.name == 'police') end)
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function() SetTimeout(1500, function() dutyNow(jobOn(QBX.PlayerData and QBX.PlayerData.job)) end) end)
+RegisterNetEvent('qbx_core:client:playerLoggedOut', function() wasOn = false; clearAll() end)
+AddEventHandler('onResourceStart', function(res)
+    if res == GetCurrentResourceName() and QBX and QBX.PlayerData and jobOn(QBX.PlayerData.job) then dutyNow(true) end
+end)
