@@ -66,7 +66,7 @@ lib.callback.register('exti_gangs:server:washBox', function(source, name)
     local ready, waiting = 0, 0
     for _, o in ipairs(list) do ready = ready + o.ready; waiting = waiting + o.left end
     return true, { label = g.label, cut = g.settings.washCut, ready = ready, waiting = waiting, orders = #list, maxOrders = W.openOrders,
-                   min = W.dropMin, max = W.dropMax, dirty = ox:GetItemCount(source, 'black_money') or 0, locked = g.locked }
+                   min = W.dropMin, max = W.dropMax, dirty = (ox:GetItemCount(source, 'black_money') or 0) + (ox:GetItemCount(source, 'marked_bills') or 0), locked = g.locked }
 end)
 
 lib.callback.register('exti_gangs:server:washDrop', function(source, name, amount)
@@ -84,12 +84,24 @@ lib.callback.register('exti_gangs:server:washDrop', function(source, name, amoun
         if #myOrders(g, cid) >= W.openOrders then return false, 'orders' end
         local total = queueTotal(g)
         if total + amount > W.queueMax then return false, 'queue' end
-        if (ox:GetItemCount(source, 'black_money') or 0) < amount then return false, 'nomoney' end
-        if not ox:RemoveItem(source, 'black_money', amount) then return false, 'nomoney' end
+        -- dirty money first, then marked bills from the heists (both wash the same way)
+        local dirty, marked = ox:GetItemCount(source, 'black_money') or 0, ox:GetItemCount(source, 'marked_bills') or 0
+        if dirty + marked < amount then return false, 'nomoney' end
+        local fromDirty = math.min(dirty, amount)
+        local fromMarked = amount - fromDirty
+        if fromDirty > 0 and not ox:RemoveItem(source, 'black_money', fromDirty) then return false, 'nomoney' end
+        if fromMarked > 0 and not ox:RemoveItem(source, 'marked_bills', fromMarked) then
+            if fromDirty > 0 then ox:AddItem(source, 'black_money', fromDirty) end
+            return false, 'nomoney'
+        end
         local cut = g.settings.washCut
         local id = MySQL.insert.await('INSERT INTO `exti_gang_wash` (`gang`, `citizenid`, `name`, `dirty`, `left`, `cut`, `created`) VALUES (?, ?, ?, ?, ?, ?, ?)',
             { g.name, cid, GANG.charName(p), amount, amount, cut, os.time() })
-        if not id then ox:AddItem(source, 'black_money', amount); return false, 'failed' end
+        if not id then
+            if fromDirty > 0 then ox:AddItem(source, 'black_money', fromDirty) end
+            if fromMarked > 0 then ox:AddItem(source, 'marked_bills', fromMarked) end
+            return false, 'failed'
+        end
         GANG.log(g, GANG.charName(p), 'wash_drop', ('$%d · النسبة %d%%'):format(amount, cut))
         GANG.toGang(g, ('طلب غسيل جديد في الصندوق: $%d'):format(amount), 'inform', 1)
         return true, { amount = amount, back = amount - math.floor(amount * cut / 100), cut = cut }

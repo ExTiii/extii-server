@@ -230,6 +230,7 @@ local function jail(src, minutes, officerName, chargeId)
     tellClient(src, inmate)
     POL.log(nil, 'jailed', ('%s: %d دقيقة (%s)'):format(name, inmate.minutes, officerName or ''))
     lib.print.info(('[prison] %s (%s) jailed %d min by %s'):format(name, cid, inmate.minutes, officerName or '?'))
+    TriggerEvent('exti_police:server:jailed', src, inmate.minutes)   -- (exti_heists: an arrest costs criminal Rep)
     return true
 end
 

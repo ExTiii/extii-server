@@ -1,0 +1,60 @@
+/* =====================================================================
+   EX_Tii gangs — the minigames (workshop look). The scene is a real render, 1200 x 690 "scene pixels",
+   scaled to the screen; everything moving is placed in those same pixels.
+   (No backdrop-filter: FiveM draws it as a black box.)
+   ===================================================================== */
+.mg { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at center, rgba(0,0,0,.35), rgba(0,0,0,.7)); animation: mgin .2s ease-out; }
+@keyframes mgin { from { opacity: 0; } }
+.mg-wrap { position: relative; width: calc(1200px * var(--k)); }
+.mg-top { display: flex; align-items: baseline; gap: 12px; margin: 0 2px 8px; color: #f1eee8; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+.mg-top h3 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: .2px; }
+.mg-top .where { font-size: 13px; color: #b8b3a9; }
+.mg-top .cnt { margin-inline-start: auto; font-size: 15px; font-weight: 600; direction: ltr; font-variant-numeric: tabular-nums; }
+
+.mg-stage-box { position: relative; width: calc(1200px * var(--k)); height: calc(690px * var(--k)); overflow: hidden; border-radius: 3px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.9), 0 24px 60px rgba(0,0,0,.65); background: #111; }
+.mg-stage { position: absolute; left: 0; top: 0; width: 1200px; height: 690px; transform: scale(var(--k)); transform-origin: 0 0; user-select: none; }
+.mg-stage > img.bg { position: absolute; inset: 0; width: 1200px; height: 690px; pointer-events: none; }
+.mg-stage .spr { position: absolute; left: 0; top: 0; width: auto; height: auto; max-width: none; max-height: none; pointer-events: none; will-change: transform; }
+.mg-stage .hit { position: absolute; border-radius: 50%; cursor: pointer; }
+.mg-stage.jolt { animation: jolt .28s; }
+@keyframes jolt { 20% { transform: scale(var(--k)) translate(5px, -2px); } 45% { transform: scale(var(--k)) translate(-4px, 2px); } 70% { transform: scale(var(--k)) translate(2px, -1px); } }
+/* a soft work-light falloff over every scene */
+.mg-stage::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 75% 85% at 45% 40%, transparent 55%, rgba(0,0,0,.38)); }
+
+/* the bar under the scene: the hint and GTA-style key prompts */
+.mg-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 8px; padding: 0 2px; min-height: 30px; color: #d9d5cc; font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,.9); }
+.mg-bar .hint { flex: 1 1 320px; }
+.mg-bar .keys { display: flex; align-items: center; gap: 12px; direction: rtl; }
+.mg-key { display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px 4px 7px; border-radius: 2px; background: rgba(0,0,0,.72); font-size: 13px; color: #fff; text-shadow: none; white-space: nowrap; }
+.mg-key kbd { min-width: 22px; height: 22px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 3px; background: #f2f2f2; color: #111; font: 700 12px/1 'Kit Plex', sans-serif; direction: ltr; }
+.mg-key kbd.mouse { width: 16px; min-width: 16px; height: 22px; padding: 0; border-radius: 8px; position: relative; }
+.mg-key kbd.mouse::before { content: ''; position: absolute; left: 7px; top: 3px; width: 2px; height: 6px; border-radius: 1px; background: #111; }
+.mg-prog { position: relative; height: 3px; margin-top: 6px; background: rgba(255,255,255,.12); }
+.mg-prog i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--gc, #e8b547); transition: width .25s ease-out; }
+
+html, body { margin: 0; height: 100%; background: transparent !important; overflow: hidden; user-select: none; font-family: 'Kit Plex', sans-serif; }
+.hidden { display: none !important; }
+.mg-stage.jolt-s { animation: jolts .16s; }
+@keyframes jolts { 30% { transform: scale(var(--k)) translate(2px, -1px); } 65% { transform: scale(var(--k)) translate(-2px, 1px); } }
+
+/* ---------------------------------------------------------------- lockpick */
+.h-lockpick .spr { filter: drop-shadow(2px 3px 2px rgba(0,0,0,.55)); }
+.h-lockpick .m-pick { filter: drop-shadow(3px 5px 3px rgba(0,0,0,.6)); }
+.h-lockpick .m-tw { transition: transform .12s ease-out; }
+.h-lockpick .m-ten { position: absolute; left: 30px; bottom: 26px; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: rgba(0,0,0,.6); color: #e9e6df; font-size: 14px; border-radius: 2px; }
+.h-lockpick .m-ten i { width: 10px; height: 10px; border-radius: 50%; background: #3a3a3a; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+.h-lockpick .m-ten.on i { background: #e8b547; box-shadow: 0 0 10px rgba(232,181,71,.8); }
+.h-lockpick .m-warn { position: absolute; left: 0; right: 0; top: 16px; text-align: center; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 3px #000, 0 0 12px #000; opacity: 0; transition: opacity .2s; }
+.h-lockpick .m-warn.on { opacity: 1; }
+
+/* ---------------------------------------------------------------- safe dial */
+.h-safedial .m-dial { filter: drop-shadow(4px 8px 6px rgba(0,0,0,.55)); cursor: grab; pointer-events: auto; }
+.h-safedial .m-lamps { position: absolute; display: flex; gap: 14px; }
+.h-safedial .m-lamps i { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5a1f18, #250b08); box-shadow: 0 0 0 2px #0c0c0c, inset 0 -2px 3px rgba(0,0,0,.6); }
+.h-safedial .m-lamps i.on { background: radial-gradient(circle at 35% 30%, #c6ffcf, #2fd36b 55%, #0c6a2c); box-shadow: 0 0 0 2px #0c0c0c, 0 0 14px rgba(60,230,120,.75); }
+.h-safedial .m-steth { position: absolute; left: 26px; bottom: 22px; width: 250px; height: 92px; border-radius: 4px; background: #070b08; box-shadow: 0 0 0 2px #1a1d1b, 0 0 0 4px #050505, inset 0 0 30px rgba(0,0,0,.9); overflow: hidden; }
+.h-safedial .m-steth canvas { position: absolute; inset: 0; width: 250px; height: 92px; }
+.h-safedial .m-steth b { position: absolute; left: 8px; top: 5px; font: 600 10px 'Kit Plex', monospace; letter-spacing: 1px; color: rgba(120,255,160,.55); direction: ltr; }
+.h-safedial .m-dir { position: absolute; font-size: 18px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px #000, 0 0 10px #000; white-space: nowrap; }
+.h-safedial .m-read { position: absolute; padding: 3px 9px; background: rgba(0,0,0,.7); color: #f3efe6; font: 700 18px 'Kit Plex', monospace; direction: ltr; border-radius: 2px; }

@@ -20,6 +20,7 @@
         mask: '<path d="M4 8.5c2.5-2 13.5-2 16 0 0 6-3.5 10-8 10s-8-4-8-10z"/><path d="M7.5 11.5h3M13.5 11.5h3"/>',
         plate: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 12h10"/>',
         arrow: '<path d="M12 20V5M6 11l6-6 6 6"/>',
+        store: '<path d="M4 10v10h16V10M3 10l1.5-5h15L21 10z"/><path d="M9 20v-5h6v5"/>',
         cam: '<path d="M3 8h11l4-3v12l-4-3H3z"/><path d="M7 17v3"/>',
     };
     const svg = (n, s = 15) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICON[n] || ICON.bell}</svg>`;

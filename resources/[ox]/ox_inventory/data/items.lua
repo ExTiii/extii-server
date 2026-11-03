@@ -1229,4 +1229,82 @@ return {
         weight = 1200,
         description = 'قطعة عصابة غسيل الأموال: منظّف وأشرطة رزم. واحدة لكل 1,000$ تُغسل',
     },
+
+    -- EX_Tii heists (robberies): hacking USBs, tools, loot
+    ['usb_green'] = {
+        label = 'فلاشة اختراق خضراء (Green USB)',
+        weight = 50,
+        description = 'تُستعمل مرة واحدة: الواجهة الهادئة لمحل المجوهرات وبنوك فليكا. تسقط من الخزائن وتُباع عند الوسيط',
+        client = { image = 'nui://exti_heists/html/items/usb_green.png' },
+    },
+
+    ['usb_blue'] = {
+        label = 'فلاشة اختراق زرقاء (Blue USB)',
+        weight = 50,
+        description = 'تُستعمل مرة واحدة: بيت الكارتيل والقافلة وبنك باليتو',
+        client = { image = 'nui://exti_heists/html/items/usb_blue.png' },
+    },
+
+    ['usb_red'] = {
+        label = 'فلاشة اختراق حمراء (Red USB)',
+        weight = 50,
+        description = 'تُستعمل مرة واحدة: باسيفيك واليخت. لا تُشترى، تُكسب',
+        client = { image = 'nui://exti_heists/html/items/usb_red.png' },
+    },
+
+    ['usb_gold'] = {
+        label = 'فلاشة اختراق ذهبية (Gold USB)',
+        weight = 50,
+        description = 'تُستعمل مرة واحدة: الضربة الكبرى. لا تُشترى، تُكسب',
+        client = { image = 'nui://exti_heists/html/items/usb_gold.png' },
+    },
+
+    ['marked_bills'] = {
+        label = 'أوراق نقدية معلّمة (Marked Bills)',
+        weight = 0,
+        description = 'من البنوك والشاحنات المصفّحة. تُغسل عند عصابة غسيل الأموال، والشرطة تتعقّبها ما دامت معك',
+        client = { image = 'nui://exti_heists/html/items/marked_bills.png' },
+    },
+
+    ['drill_bit'] = {
+        label = 'رأس مثقاب (Drill Bit)',
+        weight = 150,
+        description = 'ينكسر إذا سخن المثقاب. من متجر الأدوات',
+        client = { image = 'nui://exti_heists/html/items/drill_bit.png' },
+    },
+
+    ['tow_chain'] = {
+        label = 'سلسلة سحب (Tow Chain)',
+        weight = 4000,
+        description = 'تُربط بين شاحنة بيك أب وجهاز صراف لاقتلاعه. من متجر الأدوات',
+        client = { image = 'nui://exti_heists/html/items/tow_chain.png' },
+    },
+
+    ['zip_ties'] = {
+        label = 'أربطة بلاستيكية (Zip Ties)',
+        weight = 50,
+        description = 'لتقييد الرهائن. من متجر الأدوات',
+        client = { image = 'nui://exti_heists/html/items/zip_ties.png' },
+    },
+
+    ['stolen_laptop'] = {
+        label = 'حاسوب مسروق (Stolen Laptop)',
+        weight = 2500,
+        description = 'يُباع للمصرّف',
+        client = { image = 'nui://exti_heists/html/items/stolen_laptop.png' },
+    },
+
+    ['stolen_console'] = {
+        label = 'جهاز ألعاب مسروق (Stolen Console)',
+        weight = 3000,
+        description = 'يُباع للمصرّف',
+        client = { image = 'nui://exti_heists/html/items/stolen_console.png' },
+    },
+
+    ['painting'] = {
+        label = 'لوحة فنية (Painting)',
+        weight = 6000,
+        description = 'ثقيلة: تُحمل بيديك ببطء. تُباع للمصرّف',
+        client = { image = 'nui://exti_heists/html/items/painting.png' },
+    },
 }

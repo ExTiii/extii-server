@@ -324,6 +324,7 @@ Config.dispatch = {
         { match = 'بيع مخدرات', code = '10-66', icon = 'pill' },
         { match = 'كتابة على الجدران', code = '10-31', icon = 'spray' },
         { match = 'بلاغ مجهول', code = '10-31', icon = 'eye' },
+        { match = 'سطو', code = '10-90', icon = 'store', urgent = true },   -- (exti_heists: stores; more specific robberies go above this)
     },
     kindCodes = { phone = { code = '911', icon = 'phone' }, chat = { code = '911', icon = 'phone' }, alarm = { code = '10-90', icon = 'bell' } },
     cardSeconds = 12,        -- (not used now: a card stays on screen until a cop takes the call or it is closed)

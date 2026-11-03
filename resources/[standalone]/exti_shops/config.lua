@@ -88,6 +88,11 @@ Config.types = {
             { name = 'spray_can', price = 150, category = 'tools', max = 5 },
             { name = 'weed_nutrition', price = 60, category = 'tools', max = 5 },   -- (the Weed gang's fertilizer)
             { name = 'scrub_brush', price = 40, category = 'tools', max = 2, metadata = { uses = 3, description = 'استعمالات متبقية: 3' } },
+            -- EX_Tii heists: what a robbery needs from a normal shop (lockpicks and C4 only come from the Chop Shop)
+            { name = 'drill', price = 1800, category = 'tools', max = 1 },
+            { name = 'drill_bit', price = 120, category = 'tools', max = 5 },
+            { name = 'tow_chain', price = 650, category = 'tools', max = 1 },
+            { name = 'zip_ties', price = 30, category = 'tools', max = 5 },
         },
     },
 

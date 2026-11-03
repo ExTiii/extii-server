@@ -197,6 +197,12 @@ lib.callback.register('exti_admin:gangs', function(src)
     return { gangs = ok and list or {}, places = ok2 and places or {} }
 end)
 
+lib.callback.register('exti_admin:heist', function(src)
+    if not can(src, 'test') or GetResourceState('exti_heists') ~= 'started' then return false end
+    local ok, info = pcall(function() return exports.exti_heists:AdminInfo(src) end)
+    return ok and info or false
+end)
+
 lib.callback.register('exti_admin:logs', function(src, q)
     if not can(src, 'logs') then return false end
     q = type(q) == 'string' and q:sub(1, 60) or ''
@@ -500,6 +506,13 @@ A.mycool = { 'test', function(src)
     local n = 0
     pcall(function() n = exports.exti_gangs:AdminClearCooldowns(gm and gm.gang or nil, cid) end)
     log(src, 'test_cooldowns', tostring(n)); return true, ('أُزيلت %d مدة انتظار عنك وعن عصابتك'):format(n)
+end }
+A.heist = { 'test', function(src, d)
+    if GetResourceState('exti_heists') ~= 'started' then return false, 'سكربت السطو لا يعمل' end
+    local ok, res, msg = pcall(function() return exports.exti_heists:Admin(src, tostring(d.what or ''), d.value) end)
+    if not ok then return false, 'خطأ في السيرفر' end
+    log(src, 'heist_' .. tostring(d.what), nil, tostring(d.value or ''))
+    return res, msg
 end }
 A.fakecall = { 'test', function(src, d)
     local c = GetEntityCoords(GetPlayerPed(src))

@@ -246,6 +246,12 @@ local function openPanel(place)
     if place.kind.opens == 'hospital' then return openHospital(place) end
     if place.kind.opens then return openAppearance(place) end
     if ui.open or ui.opening then return end
+    -- EX_Tii heists: a store being robbed (or just robbed) is closed
+    local robbed = GlobalState['exti_heists:stores']
+    if robbed and robbed[place.index] then
+        lib.notify({ type = 'error', description = 'المحل مغلق الآن', position = 'top' })
+        return
+    end
     ui.opening = true
     local data = lib.callback.await('exti_shops:server:open', false, place.index)
     ui.opening = false
@@ -471,4 +477,22 @@ CreateThread(function()
         end
         Wait(sleep)
     end
+end)
+
+---------------------------------------------------------------------------
+-- EX_Tii heists: the store robbery uses our shopkeepers (each player's game has its own copy)
+---------------------------------------------------------------------------
+local function placeOf(index)
+    for i = 1, #places do if places[i].index == index then return places[i] end end
+end
+exports('Stores', function() return Config.stores end)
+exports('Clerk', function(index) local p = placeOf(index); return p and p.ped or nil end)
+-- back to normal after a robbery: stand where he stands, doing what he does
+exports('ClerkReset', function(index)
+    local p = placeOf(index)
+    if not p or not p.ped or not DoesEntityExist(p.ped) then return end
+    local c = p.store.clerk
+    ClearPedTasksImmediately(p.ped)
+    SetEntityHeading(p.ped, c.w or 0.0)
+    if p.kind.clerk.scenario then TaskStartScenarioInPlace(p.ped, p.kind.clerk.scenario, 0, true) end
 end)

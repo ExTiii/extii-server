@@ -270,6 +270,11 @@
             <div class="row" style="margin-top:10px"><button class="btn acc" data-cool>صفّر كل أوقات الانتظار عني وعن عصابتي</button></div></div>
           <div class="card"><h3>الشرطة</h3><div class="row"><button class="btn" data-cop="1">اجعلني شرطيًا في الخدمة</button><button class="btn" data-cop="0">رجّعني مدنيًا</button></div>
             <div class="row"><button class="btn" data-call="theft">بلاغ سرقة سيارة هنا</button><button class="btn" data-call="shots">بلاغ إطلاق نار هنا</button><button class="btn" data-call="call">بلاغ 911 هنا</button></div></div>
+          <div class="card" id="hcard"><h3>السطو</h3><div class="mute" id="hinfo">...</div>
+            <div class="row"><span class="mute">السمعة:</span>${[1, 2, 3, 4, 7, 10].map((n) => `<button class="chip" data-hl="${n}">${n}</button>`).join('')}</div>
+            <div class="row"><span class="mute">المهارات:</span><button class="chip" data-hs="1">كلها 1</button><button class="chip" data-hs="3">كلها 3</button><button class="chip" data-hs="5">كلها 5</button></div>
+            <div class="row"><span class="mute">الوضع:</span><button class="chip" data-hf="auto">طبيعي</button><button class="chip" data-hf="police">بالشرطة</button><button class="chip" data-hf="npc">بلا شرطة</button></div>
+            <div class="row"><button class="btn" data-hx="kit">عُدّة السطو</button><button class="btn" data-hx="heat">أزل الملاحقة عني</button><button class="btn acc" data-hx="cooldowns">صفّر انتظار السطو</button></div></div>
           <div class="card"><h3>نفسي بسرعة</h3><div class="row"><button class="btn ok" data-me="revive">أنعشني</button><button class="btn ok" data-me="heal">عالجني</button>
             <button class="btn" data-money="10000">+10,000 كاش لي</button><button class="btn" data-time="12">ظهر</button><button class="btn" data-time="0">ليل</button></div></div>
           <div class="card" style="grid-column:1/-1"><h3>انتقل إلى</h3><div class="row">${((gangs && gangs.places) || []).map((p) => `<button class="chip" data-hq="${p.x},${p.y},${p.z}">${esc(p.label)}</button>`).join('') || '<span class="mute">لا أماكن بعد</span>'}</div></div></div>`;
@@ -282,6 +287,20 @@
         pg.querySelectorAll('[data-money]').forEach((b) => b.onclick = () => act('money', { self: true, amount: Number(b.dataset.money), account: 'cash' }));
         pg.querySelectorAll('[data-time]').forEach((b) => b.onclick = () => act('time', { hour: Number(b.dataset.time), minute: 0 }));
         pg.querySelectorAll('[data-hq]').forEach((b) => b.onclick = () => { const [x, y, z] = b.dataset.hq.split(',').map(Number); self('coords', { c: { x, y, z } }); });
+        // the robbery card
+        const MODE = { auto: 'طبيعي', police: 'بالشرطة دائمًا', npc: 'بلا شرطة دائمًا' };
+        const hload = async () => {
+            const h = await fetchX('heist');
+            const el = document.getElementById('hinfo'); if (!el) return;
+            if (!h) { el.textContent = 'سكربت السطو لا يعمل'; return; }
+            el.innerHTML = `سمعتك <b>${h.level}</b> (${h.xp} XP) · أقفال ${h.lockpick} · اختراق ${h.hacking} · كسر ${h.breaching}${h.heat > 0 ? ` · <b style="color:var(--bad)">ملاحَق ${Math.ceil(h.heat / 60)} د</b>` : ''}<br>شرطة محسوبة ${h.cops} · المطلوب: الدرجة 1 = ${h.need1}، الدرجة 4 = ${h.need4}، الدرجة 7 = ${h.need7} · الوضع: ${MODE[h.force] || h.force}`;
+        };
+        const hact = async (what, value) => { await act('heist', { what, value }); hload(); };
+        pg.querySelectorAll('[data-hl]').forEach((b) => b.onclick = () => hact('level', Number(b.dataset.hl)));
+        pg.querySelectorAll('[data-hs]').forEach((b) => b.onclick = async () => { for (const k of ['lockpick', 'hacking', 'breaching']) await act('heist', { what: k, value: Number(b.dataset.hs) }); hload(); });
+        pg.querySelectorAll('[data-hf]').forEach((b) => b.onclick = () => hact('force', b.dataset.hf));
+        pg.querySelectorAll('[data-hx]').forEach((b) => b.onclick = () => hact(b.dataset.hx));
+        hload();
     }
 
     // ------------------------------------------------------------- LOGS & BANS
