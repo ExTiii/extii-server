@@ -30,5 +30,6 @@ files {
     'html/kit.css',
     'html/app.js',
     'html/sign.html',
+    'html/sign.png',
     'html/fonts/*.woff2',
 }

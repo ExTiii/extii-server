@@ -1,6 +1,6 @@
 -- =====================================================================
 -- EX_Tii shops (game side): the notice on the wall behind every Ammu-Nation clerk
--- ("we don't sell guns or ammo any more"). The page html/sign.html is drawn on the wall.
+-- ("we don't sell guns or ammo any more"). The picture html/sign.png (made from html/sign.html) is drawn on the wall.
 -- Where it goes: found by itself (the wall behind the clerk), or put by an admin with /ammusign.
 -- =====================================================================
 local RES = GetCurrentResourceName()
@@ -11,22 +11,16 @@ local DRAW = 18.0                 -- shows from this close
 local placed = GlobalState['exti_shops:signs'] or {}
 AddStateBagChangeHandler('exti_shops:signs', 'global', function(_, _, v) placed = v or {} end)
 
-local ready, dui = false, nil
+-- the notice is a plain picture (html/sign.png, drawn from html/sign.html) loaded once: no web page in the game,
+-- which could crash the game when someone arrives at a shop before it finished loading
+local ready = false
 local function texture()
     if ready then return true end
-    if dui then return false end
     local txd = CreateRuntimeTxd(TXD)
-    dui = CreateDui(('nui://%s/html/sign.html'):format(RES), 512, 384)
-    CreateThread(function()
-        local tries = 0
-        while not IsDuiAvailable(dui) and tries < 100 do Wait(50); tries = tries + 1 end
-        CreateRuntimeTextureFromDuiHandle(txd, TEX, GetDuiHandle(dui))
-        Wait(800)   -- let the page draw
-        ready = true
-    end)
-    return false
+    CreateRuntimeTextureFromImage(txd, TEX, 'html/sign.png')
+    ready = true
+    return true
 end
-AddEventHandler('onResourceStop', function(r) if r == RES and dui then DestroyDui(dui) end end)
 
 local function quad(p, n)
     local right = vec3(-n.y, n.x, 0.0)
