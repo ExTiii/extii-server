@@ -32,6 +32,19 @@ local function callView(c, src)
     }
 end
 
+-- the card that pops up for officers: the call + its code and icon
+local function codeOf(c)
+    for _, k in ipairs(D.codes or {}) do
+        if type(c.label) == 'string' and c.label:find(k.match, 1, true) then return k end
+    end
+    return (D.kindCodes or {})[c.kind] or { code = '10-90', icon = 'bell' }
+end
+local function cardView(c)
+    local k = codeOf(c)
+    return { id = c.id, code = k.code, icon = k.icon, urgent = k.urgent == true, label = c.label, text = c.text, number = c.number,
+        x = c.coords.x, y = c.coords.y, z = c.coords.z, time = c.time, takenBy = c.takenByName }
+end
+
 local function openCalls()
     local n = 0
     for _ in pairs(calls) do n = n + 1 end
@@ -68,12 +81,14 @@ local function addCall(data)
     end
     -- the same alert the phone shows (blip + notification + the phone's services list)
     if data.alert ~= false then
-        tellCops('npwd_city:client:serviceAlert', {
+        -- the phone keeps it in its list quietly; the card below is what the officer sees and hears
+        tellCops('npwd_city:client:serviceAlert', { quiet = true,
             id = ('911-%d-%d'):format(c.id, c.time), service = 'police', label = 'الشرطة', blip = 'بلاغ للشرطة', sprite = 526, color = 38,
             number = c.number or '', message = c.text or '', x = coords.x, y = coords.y, z = coords.z, time = c.time,
         })
     end
     tellCops('exti_police:client:callsChanged', true)
+    if data.alert ~= false then tellCops('exti_police:client:dispatchCard', cardView(c)) end
     return c.id
 end
 exports('AddCall', addCall)
@@ -152,6 +167,7 @@ cb('callTake', function(source, id)
         c.takenBy, c.takenByName = source, nameOf(player)
     end
     tellCops('exti_police:client:callsChanged')
+    tellCops('exti_police:client:dispatchTaken', c.id, c.takenByName or false, c.takenBy)
     return { calls = list(source), call = callView(c, source) }
 end)
 
@@ -163,6 +179,7 @@ cb('callClose', function(source, id)
     calls[c.id] = nil
     if c.caller and getPlayer(c.caller) then notify(c.caller, 'inform', 'أغلقت الشرطة بلاغك') end
     tellCops('exti_police:client:callsChanged')
+    tellCops('exti_police:client:dispatchClosed', c.id)
     return { calls = list(source) }
 end)
 

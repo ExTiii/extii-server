@@ -170,6 +170,14 @@ end)
 RegisterNetEvent('npwd_city:client:serviceAlert', function(alert)
     if type(alert) ~= 'table' or not alert.x then return end
 
+    -- EX_Tii: a quiet alert (police calls: exti_police shows its own call card) only goes in the list
+    if alert.quiet then
+        alert.zone = zoneLabel(alert.x, alert.y, alert.z)
+        table.insert(alerts, 1, alert)
+        while #alerts > Config.AlertsKept do table.remove(alerts) end
+        return
+    end
+
     local blip = AddBlipForCoord(alert.x, alert.y, alert.z)
     SetBlipSprite(blip, alert.sprite or 280)
     SetBlipColour(blip, alert.color or 1)

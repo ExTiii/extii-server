@@ -34,6 +34,7 @@ client_scripts {
     'client/prison.lua',
     'client/cctv.lua',
     'client/doors.lua',
+    'client/dispatch.lua',
 }
 
 server_scripts {
@@ -79,4 +80,7 @@ files {
     'html/pt/*.js',
     'html/pt/tablet.css',
     'html/pt/img/map.jpg',
+    'html/dispatch.js',
+    'html/dispatch.css',
+    'html/sfx/*.ogg',
 }

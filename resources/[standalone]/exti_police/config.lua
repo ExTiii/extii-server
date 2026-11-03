@@ -315,6 +315,19 @@ Config.dispatch = {
     cooldown = 45,           -- seconds between two /911 of the same player
     textLength = 160,
     labels = { phone = 'بلاغ هاتفي', chat = 'بلاغ 911', alarm = 'إنذار' },
+    -- the call card that pops up for officers (like NoPixel's dispatch): the code shown for a call,
+    -- picked by the first words of its title (urgent = red card + the urgent radio sound)
+    codes = {
+        { match = 'إطلاق نار', code = '10-71', icon = 'gun', urgent = true },
+        { match = 'سرقة مركبة شرطة', code = '10-99', icon = 'car', urgent = true },
+        { match = 'سرقة سيارة', code = '10-16', icon = 'car' },
+        { match = 'بيع مخدرات', code = '10-66', icon = 'pill' },
+        { match = 'كتابة على الجدران', code = '10-31', icon = 'spray' },
+        { match = 'بلاغ مجهول', code = '10-31', icon = 'eye' },
+    },
+    kindCodes = { phone = { code = '911', icon = 'phone' }, chat = { code = '911', icon = 'phone' }, alarm = { code = '10-90', icon = 'bell' } },
+    cardSeconds = 12,        -- a card stays this long (urgent ones a bit longer)
+    blipSeconds = 180,       -- the flashing map icon at the call
 }
 
 -- CCTV (الكاميرات): the tablet looks through them. The list builds itself: one camera in every
