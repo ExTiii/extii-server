@@ -208,6 +208,7 @@ end)
 lib.callback.register('exti_gangs:server:repairBegin', function(source, slot)
     local g, m = GANG.memberOf(source)
     if not g or g.type ~= 'weapons' or m.rank < 1 then return false, 'rank' end
+    if g.locked then return false, 'locked' end
     if not GANG.near(source, GANG.spot(g, 'workbench'), 2.5) then return false, 'far' end
     slot = math.tointeger(tonumber(slot))
     local it = slot and ox:GetSlot(source, slot)

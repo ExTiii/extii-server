@@ -409,6 +409,8 @@ function GANG.deleteGang(source, args)
     gangs[g.name] = nil
     exports.ox_inventory:ClearInventory(stashId(g))
     if GANG.turfDropGang then GANG.turfDropGang(g.name) end
+    -- its HQ places go too (no locked doors left behind on the map)
+    if GANG.spots and GANG.spots.hq[g.name] then GANG.spots.hq[g.name] = nil; if GANG.publishSpots then GANG.publishSpots() end end
     log(g.name, GANG.charName(GANG.player(source)), 'gang_deleted', g.label)
     notify(source, 'تم حذف العصابة', 'success')
     TriggerClientEvent('exti_gangs:client:gangsChanged', -1)

@@ -164,6 +164,8 @@ local function maybeAlert(src, veh, how, witness, owned)
     return true
 end
 
+local pending = {}    -- [plate] = { cid, at }: the owner may answer this alarm (once, within 60 s) (declared before the purge loop uses it)
+
 -- purge old cars
 CreateThread(function()
     while true do
@@ -248,7 +250,6 @@ AddEventHandler('playerDropped', function() pulling[source] = nil; lastFrom[sour
 -- a player car: the owner's alarm + the STOLEN flag on the police tablet
 ---------------------------------------------------------------------------
 local alarmed = {}    -- [plate] = os.time() (one alarm per car per 10 min)
-local pending = {}    -- [plate] = { cid, at }: the owner may answer this alarm (once, within 60 s)
 
 local function openBolo(plate)
     return MySQL.single.await('SELECT `id`, `officer` FROM `exti_police_bolos` WHERE `plate` = ? AND `closed` IS NULL ORDER BY `id` DESC LIMIT 1', { plate })

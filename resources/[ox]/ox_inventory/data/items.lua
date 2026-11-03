@@ -1204,7 +1204,7 @@ return {
         weight = 1800,
         stack = false,
         description = 'تعطي 50% درع. السترة الثقيلة (100%) تصنعها عصابة الأسلحة',
-        client = { image = 'armor.png', export = 'exti_weapons.useLightArmour' },
+        client = { image = 'armour.png', export = 'exti_weapons.useLightArmour' },
     },
 
     -- EX_Tii gangs: turf graffiti (tools shop). One can = one tag; the brush scrubs 3 rival tags
