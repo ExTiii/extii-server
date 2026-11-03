@@ -27,7 +27,7 @@ local function render()
     local me = GetEntityCoords(cache.ped)
     local function view(c, extra)
         local v = { id = c.id, code = c.code, icon = c.icon, urgent = c.urgent, label = c.label, text = c.text, street = c.street, area = c.area,
-            takenBy = c.takenBy, mine = c.mine, dist = math.floor(#(me - vec3(c.x, c.y, c.z))), seen = math.floor((now() - c.at) / 1000) }
+            takenBy = c.takenBy, mine = c.mine, witness = c.witness, dist = math.floor(#(me - vec3(c.x, c.y, c.z))), seen = math.floor((now() - c.at) / 1000) }
         if extra then for k, val in pairs(extra) do v[k] = val end end
         return v
     end
@@ -92,7 +92,7 @@ local function addCard(card, quiet)
     local street, area = placeOf(card.x + 0.0, card.y + 0.0, (card.z or 0.0) + 0.0)
     local c = {
         id = card.id, code = card.code, icon = card.icon, urgent = card.urgent == true, label = card.label, text = card.text,
-        x = card.x + 0.0, y = card.y + 0.0, z = (card.z or 0.0) + 0.0, takenBy = card.takenBy or false, mine = false,
+        x = card.x + 0.0, y = card.y + 0.0, z = (card.z or 0.0) + 0.0, takenBy = card.takenBy or false, mine = false, witness = type(card.witness) == 'table' and card.witness or nil,
         street = street, area = area, at = now() - (tonumber(card.ago) or 0) * 1000, shownUntil = now() + (D.cardSeconds or 12) * 1000 * (card.urgent and 1.5 or 1),
     }
     table.insert(list, 1, c)

@@ -26,7 +26,8 @@ end
 
 local function callView(c, src)
     return {
-        id = c.id, kind = c.kind, label = c.label, text = c.text, number = c.number,
+        id = c.id, kind = c.kind, label = c.label, number = c.number,
+        text = (c.witness and POL.witnessLine(c.witness)) and ((c.text and (c.text .. ' · ') or '') .. POL.witnessLine(c.witness)) or c.text,
         x = c.coords.x, y = c.coords.y, z = c.coords.z, ago = os.time() - c.time,
         takenBy = c.takenByName, mine = c.takenBy == src,
     }
@@ -42,7 +43,7 @@ end
 local function cardView(c)
     local k = codeOf(c)
     return { id = c.id, code = k.code, icon = k.icon, urgent = k.urgent == true, label = c.label, text = c.text, number = c.number,
-        x = c.coords.x, y = c.coords.y, z = c.coords.z, time = c.time, takenBy = c.takenByName }
+        x = c.coords.x, y = c.coords.y, z = c.coords.z, time = c.time, takenBy = c.takenByName, witness = c.witness }
 end
 
 local function openCalls()
@@ -77,6 +78,11 @@ local function addCall(data)
             id = nextId, kind = kind, label = data.label or D.labels[kind], coords = coords, caller = data.caller,
             number = cleanText(data.number, 20), text = text, time = os.time(),
         }
+        -- about a suspect: what the reporter saw
+        if data.suspect or data.vehicle then
+            local ok, w = pcall(POL.describe, { suspect = tonumber(data.suspect), vehicle = tonumber(data.vehicle), seen = data.seen == true })
+            if ok then c.witness = w end
+        end
         calls[nextId] = c
     end
     -- the same alert the phone shows (blip + notification + the phone's services list)
@@ -84,7 +90,7 @@ local function addCall(data)
         -- the phone keeps it in its list quietly; the card below is what the officer sees and hears
         tellCops('npwd_city:client:serviceAlert', { quiet = true,
             id = ('911-%d-%d'):format(c.id, c.time), service = 'police', label = 'الشرطة', blip = 'بلاغ للشرطة', sprite = 526, color = 38,
-            number = c.number or '', message = c.text or '', x = coords.x, y = coords.y, z = coords.z, time = c.time,
+            number = c.number or '', message = (c.witness and POL.witnessLine(c.witness)) and ((c.text and (c.text .. ' · ') or '') .. POL.witnessLine(c.witness)) or c.text or '', x = coords.x, y = coords.y, z = coords.z, time = c.time,
         })
     end
     tellCops('exti_police:client:callsChanged', true)

@@ -127,16 +127,15 @@ local function tooMany(src, veh)
     return false
 end
 
-local function alertPolice(veh, how, witness, police)
+local function alertPolice(veh, how, witness, police, src)
     if not policeUp() then return end
-    local plate = plateOf(veh)
-    local colour = colourOf(veh)
-    local text = ('%s%s · اللوحة %s · %s%s'):format(modelLabel(veh), colour and (' ' .. colour) or '', halfPlate(plate),
-        HOW[how] or 'سرقة', witness and ' · شاهد رأى السرقة' or '')
+    -- the car, half the plate, who and where to: the police card adds what the reporter saw (exti_police witness)
+    local text = HOW[how] or 'سرقة'
     pcall(function()
         exports.exti_police:AddCall({
             kind = 'alarm', label = police and 'سرقة مركبة شرطة' or 'سرقة سيارة',
             coords = (function() local c = GetEntityCoords(veh) return { x = c.x, y = c.y, z = c.z } end)(), text = text, number = witness and 'شاهد' or SYSTEM,
+            suspect = src, vehicle = veh, seen = witness == true,
         })
     end)
 end
@@ -160,7 +159,7 @@ local function maybeAlert(src, veh, how, witness, owned)
     end
     if not go then return false end
     s.alerted = now
-    alertPolice(veh, how, witness == true, police)
+    alertPolice(veh, how, witness == true, police, src)
     return true
 end
 

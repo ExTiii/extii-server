@@ -324,7 +324,7 @@ fireNet('qbx_vehiclekeys:server:hotwiredVehicle', 3, CAR)
 check(entityState[CAR].exti_thief == 'CID3', 'hotwiring tags the thief on the car')
 
 -- car theft -> police
-check(#CALLS == 1 and CALLS[1].label == 'سرقة سيارة' and CALLS[1].text:find('سوداء'), 'a super car hotwired: the police always get it (model, colour)')
+check(#CALLS == 1 and CALLS[1].label == 'سرقة سيارة' and CALLS[1].vehicle == CAR and CALLS[1].suspect == 3, 'a super car hotwired: the police always get it (the car and the thief go to the witness check)')
 check(entityState[CAR].exti_tracker == true, 'a fast car gets the GPS tracker')
 fireNet('qbx_vehiclekeys:server:hotwiredVehicle', 3, CAR)
 check(#CALLS == 1, 'the same car again within 5 min: no second alert')
@@ -347,7 +347,7 @@ fireNet('exti_gangs:server:theftAttempt', 3, 'carjack', NPC, false)
 check(#CALLS == 1, 'trying again on the same car does not roll again for 5 min')
 advance(5)
 fireNet('exti_gangs:server:theftAttempt', 3, 'carjack', NPC, true)
-check(#CALLS == 2 and CALLS[2].text:find('شاهد'), 'a witness saw it: the call goes in')
+check(#CALLS == 2 and CALLS[2].number == 'شاهد' and CALLS[2].seen == true, 'a witness saw it: the call goes in')
 math.random = rnd
 local NPC2 = 61
 entityPos[NPC2] = vec3(400, 0, 0); entityType[NPC2] = 2; entityModel[NPC2] = joaat('blista')
@@ -407,7 +407,7 @@ local flagged = false
 for _, e in ipairs(clientEvents) do if e.name == 'exti_gangs:client:carAlarm' and e.src == 4 then flagged = e.args[1].flagged and e.args[1].coords ~= nil end end
 check(BOLO and BOLO[4] == 'OWN 123' and BOLO[5] == 'نظام الإنذار' and flagged, 'the alarm flags the plate STOLEN on the police tablet right away (owner sees where)')
 local nc = #CALLS
-check(nc > 0 and CALLS[nc].text:find('OWN') and CALLS[nc].text:find('%*'), 'the police get the call with half the plate: ' .. tostring(CALLS[nc] and CALLS[nc].text))
+check(nc > 0 and CALLS[nc].vehicle ~= nil and CALLS[nc].suspect ~= nil, 'the police get the call with the car (half the plate comes from the witness check): ' .. tostring(CALLS[nc] and CALLS[nc].text))
 fireNet('exti_gangs:server:reportStolen', 4, 'OWN 123', true)
 check(UPD[#UPD] and UPD[#UPD].p[1]:find('بلاغ المالك'), 'the owner confirms: the BOLO says "owner report"')
 local nu = #UPD

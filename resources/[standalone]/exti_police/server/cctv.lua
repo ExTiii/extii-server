@@ -150,6 +150,7 @@ local function build()
         end
     end
     cameras = list
+    POL.cctvList = list   -- (the witness check: a camera close by sees the suspect)
     GlobalState.exti_police_cctv = cameras
     lib.print.info(('[cctv] %d cameras'):format(#cameras))
 end

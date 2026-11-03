@@ -328,6 +328,15 @@ Config.dispatch = {
     kindCodes = { phone = { code = '911', icon = 'phone' }, chat = { code = '911', icon = 'phone' }, alarm = { code = '10-90', icon = 'bell' } },
     cardSeconds = 12,        -- a card stays this long (urgent ones a bit longer)
     blipSeconds = 180,
+    -- what the reporter saw (server/witness.lua): the chance of each detail
+    witness = {
+        day    = { person = 0.85, car = 0.9, plate = 0.55, dir = 0.75 },
+        night  = { person = 0.55, car = 0.7, plate = 0.25, dir = 0.5 },   -- 21:00 to 06:00 (a witness who surely saw it uses the day chances)
+        camera = { person = 0.95, car = 1.0, plate = 0.9, dir = 0.9 },   -- a CCTV camera within cameraRange
+        cameraRange = 45.0,
+        nightFrom = 21, nightTo = 6,
+        movingSpeed = 2.5,   -- slower than this: no direction
+    },
     recentSeconds = 120,   -- coming on duty: the open calls of the last 2 minutes pop up too (no beep)       -- the flashing map icon at the call
 }
 

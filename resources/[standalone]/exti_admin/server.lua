@@ -505,7 +505,7 @@ A.fakecall = { 'test', function(src, d)
     local c = GetEntityCoords(GetPlayerPed(src))
     local kinds = { theft = 'سرقة سيارة (تجربة)', shots = 'إطلاق نار (تجربة)', call = 'بلاغ 911 (تجربة)' }
     local label = kinds[d.kind] or kinds.call
-    pcall(function() exports.exti_police:AddCall({ kind = 'alarm', label = label, coords = c, text = 'تجربة من لوحة الإدارة' }) end)
+    pcall(function() exports.exti_police:AddCall({ kind = 'alarm', label = label, coords = c, text = 'تجربة من لوحة الإدارة', suspect = src }) end)
     log(src, 'test_call', label); return true, 'أُرسل بلاغ تجربة للشرطة'
 end }
 A.copduty = { 'test', function(src, d)

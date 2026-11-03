@@ -43,7 +43,7 @@ RegisterNetEvent('exti_weapons:server:shots', function(c, street, zone, silenced
     local where = clean(street, 60)
     pcall(function()
         exports.exti_police:AddCall({ kind = 'alarm', label = 'إطلاق نار', coords = { x = here.x, y = here.y, z = here.z },
-            text = ('إطلاق نار%s%s'):format(where and (' · ' .. where) or '', silenced == true and ' · صوت مكتوم' or ''), number = 'نظام الرصد' })
+            text = ('إطلاق نار%s%s'):format(where and (' · ' .. where) or '', silenced == true and ' · صوت مكتوم' or ''), number = 'نظام الرصد', suspect = src })
     end)
 end)
 

@@ -48,6 +48,7 @@ server_scripts {
     'server/street.lua',
     'server/charges.lua',
     'server/prison.lua',
+    'server/witness.lua',
     'server/dispatch.lua',
     'server/cctv.lua',
     'server/doors.lua',

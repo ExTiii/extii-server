@@ -249,7 +249,7 @@ lib.callback.register('exti_gangs:server:cornerSell', function(source)
     if math.random() < (CO.policeChance[kind] or CO.policeChance.none) and GetResourceState('exti_police') == 'started' then
         pcall(function()
             exports.exti_police:AddCall({ kind = 'alarm', label = 'بيع مخدرات', coords = { x = here.x, y = here.y, z = here.z },
-                text = ('شخص يبيع على الزاوية%s'):format(z and (' · ' .. z.name) or ''), number = 'مواطن' })
+                text = ('شخص يبيع على الزاوية%s'):format(z and (' · ' .. z.name) or ''), number = 'مواطن', suspect = source })
         end)
     end
     -- selling in a rival's turf: they hear about it

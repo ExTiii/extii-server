@@ -186,7 +186,7 @@ local function policeMaybe(src, here, zone, witness)
     if not (witness or math.random() < ((GANG.nightNow and GANG.nightNow()) and th.nightChance or th.dayChance)) then return end
     pcall(function()
         exports.exti_police:AddCall({ kind = 'alarm', label = 'كتابة على الجدران', coords = { x = here.x, y = here.y, z = here.z },
-            text = ('شخص يرسم علامة عصابة · %s%s'):format(zone.name, witness and ' · شاهد رأى ذلك' or ''), number = witness and 'شاهد' or 'نظام الإنذار' })
+            text = ('شخص يرسم علامة عصابة · %s%s'):format(zone.name, witness and ' · شاهد رأى ذلك' or ''), number = witness and 'شاهد' or 'نظام الإنذار', suspect = src, seen = witness == true })
     end)
 end
 
