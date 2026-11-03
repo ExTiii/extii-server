@@ -8,6 +8,7 @@
 local D = Config.dispatch
 local list = {}            -- the last calls, newest first: { id, code, icon, urgent, label, text, x, y, z, time, takenBy, mine, street, area, shownUntil, blip }
 local MAX = 10
+local TAKEN_MS = 6000      -- after a cop takes it: the card shows who took it for 6 s, then goes
 local flip = { on = false, index = 1, untilAt = 0 }
 local ticking = false
 
@@ -93,7 +94,7 @@ local function addCard(card, quiet)
     local c = {
         id = card.id, code = card.code, icon = card.icon, urgent = card.urgent == true, label = card.label, text = card.text,
         x = card.x + 0.0, y = card.y + 0.0, z = (card.z or 0.0) + 0.0, takenBy = card.takenBy or false, mine = false, witness = type(card.witness) == 'table' and card.witness or nil,
-        street = street, area = area, at = now() - (tonumber(card.ago) or 0) * 1000, shownUntil = now() + (D.cardSeconds or 12) * 1000 * (card.urgent and 1.5 or 1),
+        street = street, area = area, at = now() - (tonumber(card.ago) or 0) * 1000, shownUntil = card.takenBy and (now() + TAKEN_MS) or math.huge,   -- on screen until a cop takes it
     }
     table.insert(list, 1, c)
     while #list > MAX do removeBlip(list[#list]); table.remove(list) end
@@ -108,7 +109,8 @@ RegisterNetEvent('exti_police:client:dispatchTaken', function(id, name, by)
     local c = find(id); if not c then return end
     c.takenBy = name or false
     c.mine = name and by == cache.serverId or false
-    if c.shownUntil > now() or flip.on then tick() end
+    c.shownUntil = name and (now() + TAKEN_MS) or math.huge   -- let go again: back on screen until someone takes it
+    tick()
 end)
 
 RegisterNetEvent('exti_police:client:dispatchClosed', function(id)
@@ -140,7 +142,7 @@ RegisterCommand('+exti_dispatch_take', function()
     c.mine = res.call.mine == true
     c.takenBy = res.call.takenBy or false
     if c.mine then route(c) end
-    c.shownUntil = now() + 6000
+    c.shownUntil = c.takenBy and (now() + TAKEN_MS) or math.huge
     tick()
 end, false)
 RegisterCommand('-exti_dispatch_take', function() end, false)
@@ -177,7 +179,7 @@ local function dutyNow(on)
         local cards = lib.callback.await('exti_police:server:tab_dispatchRecent', false)
         if type(cards) ~= 'table' then return end
         for _, card in ipairs(cards) do
-            if not find(card.id) then addCard(card, true) end
+            if not find(card.id) and not card.takenBy then addCard(card, true) end
         end
     end)
 end

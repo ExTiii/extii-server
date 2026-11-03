@@ -326,7 +326,7 @@ Config.dispatch = {
         { match = 'بلاغ مجهول', code = '10-31', icon = 'eye' },
     },
     kindCodes = { phone = { code = '911', icon = 'phone' }, chat = { code = '911', icon = 'phone' }, alarm = { code = '10-90', icon = 'bell' } },
-    cardSeconds = 12,        -- a card stays this long (urgent ones a bit longer)
+    cardSeconds = 12,        -- (not used now: a card stays on screen until a cop takes the call or it is closed)
     blipSeconds = 180,
     -- what the reporter saw (server/witness.lua): the chance of each detail
     witness = {

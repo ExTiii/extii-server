@@ -125,7 +125,10 @@ CreateThread(function()
         Wait(60000)
         local now, changed = os.time(), false
         for id, c in pairs(calls) do
-            if now - c.time > D.expireMinutes * 60 then calls[id] = nil changed = true end
+            if now - c.time > D.expireMinutes * 60 then
+                calls[id] = nil changed = true
+                tellCops('exti_police:client:dispatchClosed', id)   -- (its card goes too)
+            end
         end
         if changed then tellCops('exti_police:client:callsChanged') end
     end
