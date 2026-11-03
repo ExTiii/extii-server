@@ -60,6 +60,7 @@ lib.callback.register('exti_heists:server:fenceGoods', function(src)
             if n < have then full[#full + 1] = item end
             if n > 0 and exports.ox_inventory:RemoveItem(src, item, n) then
                 bought.n[item] = (bought.n[item] or 0) + n
+                if H.contract then H.contract(src, 'sell', { item = item, n = n }) end
                 sold[#sold + 1] = { item = item, n = n }
                 total = total + n * g.price
             end
@@ -124,11 +125,13 @@ local function onText(src, msg)
         else
             H.text(src, type(lead) == 'string' and #lead > 12 and lead or 'لا شيء لك الآن.')
         end
+    elseif msg:find('مهام') or msg:find('مهمة') then
+        if H.contractStatus then H.contractStatus(src) end
     elseif msg:find('مكان') or msg:find('وين') or msg:find('أين') or msg:lower():find('where') then
         local f = H.fenceSpot()
         if f then H.text(src, 'هنا اليوم. تعال وحدك.', f) else H.text(src, 'لست في المدينة اليوم.') end
     else
-        H.text(src, 'اكتب "شغل" إن كنت تريد بيتًا، أو "مكان" لتعرف أين أنا اليوم. لا تتصل.')
+        H.text(src, 'اكتب "شغل" إن كنت تريد بيتًا، "مهام" لشغل اليوم، أو "مكان" لتعرف أين أنا اليوم. لا تتصل.')
     end
 end
 local function hook()
@@ -150,6 +153,7 @@ AddEventHandler('onResourceStart', function(res) if res == 'npwd' then SetTimeou
 -- the first time he meets you, he gives his number
 lib.callback.register('exti_heists:server:fenceHello', function(src)
     if not atFence(src) then return false end
+    local cid = H.cid(src); if cid then SetResourceKvpInt('fencemet:' .. cid, 1) end
     H.text(src, 'هذا رقمي. احفظه. اكتب "شغل" حين تريد بيتًا، و"مكان" لتعرف أين أجدك.')
     return F.number
 end)

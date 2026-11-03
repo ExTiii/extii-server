@@ -284,3 +284,23 @@ Config.jewelry = {
 Config.games.drill = { minSeconds = 8.0 }
 Config.games.glasscut = { minSeconds = 4.0 }
 Config.games.hack = { minSeconds = 6.0 }
+
+---------------------------------------------------------------------------
+-- the fence's daily contracts (texted each day to characters who know him)
+---------------------------------------------------------------------------
+Config.contracts = {
+    perDay = 3,
+    dayStartsHour = 6,
+    reward = { xp = 10, money = { 400, 900 } },   -- each contract done (dirty money)
+    pool = {
+        { id = 'stores',    kind = 'store',     need = { 2, 3 }, text = 'اسرق %d صناديق محلات' },
+        { id = 'safe',      kind = 'storesafe', need = 1,        text = 'افتح خزنة محل (%d)', minRep = 2 },
+        { id = 'house',     kind = 'house',     need = 1,        text = 'ادخل بيتًا من بيوتي وخذ شيئًا (%d)' },
+        { id = 'atm',       kind = 'atm',       need = 1,        text = 'اقتلع جهاز صراف وافتحه (%d)', minRep = 2 },
+        { id = 'jewel',     kind = 'jewel',     need = { 2, 4 }, text = 'افتح %d خزائن في فانجيليكو', minRep = 3 },
+        { id = 'watches',   kind = 'sell', item = 'rolex',        need = { 2, 3 }, text = 'بِعني %d ساعات رولكس' },
+        { id = 'rings',     kind = 'sell', item = 'diamond_ring', need = { 1, 2 }, text = 'بِعني %d خواتم ألماس' },
+        { id = 'laptops',   kind = 'sell', item = 'stolen_laptop', need = 1,       text = 'أحضر لي حاسوبًا مسروقًا (%d)' },
+        { id = 'tv',        kind = 'sell', item = 'small_tv',     need = 1,        text = 'أحضر لي تلفازًا (%d)' },
+    },
+}

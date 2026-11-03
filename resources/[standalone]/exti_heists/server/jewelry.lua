@@ -115,6 +115,7 @@ local function lootCase(src, i)
         if item then H.giveLoot(src, item, n); got[#got + 1] = { item = item, n = n } end
     end
     st.looted = st.looted or {}; st.looted[src] = true
+    if H.contract then H.contract(src, 'jewel') end
     return got
 end
 

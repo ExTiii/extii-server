@@ -150,6 +150,7 @@ lib.callback.register('exti_heists:server:atmDrillEnd', function(src, token, pas
     H.giveLoot(src, 'black_money', pay)
     H.addSkill(src, 'breaching')
     H.repFor(src, AT.tier, a.mode)
+    if H.contract then H.contract(src, 'atm') end
     if a.by ~= src and GetPlayerName(a.by) then H.repFor(a.by, AT.tier, a.mode) end
     H.log(src, 'atm_drilled', ('$%d · %s'):format(pay, H.modeText(a.mode)))
     SetTimeout(30000, function() if DoesEntityExist(obj) then DeleteEntity(obj) end end)

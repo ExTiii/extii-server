@@ -168,6 +168,7 @@ lib.callback.register('exti_heists:server:grabTill', function(src, i)
     H.setCooldown(storeKey(i, 'till'), R.cooldownMinutes * 60)
     H.repFor(src, R.tier, st.mode)
     H.log(src, 'store_till', ('%s · $%d · %s'):format(stores[i].area, pay, H.modeText(st.mode)))
+    if H.contract then H.contract(src, 'store') end
     if not st.alarm then
         SetTimeout(R.reportDelay * 1000, function() call(i, C.calls.register, 'صاحب المحل', src, nil, st.mode) end)
     end
@@ -225,6 +226,7 @@ lib.callback.register('exti_heists:server:tillPickEnd', function(src, token, pas
     H.addSkill(src, 'lockpick')
     H.repFor(src, R.tier, st.mode)
     H.log(src, 'store_till', ('%s · $%d (lockpick) · %s'):format(stores[i].area, pay, H.modeText(st.mode)))
+    if H.contract then H.contract(src, 'store') end
     finish(i)
     return true, pay
 end)
@@ -288,6 +290,7 @@ lib.callback.register('exti_heists:server:safeLoot', function(src, i)
     local usb = math.random() < S.usb.chance * (sf.mode.usb or 1)
     if usb then exports.ox_inventory:AddItem(src, S.usb.item, 1) end
     H.repFor(src, S.tier, sf.mode)
+    if H.contract then H.contract(src, 'storesafe') end
     H.log(src, 'store_safe_loot', ('%s · $%d%s · %s'):format(stores[i].area, pay, usb and ' + green USB' or '', H.modeText(sf.mode)))
     return true, pay, usb
 end)

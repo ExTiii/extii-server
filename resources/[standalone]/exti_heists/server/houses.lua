@@ -224,6 +224,7 @@ lib.callback.register('exti_heists:server:houseLeave', function(src, id)
     if l.looted and l.looted[src] and not (l.repDone and l.repDone[src]) then
         l.repDone = l.repDone or {}; l.repDone[src] = true
         H.repFor(src, HS.sizes[l.size].tier, l.mode)
+        if H.contract then H.contract(src, 'house') end
     end
     -- everyone out: the house is done
     local still = false

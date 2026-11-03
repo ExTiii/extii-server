@@ -39,6 +39,7 @@ server_scripts {
     'server/houses.lua',
     'server/atm.lua',
     'server/jewelry.lua',
+    'server/contracts.lua',
 }
 
 ui_page 'html/index.html'
