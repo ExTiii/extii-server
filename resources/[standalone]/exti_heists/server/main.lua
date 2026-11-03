@@ -444,7 +444,7 @@ exports('Admin', function(src, what, value)
         if not H.adminHouseLead or not H.adminHouseLead(src, size) then return false, 'لا بيت فاضٍ من هذا الحجم' end
         return true, 'وصلك بيت (تجربة: يعمل في أي وقت)'
     elseif what == 'kit' then
-        for _, it in ipairs({ { 'lockpick', 5 }, { 'usb_green', 2 }, { 'usb_blue', 2 }, { 'usb_red', 1 }, { 'drill', 1 }, { 'drill_bit', 6 }, { 'zip_ties', 3 }, { 'tow_chain', 1 },
+        for _, it in ipairs({ { 'lockpick', 5 }, { 'usb_green', 2 }, { 'usb_blue', 2 }, { 'usb_red', 1 }, { 'drill', 1 }, { 'drill_bit', 6 }, { 'zip_ties', 3 }, { 'blindfold', 2 }, { 'tow_chain', 1 },
                               { 'c4', 4 }, { 'usb_gold', 1 }, { 'guard_keycard', 1 }, { 'blueprints', 2 }, { 'catering_uniform', 1 } }) do
             if exports.ox_inventory:Items(it[1]) then exports.ox_inventory:AddItem(src, it[1], it[2]) end
         end

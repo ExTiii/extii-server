@@ -60,12 +60,13 @@ local function spawnPoint(pos, i)
     return vec3(pos.x + 150.0, pos.y, pos.z), 0.0
 end
 
-local function setupPed(ped, weapon)
+local function setupPed(ped, weapon, opts)
+    opts = opts or {}
     SetPedRelationshipGroupHash(ped, REL)
-    SetPedArmour(ped, 50)
-    SetPedAccuracy(ped, N.accuracy)
-    SetPedCombatAbility(ped, 1)
-    SetPedCombatMovement(ped, 1)          -- defensive: hold the line, don't rush in
+    SetPedArmour(ped, opts.armour or 50)
+    SetPedAccuracy(ped, opts.accuracy or (own and own.chase and C.hostages.chaseAccuracy) or N.accuracy)
+    SetPedCombatAbility(ped, opts.swat and 2 or 1)
+    SetPedCombatMovement(ped, opts.swat and 2 or 1)   -- defensive: hold the line (the SWAT team pushes in)
     SetPedCombatRange(ped, 1)
     SetPedCombatAttributes(ped, 0, true)  -- use cover
     SetPedCombatAttributes(ped, 1, true)  -- use vehicles
@@ -84,9 +85,11 @@ end
 ---------------------------------------------------------------------------
 -- spawning (the owner's game)
 ---------------------------------------------------------------------------
-local function spawnUnits(id, pos, cars, weapons)
-    local vehModel, pedModel = joaat(N.car), joaat(N.ped)
+local function spawnUnits(id, pos, cars, weapons, opts)
+    opts = opts or {}
+    local vehModel, pedModel = joaat(opts.car or N.car), joaat(opts.ped or N.ped)
     if not pcall(lib.requestModel, vehModel, 10000) or not pcall(lib.requestModel, pedModel, 10000) then return end
+    if not own or own.id ~= id then return end   -- (it ended while the models loaded)
     local netIds = {}
     for i = 1, cars do
         local p, h = spawnPoint(pos, i)
@@ -99,16 +102,17 @@ local function spawnUnits(id, pos, cars, weapons)
             SetVehicleDoorsLocked(veh, 1)
             SetVehicleEngineOn(veh, true, true, false)
             Entity(veh).state:set('exti_npcsec', id, true)
-            local unit = { veh = veh, peds = {}, stage = 'drive' }
+            local unit = { veh = veh, peds = {}, stage = 'drive', swat = opts.swat }
             for seat = -1, 0 do
                 local ped = CreatePedInsideVehicle(veh, 4, pedModel, seat, true, false)
-                if ped ~= 0 then setupPed(ped, weapons[(seat + 2)] or weapons[1]); unit.peds[#unit.peds + 1] = ped; netIds[#netIds + 1] = NetworkGetNetworkIdFromEntity(ped) end
+                if ped ~= 0 then setupPed(ped, weapons[(seat + 2)] or weapons[1], opts); unit.peds[#unit.peds + 1] = ped; netIds[#netIds + 1] = NetworkGetNetworkIdFromEntity(ped) end
             end
             -- stop short of the door, a little to the side of it
             local a = math.rad(math.random(0, 359))
-            unit.park = vec3(pos.x + math.cos(a) * (12.0 + i * 4.0), pos.y + math.sin(a) * (12.0 + i * 4.0), pos.z)
+            local r0 = opts.swat and (8.0 + i * 3.0) or (12.0 + i * 4.0)
+            unit.park = vec3(pos.x + math.cos(a) * r0, pos.y + math.sin(a) * r0, pos.z)
             local drv = unit.peds[1]
-            if drv then TaskVehicleDriveToCoordLongrange(drv, veh, unit.park.x, unit.park.y, unit.park.z, 32.0, 786468, 8.0) end
+            if drv then TaskVehicleDriveToCoordLongrange(drv, veh, unit.park.x, unit.park.y, unit.park.z, opts.swat and 38.0 or 32.0, 786468, 8.0) end
             unit.since = GetGameTimer()
             own.units[#own.units + 1] = unit
             netIds[#netIds + 1] = NetworkGetNetworkIdFromEntity(veh)
@@ -133,18 +137,38 @@ local function nearestTarget(from)
     return best, bd
 end
 
-local function holdUnits(u, alive, tgt)
-    -- (they aim, they don't shoot, they don't chase; pulled back = they sit in their cars)
-    if u.holding then return end
-    u.holding = true
-    for i, ped in ipairs(alive) do
-        ClearPedTasks(ped)
-        if own.pullBack and DoesEntityExist(u.veh) and IsVehicleDriveable(u.veh, false) then
-            TaskEnterVehicle(ped, u.veh, 10000, i == 1 and -1 or 0, 1.2, 1, 0)
-        elseif tgt then
+local function holdUnits(u, alive, tgt, dist)
+    -- they hold their fire: guns on him; if he drives off (a hostage with him), they follow his car close,
+    -- sirens on, and never shoot. A head start: they stay where they are.
+    local tgtCar = tgt and GetVehiclePedIsIn(tgt, false) or 0
+    local canDrive = DoesEntityExist(u.veh) and IsVehicleDriveable(u.veh, false)
+    if own.holdWhy ~= 'headstart' and tgtCar ~= 0 and dist and dist > 30.0 and canDrive and not u.block then
+        if u.holding ~= 'follow' then
+            u.holding, u.aimed, u.followCar = 'follow', {}, nil
+            for i, ped in ipairs(alive) do
+                if not IsPedInVehicle(ped, u.veh, false) then ClearPedTasks(ped); TaskEnterVehicle(ped, u.veh, 10000, i == 1 and -1 or (i - 2), 2.0, 1, 0) end
+            end
+        end
+        local drv = GetPedInVehicleSeat(u.veh, -1)
+        if drv ~= 0 and u.followCar ~= tgtCar then
+            u.followCar = tgtCar
+            SetVehicleSiren(u.veh, true)
+            TaskVehicleFollow(drv, u.veh, tgtCar, 32.0, 786468, 18)
+        end
+        return
+    end
+    if u.holding ~= 'aim' then u.holding, u.aimed, u.followCar = 'aim', {}, nil end
+    for _, ped in ipairs(alive) do
+        if IsPedInVehicle(ped, u.veh, false) then
+            -- (they followed him here: out, guns up)
+            if dist and dist < 45.0 and tgtCar == 0 and (u.leaving or 0) < GetGameTimer() then TaskLeaveVehicle(ped, u.veh, 256) end
+        elseif tgt and u.aimed[ped] ~= tgt then
+            u.aimed[ped] = tgt
+            ClearPedTasks(ped)
             TaskAimGunAtEntity(ped, tgt, -1, false)
         end
     end
+    if dist and dist < 45.0 and tgtCar == 0 then u.leaving = GetGameTimer() + 4000 end
 end
 
 local function think()
@@ -159,12 +183,24 @@ local function think()
             local here = GetEntityCoords(alive[1])
             local tgt, dist = nearestTarget(here)
             if holding and u.stage ~= 'drive' then
-                holdUnits(u, alive, tgt)
+                holdUnits(u, alive, tgt, dist)
             elseif u.holding then
-                -- the hold is over: back to work
-                u.holding = false; u.target = nil; u.chasing = nil; u.shooting = nil
-                if u.stage == 'chase' then u.stage = 'fight' end
-                for _, ped in ipairs(alive) do if IsPedInVehicle(ped, u.veh, false) then TaskLeaveVehicle(ped, u.veh, 256) end end
+                -- the hold is over: back to work (in their cars after a car: the chase; else out and fight)
+                local inCar = DoesEntityExist(u.veh) and IsPedInVehicle(alive[1], u.veh, false)
+                local tgtCar = tgt and GetVehiclePedIsIn(tgt, false) or 0
+                u.holding = false; u.target = nil; u.chasing = nil; u.shooting = nil; u.aimed = nil; u.followCar = nil
+                if inCar and tgtCar ~= 0 and not u.block then
+                    u.stage, u.chaseAt = 'chase', nil
+                else
+                    u.stage = 'fight'
+                    for _, ped in ipairs(alive) do if IsPedInVehicle(ped, u.veh, false) then TaskLeaveVehicle(ped, u.veh, 256) end end
+                end
+            elseif tgt and u.block then
+                -- a roadblock: they wait by their cars and open up when he comes close
+                if dist < 90.0 and u.target ~= tgt then
+                    u.target = tgt
+                    for _, ped in ipairs(alive) do ClearPedTasks(ped); TaskCombatPed(ped, tgt, 0, 16) end
+                end
             elseif tgt then
                 local tgtCar = GetVehiclePedIsIn(tgt, false)
                 if u.stage == 'drive' then
@@ -297,14 +333,10 @@ end)
 -- the server: hold your fire for this long (hostages, a deal, pulled back)
 RegisterNetEvent('exti_heists:client:npcHold', function(id, seconds, why)
     if not own or own.id ~= id then return end
-    local untilT = GetGameTimer() + math.max(0, seconds) * 1000
-    if why == 'pullback' then own.pullUntil = untilT end
-    own.holdUntil = math.max(own.holdUntil or 0, untilT)
-    own.pullBack = (own.pullUntil or 0) > GetGameTimer()
-    for _, u in ipairs(own.units) do u.holding = false end
-end)
-RegisterNetEvent('exti_heists:client:npcPullBack', function(id)
-    if own and own.id == id then own.pullBack = true; for _, u in ipairs(own.units) do u.holding = false end end
+    if (seconds or 0) <= 0 then own.holdUntil, own.holdWhy = 0, nil
+    else own.holdUntil, own.holdWhy = GetGameTimer() + seconds * 1000, why end
+    own.pullBack = false
+    for _, u in ipairs(own.units) do if u.holding then u.holding = 'redo' end end
 end)
 -- a hostage was hurt: no hold, sharper, pushing in
 RegisterNetEvent('exti_heists:client:npcRage', function(id)
@@ -321,7 +353,8 @@ end)
 RegisterNetEvent('exti_heists:client:npcHoldBar', function(id, seconds, why)
     if not hunt or hunt.id ~= id then return end
     if why == 'rage' then hunt.rageUntil = GetGameTimer() + 6000; hunt.holdUntil = 0; return end
-    hunt.holdUntil, hunt.holdWhy = GetGameTimer() + math.max(0, seconds) * 1000, why
+    if why == 'clear' or (seconds or 0) <= 0 then hunt.holdUntil, hunt.holdWhy = 0, nil; hunt.lastSeen = GetGameTimer(); return end
+    hunt.holdUntil, hunt.holdWhy = GetGameTimer() + seconds * 1000, why
 end)
 
 RegisterNetEvent('exti_heists:client:npcEnd', function(id, why)
@@ -366,9 +399,11 @@ CreateThread(function()
                 if seen then hunt.lastSeen = GetGameTimer() end
                 -- (inside a house nobody can see you, but they wait at the door: the clock doesn't run in there)
                 if HC.insideHouse and HC.insideHouse() then hunt.lastSeen = GetGameTimer() end
+                -- (while they hold their fire and wait, there's nothing to lose)
+                if (hunt.holdUntil or 0) > GetGameTimer() then hunt.lastSeen = GetGameTimer() end
                 local from = hunt.lastSeen or ((GetGameTimer() - hunt.onAt > 90000) and (hunt.onAt + 90000) or GetGameTimer())
                 local hidden = (GetGameTimer() - from) / 1000
-                local left = math.max(0, N.lostSeconds - hidden)
+                local left = math.max(0, (hunt.lost or N.lostSeconds) - hidden)
                 if (hunt.rageUntil or 0) > GetGameTimer() then
                     bar({ kind = 'rage', seconds = 0 })
                 elseif (hunt.holdUntil or 0) > GetGameTimer() then
@@ -391,6 +426,137 @@ CreateThread(function()
         Wait(1000)
     end
 end)
+
+---------------------------------------------------------------------------
+-- after a deal: the chase (sharper aim, roadblocks ahead of his car); the SWAT team; how long to hide
+---------------------------------------------------------------------------
+local RB = C.hostages.roadblocks
+RegisterNetEvent('exti_heists:client:npcChase', function(id)
+    if not own or own.id ~= id then return end
+    own.chase = true
+    own.rbCount, own.rbNext = own.rbCount or 0, GetGameTimer() + RB.every * 500
+    for _, u in ipairs(own.units) do
+        for _, ped in ipairs(u.peds) do if DoesEntityExist(ped) then SetPedAccuracy(ped, C.hostages.chaseAccuracy) end end
+        u.target, u.chasing, u.shooting = nil, nil, nil
+    end
+end)
+
+RegisterNetEvent('exti_heists:client:npcSwat', function(id, sw)
+    if not own or own.id ~= id or own.swatSent then return end
+    own.swatSent = true
+    -- (they come to where the robbers are now)
+    local at = own.pos
+    for _, s in ipairs(own.targets) do local p = pedOfServerId(s); if p then at = GetEntityCoords(p) break end end
+    CreateThread(function()
+        spawnUnits(id, at, sw.cars, sw.weapons, { car = sw.car, ped = sw.ped, armour = sw.armour, accuracy = sw.accuracy, swat = true })
+    end)
+    PlaySoundFrontend(-1, 'Lose_1st', 'GTAO_FM_Events_Soundset', false)
+end)
+
+RegisterNetEvent('exti_heists:client:npcMode', function(id, m)
+    if not hunt or hunt.id ~= id then return end
+    hunt.lost = m and m.lost or nil
+    if m and m.chase then hunt.lastSeen = GetGameTimer(); hunt.lostSent = nil end
+end)
+
+-- a roadblock about 260 m ahead of a fleeing car: two cars across the road, two men at each
+local function roadblock(tgt)
+    local car = GetVehiclePedIsIn(tgt, false)
+    if car == 0 or GetEntitySpeed(car) < 8.0 then return false end
+    local p, f = GetEntityCoords(car), GetEntityForwardVector(car)
+    local ahead = p + f * RB.ahead
+    local ok, node, heading = GetClosestVehicleNodeWithHeading(ahead.x, ahead.y, ahead.z, 1, 3.0, 0)
+    if not ok then return false end
+    local to = node - p
+    if #to < RB.ahead * 0.6 or (to.x * f.x + to.y * f.y) <= 0 then return false end
+    local vehModel, pedModel = joaat(N.car), joaat(N.ped)
+    if not pcall(lib.requestModel, vehModel, 5000) or not pcall(lib.requestModel, pedModel, 5000) then return false end
+    if not own or not own.chase then return false end
+    local hr = math.rad(heading)
+    local side = vec3(math.cos(hr), math.sin(hr), 0.0)          -- across the road
+    local netIds = {}
+    for k = -1, 1, 2 do
+        local c = node + side * (2.6 * k)
+        local veh = CreateVehicle(vehModel, c.x, c.y, c.z + 0.4, heading + 90.0, true, false)
+        if veh ~= 0 then
+            SetEntityAsMissionEntity(veh, true, true)
+            SetVehicleOnGroundProperly(veh)
+            SetVehicleSiren(veh, true)
+            SetVehicleDoorsLocked(veh, 2)
+            Entity(veh).state:set('exti_npcsec', own.id, true)
+            local unit = { veh = veh, peds = {}, stage = 'fight', block = true, since = GetGameTimer(), park = c }
+            for j = 1, 2 do
+                local behind = c - vec3(math.cos(math.rad(heading + 90.0)), math.sin(math.rad(heading + 90.0)), 0.0) * 1.8 + side * (j == 1 and -0.9 or 0.9)
+                local ped = CreatePed(4, pedModel, behind.x, behind.y, behind.z, heading, true, false)
+                if ped ~= 0 then
+                    setupPed(ped, RB.weapons[j] or RB.weapons[1], { accuracy = C.hostages.chaseAccuracy })
+                    unit.peds[#unit.peds + 1] = ped
+                    netIds[#netIds + 1] = NetworkGetNetworkIdFromEntity(ped)
+                end
+            end
+            own.units[#own.units + 1] = unit
+            netIds[#netIds + 1] = NetworkGetNetworkIdFromEntity(veh)
+        end
+    end
+    SetModelAsNoLongerNeeded(vehModel); SetModelAsNoLongerNeeded(pedModel)
+    if #netIds == 0 then return false end
+    TriggerServerEvent('exti_heists:server:npcSpawned', own.id, netIds)
+    return true
+end
+CreateThread(function()
+    while true do
+        Wait(2000)
+        if own and own.chase and (own.rbCount or 0) < RB.max and GetGameTimer() > (own.rbNext or 0) then
+            for _, s in ipairs(own.targets) do
+                local p = pedOfServerId(s)
+                if p and not IsPedDeadOrDying(p, true) and own and pcall(roadblock, p) then
+                    own.rbCount = (own.rbCount or 0) + 1
+                    own.rbNext = GetGameTimer() + RB.every * 1000
+                    break
+                end
+            end
+        end
+    end
+end)
+
+---------------------------------------------------------------------------
+-- the drop-off spot: picked here (a road 400-800 m away), shown on the map of every hunted robber
+---------------------------------------------------------------------------
+lib.callback.register('exti_heists:client:dropSpot', function(origin, minD, maxD)
+    local o = vec3(origin.x, origin.y, origin.z)
+    for _ = 1, 40 do
+        local a = math.rad(math.random(0, 359))
+        local d = math.random(math.floor(minD), math.floor(maxD))
+        local ok, node = GetClosestVehicleNode(o.x + math.cos(a) * d, o.y + math.sin(a) * d, o.z, 1, 3.0, 0)
+        if ok then
+            local dd = #(node - o)
+            if dd >= minD * 0.85 and dd <= maxD * 1.2 and not TestVerticalProbeAgainstAllWater(node.x, node.y, node.z + 2.0, 0) then
+                local s1 = GetStreetNameAtCoord(node.x, node.y, node.z)
+                return { x = node.x, y = node.y, z = node.z, street = GetStreetNameFromHashKey(s1) }
+            end
+        end
+    end
+    return nil
+end)
+
+local dropBlips = {}
+local function clearDrop()
+    for _, b in ipairs(dropBlips) do if DoesBlipExist(b) then RemoveBlip(b) end end
+    dropBlips = {}
+end
+RegisterNetEvent('exti_heists:client:dropSpotShow', function(id, spot)
+    clearDrop()
+    local b = AddBlipForCoord(spot.x, spot.y, spot.z)
+    SetBlipSprite(b, 280); SetBlipColour(b, 1); SetBlipScale(b, 1.0)
+    SetBlipRoute(b, true); SetBlipRouteColour(b, 1)
+    BeginTextCommandSetBlipName('STRING'); AddTextComponentSubstringPlayerName('نقطة ترك الرهائن'); EndTextCommandSetBlipName(b)
+    local r = AddBlipForRadius(spot.x, spot.y, spot.z, C.hostages.dropRadius)
+    SetBlipColour(r, 1); SetBlipAlpha(r, 120)
+    dropBlips = { b, r }
+    PlaySoundFrontend(-1, 'Text_Arrive_Tone', 'Phone_SoundSet_Default', false)
+end)
+RegisterNetEvent('exti_heists:client:dropSpotClear', function() clearDrop() end)
+AddEventHandler('exti_heists:client:npcEnd', function() clearDrop() end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end

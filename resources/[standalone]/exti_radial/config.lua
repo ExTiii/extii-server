@@ -23,6 +23,7 @@ Config.menu = {
             { id = 'idcard', label = 'بطاقة الهوية', icon = 'id-card', action = 'useItem', arg = 'id_card' },
             { id = 'license', label = 'رخصة القيادة', icon = 'id-card', action = 'useItem', arg = 'driver_license' },
             { id = 'walk', label = 'طريقة المشي', icon = 'person-walking', action = 'walkMenu' },
+            { id = 'handsup', label = 'ارفع يديك (X)', icon = 'hands-holding', action = 'command', arg = 'handsup' },
             { id = 'keys', label = 'إعطاء المفتاح', icon = 'key', action = 'giveKeys', when = 'vehicle' },
         },
     },
@@ -110,6 +111,7 @@ Config.blipGroups = {
 -- answers { label, icon, items } (or nothing when the menu should not show right now)
 Config.providers = {
     { resource = 'exti_police', export = 'RadialMenu' },
+    { resource = 'exti_heists', export = 'RadialMenu' },   -- the hostage menu (الرهينة) next to someone with his hands up / tied
     { resource = 'exti_mechanic', export = 'RadialMenu' },
     { resource = 'exti_level', export = 'RadialMenu' },   -- the player level (المستوى 12)
 }

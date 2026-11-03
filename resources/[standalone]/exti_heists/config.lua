@@ -318,30 +318,38 @@ Config.contracts = {
 ---------------------------------------------------------------------------
 Config.hostages = {
     maxPerRobber = 4,
-    aimDistance = 12.0,       -- aim at a person this close: hands up
+    aimDistance = 12.0,       -- aim at a person this close: hands up (aim at him again: flat on his stomach)
     tieDistance = 1.8,
     tieSeconds = 4,
-    holdPerHostage = 30,      -- NPC security: seconds of no shooting per hostage when they arrive
-    holdMax = 120,
-    arriveDrive = 25,         -- (they need about this long to drive in: the hold starts counting after)
-    releaseHold = 20,         -- let one go: they hold this long (a head start)
-    autoReleaseMinutes = 15,  -- nobody keeps a hostage longer than this
     leaveDistance = 150.0,    -- the robber is this far from his hostage: he goes free
     copFreeBonus = 250,       -- an officer who frees a hostage (bank): not his own, held 60 s+, 5 a day
     minHoldForBonus = 60, copFreeDaily = 5,
     hurtMinutes = 60,         -- a robber who hurt a hostage: double arrest bonus this long
-    rageAccuracy = 35,        -- NPC security after a hostage was hurt
+    rageAccuracy = 45,        -- NPC police after a hostage was hurt (or the standoff ran out)
+    -- NPC police with a hostage (no-police mode): they hold their fire until a deal, a hurt hostage, or the time
+    standoffMinutes = 15,     -- no deal by then: they storm in
+    moreTimeMinutes = 5,      -- "more time" (once)
+    dropDistance = { 400, 800 }, -- the drop-off spot they text you: this far from where you are
+    dropRadius = 30.0,        -- let him go this close to the spot
+    dropMinutes = 6,          -- to get there (they follow you, no shooting)
+    dropHeadStart = 30,       -- he's out at the spot: then this long before they come after you
+    releaseHeadStart = 15,    -- "release on the spot"
+    chaseMinutes = 15,        -- the chase after a deal: they give up after this long
+    chaseLostSeconds = 120,   -- out of their sight this long in that chase: you lost them
+    surrenderJail = 10,       -- minutes of prison when you give up to them
+    leaveJail = 15,           -- left with a hostage (logged out / went into a house): prison on return
+    swat = { cars = 3, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_CARBINERIFLE' }, armour = 100, accuracy = 45, ped = 's_m_y_swat_01', car = 'fbi2' },
+    roadblocks = { every = 75, max = 3, ahead = 260.0, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_PUMPSHOTGUN' } },
+    chaseAccuracy = 26,       -- the chase after a deal: they shoot to stop you
+    blindProp = 'prop_money_bag_01', -- the cloth sack over the head
 }
 Config.calls.hostages = 'احتجاز رهائن'
 Config.calls.hostageHurt = 'رهينة أُصيبت'
 
 -- the NPC negotiator (no-police mode): texts you when the units are on scene
 Config.negotiator = {
-    number = '555-0119',      -- shows as the sender in the phone
+    number = '555-0119',      -- shows as the sender in the phone (also the admins' messages)
     textAfter = 6,            -- seconds after they arrive
-    pullBackHostages = 2,     -- "انسحبوا" needs this many hostages
-    pullBackSeconds = 60,
-    headStartSeconds = 30,    -- "مهلة": let one hostage go, this long
     surrenderXp = -5,
 }
 

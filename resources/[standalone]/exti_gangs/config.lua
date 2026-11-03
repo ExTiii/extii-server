@@ -43,6 +43,15 @@ C.collect = {
     gangDaily = 80,           -- parts a gang can take in per day (rep raises it)
     crateModel = 'prop_box_wood05a',
 }
+-- zip ties and blindfolds for the hostage system (exti_heists): any gang makes them at the HQ stash, from
+-- the parts it collects (1 part makes 3 zip ties or 2 blindfolds: cheaper than any part is worth)
+C.ties = {
+    zip_ties = { per = 3, label = 'أربطة بلاستيكية' },
+    blindfold = { per = 2, label = 'عصابات عيون' },
+    maxParts = 5,          -- parts per batch
+    seconds = 8, perPart = 2, -- the work: 8 s + 2 s per part
+    gangDaily = 30,        -- parts a gang can turn into these per day
+}
 C.fence = { price = 40, model = 's_m_y_dealer_01', name = 'المصرّف' } -- buys stolen parts of any gang (dirty money)
 -- EX_Tii heists: he is also the robbery fence, and he moves: one of these spots each day (an admin can put him
 -- somewhere else for today with /gangspots). The ground under each spot is found in game.

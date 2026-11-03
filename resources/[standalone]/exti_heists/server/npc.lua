@@ -1,38 +1,54 @@
 -- =====================================================================
--- EX_Tii heists: NPC security (no-police mode). When an alarm goes off and there are not enough real
--- cops, armed "حراسة الحي" units come after a timer, hold the entrance from behind their cars and
--- fight the robbers (lowered aim, no helicopters). Break their line of sight for 60 s and they lose you.
--- Downed by them: you wake at the hospital as usual and the loot from this robbery is gone.
+-- EX_Tii heists: NPC police "حراسة الحي" (no-police mode). When an alarm goes off and there are not
+-- enough real cops, armed units come after a timer, hold the entrance from behind their cars and fight
+-- the robbers. Out of their sight for 60 s and they lose you. Downed by them: the loot of this robbery is
+-- gone (the hospital does the rest as usual). A real cop within 100 m: they stand down.
+-- Hostages (hostages.lua) change everything:
+--   * one hostage is enough: they hold their fire and wait (a standoff), they follow you if you drive
+--     off with him, and the negotiator texts you. No deal in 15 min: they storm in.
+--   * the deals (negotiate.lua): drop him at a spot they text you / let him go right here / more time
+--     (once) / give up. A clean drop: a head start, then a hard chase (cars, roadblocks) for 15 min;
+--     out of their sight 2 min and you're gone.
+--   * hurt a hostage (or let the time run out): the SWAT team comes in hard.
+--   * no mask: they saw your face. A warrant in the police tablet.
 -- The server decides who, when, how many and where; the robber's game drives the units.
--- A real cop within 100 m: the units stand down and leave it to him.
 -- =====================================================================
 local C = Config
 local N = C.npc
+local HG = C.hostages
 
-local active = {}     -- [id] = { id, targets = { [src] = true }, pos, kind, startsAt, phase, units = {netIds}, owner }
+local active = {}     -- [id] = { id, targets = { [src] = true }, pos, kind, phase, units = {netIds}, owner, ... }
 local nextId = 0
 local byPlayer = {}   -- [src] = id
 
 local function targetsList(r) local t = {} for s in pairs(r.targets) do t[#t + 1] = s end return t end
+local function each(r, fn) for s in pairs(r.targets) do fn(s) end end
+
+-- what every hunted robber's game must know (how long to hide, the bar)
+local function tellMode(r)
+    local lost = r.chase and HG.chaseLostSeconds or N.lostSeconds
+    each(r, function(s) TriggerClientEvent('exti_heists:client:npcMode', s, r.id, { lost = lost, chase = r.chase ~= nil }) end)
+end
 
 -- the robber whose game drives the units is out of it: another robber's game takes them over
 local function handOver(r, leaving)
     if r.owner ~= leaving or not next(r.targets) then return end
     local nxt
-    for s in pairs(r.targets) do if GetPlayerRoutingBucket(s) == 0 then nxt = s break end end
+    for s in pairs(r.targets) do if s ~= leaving and GetPlayerRoutingBucket(s) == 0 then nxt = s break end end
     nxt = nxt or next(r.targets)
     r.owner = nxt
     TriggerClientEvent('exti_heists:client:npcTakeOver', nxt, r.id, r.units or {}, targetsList(r), { x = r.pos.x, y = r.pos.y, z = r.pos.z })
-    -- (whatever the units were doing goes with them: a hold, a pull-back, the rage)
-    if r.rage then TriggerClientEvent('exti_heists:client:npcRage', nxt, r.id)
-    elseif (r.holdUntil or 0) > H.now() then TriggerClientEvent('exti_heists:client:npcHold', nxt, r.id, r.holdUntil - H.now(), r.pullUntil and r.pullUntil > H.now() and 'pullback' or 'hold') end
+    -- (whatever the units were doing goes with them: a hold, the chase, the rage)
+    if r.rage then TriggerClientEvent('exti_heists:client:npcRage', nxt, r.id) end
+    if r.chase then TriggerClientEvent('exti_heists:client:npcChase', nxt, r.id) end
+    if (r.holdUntil or 0) > H.now() then TriggerClientEvent('exti_heists:client:npcHold', nxt, r.id, r.holdUntil - H.now(), r.holdWhy) end
 end
 local function tellTargets(r)
     if r.phase == 'on scene' and r.owner then TriggerClientEvent('exti_heists:client:npcTargets', r.owner, r.id, targetsList(r)) end
 end
 
 -- the server removes the units itself 40 s after the end (the owner's game may be gone, and they are
--- mission entities the game never cleans up): time for them to drive off first
+-- kept entities nobody else cleans up): time for them to drive off first
 local function sweep(r)
     local units = r.units or {}
     SetTimeout(40000, function()
@@ -55,15 +71,183 @@ local function endResponse(id, why)
 end
 H.npcEnd = endResponse
 
+---------------------------------------------------------------------------
+-- hold your fire (the standoff, a deal, a head start) / fire at will
+---------------------------------------------------------------------------
+function H.npcHold(r, seconds, why)
+    if not r then return end
+    r.holdUntil, r.holdWhy = H.now() + seconds, why
+    if r.owner then TriggerClientEvent('exti_heists:client:npcHold', r.owner, r.id, seconds, why) end
+    each(r, function(s) TriggerClientEvent('exti_heists:client:npcHoldBar', s, r.id, seconds, why) end)
+end
+local function unhold(r)
+    r.holdUntil, r.holdWhy = 0, nil
+    if r.owner then TriggerClientEvent('exti_heists:client:npcHold', r.owner, r.id, 0, 'clear') end
+    each(r, function(s) TriggerClientEvent('exti_heists:client:npcHoldBar', s, r.id, 0, 'clear') end)
+end
+
+local function negotiator(r, msg) if H.negotiatorText then each(r, function(s) H.negotiatorText(s, msg) end) end end
+
+-- the warrant: they saw his face (no mask)
+local function faceSeen(r)
+    for s in pairs(r.targets) do
+        local ped = GetPlayerPed(s)
+        local ok, mask = pcall(GetPedDrawableVariation, ped, 1)
+        if ped ~= 0 and ok and mask == 0 and not (r.warned or {})[s] then
+            r.warned = r.warned or {}; r.warned[s] = true
+            local cid, name = H.cid(s), H.name(s)
+            if cid then
+                MySQL.single('SELECT `id` FROM `exti_police_warrants` WHERE `citizenid` = ? AND `closed` IS NULL', { cid }, function(open)
+                    if open then return end
+                    MySQL.insert('INSERT INTO `exti_police_warrants` (`citizenid`, `name`, `reason`, `officer`, `created`) VALUES (?, ?, ?, ?, ?)',
+                        { cid, name, ('سطو مسلح (%s) · رأت حراسة الحي وجهه'):format(r.kind), 'حراسة الحي', os.time() })
+                end)
+                H.notify(s, 'رأوا وجهك: أنت مطلوب للشرطة', 'error', 7000)
+                H.log(s, 'npc_face_seen', r.kind)
+            end
+        end
+    end
+end
+
+---------------------------------------------------------------------------
+-- the standoff, the storm, the head start, the chase
+---------------------------------------------------------------------------
+local function standoff(r)
+    if r.standoff or r.rage or r.chase or r.chasePending or r.phase ~= 'on scene' then return end
+    r.standoff = { untilT = H.now() + HG.standoffMinutes * 60 }
+    H.npcHold(r, HG.standoffMinutes * 60, 'hostages')
+    H.log(r.owner, 'npc_standoff', r.kind)
+    if H.negotiateStart then SetTimeout(C.negotiator.textAfter * 1000, function() if active[r.id] == r and r.standoff then H.negotiateStart(r) end end) end
+end
+
+local function storm(r, why)
+    if r.rage then return end
+    r.rage, r.standoff, r.deal, r.chasePending = true, nil, nil, nil
+    unhold(r)
+    if r.owner then
+        TriggerClientEvent('exti_heists:client:npcRage', r.owner, r.id)
+        TriggerClientEvent('exti_heists:client:npcSwat', r.owner, r.id, HG.swat)
+    end
+    each(r, function(s) TriggerClientEvent('exti_heists:client:npcHoldBar', s, r.id, 0, 'rage') end)
+    negotiator(r, why == 'hurt' and 'آذيت أحدهم. انتهى الكلام. فريق التدخل قادم.' or 'انتهى الوقت. فريق التدخل يقتحم الآن.')
+    H.log(r.owner, 'npc_storm', ('%s · %s'):format(r.kind, why))
+end
+
+local function chase(r, quiet)
+    if active[r.id] ~= r or r.rage then return end
+    r.chasePending = nil
+    r.chase = { endT = H.now() + HG.chaseMinutes * 60 }
+    unhold(r)
+    if r.owner then TriggerClientEvent('exti_heists:client:npcChase', r.owner, r.id) end
+    tellMode(r)
+    if not quiet then negotiator(r, 'انتهت المهلة. نحن قادمون خلفك.') end
+    H.log(r.owner, 'npc_chase', r.kind)
+end
+
+local function headStart(r, seconds)
+    r.standoff, r.deal, r.chasePending = nil, nil, true
+    H.npcHold(r, seconds, 'headstart')
+    each(r, function(s) TriggerClientEvent('exti_heists:client:dropSpotClear', s, r.id) end)
+    SetTimeout(seconds * 1000, function() if active[r.id] == r and r.chasePending then chase(r) end end)
+end
+
+-- every hostage of these robbers, wherever they are
+local function heldBy(r)
+    local n = 0
+    for s in pairs(r.targets) do n = n + #(H.hostagesOf and H.hostagesOf(s) or {}) end
+    return n
+end
+
+-- from hostages.lua: a hostage was taken / let go
+function H.npcOnHostage(src)
+    local r = H.npcOf(src)
+    if r then standoff(r) end
+end
+function H.npcOnRelease(by, at, why)
+    local r = H.npcOf(by)
+    if not r or not r.deal or r.deal.kind ~= 'drop' then return end
+    if why == 'released' then
+        local s = r.deal.spot
+        if #(at - vec3(s.x, s.y, s.z)) > HG.dropRadius then
+            -- not where we said: the deal is off
+            r.deal = nil; r.standoff = nil
+            each(r, function(x) TriggerClientEvent('exti_heists:client:dropSpotClear', x, r.id) end)
+            negotiator(r, 'هذا ليس المكان الذي اتفقنا عليه. الاتفاق انتهى.')
+            H.log(by, 'npc_deal_broken', r.kind)
+            return chase(r, true)
+        end
+    end
+    if heldBy(r) > 0 then return end
+    if why == 'released' then
+        -- everyone's out at the spot: the head start
+        negotiator(r, ('رأيناه. معك %d ثانية.'):format(HG.dropHeadStart))
+        H.log(by, 'npc_deal_done', r.kind)
+        headStart(r, HG.dropHeadStart)
+    else
+        -- the last one got away some other way (cut loose, the robber left him): no hostage, no deal
+        r.deal = nil; r.standoff = nil
+        each(r, function(x) TriggerClientEvent('exti_heists:client:dropSpotClear', x, r.id) end)
+        negotiator(r, 'لم يعد معك أحد. الاتفاق انتهى.')
+        chase(r, true)
+    end
+end
+
+-- the negotiator's deals (negotiate.lua): 'drop' | 'release' | 'time' | 'surrender'
+function H.npcDeal(src, kind)
+    local r = H.npcOf(src)
+    if not r or r.phase ~= 'on scene' then return false, 'none' end
+    if r.rage then return false, 'rage' end
+    if kind == 'surrender' then return H.npcSurrender(src) end
+    if not r.standoff then return false, r.chase and 'chase' or 'nohostage' end
+    if kind == 'time' then
+        if r.standoff.more then return false, 'once' end
+        r.standoff.more = true
+        r.standoff.untilT = r.standoff.untilT + HG.moreTimeMinutes * 60
+        H.npcHold(r, r.standoff.untilT - H.now(), r.deal and 'deal' or 'hostages')
+        return true, math.ceil((r.standoff.untilT - H.now()) / 60)
+    elseif kind == 'release' then
+        if heldBy(r) == 0 then return false, 'nohostage' end
+        for s in pairs(r.targets) do H.releaseAll(s, 'deal') end
+        H.log(src, 'npc_deal_release', r.kind)
+        headStart(r, HG.releaseHeadStart)
+        return true, HG.releaseHeadStart
+    elseif kind == 'drop' then
+        if r.deal then return true, r.deal.spot, true end
+        if heldBy(r) == 0 then return false, 'nohostage' end
+        local here = H.coords(src); if not here then return false end
+        local ok, spot = pcall(function()
+            return lib.callback.await('exti_heists:client:dropSpot', src, { x = here.x, y = here.y, z = here.z }, HG.dropDistance[1], HG.dropDistance[2])
+        end)
+        if not ok or type(spot) ~= 'table' or not tonumber(spot.x) then return false, 'nospot' end
+        local p = vec3(spot.x + 0.0, spot.y + 0.0, spot.z + 0.0)
+        local d = #(p - here)
+        if d < HG.dropDistance[1] * 0.75 or d > HG.dropDistance[2] * 1.4 then return false, 'nospot' end
+        r.deal = { kind = 'drop', spot = { x = p.x, y = p.y, z = p.z, street = tostring(spot.street or ''):sub(1, 60) }, deadline = H.now() + HG.dropMinutes * 60 }
+        r.standoff.untilT = math.max(r.standoff.untilT, r.deal.deadline)
+        H.npcHold(r, r.deal.deadline - H.now(), 'deal')
+        each(r, function(s) TriggerClientEvent('exti_heists:client:dropSpotShow', s, r.id, r.deal.spot) end)
+        H.log(src, 'npc_deal_drop', ('%s · %.0f m'):format(r.kind, d))
+        return true, r.deal.spot
+    end
+    return false
+end
+
+---------------------------------------------------------------------------
 -- start a response at pos for these players (already in no-police mode)
+---------------------------------------------------------------------------
 function H.npcRespond(players, pos, kind)
     local spec = N.kinds[kind] or N.kinds.store
     -- one response per robber: a second alarm only adds people to it
     for _, s in ipairs(players) do
         local id = byPlayer[s]
         if id and active[id] then
-            for _, o in ipairs(players) do active[id].targets[o] = true; byPlayer[o] = id end
-            tellTargets(active[id])
+            local r = active[id]
+            for _, o in ipairs(players) do r.targets[o] = true; byPlayer[o] = id end
+            tellTargets(r)
+            if r.phase == 'on scene' then
+                for _, o in ipairs(players) do if o ~= r.owner then TriggerClientEvent('exti_heists:client:npcHunted', o, id) end end
+                tellMode(r)
+            end
             return id
         end
     end
@@ -95,25 +279,30 @@ function H.npcRespond(players, pos, kind)
         r.spawnedAt = H.now()
         TriggerClientEvent('exti_heists:client:npcSpawn', owner, id, { x = r.pos.x, y = r.pos.y, z = r.pos.z }, r.cars, targetsList(r), spec.weapons)
         for s in pairs(r.targets) do if s ~= owner then TriggerClientEvent('exti_heists:client:npcHunted', s, id) end end
-        -- hostages: they arrive, see them, and hold their fire while they talk
-        local n = H.hostageCount and H.hostageCount(targetsList(r)) or 0
-        if n > 0 then H.npcHold(r, C.hostages.arriveDrive + math.min(C.hostages.holdMax, n * C.hostages.holdPerHostage), 'hostages') end
-        if H.negotiateStart then SetTimeout(C.negotiator.textAfter * 1000, function() if active[id] == r then H.negotiateStart(r) end end) end
+        tellMode(r)
+        -- they see his face (a warrant without a mask), and his hostages (they hold their fire and talk)
+        SetTimeout(20000, function() if active[id] == r then faceSeen(r) end end)
+        if heldBy(r) > 0 then standoff(r)
+        elseif H.negotiateStart then SetTimeout(C.negotiator.textAfter * 1000, function() if active[id] == r and not r.standoff then H.negotiateStart(r) end end) end
     end
     SetTimeout(spec.delay * 1000, function() r.retry() end)
     return id
 end
 
--- the owner's game says the units are out (their network ids, so others see them and the server can check)
+-- the owner's game says units are out (the first ones, the SWAT team, a roadblock): their network ids
 RegisterNetEvent('exti_heists:server:npcSpawned', function(id, netIds)
     local src = source
     local r = active[id]
     if not r or r.owner ~= src or type(netIds) ~= 'table' then return end
-    r.units = {}
-    for _, n in ipairs(netIds) do if math.type(n) == 'integer' then r.units[#r.units + 1] = n end end
+    r.units = r.units or {}
+    local have, fresh = {}, {}
+    for _, n in ipairs(r.units) do have[n] = true end
+    for _, n in ipairs(netIds) do
+        if math.type(n) == 'integer' and not have[n] and #r.units < 60 then r.units[#r.units + 1] = n; have[n] = true; fresh[#fresh + 1] = n end
+    end
     -- tag them on the server (a tag set by the game right after creating them may not reach the others)
     SetTimeout(1500, function()
-        for _, n in ipairs(r.units) do
+        for _, n in ipairs(fresh) do
             local ent = NetworkGetEntityFromNetworkId(n)
             if ent ~= 0 and DoesEntityExist(ent) then
                 Entity(ent).state:set('exti_npcsec', id, true)
@@ -129,12 +318,13 @@ RegisterNetEvent('exti_heists:server:npcSpawned', function(id, netIds)
     end)
 end)
 
--- the owner's game: lost them (out of sight for 60 s) / downed / left the area
+-- the owner's game: lost them (out of sight long enough)
 RegisterNetEvent('exti_heists:server:npcLost', function(id)
     local src = source
     local r = active[id]
     if not r or not r.targets[src] then return end
     if GetPlayerRoutingBucket(src) ~= 0 then return end   -- (hiding inside a house doesn't lose them)
+    if r.standoff or r.deal or r.chasePending then return end   -- (while they wait for you, you can't "lose" them)
     r.targets[src] = nil; byPlayer[src] = nil
     H.notify(src, 'أضعتهم: توقفت حراسة الحي عن البحث', 'success', 6000)
     H.log(src, 'npc_lost', r.kind)
@@ -143,10 +333,8 @@ RegisterNetEvent('exti_heists:server:npcLost', function(id)
     handOver(r, src); tellTargets(r)
 end)
 
--- downed while they were on you: the loot of this robbery is gone (the hospital does the rest as usual)
-local function downed(src)
-    local id = byPlayer[src]; local r = id and active[id]
-    if not r or r.phase ~= 'on scene' then return end
+-- the loot of this robbery is gone
+local function takeLoot(src)
     local rec = H.rec(src)
     local gone = {}
     if rec then
@@ -157,6 +345,14 @@ local function downed(src)
         end
         rec.loot = {}
     end
+    return gone
+end
+
+-- downed while they were on you
+local function downed(src)
+    local id = byPlayer[src]; local r = id and active[id]
+    if not r or r.phase ~= 'on scene' then return end
+    local gone = takeLoot(src)
     H.notify(src, 'أسقطتك حراسة الحي: ضاعت الغنيمة', 'error', 9000)
     H.log(src, 'npc_downed', table.concat(gone, ', '))
     r.targets[src] = nil; byPlayer[src] = nil
@@ -171,7 +367,7 @@ RegisterNetEvent('exti_heists:server:npcDowned', function(id)
     if (ds ~= nil and ds ~= 1) or GetEntityHealth(GetPlayerPed(src)) <= 101 then downed(src) end
 end)
 
--- a real cop arrives: the NPCs stand down / everyone left / the time ran out
+-- the clock: a real cop arrives / the standoff / the deal / the chase / everyone left
 CreateThread(function()
     while true do
         Wait(3000)
@@ -196,16 +392,30 @@ CreateThread(function()
                     sweep(r)
                     for tgt in pairs(r.targets) do if byPlayer[tgt] == id then byPlayer[tgt] = nil end end
                     H.log(cop, 'npc_stand_down', r.kind)
-                elseif t - (r.spawnedAt or t) > N.maxMinutes * 60 then
+                elseif r.standoff then
+                    if r.deal and t > r.deal.deadline then
+                        storm(r, 'deal time')
+                    elseif t > r.standoff.untilT then
+                        storm(r, 'time')
+                    elseif heldBy(r) == 0 and not r.deal then
+                        -- no hostage any more and no deal: nothing holds them back
+                        r.standoff = nil; unhold(r)
+                        negotiator(r, 'لا رهائن معك الآن. لا شيء يمنعنا.')
+                    end
+                elseif r.chase then
+                    if t > r.chase.endT then endResponse(id, 'time') end
+                elseif not r.chasePending and t - (r.spawnedAt or t) > N.maxMinutes * 60 then
                     endResponse(id, 'time')
-                elseif r.owner and GetPlayerRoutingBucket(r.owner) ~= 0 then
-                    -- the robber whose game drives them went inside a house: a crewmate still outside drives them
+                end
+                -- the robber whose game drives them went inside a house: a crewmate still outside drives them
+                local rr = active[id]
+                if rr and rr.owner and GetPlayerRoutingBucket(rr.owner) ~= 0 then
                     local outside
-                    for s in pairs(r.targets) do if s ~= r.owner and GetPlayerRoutingBucket(s) == 0 then outside = s break end end
+                    for s in pairs(rr.targets) do if s ~= rr.owner and GetPlayerRoutingBucket(s) == 0 then outside = s break end end
                     if outside then
-                        local old = r.owner
+                        local old = rr.owner
                         TriggerClientEvent('exti_heists:client:npcRelease', old, id)
-                        handOver(r, old)
+                        handOver(rr, old)
                     end
                 end
             end
@@ -236,46 +446,32 @@ AddEventHandler('onResourceStop', function(res)
 end)
 
 ---------------------------------------------------------------------------
--- hostages and the negotiator (hostages.lua / negotiate.lua)
+-- for hostages.lua / negotiate.lua
 ---------------------------------------------------------------------------
--- the response hunting this robber (or nil)
 function H.npcOf(src) local id = byPlayer[src]; return id and active[id] or nil end
 function H.npcTargets(r) return targetsList(r) end
+function H.npcStandoffLeft(r) return r.standoff and math.max(0, r.standoff.untilT - H.now()) or 0 end
 
--- the units hold their fire (they aim, they don't shoot, they don't chase) for this long
-function H.npcHold(r, seconds, why)
-    if not r then return end
-    local untilT = math.max(r.holdUntil or 0, H.now() + seconds)
-    r.holdUntil = untilT
-    if why == 'pullback' then r.pullUntil = H.now() + seconds end
-    if r.owner then TriggerClientEvent('exti_heists:client:npcHold', r.owner, r.id, untilT - H.now(), why) end
-    for s in pairs(r.targets) do TriggerClientEvent('exti_heists:client:npcHoldBar', s, r.id, untilT - H.now(), why) end
-    H.log(r.owner, 'npc_hold', ('%ds (%s)'):format(seconds, why or ''))
-end
--- a hostage was hurt: no more talking, they come in hard
+-- a hostage was hurt: no more talking, the SWAT team
 function H.npcRage(src)
     local r = H.npcOf(src); if not r then return end
-    r.holdUntil, r.rage = 0, true
-    if r.owner then TriggerClientEvent('exti_heists:client:npcRage', r.owner, r.id) end
-    for s in pairs(r.targets) do TriggerClientEvent('exti_heists:client:npcHoldBar', s, r.id, 0, 'rage') end
+    storm(r, 'hurt')
 end
--- he gives himself up: the loot of this robbery is gone, the units leave him
+
+-- he gives himself up: his hostages go, the loot of this robbery is gone, he goes to prison
 function H.npcSurrender(src)
     local id = byPlayer[src]; local r = id and active[id]
     if not r then return false end
-    local rec = H.rec(src)
-    local gone = {}
-    if rec then
-        for item, n in pairs(rec.loot or {}) do
-            local have = exports.ox_inventory:Search(src, 'count', item) or 0
-            local take = math.min(have, n)
-            if take > 0 then exports.ox_inventory:RemoveItem(src, item, take); gone[#gone + 1] = ('%dx %s'):format(take, item) end
-        end
-        rec.loot = {}
-    end
+    H.releaseAll(src, 'surrender')
+    local gone = takeLoot(src)
     H.log(src, 'npc_surrender', table.concat(gone, ', '))
     r.targets[src] = nil; byPlayer[src] = nil
     TriggerClientEvent('exti_heists:client:npcEnd', src, id, r.owner == src and next(r.targets) and 'handover' or 'surrender')
     if not next(r.targets) then endResponse(id, 'surrender') else handOver(r, src); tellTargets(r) end
+    if GetResourceState('exti_police') == 'started' then
+        SetTimeout(4000, function()
+            if GetPlayerName(src) then pcall(function() exports.exti_police:Jail(src, HG.surrenderJail, 'حراسة الحي') end) end
+        end)
+    end
     return true
 end

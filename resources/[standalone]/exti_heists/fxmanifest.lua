@@ -29,6 +29,8 @@ client_scripts {
     'client/atm.lua',
     'client/jewelry.lua',
     'client/hostages.lua',
+    'client/captive.lua',
+    'client/radial.lua',
     'client/guards.lua',
     'client/vaults.lua',
     'client/preps.lua',

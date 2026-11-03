@@ -1283,8 +1283,15 @@ return {
     ['zip_ties'] = {
         label = 'أربطة بلاستيكية (Zip Ties)',
         weight = 50,
-        description = 'لتقييد الرهائن. من متجر الأدوات',
+        description = 'لتقييد الرهائن (القائمة Z). تصنعها العصابات في مقرّاتها',
         client = { image = 'nui://exti_heists/html/items/zip_ties.png' },
+    },
+
+    ['blindfold'] = {
+        label = 'عصابة عينين (Blindfold)',
+        weight = 80,
+        description = 'كيس قماش على رأس رهينة مقيّدة: لا يرى شيئًا (القائمة Z). تصنعها العصابات في مقرّاتها',
+        client = { image = 'nui://exti_heists/html/items/blindfold.png' },
     },
 
     ['stolen_laptop'] = {

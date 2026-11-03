@@ -204,3 +204,50 @@ CreateThread(function()
         for _, t in ipairs(takes) do GANG.log(g, GANG.charName(p), 'stash_take', ('%d × %s'):format(t.count, tostring(t.item))) end
     end, { inventoryFilter = { '^gang_' } })
 end)
+
+---------------------------------------------------------------------------
+-- zip ties / blindfolds at the HQ stash (any gang, any rank): parts out of the gang stash, the work,
+-- the product in the member's pockets
+---------------------------------------------------------------------------
+local TI = C.ties
+local tieWork = {}   -- [source] = { gang, item, parts, at, need }
+
+lib.callback.register('exti_gangs:server:tiesBegin', function(source, item, parts)
+    local g, m = GANG.memberOf(source)
+    if not g or not TI[item] or type(TI[item]) ~= 'table' then return false, 'nogang' end
+    if g.locked then return false, 'locked' end
+    if not GANG.near(source, GANG.spot(g, 'stash'), 3.0) then return false, 'far' end
+    parts = math.tointeger(tonumber(parts))
+    if not parts or parts < 1 or parts > TI.maxParts then return false, 'failed' end
+    if tieWork[source] then return false, 'failed' end
+    if GANG.getDaily('g', g.name, 'ties') + parts > TI.gangDaily then return false, 'tiesdaily' end
+    local count = parts * TI[item].per
+    if not ox:CanCarryItem(source, item, count) then return false, 'full' end
+    local stash, part = GANG.stashId(g), partOf(g)
+    if (ox:GetItemCount(stash, part) or 0) < parts or not ox:RemoveItem(stash, part, parts) then return false, 'tiesparts' end
+    local need = TI.seconds + TI.perPart * parts
+    tieWork[source] = { gang = g.name, item = item, parts = parts, at = os.time(), need = need, part = part }
+    return true, need, count
+end)
+
+lib.callback.register('exti_gangs:server:tiesEnd', function(source, done)
+    local w = tieWork[source]; tieWork[source] = nil
+    if not w then return false end
+    local g = GANG.gangs[w.gang]
+    if not done or os.time() - w.at < w.need - 1 or not g or not GANG.near(source, GANG.spot(g, 'stash'), 4.0) then
+        -- stopped: the parts go back
+        if g then ox:AddItem(GANG.stashId(g), w.part, w.parts) end
+        return false
+    end
+    local count = w.parts * TI[w.item].per
+    GANG.addDaily('g', g.name, 'ties', w.parts)
+    if not ox:AddItem(source, w.item, count) then ox:AddItem(GANG.stashId(g), w.item, count) end
+    GANG.log(g, GANG.charName(GANG.player(source)), 'ties_made', ('%s · %d'):format(w.item, count))
+    return true, count
+end)
+AddEventHandler('playerDropped', function()
+    local w = tieWork[source]; tieWork[source] = nil
+    local g = w and GANG.gangs[w.gang]
+    if g then ox:AddItem(GANG.stashId(g), w.part, w.parts) end
+end)
+

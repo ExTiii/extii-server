@@ -33,7 +33,7 @@ function HC.busy() return playing ~= nil end
 -- several loops (stores, houses, ATMs, the jewelry store) each own a prompt; the first one that has
 -- something to say is shown. HC.prompt(nil) with no owner (an action starting) clears them all.
 local shown = nil
-local owners, ORDER = {}, { 'hostage', 'vault', 'bigbank', 'truck', 'stash', 'yacht', 'prep', 'jewel', 'atm', 'houses', 'stores', 'jobs' }
+local owners, ORDER = {}, { 'vault', 'bigbank', 'truck', 'stash', 'yacht', 'prep', 'jewel', 'atm', 'houses', 'stores', 'jobs', 'hostage' }
 function HC.prompt(text, owner)
     if owner then owners[owner] = text else owners = {} end
     local want

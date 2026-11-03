@@ -126,6 +126,7 @@ local ERR = {
     mecap = 'وصلت حدك اليومي من التسليم', bank = 'بنك العصابة لا يكفي لدفع أجرك', stashfull = 'مخزن العصابة ممتلئ',
     rank = 'رتبتك لا تسمح', tools = 'لا توجد أدوات تفكيك في المخزن',
     notmine = 'تُدفع فقط القطع التي جمعتها بنفسك (ضع غيرها في المخزن)',
+    tiesdaily = 'العصابة وصلت حدها اليومي من صنع الأربطة', tiesparts = 'لا توجد قطع كافية في مخزن العصابة',
 }
 GC.ERR = ERR
 local function fail(why, extra)
@@ -171,6 +172,31 @@ local function doStash()
     local id, why = lib.callback.await('exti_gangs:server:openStash', false)
     if not id then return fail(why) end
     exports.ox_inventory:openInventory('stash', id)
+end
+
+-- the stash also makes zip ties and blindfolds (from the gang's own parts)
+local function makeTies(item)
+    local T = C.ties
+    local inp = lib.inputDialog(item == 'zip_ties' and 'صنع أربطة بلاستيكية' or 'صنع عصابات عيون', {
+        { type = 'slider', label = ('كم قطعة؟ (القطعة = %d)'):format(T[item].per), min = 1, max = T.maxParts, default = 1 },
+    })
+    local parts = inp and tonumber(inp[1])
+    if not parts then return end
+    local ok, need, count = lib.callback.await('exti_gangs:server:tiesBegin', false, item, parts)
+    if not ok then return fail(need) end
+    local done = lib.progressBar({ duration = need * 1000, label = ('تصنع %d %s...'):format(count, T[item].label), canCancel = true,
+        disable = { move = true, car = true, combat = true }, anim = { dict = 'mini@repair', clip = 'fixing_a_ped' } })
+    local res, got = lib.callback.await('exti_gangs:server:tiesEnd', false, done == true)
+    if res then notify(('صنعت %d %s · في حقيبتك'):format(got, T[item].label), 'success') elseif done then notify(ERR.failed, 'error') end
+end
+local function stashMenu()
+    local T = C.ties
+    lib.registerContext({ id = 'exti_gang_stash', title = 'مخزن العصابة', options = {
+        { title = 'افتح المخزن', icon = 'box-open', onSelect = doStash },
+        { title = 'اصنع أربطة بلاستيكية', description = ('قطعة واحدة من قطع العصابة = %d أربطة'):format(T.zip_ties.per), icon = 'link', onSelect = function() makeTies('zip_ties') end },
+        { title = 'اصنع عصابات عيون', description = ('قطعة واحدة = %d عصابات'):format(T.blindfold.per), icon = 'eye-slash', onSelect = function() makeTies('blindfold') end },
+    } })
+    lib.showContext('exti_gang_stash')
 end
 
 local function sellParts()
@@ -442,7 +468,7 @@ CreateThread(function()
             busy = true; showPrompt(nil)
             local k = best.kind
             if k == 'laptop' then openLaptop()
-            elseif k == 'stash' then doStash()
+            elseif k == 'stash' then stashMenu()
             elseif k == 'deposit' then doDeposit()
             elseif k == 'locker' then doLocker()
             elseif k == 'bench' then doBench()

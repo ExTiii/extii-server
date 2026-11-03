@@ -1,57 +1,70 @@
 -- =====================================================================
 -- EX_Tii heists: the NPC negotiator (no-police mode). When "حراسة الحي" is on scene, their negotiator
 -- texts every robber they want. Reply with a number:
---   1 = a head start: let one hostage go, they hold their fire and stay put for 30 s
---   2 = pull back:   with 2+ hostages, they go back to their cars for 60 s (once)
---   3 = give up:     the loot of this robbery is gone, they leave you be (no hospital)
--- Without hostages you have nothing to trade. Hurt a hostage and they stop answering.
+--   1 = the drop: they text you a spot (marked on your map). Take your hostages there and let them go:
+--       30 s, then they come after you. They follow you there and never shoot.
+--   2 = let him go here: every hostage goes free right now, 15 s, then they come after you.
+--   3 = more time: +5 min before they storm (once).
+--   4 = give up: your hostages go, the loot is gone, prison.
+-- Without hostages you have nothing to trade but giving up. Hurt a hostage and they stop answering.
 -- =====================================================================
 local C = Config
 local NG = C.negotiator
+local HG = C.hostages
 
 local function text(src, msg)
     local to = H.phoneOf(src)
     if not to or GetResourceState('npwd') ~= 'started' then return end
     pcall(function() exports.npwd:emitMessage({ senderNumber = NG.number, targetNumber = to, message = msg }) end)
 end
+H.negotiatorText = text
 
-local MENU = 'ردّ برقم: 1 = مهلة (تطلق رهينة) · 2 = انسحبوا (رهينتان على الأقل) · 3 = أستسلم'
+local MENU = 'ردّ برقم:\n1 = نحدد لك مكانًا تترك فيه الرهائن\n2 = أطلقهم هنا الآن\n3 = أحتاج وقتًا (+%d دقائق، مرة واحدة)\n4 = أستسلم'
+local function menu() return MENU:format(HG.moreTimeMinutes) end
 
 function H.negotiateStart(r)
     for _, s in ipairs(H.npcTargets(r)) do
         local n = H.hostageCount({ s })
-        text(s, ('هنا مفاوض حراسة الحي. المكان محاصر. %s\n%s'):format(n > 0 and ('نرى معك %d رهائن. لا أحد يتأذى.'):format(n) or 'لا نرى معك رهائن.', MENU))
+        if n > 0 then
+            text(s, ('هنا مفاوض حراسة الحي. المكان محاصر. نرى معك %d %s. لن نطلق النار ما دام لا أحد يتأذى. معك %d دقيقة.\n%s')
+                :format(n, n == 1 and 'رهينة' or 'رهائن', math.ceil(H.npcStandoffLeft(r) / 60), menu()))
+        else
+            text(s, 'هنا مفاوض حراسة الحي. المكان محاصر ولا نرى معك رهائن. ردّ 4 لتستسلم.')
+        end
     end
 end
 
+local REASON = {
+    none = 'لا أعرف عمّا تتكلم.', rage = 'انتهى الكلام. آذيت أحدهم.', chase = 'فات وقت الكلام.',
+    nohostage = 'بلا رهائن لا اتفاق. ردّ 4 لتستسلم.', once = 'أعطيناك وقتًا مرة. لن نفعلها مرتين.',
+    nospot = 'لحظة... أعد المحاولة بعد قليل.',
+}
+
 local function onText(src, msg)
-    local r = H.npcOf(src)
-    if not r or r.phase ~= 'on scene' then return text(src, 'لا أعرف عمّا تتكلم.') end
-    if r.rage then return text(src, 'انتهى الكلام. آذيت أحدهم.') end
     msg = tostring(msg or ''):gsub('%s+', '')
-    local n = H.hostageCount(H.npcTargets(r))
-    if msg == '1' or msg:find('مهل') then
-        if n < 1 then return text(src, 'بلا رهائن لا مهلة. ' .. MENU) end
-        if not H.releaseOne(src) then return text(src, 'أطلق واحدًا بنفسك وسنرى.') end
-        H.npcHold(r, NG.headStartSeconds, 'deal')
-        text(src, ('اتفقنا. رأيناه يخرج. معك %d ثانية، لن نطلق النار.'):format(NG.headStartSeconds))
-        H.log(src, 'negotiate', 'head start')
-    elseif msg == '2' or msg:find('انسحب') then
-        if r.pulledBack then return text(src, 'انسحبنا مرة. لن نفعلها مرتين.') end
-        if n < NG.pullBackHostages then return text(src, ('تحتاج %d رهائن على الأقل لهذا. معك %d.'):format(NG.pullBackHostages, n)) end
-        r.pulledBack = true
-        H.npcHold(r, NG.pullBackSeconds, 'pullback')
-        if r.owner then TriggerClientEvent('exti_heists:client:npcPullBack', r.owner, r.id, NG.pullBackSeconds) end
-        text(src, ('سنرجع إلى سياراتنا %d ثانية. لا تجعلنا نندم.'):format(NG.pullBackSeconds))
-        H.log(src, 'negotiate', 'pull back')
-    elseif msg == '3' or msg:find('استسلم') or msg:find('أستسلم') then
-        H.releaseAll(src)
-        if H.npcSurrender(src) then
-            H.addXP(src, NG.surrenderXp, 'surrendered to NPC security')
-            text(src, 'قرار ذكي. أخذنا ما سرقت. اختفِ.')
-        end
-    else
-        text(src, 'لم أفهم. ' .. MENU)
+    local pick = msg:match('^[1-4]')
+    local digits = { ['١'] = '1', ['٢'] = '2', ['٣'] = '3', ['٤'] = '4' }   -- (Arabic digits too)
+    for a, b in pairs(digits) do if msg:sub(1, #a) == a then pick = b end end
+    if msg:find('استسلم') or msg:find('أستسلم') then pick = '4' end
+    if not pick then
+        local r = H.npcOf(src)
+        if not r then return text(src, REASON.none) end
+        return text(src, 'لم أفهم. ' .. menu())
+    end
+    local kind = ({ ['1'] = 'drop', ['2'] = 'release', ['3'] = 'time', ['4'] = 'surrender' })[pick]
+    local ok, res, again = H.npcDeal(src, kind)
+    if not ok then return text(src, REASON[res] or REASON.none) end
+    if kind == 'drop' then
+        local s = res
+        text(src, ('%s النقطة على خريطتك%s. اذهب بالرهائن إلى هناك وأطلقهم. نحن خلفك ولن نطلق النار. معك %d دقائق.')
+            :format(again and 'المكان كما قلنا:' or 'اتفقنا.', (s.street and s.street ~= '') and (' (' .. s.street .. ')') or '', HG.dropMinutes))
+    elseif kind == 'release' then
+        text(src, ('رأيناهم يخرجون. معك %d ثانية.'):format(res))
+    elseif kind == 'time' then
+        text(src, ('حسنًا. معك %d دقيقة الآن. لا تضيّعها.'):format(res))
+    elseif kind == 'surrender' then
+        H.addXP(src, NG.surrenderXp, 'surrendered to NPC security')
+        text(src, 'قرار ذكي. أخذنا ما سرقت. ستُسلَّم إلى السجن.')
     end
 end
 

@@ -84,6 +84,7 @@ local function canOpen()
     if LocalPlayer.state.characterScreen then return false end
     if IsEntityDead(cache.ped) then return false end
     if LocalPlayer.state.cuffed then return false end -- cuffed by the police
+    if LocalPlayer.state.exti_tied then return false end -- zip tied (a hostage)
     local down = LocalPlayer.state['qbx_medical:deathState']
     if down and down ~= 1 then return false end
     return true
@@ -111,7 +112,7 @@ local function open()
             DisableControlAction(0, 257, true) -- attack 2
             DisablePlayerFiring(cache.playerId, true)
             tick += 1
-            if tick % 15 == 0 and (IsPauseMenuActive() or IsEntityDead(cache.ped) or LocalPlayer.state.cuffed) then close() end
+            if tick % 15 == 0 and (IsPauseMenuActive() or IsEntityDead(cache.ped) or LocalPlayer.state.cuffed or LocalPlayer.state.exti_tied) then close() end
         end
     end)
 end
