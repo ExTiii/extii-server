@@ -56,3 +56,8 @@ CreateThread(function()
         for cell, t in pairs(lastArea) do if now - t > 600 then lastArea[cell] = nil end end
     end
 end)
+
+-- admins (testing): /dmgtest turns on a line for every hit you land: how much health it took
+lib.addCommand('dmgtest', { help = 'Weapons: show the damage of every hit you land (admin)', restricted = 'group.admin' }, function(source)
+    TriggerClientEvent('exti_weapons:client:dmgtest', source)
+end)

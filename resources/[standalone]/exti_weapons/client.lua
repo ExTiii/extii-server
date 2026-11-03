@@ -61,3 +61,27 @@ exports('useLightArmour', function(data, slot)
         end
     end)
 end)
+
+-- admins (testing): /dmgtest = every hit you land shows the health it took (people and players)
+local dmgtest, lastHp = false, {}
+RegisterNetEvent('exti_weapons:client:dmgtest', function()
+    if GetInvokingResource() then return end
+    dmgtest = not dmgtest; lastHp = {}
+    lib.notify({ type = 'inform', description = dmgtest and 'اختبار الضرر: يعمل (كل إصابة تظهر كم أخذت من الصحة)' or 'اختبار الضرر: متوقف' })
+end)
+AddEventHandler('gameEventTriggered', function(name, args)
+    if not dmgtest or name ~= 'CEventNetworkEntityDamage' then return end
+    local victim, attacker, weapon = args[1], args[2], args[7]
+    if attacker ~= cache.ped or not victim or victim == cache.ped or not DoesEntityExist(victim) or not IsEntityAPed(victim) then return end
+    local before = lastHp[victim] or GetEntityMaxHealth(victim)
+    SetTimeout(0, function()
+        if not DoesEntityExist(victim) then return end
+        local now = math.max(0, GetEntityHealth(victim))
+        local armour = GetPedArmour(victim)
+        lastHp[victim] = now
+        local ok, bone = GetPedLastDamageBone(victim)
+        local where = (ok and bone == 31086) and 'رأس' or 'جسم'
+        local who = IsPedAPlayer(victim) and 'لاعب' or 'شخص'
+        lib.notify({ type = 'inform', duration = 6000, description = ('%s · %s · -%d صحة · الباقي %d%s'):format(who, where, before - now, now, armour > 0 and (' · درع %d'):format(armour) or '') })
+    end)
+end)

@@ -109,8 +109,8 @@
           ${has('message') ? `<div class="card"><h3>رسالة خاصة له</h3><div class="row"><input class="in grow" id="pmsg" placeholder="اكتب رسالة تظهر على شاشته"><button class="btn acc" data-a="message">أرسل</button></div></div>` : ''}
           ${has('money') ? `<div class="card"><h3>المال</h3><div class="row"><input class="in w160 num" id="mamt" placeholder="المبلغ (- للخصم)"><select class="in" id="macc"><option value="cash">كاش</option><option value="bank">بنك</option></select>
             <button class="btn acc" data-a="money">نفّذ</button></div><div class="row"><button class="chip" data-m="1000">+1,000</button><button class="chip" data-m="10000">+10,000</button><button class="chip" data-m="100000">+100,000</button></div></div>` : ''}
-          ${has('item') ? `<div class="card"><h3>أعطه غرضًا</h3><div class="row"><input class="in grow" id="iname" list="items" placeholder="ابحث عن الغرض بالاسم"><input class="in w80 num" id="icnt" value="1"><button class="btn acc" data-a="item">أعطِ</button></div>
-            <div class="row"><button class="btn bad" data-a="clearinv">أفرغ حقيبته</button></div><datalist id="items">${S.items.map((i) => `<option value="${esc(i.name)}">${esc(i.label)}</option>`).join('')}</datalist></div>` : ''}
+          ${has('item') ? `<div class="card"><h3>أعطه غرضًا</h3><div class="row"><div class="isw grow"><input class="in" id="iname" autocomplete="off" placeholder="ابحث عن الغرض بالاسم أو بالعربي"><div class="isug" id="isug"></div></div><input class="in w80 num" id="icnt" value="1"><button class="btn acc" data-a="item">أعطِ</button></div>
+            <div class="row"><button class="btn bad" data-a="clearinv">أفرغ حقيبته</button></div></div>` : ''}
           ${has('job') ? `<div class="card"><h3>الوظيفة</h3><div class="row"><select class="in grow" id="job">${jobs}</select><select class="in w160" id="grade"></select><button class="btn acc" data-a="job">غيّر</button></div></div>` : ''}
           ${has('gang') ? `<div class="card"><h3>العصابة</h3><div class="row"><select class="in grow" id="gsel"></select><select class="in w120" id="grank"><option value="0">عدّاء</option><option value="1">طاقم</option><option value="2">نائب</option><option value="3">الزعيم</option></select>
             <button class="btn acc" data-a="setgang">ضعه</button></div><div class="mute" style="margin-top:6px">بدون انتظار 48 ساعة. «زعيم» يجعله الزعيم ويُنزل القديم.</div></div>` : ''}
@@ -124,6 +124,21 @@
         const gs = document.getElementById('gsel');
         if (gs) { (async () => { if (!gangs) gangs = await fetchX('gangs'); gs.innerHTML = arr(gangs && gangs.gangs).map((g) => `<option value="${esc(g.name)}">${esc(g.label)}</option>`).join('') || '<option value="">لا توجد عصابات</option>'; })(); }
         el.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { document.getElementById('mamt').value = b.dataset.m; });
+        // the item search: a real list under the box (FiveM's browser doesn't show <datalist> drop-downs)
+        const iname = document.getElementById('iname'), isug = document.getElementById('isug');
+        if (iname && isug) {
+            const all = arr(S.items);
+            const show = () => {
+                const q = iname.value.trim().toLowerCase();
+                if (!q) { isug.innerHTML = ''; isug.classList.remove('on'); return; }
+                const hit = all.filter((i) => String(i.name).toLowerCase().includes(q) || String(i.label || '').toLowerCase().includes(q))
+                    .sort((x, y) => (String(x.name).toLowerCase().startsWith(q) ? 0 : 1) - (String(y.name).toLowerCase().startsWith(q) ? 0 : 1)).slice(0, 12);
+                isug.innerHTML = hit.map((i) => `<button type="button" data-n="${esc(i.name)}"><b>${esc(i.label || i.name)}</b><span class="ltr">${esc(i.name)}</span></button>`).join('') || '<div class="mute">لا يوجد غرض بهذا الاسم</div>';
+                isug.classList.add('on'); isug.scrollIntoView({ block: 'nearest' });
+                isug.querySelectorAll('[data-n]').forEach((b) => b.onmousedown = (e) => { e.preventDefault(); iname.value = b.dataset.n; isug.classList.remove('on'); });
+            };
+            iname.oninput = show; iname.onfocus = show; iname.onblur = () => setTimeout(() => isug.classList.remove('on'), 120);
+        }
         el.querySelectorAll('[data-a]').forEach((b) => b.onclick = async () => {
             const id = p.id, a = b.dataset.a;
             if (a === 'freeze1' || a === 'freeze0') return act('freeze', { id, on: a === 'freeze1' });
