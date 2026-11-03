@@ -95,13 +95,14 @@ DisableVehiclePassengerIdleCamera(true)
 -- 13 cash change, 19 weapon wheel, 20 weapon wheel stats, 21 HUD components, 22 HUD weapons
 local HIDDEN = { 1, 2, 3, 4, 7, 9, 13, 19, 20, 21, 22 }
 
-local DENSITY = 0.8 -- traffic, parked cars and people in the street (1.0 = GTA Online)
+local DENSITY = 0.8 -- traffic and people in the street (1.0 = GTA Online)
+local PARKED = 0.45 -- NPC cars parked along the streets (fewer: the streets look less crowded; still enough to steal)
 
 CreateThread(function()
     for i = 1, #HIDDEN do SetHudComponentSize(HIDDEN[i], 0.0, 0.0) end
     while true do
         DisableControlAction(2, 37, true) -- TAB weapon wheel
-        SetParkedVehicleDensityMultiplierThisFrame(DENSITY)
+        SetParkedVehicleDensityMultiplierThisFrame(PARKED)
         SetVehicleDensityMultiplierThisFrame(DENSITY)
         SetRandomVehicleDensityMultiplierThisFrame(DENSITY)
         SetPedDensityMultiplierThisFrame(DENSITY)
