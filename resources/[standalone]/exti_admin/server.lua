@@ -322,11 +322,19 @@ A.money = { 'money', function(src, d)
     elseif not p.Functions.RemoveMoney(acc, -amount, 'admin') then return false, 'ليس معه هذا المبلغ' end
     log(src, 'money', GetPlayerName(t), ('%s %+d'):format(acc, amount)); return true, 'تم'
 end }
+-- does it fit in the bag? (our own weight check: the bag must never go over its limit)
+local function fits(inv, item, count)
+    local i = ox:GetInventory(inv); local def = ox:Items(item)
+    if not i or not def then return false end
+    local w = (def.weight or 0) * count
+    if i.maxWeight and (i.weight or 0) + w > i.maxWeight then return false end
+    return ox:CanCarryItem(inv, item, count) and true or false
+end
 A.item = { 'item', function(src, d)
     local t = target(d) or (d.self and src); if not t then return false, 'اللاعب غير موجود' end
     local item = type(d.item) == 'string' and d.item or nil; if not item or not ox:Items(item) then return false, 'غرض غير معروف' end
     local count = num(d.count, 1, 100000) or 1
-    if not ox:CanCarryItem(t, item, count) then return false, 'لا مكان في حقيبته' end
+    if not fits(t, item, count) then return false, 'لا مكان في حقيبته (الوزن أو الخانات)' end
     local ok = ox:AddItem(t, item, count)
     if ok then log(src, 'item', GetPlayerName(t), ('%s × %d'):format(item, count)) end
     return ok and true or false, ok and 'أعطيته' or 'لم ينجح'
@@ -479,7 +487,7 @@ A.kit = { 'test', function(src, d)
     local k = Config.kits[num(d.kit, 1, #Config.kits) or 0]; if not k then return false end
     local got, missed = 0, 0
     for _, it in ipairs(k.items) do
-        if ox:Items(it[1]) and ox:CanCarryItem(src, it[1], it[2]) and ox:AddItem(src, it[1], it[2]) then got = got + 1 else missed = missed + 1 end
+        if ox:Items(it[1]) and fits(src, it[1], it[2]) and ox:AddItem(src, it[1], it[2]) then got = got + 1 else missed = missed + 1 end
     end
     log(src, 'test_kit', k.label, missed > 0 and ('%d items did not fit'):format(missed) or nil)
     if got == 0 then return false, 'لا مكان في حقيبتك' end
