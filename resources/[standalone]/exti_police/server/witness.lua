@@ -78,8 +78,13 @@ local function halfPlate(veh)
 end
 
 local MALE, FEMALE = `mp_m_freemode_01`, `mp_f_freemode_01`
-local function personOf(ped)
-    local masked = (GetPedDrawableVariation(ped, 1) or 0) > 0
+local function personOf(ped, src)
+    -- the mask: the player's own game tells us (a state flag it keeps up to date); the server's own read if it has one
+    local masked = src and Player(src).state.exti_mask
+    if masked == nil and GetPedDrawableVariation then
+        local ok, d = pcall(GetPedDrawableVariation, ped, 1)
+        masked = ok and (d or 0) > 0
+    end
     if masked then return 'ملثّم' end
     local m = GetEntityModel(ped)
     if m == MALE then return 'رجل' elseif m == FEMALE then return 'امرأة' end
@@ -88,7 +93,8 @@ end
 
 local DIRS = { 'الشمال', 'الشمال الشرقي', 'الشرق', 'الجنوب الشرقي', 'الجنوب', 'الجنوب الغربي', 'الغرب', 'الشمال الغربي' }
 local function headingOf(ent)
-    local v = GetEntityVelocity(ent)
+    local ok, v = pcall(GetEntityVelocity, ent)
+    if not ok then return nil end
     if not v or #(vec2(v.x, v.y)) < (W.movingSpeed or 2.5) then return nil end
     local deg = math.deg(math.atan(v.x, v.y)) % 360          -- 0 = north (+y), 90 = east (+x)
     return DIRS[math.floor((deg + 22.5) / 45) % 8 + 1]
@@ -131,7 +137,7 @@ function POL.describe(opts)
     local function roll(k) return math.random() < (tonumber(odds[k]) or 0.5) end
 
     local out = { by = camera and 'كاميرا مراقبة' or 'شاهد عيان' }
-    if ped and roll('person') then out.person = personOf(ped) end
+    if ped and roll('person') then out.person = personOf(ped, opts.suspect) end
     if veh then
         if roll('car') then
             local model, colour = modelOf(veh), colourOf(veh)

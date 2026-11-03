@@ -191,3 +191,13 @@ RegisterNetEvent('qbx_core:client:playerLoggedOut', function() wasOn = false; cl
 AddEventHandler('onResourceStart', function(res)
     if res == GetCurrentResourceName() and QBX and QBX.PlayerData and jobOn(QBX.PlayerData.job) then dutyNow(true) end
 end)
+
+-- the mask (for what a witness sees): kept on the player's state, only when it changes
+CreateThread(function()
+    local last
+    while true do
+        local m = GetPedDrawableVariation(cache.ped, 1) > 0
+        if m ~= last then last = m; LocalPlayer.state:set('exti_mask', m, true) end
+        Wait(2000)
+    end
+end)

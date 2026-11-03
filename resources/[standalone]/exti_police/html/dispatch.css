@@ -1,5 +1,5 @@
 /* EX_Tii Police: the call card (top right, under the money). No backdrop-filter: FiveM draws it as a black box. */
-#dispatch { position: fixed; top: 160px; right: 22px; width: 330px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; z-index: 40; font-family: 'Kit Plex', sans-serif; direction: rtl; }
+#dispatch { position: fixed; top: 200px; right: 22px; width: 330px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; z-index: 40; font-family: 'Kit Plex', sans-serif; direction: rtl; }
 #dispatch:not(.on) { display: none; }
 .dp-card { position: relative; background: linear-gradient(180deg, rgba(22, 24, 30, 0.96), rgba(14, 15, 19, 0.96)); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 10px 14px 9px 12px; color: #f4f3ef; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45); overflow: hidden; }
 .dp-card::before { content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 4px; background: #3d8bfd; }

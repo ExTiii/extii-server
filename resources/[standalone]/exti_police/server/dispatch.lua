@@ -81,7 +81,7 @@ local function addCall(data)
         -- about a suspect: what the reporter saw
         if data.suspect or data.vehicle then
             local ok, w = pcall(POL.describe, { suspect = tonumber(data.suspect), vehicle = tonumber(data.vehicle), seen = data.seen == true })
-            if ok then c.witness = w end
+            if ok then c.witness = w else lib.print.warn(('[dispatch] witness: %s'):format(tostring(w))) end
         end
         calls[nextId] = c
     end
