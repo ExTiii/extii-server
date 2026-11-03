@@ -129,3 +129,104 @@ Config.calls = {
     registerQuiet = 'سطو على متجر',
     safe = 'سطو على خزنة متجر',
 }
+Config.calls.house = 'سطو على منزل'
+Config.calls.houseLoud = 'سطو على منزل · كسر نافذة'
+
+---------------------------------------------------------------------------
+-- the fence (المصرّف): the gang fence, now also the robbery fence. A phone contact.
+---------------------------------------------------------------------------
+Config.fence = {
+    number = '555-0187',          -- his phone number (text him: "شغل" for a house, "مكان" for where he is today)
+    leadMinutes = 60,             -- a house lead stays good this long
+    leadCooldownMinutes = 20,     -- one lead per character this often
+    -- what he buys (dirty money each), and how many of each he takes per day from the whole city
+    goods = {
+        rolex          = { price = 450,  daily = 25 },
+        diamond_ring   = { price = 600,  daily = 25 },
+        goldchain      = { price = 300,  daily = 40 },
+        ['10kgoldchain'] = { price = 200, daily = 40 },
+        diamond        = { price = 900,  daily = 15 },
+        small_tv       = { price = 350,  daily = 20 },
+        stolen_laptop  = { price = 500,  daily = 20 },
+        stolen_console = { price = 400,  daily = 20 },
+        painting       = { price = 1400, daily = 8 },
+        vault_goldbar  = { price = 15000, daily = 5 },
+    },
+}
+
+---------------------------------------------------------------------------
+-- house burglary (Tiers 1-3). Interiors: GTA's own (the spots inside come from Qbox's qbx_houserobbery data),
+-- each break-in happens in its own copy of the world (routing bucket), so two crews never meet inside.
+---------------------------------------------------------------------------
+Config.house = {
+    nightFrom = 22, nightTo = 5,          -- game time
+    playerCooldownMinutes = 30,
+    houseCooldownMinutes = 120,
+    maxMinutes = 15,                      -- inside longer than this: the owner comes home (alarm)
+    searchSeconds = { 6, 9 },
+    noise = {                             -- the noise meter (0-100): full = the owner wakes up and calls
+        sprint = 9, jump = 14, search = 3, safeFail = 18, pickFail = 10, window = 55, decay = 4, -- per second
+    },
+    sizes = {
+        small   = { tier = 1, label = 'شقة صغيرة', interior = 1, spots = { 5, 7 }, rolls = { 0, 2 }, safe = false, dog = false, pickup = 'small_tv' },
+        medium  = { tier = 2, label = 'بيت متوسط', interior = 2, spots = { 7, 9 }, rolls = { 0, 2 }, safe = { 800, 1200 }, dog = false, pickup = 'small_tv' },
+        mansion = { tier = 3, label = 'فيلا', interior = 3, spots = { 9, 12 }, rolls = { 1, 2 }, safe = { 1200, 1800 }, dog = true, pickup = 'painting', usb = 0.10 },
+    },
+    -- what one search can find (weight = how often)
+    loot = {
+        { item = 'black_money', amount = { 60, 240 }, weight = 30 },
+        { item = 'goldchain', amount = { 1, 1 }, weight = 14 },
+        { item = '10kgoldchain', amount = { 1, 2 }, weight = 14 },
+        { item = 'rolex', amount = { 1, 1 }, weight = 9 },
+        { item = 'diamond_ring', amount = { 1, 1 }, weight = 7 },
+        { item = 'stolen_laptop', amount = { 1, 1 }, weight = 8 },
+        { item = 'stolen_console', amount = { 1, 1 }, weight = 8 },
+        { item = 'diamond', amount = { 1, 1 }, weight = 3, minTier = 3 },
+    },
+    -- inside: exit = where you stand after coming in (and the [E] to leave); spots = drawers, closets, shelves;
+    -- safe = the wall safe; pickup = the big item (carried out at walking speed); dog = where the guard dog sleeps
+    interiors = {
+        [1] = { exit = vec4(266.11, -1007.61, -101.01, 357.68),
+            spots = { vec3(265.97, -999.46, -99.01), vec3(265.66, -997.40, -99.01), vec3(263.69, -995.40, -99.01), vec3(262.67, -999.88, -99.01),
+                      vec3(257.01, -995.84, -99.01), vec3(256.73, -998.34, -99.01), vec3(259.98, -1004.0, -99.01) },
+            pickup = { pos = vec3(262.77, -1002.53, -99.01), model = 'prop_tv_flat_03' } },
+        [2] = { exit = vec4(346.55, -1012.83, -99.2, 5.8),
+            spots = { vec3(346.15, -1001.71, -99.2), vec3(345.01, -995.49, -99.2), vec3(341.97, -997.45, -99.2), vec3(340.69, -995.03, -99.2),
+                      vec3(338.35, -995.22, -99.2), vec3(338.31, -997.88, -99.2), vec3(339.71, -1000.35, -99.2), vec3(338.6, -1003.18, -99.2),
+                      vec3(351.13, -999.23, -99.2), vec3(351.31, -993.76, -99.2), vec3(349.36, -995.05, -99.2) },
+            safe = vec3(347.5, -994.17, -99.2),
+            pickup = { pos = vec3(344.14, -1002.33, -99.2), model = 'prop_tv_flat_01' } },
+        [3] = { exit = vec4(-174.27, 497.71, 137.65, 191.5),
+            spots = { vec3(-170.21, 495.82, 137.65), vec3(-168.18, 494.13, 137.65), vec3(-171.02, 486.88, 137.44), vec3(-163.0, 482.49, 137.27),
+                      vec3(-164.44, 487.09, 137.44), vec3(-170.32, 482.18, 133.85), vec3(-162.86, 482.02, 133.87), vec3(-167.4, 487.85, 133.84),
+                      vec3(-165.71, 495.38, 133.85), vec3(-172.71, 500.42, 130.04), vec3(-170.01, 491.14, 130.04), vec3(-174.03, 493.64, 130.04) },
+            safe = vec3(-175.79, 492.05, 130.04),
+            pickup = { pos = vec3(-165.26, 495.01, 137.65), model = 'ch_prop_vault_painting_01a' },
+            dog = vec3(-174.45, 496.08, 130.04) },
+    },
+    -- the front doors (outside). size picks the interior.
+    doors = {
+        { pos = vec3(495.25, -1823.31, 28.87), size = 'small', area = 'ديفيس' },
+        { pos = vec3(311.99, -1956.12, 24.62), size = 'small', area = 'ديفيس' },
+        { pos = vec3(1193.67, -1656.54, 43.03), size = 'small', area = 'إل بوريو' },
+        { pos = vec3(179.29, -1923.98, 21.37), size = 'small', area = 'ستروبيري' },
+        { pos = vec3(-64.58, -1449.61, 32.52), size = 'small', area = 'ستروبيري' },
+        { pos = vec3(-138.22, -1470.78, 36.99), size = 'small', area = 'ستروبيري' },
+        { pos = vec3(69.43, -56.69, 73.02), size = 'small', area = 'هاوك' },
+        { pos = vec3(-102.84, -11.91, 70.52), size = 'small', area = 'بيرتون' },
+        { pos = vec3(1435.45, 3657.04, 34.4), size = 'small', area = 'ساندي شورز' },
+        { pos = vec3(1808.93, 3907.97, 33.74), size = 'small', area = 'ساندي شورز' },
+        { pos = vec3(-480.95, 6266.33, 13.63), size = 'small', area = 'باليتو' },
+        { pos = vec3(-280.54, 6350.67, 32.6), size = 'small', area = 'باليتو' },
+        { pos = vec3(-884.14, -1072.51, 2.53), size = 'medium', area = 'فسبوتشي' },
+        { pos = vec3(-1134.11, -1050.19, 2.15), size = 'medium', area = 'فسبوتشي' },
+        { pos = vec3(-1089.85, -1680.31, 4.67), size = 'medium', area = 'فسبوتشي بيتش' },
+        { pos = vec3(960.01, -669.94, 58.45), size = 'medium', area = 'ميرور بارك' },
+        { pos = vec3(1240.51, -601.62, 69.78), size = 'medium', area = 'ميرور بارك' },
+        { pos = vec3(1098.57, -464.54, 67.32), size = 'medium', area = 'ميرور بارك' },
+        { pos = vec3(-332.97, 57.08, 54.43), size = 'medium', area = 'وست فاينوود' },
+        { pos = vec3(-1009.5, 479.12, 79.59), size = 'medium', area = 'روكفورد هيلز' },
+        { pos = vec3(-371.74, 343.46, 109.94), size = 'medium', area = 'فاينوود هيلز' },
+        { pos = vec3(-174.65, 502.47, 137.42), size = 'mansion', area = 'فاينوود هيلز (وايلد أوتس)' },
+    },
+}

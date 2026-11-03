@@ -322,6 +322,7 @@ local function onLoaded(src)
         end
         r.dropped_at = 0; save(cid)
     end
+    if H.houseOnLoaded then H.houseOnLoaded(src) end
 end
 RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function() onLoaded(source) end)
 AddEventHandler('QBCore:Server:PlayerLoaded', function(p) if p and p.PlayerData then onLoaded(p.PlayerData.source) end end)
@@ -390,6 +391,10 @@ exports('Admin', function(src, what, value)
         H.force = (value == 'police' or value == 'npc') and value or nil
         H.log(src, 'admin_force_mode', tostring(H.force))
         return true, ({ police = 'كل سطو الآن بوضع الشرطة', npc = 'كل سطو الآن بلا شرطة (حراسة الحي)' })[H.force] or 'رجع الوضع طبيعيًا (حسب الشرطة)'
+    elseif what == 'house' then
+        local size = ({ small = 'small', medium = 'medium', mansion = 'mansion' })[value] or 'small'
+        if not H.adminHouseLead or not H.adminHouseLead(src, size) then return false, 'لا بيت فاضٍ من هذا الحجم' end
+        return true, 'وصلك بيت (تجربة: يعمل في أي وقت)'
     elseif what == 'kit' then
         for _, it in ipairs({ { 'lockpick', 5 }, { 'usb_green', 1 }, { 'drill', 1 }, { 'drill_bit', 3 }, { 'zip_ties', 3 }, { 'tow_chain', 1 } }) do
             if exports.ox_inventory:Items(it[1]) then exports.ox_inventory:AddItem(src, it[1], it[2]) end

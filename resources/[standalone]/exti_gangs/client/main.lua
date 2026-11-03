@@ -82,7 +82,26 @@ function GC.rebuild()
     if spots.fence then
         local ph = loadModel(C.fence.model)
         if ph then
-            fencePed = CreatePed(4, ph, spots.fence.x, spots.fence.y, spots.fence.z - 1.0, spots.fence.h or 0.0, false, false)
+            local f = spots.fence
+            fencePed = CreatePed(4, ph, f.x, f.y, f.z - 1.0, f.h or 0.0, false, false)
+            if f.snap then
+                -- (a spot from the daily list: when you come close, he is stood on the real ground there)
+                local ped = fencePed
+                CreateThread(function()
+                    while DoesEntityExist(ped) do
+                        if #(GetEntityCoords(cache.ped) - vec3(f.x, f.y, f.z)) < 150.0 then
+                            RequestCollisionAtCoord(f.x, f.y, f.z)
+                            for _ = 1, 40 do
+                                local found, gz = GetGroundZFor_3dCoord(f.x, f.y, f.z + 25.0, false)
+                                if found and math.abs(gz - f.z) < 30.0 then SetEntityCoordsNoOffset(ped, f.x, f.y, gz + 1.0, false, false, false) break end
+                                Wait(100)
+                            end
+                            return
+                        end
+                        Wait(2000)
+                    end
+                end)
+            end
             SetEntityInvincible(fencePed, true); FreezeEntityPosition(fencePed, true); SetBlockingOfNonTemporaryEvents(fencePed, true)
             TaskStartScenarioInPlace(fencePed, 'WORLD_HUMAN_SMOKING', 0, true)
         end
@@ -154,10 +173,40 @@ local function doStash()
     exports.ox_inventory:openInventory('stash', id)
 end
 
-local function doFence()
+local function sellParts()
     local ok, res = lib.callback.await('exti_gangs:server:fence', false)
     if not ok then return notify(res == 'none' and 'ليس معك قطع أبيعها' or ERR[res] or ERR.failed, 'error') end
     notify(('بعت %d قطعة بـ $%d (مال غير نظيف)'):format(res.count, res.money), 'success')
+end
+-- the fence: car parts (the gangs) and, with exti_heists, stolen goods and house leads
+local function doFence()
+    if GetResourceState('exti_heists') ~= 'started' then return sellParts() end
+    local opts = { { title = 'بِع قطع السيارات المسروقة', icon = 'car-burst', onSelect = sellParts } }
+    local prices = lib.callback.await('exti_heists:server:fencePrices', false) or {}
+    local desc, have = {}, 0
+    for _, p in ipairs(prices) do
+        if p.have > 0 then have = have + p.have end
+        local it = exports.ox_inventory:Items(p.item)
+        desc[#desc + 1] = ('%s %d$%s'):format((it and it.label or p.item):gsub(' %(.*%)', ''), p.price, p.left == 0 and ' (اكتفى اليوم)' or '')
+    end
+    opts[#opts + 1] = { title = 'بِع المسروقات والمجوهرات', description = have > 0 and table.concat(desc, ' · ') or 'ليس معك ما يشتريه', icon = 'gem', disabled = have == 0,
+        onSelect = function()
+            local ok, res = lib.callback.await('exti_heists:server:fenceGoods', false)
+            if not ok then return notify(res == 'limit' and 'اكتفى من هذا اليوم: تعال غدًا' or 'ليس معك ما يشتريه', 'error') end
+            notify(('بعت المسروقات بـ $%d (مال غير نظيف)%s'):format(res.money, res.limited and ' · بعض الأشياء لم يأخذها: اكتفى اليوم' or ''), 'success', 7000)
+        end }
+    opts[#opts + 1] = { title = 'عندك شغل؟', description = 'بيت فاضٍ للسرقة (بالليل فقط)', icon = 'house-chimney-crack',
+        onSelect = function()
+            local ok, res = lib.callback.await('exti_heists:server:fenceLead', false)
+            if not ok then return notify(type(res) == 'string' and #res > 10 and res or 'لا شيء لك الآن', 'error', 6000) end
+        end }
+    opts[#opts + 1] = { title = 'خذ رقمي', description = 'يرسل لك رسالة على الهاتف', icon = 'mobile-screen',
+        onSelect = function()
+            local num = lib.callback.await('exti_heists:server:fenceHello', false)
+            if num then notify(('رقم المصرّف: %s · وصلتك رسالة منه'):format(num), 'success', 8000) end
+        end }
+    lib.registerContext({ id = 'exti_gang_fence', title = C.fence.name, options = opts })
+    lib.showContext('exti_gang_fence')
 end
 
 local function doBench()
@@ -313,7 +362,7 @@ end)
 ---------------------------------------------------------------------------
 local LABELS = {
     laptop = '[E] حاسوب العصابة', stash = '[E] مخزن العصابة', deposit = '[E] سلّم القطع', locker = '[E] خزانة الملابس',
-    bench = '[E] صنع مفاتيح فتح (1 أدوات = 2 مفاتيح)', crate = '[E] فتّش الصندوق', fence = '[E] بِع القطع المسروقة',
+    bench = '[E] صنع مفاتيح فتح (1 أدوات = 2 مفاتيح)', crate = '[E] فتّش الصندوق', fence = '[E] كلّم المصرّف',
 }
 local function points()
     local list = {}
@@ -360,7 +409,7 @@ local function points()
     -- the police clean graffiti
     if GC.turfPoints then for _, pt in ipairs(GC.turfPoints()) do list[#list + 1] = pt end end
     for i, c in ipairs(spots.collect and spots.collect.crates or {}) do list[#list + 1] = { kind = 'crate', i = i, pos = v3(c) } end
-    if spots.fence then list[#list + 1] = { kind = 'fence', pos = v3(spots.fence) } end
+    if spots.fence then list[#list + 1] = { kind = 'fence', pos = (fencePed and DoesEntityExist(fencePed)) and GetEntityCoords(fencePed) or v3(spots.fence) } end
     return list
 end
 

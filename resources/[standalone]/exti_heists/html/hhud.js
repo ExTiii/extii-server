@@ -21,6 +21,17 @@
         box.className = '';
         box.innerHTML = `<div class="hh ${st.kind}"><div class="ic">${ICON[T[0]]}</div><div class="tx"><b>${T[1]}</b><span>${T[2]}</span></div>${st.kind === 'seen' ? '' : `<div class="t">${mmss(s)}</div>`}<div class="prog"><i style="width:${pct}%"></i></div></div>`;
     }
-    window.addEventListener('message', (e) => { const d = e.data || {}; if (d.action === 'hud') render(d.state); });
+    // the noise meter inside a house
+    const nz = document.createElement('div'); nz.id = 'hnoise'; nz.className = 'off';
+    nz.innerHTML = '<div class="lb"><b>الضجيج</b><span>امشِ بهدوء</span></div><div class="tr"><i style="width:0%"></i></div>';
+    document.body.appendChild(nz);
+    function noise(d) {
+        if (d.show === false) { nz.className = 'off'; return; }
+        const v = Math.max(0, Math.min(100, d.value | 0));
+        nz.className = d.alarm ? 'alarm' : (v >= 70 ? 'hot' : '');
+        nz.querySelector('i').style.width = v + '%';
+        nz.querySelector('.lb span').textContent = d.alarm ? 'استيقظ صاحب البيت!' : (v >= 70 ? 'هدّئ نفسك...' : 'امشِ بهدوء');
+    }
+    window.addEventListener('message', (e) => { const d = e.data || {}; if (d.action === 'hud') render(d.state); else if (d.action === 'noise') noise(d); });
     window.EXH_HUD = { render };
 })();

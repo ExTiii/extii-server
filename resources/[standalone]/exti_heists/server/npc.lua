@@ -70,20 +70,28 @@ function H.npcRespond(players, pos, kind)
     active[id] = r
     for _, s in ipairs(players) do TriggerClientEvent('exti_heists:client:npcIncoming', s, id, spec.delay) end
     H.log(players[1], 'npc_start', ('%s · %d cars in %ds'):format(kind, r.cars, spec.delay))
-    SetTimeout(spec.delay * 1000, function()
+    r.retry = function()
         if active[id] ~= r then return end
         -- still somebody around? (they all ran before the units came: nothing comes)
-        local owner
+        -- (a robber still inside a house is in his own copy of the world: the units wait outside for him)
+        local owner, waiting
         for s in pairs(r.targets) do
             local here = H.coords(s)
-            if here and #(here - r.pos) < N.giveUpDistance then owner = s break end
+            if GetPlayerRoutingBucket(s) ~= 0 then waiting = true
+            elseif here and #(here - r.pos) < N.giveUpDistance then owner = s break end
+        end
+        if not owner and waiting and (r.waited or 0) < N.maxMinutes * 30 then
+            r.waited = (r.waited or 0) + 1
+            SetTimeout(2000, function() if active[id] == r then r.retry() end end)
+            return
         end
         if not owner then return endResponse(id, 'gone before') end
         r.owner, r.phase = owner, 'on scene'
         r.spawnedAt = H.now()
         TriggerClientEvent('exti_heists:client:npcSpawn', owner, id, { x = r.pos.x, y = r.pos.y, z = r.pos.z }, r.cars, targetsList(r), spec.weapons)
         for s in pairs(r.targets) do if s ~= owner then TriggerClientEvent('exti_heists:client:npcHunted', s, id) end end
-    end)
+    end
+    SetTimeout(spec.delay * 1000, function() r.retry() end)
     return id
 end
 

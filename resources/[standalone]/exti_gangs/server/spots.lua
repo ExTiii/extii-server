@@ -40,18 +40,45 @@ do
         for _, c in ipairs(type(data.collect) == 'table' and type(data.collect.crates) == 'table' and data.collect.crates or {}) do
             local p = pos4(c); if p and #spots.collect.crates < MAX_CRATES then spots.collect.crates[#spots.collect.crates + 1] = p end
         end
-        spots.fence = pos4(data.fence)
+        -- an admin's spot is for that day only (the fence moves every day)
+        if type(data.fenceAdmin) == 'table' and data.fenceAdmin.day then
+            spots.fenceAdmin = { day = tostring(data.fenceAdmin.day), x = data.fenceAdmin.x, y = data.fenceAdmin.y, z = data.fenceAdmin.z, h = data.fenceAdmin.h }
+        end
         spots.blackmarket = pos4(data.blackmarket)
     end
 end
 GANG.spots = spots
 
+-- where the fence is today
+local function fenceToday()
+    local day = os.date('%Y-%m-%d')
+    local a = spots.fenceAdmin
+    if a and a.day == day and num(a.x) then return { x = a.x, y = a.y, z = a.z, h = num(a.h) and a.h or 0.0 } end
+    local list = C.fence.spots or {}
+    if #list == 0 then return nil end
+    local p = list[(tonumber(os.date('%j')) + tonumber(os.date('%Y'))) % #list + 1]
+    return { x = p.x, y = p.y, z = p.z, h = p.w, snap = true }
+end
+GANG.fenceToday = fenceToday
+
 local function publish()
+    spots.fence = fenceToday()
     GlobalState['exti_gangs:spots'] = spots
     SaveResourceFile(GetCurrentResourceName(), FILE, json.encode(spots, { indent = true }), -1)
 end
+spots.fence = fenceToday()
 GlobalState['exti_gangs:spots'] = spots
 GANG.publishSpots = publish
+-- a new day: he moves
+CreateThread(function()
+    local last = spots.fence and ('%.1f,%.1f'):format(spots.fence.x, spots.fence.y)
+    while true do
+        Wait(5 * 60 * 1000)
+        local f = fenceToday()
+        local now = f and ('%.1f,%.1f'):format(f.x, f.y)
+        if now ~= last then last = now; publish() end
+    end
+end)
 
 function GANG.spot(g, kind)
     local set = spots.hq[g.name]
@@ -91,7 +118,7 @@ lib.callback.register('exti_gangs:server:spotSave', function(source, what, a, b)
     elseif what == 'crates_clear' then
         spots.collect.crates = {}
     elseif what == 'fence' then
-        spots.fence = here
+        spots.fenceAdmin = { day = os.date('%Y-%m-%d'), x = here.x, y = here.y, z = here.z, h = here.h }
     elseif what == 'blackmarket' then
         spots.blackmarket = here
     elseif what == 'pot_add' then

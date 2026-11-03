@@ -132,7 +132,9 @@ AddEventHandler('playerDropped', function() busy[source] = nil; pending[source] 
 ---------------------------------------------------------------------------
 lib.callback.register('exti_gangs:server:fence', function(source)
     local f = GANG.spots.fence
-    if not f or not GANG.near(source, f, 3.0) then return false, 'far' end
+    -- (2D: a spot from the daily list is stood on the ground in game, so its height may differ a little)
+    local here = GetEntityCoords(GetPlayerPed(source))
+    if not f or #(vec2(here.x, here.y) - vec2(f.x, f.y)) > 3.0 or math.abs(here.z - f.z) > 15.0 then return false, 'far' end
     local p = GANG.player(source)
     local total, sold, took = 0, 0, {}
     for item in pairs(allParts) do

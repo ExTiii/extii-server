@@ -44,6 +44,16 @@ C.collect = {
     crateModel = 'prop_box_wood05a',
 }
 C.fence = { price = 40, model = 's_m_y_dealer_01', name = 'المصرّف' } -- buys stolen parts of any gang (dirty money)
+-- EX_Tii heists: he is also the robbery fence, and he moves: one of these spots each day (an admin can put him
+-- somewhere else for today with /gangspots). The ground under each spot is found in game.
+C.fence.spots = {
+    vec4(-468.0, -1716.0, 18.7, 90.0),     -- Rogers Salvage & Scrap
+    vec4(1003.5, -3105.0, 5.9, 0.0),       -- the Terminal, between the containers
+    vec4(1380.0, -2055.0, 52.0, 30.0),     -- El Burro Heights, the oil field
+    vec4(1993.0, 3050.0, 47.2, 240.0),     -- Sandy Shores, behind the Yellow Jack
+    vec4(2416.0, 4993.0, 46.2, 130.0),     -- Grapeseed, the farm
+    vec4(-569.0, 5326.0, 70.2, 160.0),     -- Paleto, the sawmill
+}
 
 -- what a Crew member may take out of the stash per day (value of the items). Runners take nothing out.
 C.crewDailyTake = 10000

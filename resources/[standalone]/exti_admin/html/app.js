@@ -274,6 +274,7 @@
             <div class="row"><span class="mute">السمعة:</span>${[1, 2, 3, 4, 7, 10].map((n) => `<button class="chip" data-hl="${n}">${n}</button>`).join('')}</div>
             <div class="row"><span class="mute">المهارات:</span><button class="chip" data-hs="1">كلها 1</button><button class="chip" data-hs="3">كلها 3</button><button class="chip" data-hs="5">كلها 5</button></div>
             <div class="row"><span class="mute">الوضع:</span><button class="chip" data-hf="auto">طبيعي</button><button class="chip" data-hf="police">بالشرطة</button><button class="chip" data-hf="npc">بلا شرطة</button></div>
+            <div class="row"><span class="mute">بيت للسرقة الآن:</span><button class="chip" data-hh="small">شقة</button><button class="chip" data-hh="medium">بيت متوسط</button><button class="chip" data-hh="mansion">فيلا</button></div>
             <div class="row"><button class="btn" data-hx="kit">عُدّة السطو</button><button class="btn" data-hx="heat">أزل الملاحقة عني</button><button class="btn acc" data-hx="cooldowns">صفّر انتظار السطو</button></div></div>
           <div class="card"><h3>نفسي بسرعة</h3><div class="row"><button class="btn ok" data-me="revive">أنعشني</button><button class="btn ok" data-me="heal">عالجني</button>
             <button class="btn" data-money="10000">+10,000 كاش لي</button><button class="btn" data-time="12">ظهر</button><button class="btn" data-time="0">ليل</button></div></div>
@@ -300,6 +301,7 @@
         pg.querySelectorAll('[data-hs]').forEach((b) => b.onclick = async () => { for (const k of ['lockpick', 'hacking', 'breaching']) await act('heist', { what: k, value: Number(b.dataset.hs) }); hload(); });
         pg.querySelectorAll('[data-hf]').forEach((b) => b.onclick = () => hact('force', b.dataset.hf));
         pg.querySelectorAll('[data-hx]').forEach((b) => b.onclick = () => hact(b.dataset.hx));
+        pg.querySelectorAll('[data-hh]').forEach((b) => b.onclick = () => hact('house', b.dataset.hh));
         hload();
     }
 
