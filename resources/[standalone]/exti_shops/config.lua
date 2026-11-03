@@ -315,6 +315,10 @@ function Config.circleOf(store)
 end
 
 -- the Ammu-Nation wall notice is saved per shop by the clerk's spot (so adding shops to the list never moves it)
+-- the two Ammu-Nations with a shooting range have a different room from the other seven
+-- (/ammusigncopy copies a fixed notice only to shops with the same room)
+Config.ammuRange = { ['بيلبوكس هيل'] = true, ['سايبرس فلاتس'] = true }
+
 function Config.signKey(store)
     return ('%.1f,%.1f'):format(store.clerk.x, store.clerk.y)
 end

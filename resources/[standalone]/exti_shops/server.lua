@@ -263,6 +263,53 @@ do
         TriggerClientEvent('exti_shops:client:placeSign', source, args.reset == 'reset')
     end)
 
+    -- /ammusigncopy, standing in a shop whose notice you fixed: the same spot (measured from the clerk)
+    -- goes to every other shop with the same room that you did not fix by hand yet
+    lib.addCommand('ammusigncopy', {
+        help = 'Copy this Ammu-Nation notice spot to the other shops with the same room',
+        restricted = 'group.admin',
+    }, function(source)
+        local function tell(t, kind) TriggerClientEvent('ox_lib:notify', source, { description = t, type = kind }) end
+        local ped = GetPlayerPed(source)
+        if not ped or ped == 0 then return end
+        local here = GetEntityCoords(ped)
+        local from, bestD
+        for _, s in ipairs(Config.stores) do
+            if s.type == 'ammunation' then
+                local d = #(here - vec3(s.clerk.x, s.clerk.y, s.clerk.z))
+                if d < 25.0 and (not bestD or d < bestD) then from, bestD = s, d end
+            end
+        end
+        if not from then return tell('أنت لست داخل محل Ammu-Nation', 'error') end
+        local sp = signs[Config.signKey(from)]
+        if not sp or sp.copied then return tell('ثبّت اللافتة هنا أولًا بـ /ammusign ثم اكتب /ammusigncopy', 'error') end
+        -- the spot in the clerk's own frame (right, forward, up)
+        local function frame(c)
+            local h = math.rad(c.w)
+            return vec3(math.cos(h), math.sin(h), 0.0), vec3(-math.sin(h), math.cos(h), 0.0)
+        end
+        local r0, f0 = frame(from.clerk)
+        local d = vec3(sp.x - from.clerk.x, sp.y - from.clerk.y, 0.0)
+        local a, b, up = d.x * r0.x + d.y * r0.y, d.x * f0.x + d.y * f0.y, sp.z - from.clerk.z
+        local na, nb = sp.nx * r0.x + sp.ny * r0.y, sp.nx * f0.x + sp.ny * f0.y
+        local range = Config.ammuRange[from.area] == true
+        local n = 0
+        for _, s in ipairs(Config.stores) do
+            local key = s.type == 'ammunation' and Config.signKey(s)
+            if key and s ~= from and (Config.ammuRange[s.area] == true) == range and not (signs[key] and not signs[key].copied) then
+                local r, f = frame(s.clerk)
+                local p = vec3(s.clerk.x, s.clerk.y, s.clerk.z) + r * a + f * b
+                local nx, ny = r.x * na + f.x * nb, r.y * na + f.y * nb
+                local len = math.sqrt(nx * nx + ny * ny)
+                signs[key] = { x = p.x, y = p.y, z = s.clerk.z + up, nx = nx / len, ny = ny / len, copied = true }
+                n = n + 1
+            end
+        end
+        SetResourceKvp('ammu_signs', json.encode(signs))
+        GlobalState['exti_shops:signs'] = signs
+        tell(('نُسخ مكان اللافتة إلى %d محل (تلتصق بالجدار وحدها)'):format(n), 'success')
+    end)
+
     RegisterNetEvent('exti_shops:server:placeSign', function(spot)
         local src = source
         if not IsPlayerAceAllowed(src, 'group.admin') and not IsPlayerAceAllowed(src, 'command.ammusign') then return end

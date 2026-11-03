@@ -67,8 +67,26 @@ local function autoSpot(st)
     return fallback
 end
 
+-- a spot copied from another shop (/ammusigncopy): the clerks stand a few cm differently, so it is pulled onto the wall
+local function snapped(st, s)
+    if st.snapOf == s and st.snap then return st.snap end
+    if st.snapOf ~= s then st.snapOf, st.snap, st.snapTries = s, nil, 0 end
+    local p, n = vec3(s.x, s.y, s.z), vec3(s.nx, s.ny, 0.0)
+    local from, to = p + n * 0.8, p - n * 0.8
+    local ray = StartExpensiveSynchronousShapeTestLosProbe(from.x, from.y, from.z, to.x, to.y, to.z, 1 | 16, PlayerPedId(), 7)
+    local _, hit, pos, normal = GetShapeTestResult(ray)
+    if hit == 1 and math.abs(normal.z) < 0.4 then
+        st.snap = { p = vec3(pos.x, pos.y, p.z), n = vec3(normal.x, normal.y, 0.0) }
+        return st.snap
+    end
+    st.snapTries = st.snapTries + 1
+    if st.snapTries >= 300 then st.snap = { p = p, n = n } end   -- (no wall found: as copied)
+    return { p = p, n = n }
+end
+
 local function spotOf(st)
     local s = placed[st.key]
+    if s and s.copied then return snapped(st, s) end
     if s then return { p = vec3(s.x, s.y, s.z), n = vec3(s.nx, s.ny, 0.0) } end
     return autoSpot(st)
 end
