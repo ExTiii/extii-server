@@ -24,15 +24,30 @@ RegisterNetEvent('exti_admin:client:close', close)
 RegisterNUICallback('close', function(_, cb) close(); cb(true) end)
 
 -- every server action from the page goes through here; positions come back for goto
+-- teleport: always in its own thread (never inside a tablet callback), frozen until the ground around is loaded
+local teleporting = false
 local function teleport(c)
-    local ped = PlayerPedId()
-    local ent = IsPedInAnyVehicle(ped, false) and GetVehiclePedIsIn(ped, false) or ped
-    DoScreenFadeOut(150); Wait(160)
-    RequestCollisionAtCoord(c.x, c.y, c.z)
-    SetEntityCoords(ent, c.x, c.y, c.z + 0.5, false, false, false, false)
-    local t = GetGameTimer()
-    while not HasCollisionLoadedAroundEntity(ent) and GetGameTimer() - t < 2000 do Wait(0) end
-    DoScreenFadeIn(200)
+    if teleporting then return end
+    teleporting = true
+    CreateThread(function()
+        local ped = PlayerPedId()
+        local ent = IsPedInAnyVehicle(ped, false) and GetVehiclePedIsIn(ped, false) or ped
+        local x, y, z = c.x + 0.0, c.y + 0.0, c.z + 0.0
+        DoScreenFadeOut(200)
+        local t = GetGameTimer()
+        while not IsScreenFadedOut() and GetGameTimer() - t < 1000 do Wait(0) end
+        FreezeEntityPosition(ent, true)
+        RequestCollisionAtCoord(x, y, z)
+        SetEntityCoordsNoOffset(ent, x, y, z + 0.5, false, false, false)
+        t = GetGameTimer()
+        while not HasCollisionLoadedAroundEntity(ent) and GetGameTimer() - t < 3000 do RequestCollisionAtCoord(x, y, z); Wait(0) end
+        -- land on the ground near the height you typed (so a slightly wrong Z doesn't drop you or bury you)
+        local found, gz = GetGroundZFor_3dCoord(x, y, z + 2.0, false)
+        if found and math.abs(gz - z) < 15.0 then SetEntityCoordsNoOffset(ent, x, y, gz + 0.3, false, false, false) end
+        FreezeEntityPosition(ent, false)
+        DoScreenFadeIn(250)
+        teleporting = false
+    end)
 end
 
 local stopSpectate   -- (below)
