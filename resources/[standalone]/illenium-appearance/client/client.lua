@@ -154,7 +154,10 @@ function OpenShop(config, isPedMenu, shopType)
                 if not isPedMenu and flatCharge(shopType) then
                     TriggerServerEvent("illenium-appearance:server:chargeCustomer", shopType)
                 end
-                TriggerServerEvent("illenium-appearance:server:saveAppearance", appearance)
+                -- the clothing store's paid clothes were already saved by the server when you paid
+                if isPedMenu or shopType ~= "clothing" then
+                    TriggerServerEvent("illenium-appearance:server:saveAppearance", appearance)
+                end
             elseif not (shop and shop.paid) then
                 lib.notify({
                     title = _L("cancelled.title"),

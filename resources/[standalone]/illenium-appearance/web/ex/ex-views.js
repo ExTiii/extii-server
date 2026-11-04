@@ -237,7 +237,7 @@ function cart() {
         if (!catEnabled(cat) || !changed(cat)) return;
         const isProp = cat[0] === 'p', id = +cat.slice(1);
         const a = isProp ? propOf(S.cur, id) : compOf(S.cur, id);
-        const removed = (isProp && a.drawable === -1);
+        const removed = isProp ? a.drawable === -1 : (a.drawable === 0 && FREE_OFF.includes(cat));
         lines.push({ cat, label: catInfo(cat).label, d: a.drawable, t: a.texture, price: removed ? 0 : priceOf(cat), removed });
     });
     return lines;

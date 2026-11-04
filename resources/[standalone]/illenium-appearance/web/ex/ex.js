@@ -44,6 +44,7 @@ const PROP = {
     6: { label: 'الساعات', icon: 'watch', group: 'acc', cfg: 'watches' },
     7: { label: 'الأساور', icon: 'bracelet', group: 'acc', cfg: 'bracelets' },
 };
+const FREE_OFF = ['c1', 'c5', 'c7', 'c9', 'c10']; // drawable 0 = nothing on; taking these off is free
 const ORDER = { top: ['c11', 'c8', 'c3', 'c7', 'c5', 'c10', 'c9'], bottom: ['c4', 'c6'], head: ['p0', 'p1', 'p2', 'c1'], acc: ['p6', 'p7'] };
 const GROUPS = [['top', 'الجزء العلوي'], ['bottom', 'الأسفل'], ['head', 'الرأس'], ['acc', 'الإكسسوار']];
 

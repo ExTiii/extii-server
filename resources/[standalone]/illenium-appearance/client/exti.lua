@@ -65,7 +65,7 @@ RegisterNUICallback("exti_outfit_save", function(data, cb)
     local name = data and type(data.name) == "string" and data.name:gsub("^%s+", ""):gsub("%s+$", "") or ""
     if name == "" then return cb({ msg = "اكتب اسمًا للزي" }) end
     -- always save what the character really has on (the screen's copy could be edited)
-    local res = lib.callback.await("illenium-appearance:server:extiOutfitSave", false, name:sub(1, 30),
+    local res = lib.callback.await("illenium-appearance:server:extiOutfitSave", false, (utf8.len(name) and utf8.len(name) > 30) and name:sub(1, utf8.offset(name, 31) - 1) or name,
         client.getPedModel(cache.ped), client.getPedComponents(cache.ped), client.getPedProps(cache.ped))
     if res and res.outfits then res.outfits = outfitList(res.outfits) end
     cb(res or { msg = "لم يُحفظ، حاول مرة أخرى" })
@@ -88,7 +88,7 @@ RegisterNUICallback("exti_outfit_wear", function(data, cb)
     -- the outfit is yours: it is saved right away and becomes the look you "came in" with,
     -- so the clothing store does not charge for it and leaving the screen keeps it on
     client.setBaseAppearance(appearance)
-    TriggerServerEvent("illenium-appearance:server:saveAppearance", appearance)
+    lib.callback.await("illenium-appearance:server:extiSaveLook", false, appearance) -- wait, so paying right after sees it
     cb({ appearance = appearance })
 end)
 

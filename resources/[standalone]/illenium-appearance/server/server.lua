@@ -380,13 +380,16 @@ local function byId(list, key)
     return out
 end
 
+local FREE_OFF = { [1] = true, [5] = true, [7] = true, [9] = true, [10] = true } -- drawable 0 = nothing on
+
 local function cartTotal(old, new)
     local total = 0
     local oc, nc = byId(old.components, "component_id"), byId(new.components, "component_id")
     for id, n in pairs(nc) do
         local price = Config.ExtiPrices["c" .. id] or 0
         local o = oc[id]
-        if price > 0 and (not o or tonumber(o.drawable) ~= tonumber(n.drawable) or tonumber(o.texture) ~= tonumber(n.texture)) then
+        local off = tonumber(n.drawable) == 0 and FREE_OFF[id]
+        if price > 0 and not off and (not o or tonumber(o.drawable) ~= tonumber(n.drawable) or tonumber(o.texture) ~= tonumber(n.texture)) then
             total = total + price
         end
     end
@@ -413,35 +416,47 @@ lib.callback.register("illenium-appearance:server:extiPayCart", function(source,
     local citizenID = Framework.GetPlayerID(src)
     if not citizenID then return { ok = false, msg = "لم يتم الدفع، حاول مرة أخرى" } end
     paying[src] = true
-    local old = Framework.GetAppearance(citizenID) or { components = {}, props = {} }
-    local total = cartTotal(old, appearance)
-    local wallet = extiWallet(src)
-    -- the screen prices the cart against the clothes you walked in with; the server prices it against
-    -- your saved look. They only differ when you walked in wearing something that was never saved
-    -- (a work uniform): never charge for pieces the screen did not show
-    expected = tonumber(expected)
-    if expected and total > expected then
-        paying[src] = nil
-        return { ok = false, cash = wallet.cash, bank = wallet.bank,
-            msg = "تلبس زيًا غير محفوظ (زي عمل؟). البس ملابسك العادية ثم عد للمتجر" }
-    end
-    if total > 0 then
-        if (wallet[method] or 0) < total or not Framework.RemoveMoney(src, method, total) then
-            paying[src] = nil
+    local charged, chargedMethod = 0, method
+    local ok, res = pcall(function()
+        local old = Framework.GetAppearance(citizenID) or { components = {}, props = {} }
+        local total = cartTotal(old, appearance)
+        local wallet = extiWallet(src)
+        -- the screen prices the cart against the clothes you walked in with; the server prices it against
+        -- your saved look. They only differ when you walked in wearing something that was never saved
+        -- (a work uniform): never charge for pieces the screen did not show
+        expected = tonumber(expected)
+        if expected and total > expected then
             return { ok = false, cash = wallet.cash, bank = wallet.bank,
-                msg = method == "cash" and "ليس معك مال كافٍ نقدًا" or "ليس في حسابك البنكي ما يكفي" }
+                msg = "تلبس زيًا غير محفوظ (زي عمل؟). البس ملابسك العادية ثم عد للمتجر" }
         end
-        lib.notify(src, { type = "success", position = "top", title = "متجر الملابس",
-            description = ("دفعت $%d %s"):format(total, method == "cash" and "نقدًا" or "بالبطاقة") })
-    end
-    -- save the paid clothes right away (only clothes and accessories: the face and body stay as they were)
-    if old.model then
-        old.components = appearance.components
-        old.props = appearance.props
-        Framework.SaveAppearance(old, citizenID)
-    end
+        if total > 0 then
+            if (wallet[method] or 0) < total or not Framework.RemoveMoney(src, method, total) then
+                return { ok = false, cash = wallet.cash, bank = wallet.bank,
+                    msg = method == "cash" and "ليس معك مال كافٍ نقدًا" or "ليس في حسابك البنكي ما يكفي" }
+            end
+            charged = total
+            lib.notify(src, { type = "success", position = "top", title = "متجر الملابس",
+                description = ("دفعت $%d %s"):format(total, method == "cash" and "نقدًا" or "بالبطاقة") })
+        end
+        -- save the paid clothes right away (only clothes and accessories: the face and body stay as they were)
+        -- (the screen does not save clothing itself, so only what was priced here is ever kept)
+        if old.model then
+            old.components = appearance.components
+            old.props = appearance.props
+            Framework.SaveAppearance(old, citizenID)
+        elseif appearance.model then
+            Framework.SaveAppearance(appearance, citizenID)
+        end
+        return { ok = true, total = total }
+    end)
     paying[src] = nil
-    return { ok = true, total = total }
+    if ok then return res end
+    print(("^1[illenium-appearance] clothing payment failed for %s: %s^0"):format(src, tostring(res)))
+    if charged > 0 then -- the money was taken but the clothes were not saved: give it back
+        local player = extiPlayer(src)
+        if player then player.Functions.AddMoney(chargedMethod, charged, "clothing refund") end
+    end
+    return { ok = false, msg = "لم يتم الدفع، حاول مرة أخرى" }
 end)
 
 AddEventHandler("playerDropped", function() paying[source] = nil end)
@@ -477,4 +492,13 @@ lib.callback.register("illenium-appearance:server:extiOutfitDelete", function(so
         end
     end
     return { outfits = list }
+end)
+
+-- the wardrobe saves the outfit you put on before answering, so a payment right after reads the new look
+lib.callback.register("illenium-appearance:server:extiSaveLook", function(source, appearance)
+    local citizenID = Framework.GetPlayerID(source)
+    if citizenID and type(appearance) == "table" and appearance.model then
+        Framework.SaveAppearance(appearance, citizenID)
+    end
+    return true
 end)

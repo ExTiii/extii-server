@@ -117,6 +117,7 @@ function confirmFinish() {
 }
 function leave(confirmIt) {
     if (S.config.enableExit === false) return;
+    if (S.mode === 'tattoo') return save(); // tattoos are paid one by one, so leaving keeps them
     const dirty = S.mode === 'clothing' ? cart().length > 0 : confirmIt;
     if (!dirty) { post('appearance_exit'); return; }
     ask('الخروج بلا حفظ؟', 'سيعود مظهرك كما كان قبل الدخول.', 'اخرج', () => post('appearance_exit'));

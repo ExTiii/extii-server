@@ -210,10 +210,13 @@ local function setPiece(ped, part, d)
     Wait(120)
 end
 
+local restore
+local saved = {}
 local function run(onlyG, onlyKey)
     local at = vec4(-1267.0, -3013.0, 13.945, 330.0) -- the airport, in a private world (only you)
     local back = GetEntityCoords(cache.ped)
     local look = client.getPedAppearance(cache.ped)
+    saved.back, saved.look = back, look
     TriggerServerEvent("illenium-appearance:server:ChangeRoutingBucket")
     DoScreenFadeOut(300); Wait(400)
     NetworkOverrideClockTime(12, 0, 0)
@@ -302,7 +305,12 @@ local function run(onlyG, onlyKey)
         end
     end
 
-    -- back to normal
+    restore(back, look)
+    note(("انتهى: %d صورة جديدة، %d موجودة. اكتب refresh ثم restart illenium-appearance"):format(made, skipped))
+end
+
+-- put the admin back as they were (also used when the tool stops on an error)
+restore = function(back, look)
     screen = nil
     RenderScriptCams(false, false, 0, true, true)
     if cam then DestroyCam(cam, false); cam = nil end
@@ -322,7 +330,6 @@ local function run(onlyG, onlyKey)
     Wait(300)
     DoScreenFadeIn(300)
     Framework.CachePed()
-    note(("انتهى: %d صورة جديدة، %d موجودة. اكتب refresh ثم restart illenium-appearance"):format(made, skipped))
 end
 
 RegisterNetEvent("illenium-appearance:client:photoTool", function(g, key)
@@ -335,13 +342,11 @@ RegisterNetEvent("illenium-appearance:client:photoTool", function(g, key)
     if ExtiShop then return note("أغلق شاشة الملابس أولًا") end
     if g and g ~= "m" and g ~= "f" then key = g; g = nil end -- /extiphotos parents
     running, stopAsked = true, false
+    saved.back, saved.look = nil, nil
     local ok, err = pcall(run, g, key)
     if not ok then
         print("^1[photo tool] " .. tostring(err))
-        screen = nil
-        RenderScriptCams(false, false, 0, true, true)
-        FreezeEntityPosition(cache.ped, false)
-        TriggerServerEvent("illenium-appearance:server:ResetRoutingBucket")
+        if saved.back then pcall(restore, saved.back, saved.look) end
         DoScreenFadeIn(300)
         note("توقفت الأداة بسبب خطأ (انظر F8)")
     end
