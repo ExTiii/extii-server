@@ -467,3 +467,41 @@ H.registerHeist({ id = 'house', label = 'سطو على منزل', tier = 1, wher
     if not isNight() then return 'night', 0, 'بالليل فقط (10 مساءً - 5 صباحًا)' end
     return 'ready', 0, 'اكتب للمصرّف "شغل"'
 end })
+
+---------------------------------------------------------------------------
+-- admins: where the owner sleeps in each house layout (stand on the bed, look the way his head lies)
+--   /housespot sleeper   (inside a house: saved for that layout, all houses of that size use it)
+--   /housespot clear     (back to the default spot)
+---------------------------------------------------------------------------
+local SPOTS_FILE = 'data/houses.json'
+local houseSpots = {}
+do
+    local raw = LoadResourceFile(GetCurrentResourceName(), SPOTS_FILE)
+    local ok, data = pcall(json.decode, raw or '')
+    if ok and type(data) == 'table' then houseSpots = data end
+    GlobalState['exti_heists:houseSpots'] = houseSpots
+end
+
+lib.addCommand('housespot', {
+    help = 'مكان نوم صاحب البيت (للإدارة، داخل بيت)',
+    params = { { name = 'what', type = 'string', help = 'sleeper أو clear' } },
+    restricted = 'group.admin',
+}, function(src, args)
+    local id = inside[src]
+    local l = id and leads[id]
+    if not l then return H.notify(src, 'ادخل بيتًا أولًا (من F1 خذ بيتًا للتجربة)', 'error') end
+    local key = tostring(HS.sizes[l.size].interior)
+    if args.what == 'clear' then
+        houseSpots[key] = nil
+    elseif args.what == 'sleeper' then
+        local ped = GetPlayerPed(src)
+        local c = GetEntityCoords(ped)
+        houseSpots[key] = { x = c.x, y = c.y, z = c.z, h = GetEntityHeading(ped) }
+    else
+        return H.notify(src, 'اكتب: /housespot sleeper أو /housespot clear', 'error')
+    end
+    SaveResourceFile(GetCurrentResourceName(), SPOTS_FILE, json.encode(houseSpots, { indent = true }), -1)
+    GlobalState['exti_heists:houseSpots'] = houseSpots
+    H.notify(src, args.what == 'clear' and 'رجع المكان الافتراضي' or ('حُفظ مكان النوم لكل بيوت: %s'):format(HS.sizes[l.size].label), 'success')
+    H.log(src, 'house_spot', ('%s %s'):format(args.what, key))
+end)

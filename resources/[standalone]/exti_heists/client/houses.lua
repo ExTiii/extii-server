@@ -50,6 +50,12 @@ RegisterNetEvent('exti_heists:client:fenceArea', function(p, radius, minutes)
 end)
 
 RegisterNetEvent('exti_heists:client:houseDone', function(id, why)
+    -- (a big item left on the floor inside is gone with the house)
+    if carry and carry.down then
+        if carry.prop and DoesEntityExist(carry.prop) then DeleteEntity(carry.prop) end
+        carry = nil
+        TriggerServerEvent('exti_heists:server:houseDropCarry')
+    end
     if lead and lead.id == id then
         if why == 'expired' then HC.notify('انتهت مهلة البيت. اطلب غيره من المصرّف', 'error', 7000) end
         clearLead()
@@ -59,28 +65,53 @@ end)
 ---------------------------------------------------------------------------
 -- the noise meter (inside only): running, jumping and mistakes make noise; quiet steps let it fall
 ---------------------------------------------------------------------------
-local lastSent = 0
+local lastSent, lastUi, lastSmash, wasMelee = 0, 0, 0, false
+local sleeper = nil      -- the owner asleep in his bed (this game's own copy)
 local function addNoise(n)
-    if not inHouse then return end
+    if not inHouse or inHouse.alarm then return end
     inHouse.noise = math.min(100, inHouse.noise + n)
+end
+local function nearSleeper()
+    return sleeper and DoesEntityExist(sleeper) and not IsPedDeadOrDying(sleeper, true)
+        and #(GetEntityCoords(cache.ped) - GetEntityCoords(sleeper)) < HS.sleeperReach
 end
 CreateThread(function()
     while true do
         if inHouse and not inHouse.alarm then
-            local ped = cache.ped
-            if IsPedSprinting(ped) then addNoise(HS.noise.sprint * 0.25) elseif IsPedRunning(ped) then addNoise(HS.noise.run * 0.25) end
-            if IsPedJumping(ped) then addNoise(HS.noise.jump * 0.25) end
-            if IsPedShooting(ped) then addNoise(100) end
-            inHouse.noise = math.max(0, inHouse.noise - HS.noise.decay * 0.25)
-            SendNUIMessage({ action = 'noise', value = math.floor(inHouse.noise) })
+            local ped, dt = cache.ped, GetFrameTime()
+            if IsPedSprinting(ped) then addNoise(HS.noise.sprint * dt) elseif IsPedRunning(ped) then addNoise(HS.noise.run * dt) end
+            if IsPedJumping(ped) then addNoise(HS.noise.jump * dt) end
+            -- a shot (every one counts; a suppressor is quieter, not silent)
+            if IsPedShooting(ped) then addNoise(IsPedCurrentWeaponSilenced(ped) and HS.noise.shotSilenced or HS.noise.shot) end
+            -- a punch or a swing (once per swing)
+            local melee = IsPedPerformingMeleeAction(ped)
+            if melee and not wasMelee then addNoise(HS.noise.melee) end
+            wasMelee = melee
+            local close = nearSleeper()
+            if close then addNoise(HS.noise.nearSleeper * dt)
+            else inHouse.noise = math.max(0, inHouse.noise - HS.noise.decay * dt) end
+            if GetGameTimer() - lastUi > 200 then
+                lastUi = GetGameTimer()
+                SendNUIMessage({ action = 'noise', value = math.floor(inHouse.noise), sleeper = close })
+            end
             if inHouse.noise >= 100 or (inHouse.noise >= 60 and GetGameTimer() - lastSent > 3000) then
                 lastSent = GetGameTimer()
                 TriggerServerEvent('exti_heists:server:houseNoise', inHouse.id, inHouse.noise)
             end
-            Wait(250)
+            Wait(0)
         else
             Wait(500)
         end
+    end
+end)
+-- glass and things broken by a bullet or a hit
+AddEventHandler('gameEventTriggered', function(name, args)
+    if name ~= 'CEventNetworkEntityDamage' or not inHouse then return end
+    local victim, attacker = args[1], args[2]
+    if attacker ~= cache.ped or not victim or not DoesEntityExist(victim) then return end
+    if GetEntityType(victim) == 3 and GetGameTimer() - lastSmash > 300 then
+        lastSmash = GetGameTimer()
+        addNoise(HS.noise.smash)
     end
 end)
 
@@ -98,11 +129,42 @@ local function spawnLocal(model, pos, heading)
 end
 local function clearLocals() for _, p in ipairs(locals) do if DoesEntityExist(p) then DeleteEntity(p) end end locals = {} end
 
+local SLEEP = { 'timetable@tracy@sleep@', 'idle_c' }
+local function sleeperSpot()
+    local saved = (GlobalState['exti_heists:houseSpots'] or {})[tostring(inHouse.interior)]
+    if saved and saved.x then return vec3(saved.x, saved.y, saved.z), saved.h or 0.0 end
+    local it = HS.interiors[inHouse.interior]
+    if it.sleeper then return vec3(it.sleeper.x, it.sleeper.y, it.sleeper.z), it.sleeper.w or 0.0 end
+    local p = it.spots[#it.spots]
+    return p, 0.0
+end
+local function spawnSleeper()
+    if not inHouse or inHouse.alarm or sleeper or not HS.sizes[inHouse.size].sleeper then return end
+    local pos, h = sleeperSpot()
+    local ped = spawnLocal(inHouse.size == 'mansion' and 'a_m_y_bevhills_01' or 'a_m_m_eastsa_02', pos + vec3(0.0, 0.0, 1.0), h)
+    if not ped then return end
+    SetEntityCoordsNoOffset(ped, pos.x, pos.y, pos.z, false, false, false)
+    SetEntityHeading(ped, h)
+    FreezeEntityPosition(ped, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    SetPedCanRagdoll(ped, false)
+    if pcall(lib.requestAnimDict, SLEEP[1], 3000) then TaskPlayAnim(ped, SLEEP[1], SLEEP[2], 8.0, 8.0, -1, 1, 0.0, false, false, false) end
+    sleeper = ped
+end
+
 local function ownerWakes()
     if not inHouse then return end
-    local it = HS.interiors[inHouse.interior]
-    local spot = it.spots[#it.spots]
-    local ped = spawnLocal(inHouse.size == 'mansion' and 'a_m_y_bevhills_01' or 'a_m_m_eastsa_02', spot, 0.0)
+    local ped = sleeper
+    if ped and DoesEntityExist(ped) and not IsPedDeadOrDying(ped, true) then
+        -- he wakes up in his bed
+        FreezeEntityPosition(ped, false); SetPedCanRagdoll(ped, true)
+        ClearPedTasks(ped)
+    else
+        local it = HS.interiors[inHouse.interior]
+        local spot = it.spots[#it.spots]
+        ped = spawnLocal(inHouse.size == 'mansion' and 'a_m_y_bevhills_01' or 'a_m_m_eastsa_02', spot, 0.0)
+    end
+    sleeper = nil
     if ped then
         SetBlockingOfNonTemporaryEvents(ped, true)
         PlayPedAmbientSpeechNative(ped, 'GENERIC_SHOCKED_HIGH', 'SPEECH_PARAMS_FORCE_SHOUTED')
@@ -124,19 +186,33 @@ local function spawnDog()
     dog = spawnLocal('a_c_rottweiler', it.dog, 0.0)
     if not dog then return end
     SetPedRelationshipGroupHash(dog, `HATES_PLAYER`)
-    SetEntityHealth(dog, 250)
+    SetEntityMaxHealth(dog, 250); SetEntityHealth(dog, 250)
+    SetPedFleeAttributes(dog, 0, false)
+    SetPedCombatAttributes(dog, 46, true)   -- always fight
+    SetPedCombatAttributes(dog, 5, true)    -- fight armed people too
+    SetPedCombatAbility(dog, 2)
+    SetPedCombatMovement(dog, 3)            -- charge in
+    SetPedSeeingRange(dog, 25.0); SetPedHearingRange(dog, 40.0)
     TaskStartScenarioInPlace(dog, 'WORLD_DOG_SITTING_ROTTWEILER', 0, true)
     CreateThread(function()
-        local woke = false
+        local woke, nextBark, nextOrder = false, 0, 0
         while inHouse and DoesEntityExist(dog) and not IsPedDeadOrDying(dog, true) do
-            local d = #(GetEntityCoords(cache.ped) - GetEntityCoords(dog))
-            if not woke and (d < 4.0 or inHouse.noise > 40 or inHouse.alarm) then
+            local me = cache.ped
+            local d = #(GetEntityCoords(me) - GetEntityCoords(dog))
+            if not woke and (inHouse.alarm or inHouse.noise > 35 or (d < HS.dogSees and HasEntityClearLosToEntity(dog, me, 17)) or d < 2.5) then
                 woke = true
-                PlayPedAmbientSpeechNative(dog, 'BARK', 'SPEECH_PARAMS_FORCE_SHOUTED')
-                TaskCombatPed(dog, cache.ped, 0, 16)
-                addNoise(40)
+                ClearPedTasksImmediately(dog)   -- (out of the sitting pose first, or he only barks)
+                addNoise(HS.noise.bark)
             end
-            Wait(400)
+            if woke then
+                if GetGameTimer() > nextBark then nextBark = GetGameTimer() + 2500; PlayPedAmbientSpeechNative(dog, 'BARK', 'SPEECH_PARAMS_FORCE_SHOUTED'); addNoise(HS.noise.bark * 0.4) end
+                if GetGameTimer() > nextOrder and not IsPedInCombat(dog, me) and not HC.isDown() then
+                    nextOrder = GetGameTimer() + 1500
+                    TaskCombatPed(dog, me, 0, 16)
+                    SetPedKeepTask(dog, true)
+                end
+            end
+            Wait(woke and 250 or 400)
         end
     end)
 end
@@ -157,13 +233,42 @@ RegisterNetEvent('exti_heists:client:housePickedUp', function(id) if inHouse and
 ---------------------------------------------------------------------------
 -- carrying the big item
 ---------------------------------------------------------------------------
+local CARRY = { 'anim@heists@box_carry@', 'idle' }
+local function playCarry()
+    if not HasAnimDictLoaded(CARRY[1]) then
+        RequestAnimDict(CARRY[1])
+        local t = GetGameTimer() + 3000
+        while not HasAnimDictLoaded(CARRY[1]) and GetGameTimer() < t do Wait(0) end
+    end
+    -- (the dictionary stays loaded while carrying: removing it right after starting stops the movement)
+    TaskPlayAnim(cache.ped, CARRY[1], CARRY[2], 8.0, -8.0, -1, 49, 0.0, false, false, false)
+end
+
 local function dropCarry(silent)
     if not carry then return end
-    if DoesEntityExist(carry.prop) then DeleteEntity(carry.prop) end
-    ClearPedTasks(cache.ped)
+    if carry.prop and DoesEntityExist(carry.prop) then DeleteEntity(carry.prop) end
+    StopAnimTask(cache.ped, CARRY[1], CARRY[2], 1.0)
     carry = nil
     TriggerServerEvent('exti_heists:server:houseDropCarry')
     if not silent then HC.notify('أسقطته: ضاع', 'error') end
+end
+
+-- put it down here (pick it up again with E): your hands are free to search
+local function putDown()
+    if not carry or carry.down then return end
+    StopAnimTask(cache.ped, CARRY[1], CARRY[2], 1.0)
+    if carry.prop and DoesEntityExist(carry.prop) then
+        DetachEntity(carry.prop, true, true)
+        local p = GetOffsetFromEntityInWorldCoords(cache.ped, 0.0, 0.6, 0.0)
+        local ok, gz = GetGroundZFor_3dCoord(p.x, p.y, p.z + 0.5, false)
+        SetEntityCoords(carry.prop, p.x, p.y, (ok and gz or (p.z - 0.95)) + 0.02, false, false, false, false)
+        SetEntityHeading(carry.prop, GetEntityHeading(cache.ped))
+        FreezeEntityPosition(carry.prop, true)
+        carry.down = GetEntityCoords(carry.prop)
+    else
+        carry.down = GetEntityCoords(cache.ped)
+    end
+    HC.notify('وضعته على الأرض · [E] تحمله من جديد', 'inform', 4000)
 end
 
 local function attachCarry(model)
@@ -175,18 +280,34 @@ local function attachCarry(model)
     local tv = model:find('tv') ~= nil
     AttachEntityToEntity(prop, cache.ped, GetPedBoneIndex(cache.ped, 28422), tv and 0.0 or 0.05, tv and -0.18 or -0.12, tv and -0.1 or -0.25,
         tv and 0.0 or 10.0, 0.0, tv and 0.0 or 90.0, true, true, false, true, 1, true)
-    HC.anim(cache.ped, 'anim@heists@box_carry@', 'idle', 49)
+    playCarry()
     return prop
+end
+
+local function pickBackUp()
+    if not carry or not carry.down then return end
+    if carry.prop and DoesEntityExist(carry.prop) then
+        FreezeEntityPosition(carry.prop, false)
+        local tv = carry.model:find('tv') ~= nil
+        AttachEntityToEntity(carry.prop, cache.ped, GetPedBoneIndex(cache.ped, 28422), tv and 0.0 or 0.05, tv and -0.18 or -0.12, tv and -0.1 or -0.25,
+            tv and 0.0 or 10.0, 0.0, tv and 0.0 or 90.0, true, true, false, true, 1, true)
+    else
+        carry.prop = attachCarry(carry.model)
+    end
+    carry.down = nil
+    playCarry()
 end
 
 CreateThread(function()
     while true do
-        if carry then
+        if carry and not carry.down then
             DisableControlAction(0, 21, true)   -- sprint
             DisableControlAction(0, 22, true)   -- jump
             DisableControlAction(0, 24, true); DisableControlAction(0, 25, true)   -- attack, aim
             DisableControlAction(0, 23, true)   -- enter vehicle
-            if not IsEntityPlayingAnim(cache.ped, 'anim@heists@box_carry@', 'idle', 3) then HC.anim(cache.ped, 'anim@heists@box_carry@', 'idle', 49) end
+            DisableControlAction(0, 37, true)   -- weapon wheel
+            DisableControlAction(0, 44, true)   -- cover
+            if not IsEntityPlayingAnim(cache.ped, CARRY[1], CARRY[2], 3) and not lib.progressActive() then playCarry() end
             if HC.isDown() then dropCarry() end
             Wait(0)
         else
@@ -238,13 +359,13 @@ local function enter(id)
     Wait(300); DoScreenFadeIn(500)
     SendNUIMessage({ action = 'noise', value = math.floor(inHouse.noise), show = true, alarm = inHouse.alarm })
     if info.dog then spawnDog() end
-    if inHouse.alarm then ownerWakes() end
+    if inHouse.alarm then ownerWakes() else spawnSleeper() end
 end
 
 RegisterNetEvent('exti_heists:client:houseOut', function(p)
-    local wasCarrying = carry and carry.model
-    if carry and DoesEntityExist(carry.prop) then DeleteEntity(carry.prop) end
-    inHouse = nil; dog = nil
+    local wasCarrying = carry and not carry.down and carry.model
+    if carry and carry.prop and DoesEntityExist(carry.prop) and not carry.down then DeleteEntity(carry.prop) end
+    inHouse = nil; dog = nil; sleeper = nil
     clearLocals()
     SendNUIMessage({ action = 'noise', show = false })
     DoScreenFadeOut(300); Wait(350)
@@ -305,15 +426,16 @@ local function pickup()
     inHouse.pickupTaken = true
     carry = { model = model, item = item }
     carry.prop = attachCarry(model)
-    HC.notify('احمله إلى سيارتك (ببطء) وضعه فيها · [X] تسقطه', 'inform', 8000)
+    HC.notify('احمله إلى سيارتك (ببطء) وضعه فيها · [G] تضعه أرضًا', 'inform', 8000)
 end
 
 local function stow(veh)
     HC.prompt(nil)
     local ok, item = lib.callback.await('exti_heists:server:houseStow', false, NetworkGetNetworkIdFromEntity(veh))
     if not ok then return end
-    if carry and DoesEntityExist(carry.prop) then DeleteEntity(carry.prop) end
-    ClearPedTasks(cache.ped)
+    if carry and carry.prop and DoesEntityExist(carry.prop) then DeleteEntity(carry.prop) end
+    StopAnimTask(cache.ped, CARRY[1], CARRY[2], 1.0)
+    RemoveAnimDict(CARRY[1])
     carry = nil
     HC.notify('وضعته في السيارة · بِعه للمصرّف', 'success')
 end
@@ -330,7 +452,14 @@ CreateThread(function()
         if inHouse then
             sleep = 0
             local it = HS.interiors[inHouse.interior]
-            if HC.canAct() and not carry then
+            if carry and not carry.down and HC.canAct() then
+                text = 'تحمل غرضًا ثقيلًا · [G] ضعه أرضًا لتفتّش · اخرج به إلى سيارتك'
+                alt = putDown
+            end
+            if carry and carry.down and HC.canAct() and #(here - carry.down) < 1.6 then
+                text, act = '[E] احمله من جديد', pickBackUp
+            end
+            if HC.canAct() and (not carry or carry.down) then
                 local best, bd
                 for k, p in ipairs(it.spots) do
                     if not inHouse.searched[k] then
@@ -341,11 +470,11 @@ CreateThread(function()
                 end
                 if best then text, act = '[E] فتّش', function() search(best) end end
                 if it.safe and HS.sizes[inHouse.size].safe and not inHouse.safeDone and #(here - it.safe) < 1.4 then text, act = '[E] افتح خزنة الحائط', crack end
-                if it.pickup and not inHouse.pickupTaken and #(here - it.pickup.pos) < 1.6 then
+                if it.pickup and not inHouse.pickupTaken and not carry and #(here - it.pickup.pos) < 1.6 then
                     text, act = ('[E] احمل %s'):format(HS.sizes[inHouse.size].pickup == 'painting' and 'اللوحة' or 'التلفاز'), pickup
                 end
             end
-            if #(here - vec3(it.exit.x, it.exit.y, it.exit.z)) < 1.5 and HC.canAct() then text, act = '[E] اخرج', leave end
+            if #(here - vec3(it.exit.x, it.exit.y, it.exit.z)) < 1.5 and HC.canAct() and not (carry and carry.down) then text, act = '[E] اخرج', leave end
         else
             -- the door of my lead
             if lead and #(here - lead.pos) < 2.0 and HC.canAct() and not carry then
@@ -363,13 +492,16 @@ CreateThread(function()
                     text, act, alt = '[E] ادخل البيت', function() enter(id) end, nil
                 end
             end
-            -- carrying: a car nearby
-            if carry then
+            -- carrying: a car nearby (or it is on the ground)
+            if carry and carry.down then
+                sleep = 0
+                if #(here - carry.down) < 1.6 and HC.canAct() then text, act = '[E] احمله من جديد', pickBackUp end
+            elseif carry then
                 sleep = 0
                 local veh = lib.getClosestVehicle(here, 3.5, false)
                 if veh then text, act = '[E] ضعه في السيارة', function() stow(veh) end
-                else text = 'تحمل غرضًا ثقيلًا · اذهب إلى سيارتك · [X] تسقطه' end
-                if IsControlJustReleased(0, 73) then dropCarry() end
+                else text = 'تحمل غرضًا ثقيلًا · اذهب إلى سيارتك · [G] ضعه أرضًا' end
+                alt = putDown
             end
         end
         HC.prompt(text, 'houses')

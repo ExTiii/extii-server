@@ -11,6 +11,7 @@ local R, S = C.register, C.storeSafe
 local stores = {}    -- [index] = { index, area, type, layout, clerk = vec4 }
 local state = {}     -- [index] = { phase = 'held'|'open'|'cower'|'emptied', by, mode, at, alarm, rolled, called }
 local safes = {}     -- [index] = { phase = 'timelock'|'ready', by, mode, readyAt }
+local down = {}      -- [index] = os.time() he was shot (he lies behind the counter until shotResetMinutes)
 local spots = { safes = {} }   -- [key] = { x, y, z, h, copied }  (data/spots.json, placed with /heistspots)
 
 local function clerkPos(st) return vec3(st.clerk.x, st.clerk.y, st.clerk.z) end
@@ -31,6 +32,9 @@ local function publish()
     local timers = {}
     for i, sf in pairs(safes) do timers[i] = { phase = sf.phase, readyAt = sf.readyAt, by = sf.by } end
     GlobalState['exti_heists:safes'] = timers
+    local d = {}
+    for i in pairs(down) do d[i] = true end
+    GlobalState['exti_heists:clerkDown'] = d
 end
 
 CreateThread(function()
@@ -139,19 +143,56 @@ RegisterNetEvent('exti_heists:server:lookAway', function(i, secs)
     local st = i and state[i]
     if not st or st.by ~= src or st.phase ~= 'held' then return end
     secs = tonumber(secs) or 0
-    if secs >= 2 and not st.rolled then
-        st.rolled = true
-        if math.random() < R.lookAwayAlarm then
-            st.alarm = true
-            call(i, C.calls.register, 'إنذار صامت', src, nil, st.mode)
-            H.log(src, 'store_silent_alarm', stores[i].area)
-        end
+    -- (EX_Tii: no dice any more: look away and he ALWAYS presses the silent alarm, the game warns you first)
+    if secs >= R.lookAwaySeconds and not st.alarm then
+        st.alarm = true
+        call(i, C.calls.register, 'إنذار صامت', src, nil, st.mode)
+        H.log(src, 'store_silent_alarm', stores[i].area)
+        TriggerClientEvent('exti_heists:client:silentAlarm', src, i)
     end
     if secs >= R.cowerSeconds then
         st.phase = 'cower'; publish()
         TriggerClientEvent('exti_heists:client:clerkCowers', src, i)
         cowerTimeout(i)
         if not st.alarm then st.alarm = true; call(i, C.calls.register, 'إنذار صامت', src, nil, st.mode) end
+    end
+end)
+
+-- shots in the store: `direct` = at the clerk (he goes down behind the counter), else near him (he panics)
+local shotAsked = {}
+RegisterNetEvent('exti_heists:server:clerkShot', function(i, direct)
+    local src = source
+    i = math.tointeger(i)
+    local s = i and stores[i]
+    if not s or H.isCopOnDuty(src) then return end
+    if (shotAsked[src] or 0) > GetGameTimer() then return end
+    shotAsked[src] = GetGameTimer() + 1500
+    if not H.near(src, clerkPos(s), direct and 25.0 or 15.0) then return end
+    local st = state[i]
+    if direct and not down[i] then
+        down[i] = H.now()
+        local mode = st and st.mode or H.modeFor(R.tier)
+        if not st and mode then
+            -- nobody was holding him: the till now needs a lockpick (no cooldown skip)
+            if H.cooldownLeft(storeKey(i, 'till')) <= 0 then
+                st = { phase = 'cower', by = src, mode = mode, at = H.now(), alarm = true, rolled = true, shot = true }
+                state[i] = st; cowerTimeout(i)
+            end
+        elseif st and st.phase == 'held' then
+            st.phase = 'cower'; cowerTimeout(i)
+        end
+        if st then st.alarm = true; st.shot = true end
+        H.setHeat(src, R.tier)
+        publish()
+        TriggerClientEvent('exti_heists:client:clerkShot', src, i)
+        call(i, 'إطلاق نار في متجر', 'بلاغ من الشارع', src, 'أُصيب صاحب المحل', mode)
+        H.log(src, 'store_clerk_shot', s.area)
+        local at = down[i]
+        SetTimeout(R.shotResetMinutes * 60 * 1000, function() if down[i] == at then down[i] = nil; publish() end end)
+    elseif not direct and st and not st.alarm and (st.phase == 'held' or st.phase == 'open') then
+        st.alarm = true
+        call(i, 'إطلاق نار في متجر', 'إنذار صامت', src, nil, st.mode)
+        H.log(src, 'store_shots', s.area)
     end
 end)
 
@@ -364,7 +405,7 @@ end)
 -- admins (F1): clear every store cooldown
 function H.resetStores()
     for k in pairs(H.cooldowns) do if k:sub(1, 6) == 'store:' then H.clearCooldown(k) end end
-    state, safes = {}, {}
+    state, safes, down = {}, {}, {}
     publish()
 end
 

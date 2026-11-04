@@ -241,6 +241,10 @@ lib.callback.register('exti_heists:server:hostageAct', function(src, action, kin
             H.log(src, 'hostage_freed_cop', ('%s $%d'):format(kind, pay))
             return true, pay
         end
+        if sameSide(h.by, src) and H.npcDropGuard then
+            local okg, why = H.npcDropGuard(h.by, at)
+            if not okg then return false, why end
+        end
         free(kind, id, sameSide(h.by, src) and 'released' or ('cut by %d'):format(src), src)
         return true, 0
 

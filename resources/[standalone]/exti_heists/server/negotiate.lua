@@ -12,22 +12,36 @@ local C = Config
 local NG = C.negotiator
 local HG = C.hostages
 
+-- the phone shows a message on one line, so a list goes as one message per line, in order
 local function text(src, msg)
     local to = H.phoneOf(src)
     if not to or GetResourceState('npwd') ~= 'started' then return end
-    pcall(function() exports.npwd:emitMessage({ senderNumber = NG.number, targetNumber = to, message = msg }) end)
+    local lines = type(msg) == 'table' and msg or { msg }
+    for k, line in ipairs(lines) do
+        SetTimeout((k - 1) * 900, function()
+            pcall(function() exports.npwd:emitMessage({ senderNumber = NG.number, targetNumber = to, message = '\u{200F}' .. line }) end) -- (right to left from the first letter)
+        end)
+    end
 end
 H.negotiatorText = text
 
-local MENU = 'ردّ برقم:\n1 = نحدد لك مكانًا تترك فيه الرهائن\n2 = أطلقهم هنا الآن\n3 = أحتاج وقتًا (+%d دقائق، مرة واحدة)\n4 = أستسلم'
-local function menu() return MENU:format(HG.moreTimeMinutes) end
+local function menu(intro)
+    local out = {}
+    if intro then out[#out + 1] = intro end
+    out[#out + 1] = 'ردّ برقم واحد:'
+    out[#out + 1] = '1 ← نحدد لك مكانًا تترك فيه الرهائن'
+    out[#out + 1] = '2 ← أطلقهم هنا الآن'
+    out[#out + 1] = ('3 ← أحتاج وقتًا (+%d دقائق، مرة واحدة)'):format(HG.moreTimeMinutes)
+    out[#out + 1] = '4 ← أستسلم'
+    return out
+end
 
 function H.negotiateStart(r)
     for _, s in ipairs(H.npcTargets(r)) do
         local n = H.hostageCount({ s })
         if n > 0 then
-            text(s, ('هنا مفاوض حراسة الحي. المكان محاصر. نرى معك %d %s. لن نطلق النار ما دام لا أحد يتأذى. معك %d دقيقة.\n%s')
-                :format(n, n == 1 and 'رهينة' or 'رهائن', math.ceil(H.npcStandoffLeft(r) / 60), menu()))
+            text(s, menu(('هنا مفاوض حراسة الحي. المكان محاصر. نرى معك %d %s. لن نطلق النار ما دام لا أحد يتأذى. معك %d دقيقة.')
+                :format(n, n == 1 and 'رهينة' or 'رهائن', math.ceil(H.npcStandoffLeft(r) / 60))))
         else
             text(s, 'هنا مفاوض حراسة الحي. المكان محاصر ولا نرى معك رهائن. ردّ 4 لتستسلم.')
         end
@@ -50,15 +64,18 @@ local function onText(src, msg)
     if not pick then
         local r = H.npcOf(src)
         if not r then return text(src, REASON.none) end
-        return text(src, 'لم أفهم. ' .. menu())
+        return text(src, menu('لم أفهم.'))
     end
     local kind = ({ ['1'] = 'drop', ['2'] = 'release', ['3'] = 'time', ['4'] = 'surrender' })[pick]
     local ok, res, again = H.npcDeal(src, kind)
     if not ok then return text(src, REASON[res] or REASON.none) end
     if kind == 'drop' then
         local s = res
-        text(src, ('%s النقطة على خريطتك%s. اذهب بالرهائن إلى هناك وأطلقهم. نحن خلفك ولن نطلق النار. معك %d دقائق.')
-            :format(again and 'المكان كما قلنا:' or 'اتفقنا.', (s.street and s.street ~= '') and (' (' .. s.street .. ')') or '', HG.dropMinutes))
+        text(src, {
+            ('%s النقطة على خريطتك%s.'):format(again and 'المكان كما قلنا:' or 'اتفقنا.', (s.street and s.street ~= '') and (' (' .. s.street .. ')') or ''),
+            'اذهب بالرهائن إلى الدائرة الحمراء وأطلقهم داخلها.',
+            ('نحن خلفك ولن نطلق النار. معك %d دقائق.'):format(HG.dropMinutes),
+        })
     elseif kind == 'release' then
         text(src, ('رأيناهم يخرجون. معك %d ثانية.'):format(res))
     elseif kind == 'time' then

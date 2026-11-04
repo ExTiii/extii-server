@@ -13,6 +13,11 @@ AddRelationshipGroup('EXTI_NPCSEC')
 SetRelationshipBetweenGroups(3, REL, `PLAYER`)   -- neutral: they only fight who the task names
 SetRelationshipBetweenGroups(3, `PLAYER`, REL)
 SetRelationshipBetweenGroups(0, REL, REL)
+-- (they are on the side of the law: no gunfights with the police, the prison guards, the army)
+for _, g in ipairs({ `COP`, `SECURITY_GUARD`, `PRIVATE_SECURITY`, `ARMY`, `PRISONER`, `FIREMAN`, `MEDIC` }) do
+    SetRelationshipBetweenGroups(1, REL, g)
+    SetRelationshipBetweenGroups(1, g, REL)
+end
 
 local hunt = nil      -- what I see: { id, phase = 'coming'|'on', arriveAt, lastSeen, lostSent, downSent }
 local own = nil       -- what my game drives: { id, units = { {veh, peds = {}} }, targets = {src}, pos }
@@ -272,6 +277,7 @@ local function think()
                     -- arrived (or stuck for 45 s): out and into cover
                     if (DoesEntityExist(veh) and #(GetEntityCoords(veh) - u.park) < 14.0) or GetGameTimer() - u.since > 45000 or (dist and dist < 30.0) then
                         u.stage = 'fight'
+                        if not own.arrivedSent then own.arrivedSent = true; TriggerServerEvent('exti_heists:server:npcArrived', own.id) end
                         if DoesEntityExist(veh) then SetVehicleSiren(veh, true); TaskVehicleTempAction(alive[1], veh, 27, 1500) end
                         for _, ped in ipairs(alive) do TaskLeaveVehicle(ped, veh, 256); u.target = nil end
                     end
@@ -362,6 +368,15 @@ end)
 RegisterNetEvent('exti_heists:client:npcHunted', function(id)
     if not hunt or hunt.id ~= id then hunt = { id = id } end
     hunt.phase, hunt.lastSeen, hunt.onAt = 'on', nil, GetGameTimer()
+end)
+-- they are really there now (out of their cars): from here on they can lose you
+RegisterNetEvent('exti_heists:client:npcArrived', function(id)
+    if not hunt or hunt.id ~= id then return end
+    if not hunt.arrived then
+        hunt.arrived, hunt.lastSeen = true, GetGameTimer()
+        PlaySoundFrontend(-1, 'Event_Start_Text', 'GTAO_FM_Events_Soundset', false)
+        HC.notify('وصلت حراسة الحي: المكان محاصر', 'error', 6000)
+    end
 end)
 
 RegisterNetEvent('exti_heists:client:npcTargets', function(id, targets)
@@ -463,12 +478,16 @@ CreateThread(function()
                         local b = AddBlipForEntity(ped); SetBlipSprite(b, 1); SetBlipColour(b, 1); SetBlipScale(b, 0.7)
                         SetBlipAsShortRange(b, false); ShowHeadingIndicatorOnBlip(b, true); blips[ped] = b
                     end
-                    if not seen and #(GetEntityCoords(ped) - myPos) < 140.0 and HasEntityClearLosToEntity(ped, me, 17) then seen = true end
+                    local d = #(GetEntityCoords(ped) - myPos)
+                    -- (in sight, or so close they know where you are: hiding in the shop with them at the door is not "lost")
+                    if not seen and (d < N.knowDistance or (d < 140.0 and HasEntityClearLosToEntity(ped, me, 17))) then seen = true end
                 end
                 for ent, b in pairs(blips) do if not alive[ent] then if DoesBlipExist(b) then RemoveBlip(b) end blips[ent] = nil end end
                 -- (while they are still driving in, nobody has seen you yet: the clock starts when they first see you,
                 -- or 90 s after they are out if they never do)
                 if seen then hunt.lastSeen = GetGameTimer() end
+                -- (still driving in: nothing to lose yet)
+                if not hunt.arrived then hunt.lastSeen = GetGameTimer() end
                 -- (inside a house nobody can see you, but they wait at the door: the clock doesn't run in there)
                 if HC.insideHouse and HC.insideHouse() then hunt.lastSeen = GetGameTimer() end
                 -- (while they hold their fire and wait, there's nothing to lose)
@@ -478,6 +497,8 @@ CreateThread(function()
                 local left = math.max(0, (hunt.lost or N.lostSeconds) - hidden)
                 if (hunt.rageUntil or 0) > GetGameTimer() then
                     bar({ kind = 'rage', seconds = 0 })
+                elseif not hunt.arrived then
+                    bar({ kind = 'arriving', seconds = 0, units = #peds })
                 elseif (hunt.holdUntil or 0) > GetGameTimer() then
                     bar({ kind = 'hold', seconds = math.ceil((hunt.holdUntil - GetGameTimer()) / 1000), why = hunt.holdWhy })
                 else
@@ -596,15 +617,29 @@ end)
 ---------------------------------------------------------------------------
 -- the drop-off spot: picked here (a road 400-800 m away), shown on the map of every hunted robber
 ---------------------------------------------------------------------------
+-- places a drop-off can never be (closed off, or guarded by people who shoot)
+local NO_DROP = {
+    { vec2(1690.0, 2600.0), 320.0 },   -- Bolingbroke prison
+    { vec2(-2200.0, 3100.0), 950.0 },  -- Fort Zancudo
+    { vec2(-1250.0, -2850.0), 750.0 }, -- the airport (airside)
+    { vec2(3560.0, 3740.0), 260.0 },   -- Humane Labs
+}
+local function dropAllowed(p)
+    for _, z in ipairs(NO_DROP) do if #(vec2(p.x, p.y) - z[1]) < z[2] then return false end end
+    if TestVerticalProbeAgainstAllWater(p.x, p.y, p.z + 2.0, 0) then return false end
+    if GetInteriorAtCoords(p.x, p.y, p.z) ~= 0 then return false end
+    return true
+end
 lib.callback.register('exti_heists:client:dropSpot', function(origin, minD, maxD)
     local o = vec3(origin.x, origin.y, origin.z)
-    for _ = 1, 40 do
+    for n = 1, 60 do
         local a = math.rad(math.random(0, 359))
         local d = math.random(math.floor(minD), math.floor(maxD))
-        local ok, node = GetClosestVehicleNode(o.x + math.cos(a) * d, o.y + math.sin(a) * d, o.z, 1, 3.0, 0)
+        -- a real street anyone can drive to (main roads first, then any road)
+        local ok, node = GetClosestVehicleNode(o.x + math.cos(a) * d, o.y + math.sin(a) * d, o.z, n <= 40 and 0 or 1, 3.0, 0)
         if ok then
             local dd = #(node - o)
-            if dd >= minD * 0.85 and dd <= maxD * 1.2 and not TestVerticalProbeAgainstAllWater(node.x, node.y, node.z + 2.0, 0) then
+            if dd >= minD * 0.85 and dd <= maxD * 1.2 and dropAllowed(node) then
                 local s1 = GetStreetNameAtCoord(node.x, node.y, node.z)
                 return { x = node.x, y = node.y, z = node.z, street = GetStreetNameFromHashKey(s1) }
             end
@@ -614,9 +649,11 @@ lib.callback.register('exti_heists:client:dropSpot', function(origin, minD, maxD
 end)
 
 local dropBlips = {}
+local dropSpot, inDrop = nil, false
 local function clearDrop()
     for _, b in ipairs(dropBlips) do if DoesBlipExist(b) then RemoveBlip(b) end end
     dropBlips = {}
+    dropSpot, inDrop = nil, false
 end
 RegisterNetEvent('exti_heists:client:dropSpotShow', function(id, spot)
     clearDrop()
@@ -624,12 +661,35 @@ RegisterNetEvent('exti_heists:client:dropSpotShow', function(id, spot)
     SetBlipSprite(b, 280); SetBlipColour(b, 1); SetBlipScale(b, 1.0)
     SetBlipRoute(b, true); SetBlipRouteColour(b, 1)
     BeginTextCommandSetBlipName('STRING'); AddTextComponentSubstringPlayerName('نقطة ترك الرهائن'); EndTextCommandSetBlipName(b)
-    local r = AddBlipForRadius(spot.x, spot.y, spot.z, C.hostages.dropRadius)
-    SetBlipColour(r, 1); SetBlipAlpha(r, 120)
+    local r = AddBlipForRadius(spot.x + 0.0, spot.y + 0.0, spot.z + 0.0, C.hostages.dropRadius + 0.0)
+    SetBlipColour(r, 1); SetBlipAlpha(r, 150); SetBlipAsShortRange(r, false); SetBlipDisplay(r, 6)
     dropBlips = { b, r }
+    dropSpot = vec3(spot.x + 0.0, spot.y + 0.0, spot.z + 0.0)
     PlaySoundFrontend(-1, 'Text_Arrive_Tone', 'Phone_SoundSet_Default', false)
 end)
 RegisterNetEvent('exti_heists:client:dropSpotClear', function() clearDrop() end)
+-- the red circle on the ground (and an arrow over it), so you know exactly where to let them go
+CreateThread(function()
+    while true do
+        local sleep = 1000
+        if dropSpot then
+            local here = GetEntityCoords(cache.ped)
+            local d = #(vec2(here.x, here.y) - vec2(dropSpot.x, dropSpot.y))
+            if d < 300.0 then
+                sleep = 0
+                local R0 = C.hostages.dropRadius
+                local ok, gz = GetGroundZFor_3dCoord(dropSpot.x, dropSpot.y, dropSpot.z + 2.0, false)
+                local z = ok and gz or dropSpot.z
+                DrawMarker(1, dropSpot.x, dropSpot.y, z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, R0 * 2.0, R0 * 2.0, 2.2, 229, 72, 77, d <= R0 and 60 or 95, false, false, 2, false, nil, nil, false)
+                DrawMarker(0, dropSpot.x, dropSpot.y, z + 6.0, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 2.5, 2.5, 2.5, 229, 72, 77, 200, true, false, 2, true, nil, nil, false)
+                if d <= R0 then
+                    if not inDrop then inDrop = true; HC.notify('أنت داخل الدائرة: أطلق الرهائن هنا (Z ← الرهينة ← أطلق سراحه)', 'success', 6000) end
+                else inDrop = false end
+            end
+        end
+        Wait(sleep)
+    end
+end)
 AddEventHandler('exti_heists:client:npcEnd', function() clearDrop() end)
 
 AddEventHandler('onResourceStop', function(res)

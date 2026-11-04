@@ -128,7 +128,7 @@ local function storm(r, why)
 end
 
 local function standoff(r)
-    if r.standoff or r.rage or r.chase or r.chasePending or r.phase ~= 'on scene' then return end
+    if r.standoff or r.rage or r.chase or r.chasePending or r.phase ~= 'on scene' or not r.arrived then return end
     r.standoffEnd = r.standoffEnd or (H.now() + HG.standoffMinutes * 60)
     if r.standoffEnd <= H.now() then return storm(r, 'time') end
     r.standoff = { untilT = r.standoffEnd }
@@ -172,7 +172,7 @@ function H.npcOnRelease(by, at, why)
     if not r or not r.deal or r.deal.kind ~= 'drop' then return end
     if why == 'released' then
         local sp = r.deal.spot
-        if #(at - vec3(sp.x, sp.y, sp.z)) > HG.dropRadius and not r.deal.broken then
+        if #(vec2(at.x, at.y) - vec2(sp.x, sp.y)) > HG.dropRadius and not r.deal.broken then
             -- not where we said: the deal is off (they still won't shoot while he holds the others)
             r.deal.broken = true
             each(r, function(x) TriggerClientEvent('exti_heists:client:dropSpotClear', x, r.id) end)
@@ -194,6 +194,15 @@ function H.npcOnRelease(by, at, why)
         if not broken then negotiator(r, 'لم يعد معك أحد. الاتفاق انتهى.') end
         chase(r, true)
     end
+end
+
+-- (hostages.lua) a drop deal is on: letting him go anywhere but inside the red circle is refused, not a broken deal
+function H.npcDropGuard(by, at)
+    local r = H.npcOf(by)
+    local d = r and r.deal
+    if not d or d.kind ~= 'drop' or d.broken or r.rage or not at then return true end
+    if #(vec2(at.x, at.y) - vec2(d.spot.x, d.spot.y)) <= HG.dropRadius then return true end
+    return false, 'الاتفاق: أطلقه داخل الدائرة الحمراء (النقطة على خريطتك)'
 end
 
 -- the negotiator's deals (negotiate.lua): 'drop' | 'release' | 'time' | 'surrender'
@@ -244,6 +253,19 @@ function H.npcDeal(src, kind)
     return false
 end
 
+-- they are really there (out of their cars, or the timeout): now they see the hostages and the talking starts
+local function arrive(r)
+    if r.arrived or active[r.id] ~= r then return end
+    r.arrived = true
+    each(r, function(s) TriggerClientEvent('exti_heists:client:npcArrived', s, r.id) end)
+    if heldBy(r) > 0 then standoff(r)
+    elseif H.negotiateStart then SetTimeout(C.negotiator.textAfter * 1000, function() if active[r.id] == r and not r.standoff and not r.rage then H.negotiateStart(r) end end) end
+end
+RegisterNetEvent('exti_heists:server:npcArrived', function(id)
+    local r = active[id]
+    if r and r.owner == source then arrive(r) end
+end)
+
 ---------------------------------------------------------------------------
 -- start a response at pos for these players (already in no-police mode)
 ---------------------------------------------------------------------------
@@ -257,7 +279,10 @@ function H.npcRespond(players, pos, kind)
             for _, o in ipairs(players) do r.targets[o] = true; byPlayer[o] = id end
             tellTargets(r)
             if r.phase == 'on scene' then
-                for _, o in ipairs(players) do if o ~= r.owner then TriggerClientEvent('exti_heists:client:npcHunted', o, id) end end
+                for _, o in ipairs(players) do
+                    if o ~= r.owner then TriggerClientEvent('exti_heists:client:npcHunted', o, id) end
+                    if r.arrived then TriggerClientEvent('exti_heists:client:npcArrived', o, id) end
+                end
                 tellMode(r)
             end
             return id
@@ -300,10 +325,9 @@ function H.npcRespond(players, pos, kind)
                 end
             end)
         end
-        -- they see his face (a warrant without a mask), and his hostages (they hold their fire and talk)
+        -- they see his face (a warrant without a mask); the hostages and the talking wait until they are there
         SetTimeout(20000, function() if active[id] == r then faceSeen(r) end end)
-        if heldBy(r) > 0 then standoff(r)
-        elseif H.negotiateStart then SetTimeout(C.negotiator.textAfter * 1000, function() if active[id] == r and not r.standoff then H.negotiateStart(r) end end) end
+        SetTimeout(N.arriveTimeout * 1000, function() arrive(r) end)
     end
     SetTimeout(spec.delay * 1000, function() r.retry() end)
     return id

@@ -13,6 +13,7 @@
 .hh .prog i { position: absolute; top: 0; bottom: 0; right: 0; background: #e8b547; transition: width .5s linear; }
 /* coming: amber */
 .hh.coming .ic { color: #e8b547; } .hh.coming .t { color: #e8b547; }
+.hh.arriving .ic { color: #ff6b6f; background: rgba(229,72,77,.16); } .hh.arriving .prog i { background: #e5484d; }
 /* seen: red and blue light bar along the top edge, like a patrol car */
 .hh.seen { border-color: rgba(229,72,77,.5); }
 .hh.seen::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, #e5484d 0 50%, #3d8bfd 50% 100%); animation: hhlight .45s steps(2) infinite; }

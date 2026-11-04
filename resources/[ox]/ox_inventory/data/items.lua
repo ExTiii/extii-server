@@ -1308,6 +1308,20 @@ return {
         client = { image = 'nui://exti_heists/html/items/stolen_console.png' },
     },
 
+    ['stolen_radio'] = {
+        label = 'راديو مسروق (Stolen Radio)',
+        weight = 3500,
+        description = 'يُباع للمصرّف',
+        client = { image = 'nui://exti_heists/html/items/stolen_radio.png' },
+    },
+
+    ['stolen_microwave'] = {
+        label = 'مايكروويف مسروق (Stolen Microwave)',
+        weight = 9000,
+        description = 'ثقيل · يُباع للمصرّف',
+        client = { image = 'nui://exti_heists/html/items/stolen_microwave.png' },
+    },
+
     ['painting'] = {
         label = 'لوحة فنية (Painting)',
         weight = 6000,

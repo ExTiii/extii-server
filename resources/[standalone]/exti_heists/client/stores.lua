@@ -15,22 +15,39 @@ CreateThread(function()
     end
 end)
 
-local phases, safeTimers, spots = {}, {}, {}
+local phases, safeTimers, spots, downs = {}, {}, {}, {}
 local function readState()
     phases = GlobalState['exti_heists:stores'] or {}
     safeTimers = GlobalState['exti_heists:safes'] or {}
     spots = GlobalState['exti_heists:spots'] or {}
+    downs = GlobalState['exti_heists:clerkDown'] or {}
 end
 readState()
 AddStateBagChangeHandler('exti_heists:stores', 'global', function(_, _, v) phases = v or {} end)
+AddStateBagChangeHandler('exti_heists:clerkDown', 'global', function(_, _, v) downs = v or {} end)
 AddStateBagChangeHandler('exti_heists:safes', 'global', function(_, _, v) safeTimers = v or {} end)
 AddStateBagChangeHandler('exti_heists:spots', 'global', function(_, _, v) spots = v or {} end)
 
 local function clerkOf(i) local ok, ped = pcall(function() return exports.exti_shops:Clerk(i) end); return ok and ped or nil end
 local function clerkPos(s) return vec3(s.clerk.x, s.clerk.y, s.clerk.z) end
+-- the till: GTA's own register on the counter next to the clerk (found once it has loaded), else a guess
+local TILLS = { `prop_till_01`, `prop_till_01_dam`, `prop_till_02`, `prop_till_03` }
+local tills = {}
 local function tillPos(s)
+    local i = s.index
+    if tills[i] then return tills[i] end
+    local c = clerkPos(s)
+    for _, m in ipairs(TILLS) do
+        local o = GetClosestObjectOfType(c.x, c.y, c.z, 2.5, m, false, false, false)
+        if o ~= 0 and DoesEntityExist(o) then tills[i] = GetEntityCoords(o); return tills[i] end
+    end
     local h = math.rad(s.clerk.w)
-    return clerkPos(s) + vec3(-math.sin(h), math.cos(h), 0.0) * 0.75
+    return c + vec3(-math.sin(h), math.cos(h), 0.0) * 0.75
+end
+-- standing at the till: across the counter, height doesn't matter much
+local function atTill(here, s)
+    local t = tillPos(s)
+    return #(vec2(here.x, here.y) - vec2(t.x, t.y)) < 1.5 and math.abs(here.z - t.z) < 2.0
 end
 
 ---------------------------------------------------------------------------
@@ -38,11 +55,13 @@ end
 ---------------------------------------------------------------------------
 local shownPhase = {}
 local CLERK_ANIM = {
-    held = { 'missminuteman_1ig_2', 'handsup_base', 1 },
-    open = { 'mp_am_hold_up', 'holdup_victim_20s', 0 },
+    held = { 'mp_am_hold_up', 'holdup_victim_20s', 0 },   -- hands up, then he opens the till for you
+    open = false,                                         -- (he goes on with the same movement)
     cower = { 'amb@code_human_cower_stand@male@base', 'base', 1 },
     emptied = { 'amb@code_human_cower_stand@male@base', 'base', 1 },
 }
+local DEAD = { 'dead', 'dead_a', 1 }
+local shownDown = {}
 local function speak(ped, line) if ped and DoesEntityExist(ped) then PlayPedAmbientSpeechNative(ped, line, 'SPEECH_PARAMS_FORCE_SHOUTED') end end
 CreateThread(function()
     while true do
@@ -50,25 +69,44 @@ CreateThread(function()
         for i, s in pairs(stores) do
             local ph = phases[i]
             if ph == 'safe' then ph = nil end
-            if ph ~= shownPhase[i] and #(here - clerkPos(s)) < 60.0 then
+            local near = #(here - clerkPos(s)) < 60.0
+            -- shot: he lies behind the counter (over everything else) until the shop opens again
+            local isDown = downs[i] == true
+            if near and isDown ~= (shownDown[i] == true) then
                 local ped = clerkOf(i)
                 if ped and DoesEntityExist(ped) then
-                    if ph then
-                        local a = CLERK_ANIM[ph]
-                        HC.anim(ped, a[1], a[2], a[3])
-                        if ph == 'held' then speak(ped, 'GENERIC_FRIGHTENED_HIGH')
-                        elseif ph == 'cower' then speak(ped, 'GENERIC_SHOCKED_HIGH') end
-                        if ph == 'open' then
-                            -- after the till animation he keeps his hands up
-                            SetTimeout(19000, function() if phases[i] == 'open' then local p2 = clerkOf(i); HC.anim(p2, 'missminuteman_1ig_2', 'handsup_base', 1) end end)
-                        end
+                    if isDown then
+                        HC.anim(ped, DEAD[1], DEAD[2], DEAD[3])
+                        ApplyPedBlood(ped, 0, 0.0, 0.0, 0.0, 'wound_sheet')
+                        ApplyPedBlood(ped, 3, 0.0, 0.0, 0.0, 'wound_sheet')
                     else
+                        ClearPedBloodDamage(ped)
+                        pcall(function() exports.exti_shops:ClerkReset(i) end)
+                        shownPhase[i] = '?'   -- (and his robbery pose is drawn again below)
+                    end
+                    shownDown[i] = isDown
+                end
+            end
+            if not isDown and ph ~= shownPhase[i] and near then
+                local ped = clerkOf(i)
+                if ped and DoesEntityExist(ped) then
+                    local a = ph and CLERK_ANIM[ph]
+                    if ph and a then
+                        HC.anim(ped, a[1], a[2], a[3])
+                        if ph == 'held' then
+                            speak(ped, 'GENERIC_FRIGHTENED_HIGH')
+                            -- after the till movement he keeps his hands up
+                            SetTimeout(19000, function()
+                                if (phases[i] == 'held' or phases[i] == 'open') and not downs[i] then local p2 = clerkOf(i); HC.anim(p2, 'missminuteman_1ig_2', 'handsup_base', 1) end
+                            end)
+                        elseif ph == 'cower' then speak(ped, 'GENERIC_SHOCKED_HIGH') end
+                    elseif not ph then
                         pcall(function() exports.exti_shops:ClerkReset(i) end)
                     end
                     shownPhase[i] = ph
                 end
-            elseif #(here - clerkPos(s)) >= 90.0 then
-                shownPhase[i] = nil   -- (his ped is gone; drawn again when you come back)
+            elseif not near and #(here - clerkPos(s)) >= 90.0 then
+                shownPhase[i] = nil; shownDown[i] = nil; tills[i] = nil   -- (his ped is gone; drawn again when you come back)
             end
         end
         Wait(400)
@@ -79,7 +117,7 @@ end)
 -- the hold-up
 ---------------------------------------------------------------------------
 local mine = nil   -- { i, lookAway = 0, sent2 = false, sentCower = false, untilOpen }
-local lastTry = 0
+local lastTry, lastShot = 0, 0
 RegisterNetEvent('exti_heists:client:holdUp', function(i, secs, modeText)
     mine = { i = i, lookAway = 0, sent2 = false, sentCower = false, untilOpen = GetGameTimer() + secs * 1000 }
     HC.notify(('أبقِ السلاح عليه حتى يفتح الصندوق · %s'):format(modeText), 'inform', 7000)
@@ -89,6 +127,13 @@ RegisterNetEvent('exti_heists:client:tillOpen', function(i)
 end)
 RegisterNetEvent('exti_heists:client:clerkCowers', function(i)
     if mine and mine.i == i then HC.notify('اختبأ خلف الطاولة: اكسر قفل الصندوق', 'warning', 6000) end
+end)
+RegisterNetEvent('exti_heists:client:silentAlarm', function(i)
+    if mine and mine.i == i then HC.notify('أبعدت السلاح عنه: ضغط زر الإنذار الصامت', 'error', 6000) end
+end)
+RegisterNetEvent('exti_heists:client:clerkShot', function(i)
+    HC.notify('أطلقت النار على صاحب المحل: الشرطة في الطريق · اكسر قفل الصندوق (lockpick)', 'error', 8000)
+    if not mine or mine.i ~= i then mine = { i = i, lookAway = 0, sent2 = true, sentCower = true, untilOpen = 0 } end
 end)
 
 local function grabTill(i, s)
@@ -195,8 +240,17 @@ CreateThread(function()
             if ph == 'safe' then ph = nil end
             local clerk = clerkOf(near)
 
+            -- 0) shots: at him (he goes down), or near him (he panics and presses the alarm)
+            if IsPedShooting(cache.ped) and GetGameTimer() > (mine and mine.shotSent or lastShot) then
+                lastShot = GetGameTimer() + 1500
+                if mine then mine.shotSent = lastShot end
+                local atHim = clerk and not downs[near] and (HC.aimingAt(clerk, 25.0) or HasEntityBeenDamagedByEntity(clerk, cache.ped, true))
+                TriggerServerEvent('exti_heists:server:clerkShot', near, atHim and true or false)
+                if clerk then ClearEntityLastDamageEntity(clerk) end
+            end
+
             -- 1) a gun on the clerk starts it
-            if not ph and not mine and clerk and HC.aimingAt(clerk, 9.0) and GetGameTimer() - lastTry > 4000 then
+            if not ph and not mine and clerk and not downs[near] and HC.aimingAt(clerk, 9.0) and GetGameTimer() - lastTry > 4000 then
                 lastTry = GetGameTimer()
                 TriggerServerEvent('exti_heists:server:holdUp', near)
             end
@@ -207,16 +261,19 @@ CreateThread(function()
                     mine.lookAway = 0
                 else
                     mine.lookAway = mine.lookAway + GetFrameTime()
-                    if mine.lookAway >= 2 and not mine.sent2 then mine.sent2 = true; TriggerServerEvent('exti_heists:server:lookAway', near, mine.lookAway) end
+                    if mine.lookAway >= R.lookAwaySeconds and not mine.sent2 then mine.sent2 = true; TriggerServerEvent('exti_heists:server:lookAway', near, mine.lookAway) end
                     if mine.lookAway >= R.cowerSeconds and not mine.sentCower then mine.sentCower = true; TriggerServerEvent('exti_heists:server:lookAway', near, mine.lookAway) end
                 end
                 local left = math.max(0, (mine.untilOpen - GetGameTimer()) / 1000)
-                text = ('أبقِ السلاح عليه... يفتح الصندوق · %d'):format(math.ceil(left))
+                if mine.lookAway > 0.2 and not mine.sent2 then
+                    text = ('⚠ أعد السلاح عليه! سيضغط زر الإنذار خلال %d'):format(math.max(1, math.ceil(R.lookAwaySeconds - mine.lookAway)))
+                else
+                    text = ('أبقِ السلاح عليه... يفتح الصندوق · %d'):format(math.ceil(left))
+                end
             end
 
             -- 3) the till
-            local till = tillPos(s)
-            if #(here - till) < 1.7 then
+            if atTill(here, s) then
                 if ph == 'open' and mine and mine.i == near then
                     text, act = '[E] أفرغ الصندوق', function() grabTill(near, s) end
                 elseif (ph == 'cower' and mine and mine.i == near) or (not ph and not mine and HC.count('lockpick') > 0 and not IsPedArmed(cache.ped, 4)) then

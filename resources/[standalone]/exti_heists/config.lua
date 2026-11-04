@@ -53,7 +53,7 @@ Config.heatMinutes = 30              -- after any robbery: no new Tier 4+ job
 Config.combatLog = {
     graceSeconds = 180,  -- a crash: back within 3 min = keep everything
     xp = -15,            -- logged out with heat for longer: the loot is deleted and this XP
-    lootItems = { 'black_money', 'marked_bills', 'rolex', 'diamond_ring', 'goldchain', 'diamond', 'small_tv', 'stolen_laptop', 'stolen_console', 'painting', 'vault_goldbar', 'bearer_bonds', 'mw_electronics' },
+    lootItems = { 'black_money', 'marked_bills', 'rolex', 'diamond_ring', 'goldchain', 'diamond', 'small_tv', 'stolen_laptop', 'stolen_console', 'stolen_radio', 'stolen_microwave', '10kgoldchain', 'painting', 'vault_goldbar', 'bearer_bonds', 'mw_electronics' },
 }
 
 ---------------------------------------------------------------------------
@@ -61,14 +61,17 @@ Config.combatLog = {
 ---------------------------------------------------------------------------
 Config.npc = {
     kinds = {   -- delay = seconds after the alarm, cars = how many (each car: 2 guards)
-        store   = { delay = 90,  cars = { 1, 2 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_PISTOL' } },
-        house   = { delay = 60,  cars = { 1, 1 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_PISTOL' } },
-        atm     = { delay = 60,  cars = { 1, 2 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_PUMPSHOTGUN' } },
-        jewelry = { delay = 120, cars = { 2, 3 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_CARBINERIFLE' } },
-        bank    = { delay = 120, cars = { 2, 3 }, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_PUMPSHOTGUN' } },
-        truck   = { delay = 75,  cars = { 2, 2 }, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_SMG' } },
+        -- (EX_Tii: faster and more of them; they drive in from 160-260 m, about 20-30 s more)
+        store   = { delay = 40,  cars = { 2, 3 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_PUMPSHOTGUN' } },
+        house   = { delay = 40,  cars = { 2, 2 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_PISTOL' } },
+        atm     = { delay = 40,  cars = { 2, 2 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_PUMPSHOTGUN' } },
+        jewelry = { delay = 60,  cars = { 2, 3 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_CARBINERIFLE' } },
+        bank    = { delay = 75,  cars = { 3, 4 }, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_PUMPSHOTGUN' } },
+        truck   = { delay = 60,  cars = { 2, 3 }, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_SMG' } },
     },
     lostSeconds = 60,        -- out of their sight this long: they lose you (like GTA's wanted stars)
+    knowDistance = 45.0,     -- this close to one of them you are never "out of sight" (hiding in the shop doesn't lose them)
+    arriveTimeout = 60,      -- seconds: they count as on scene after this even if a car got stuck on the way
     giveUpDistance = 220.0,  -- nobody this close to the spot when they arrive: they don't come
     copStandDown = 100.0,    -- a real cop this close to a robber: the NPCs back off
     maxMinutes = 12,         -- they give up after this long anyway
@@ -98,9 +101,10 @@ Config.storeLayouts = {
 }
 Config.register = {
     tier = 1,
-    aimSeconds = 10,          -- keep the gun on him while he opens the till
-    lookAwayAlarm = 0.30,     -- look away for 2 s: this chance he presses the silent alarm (once)
+    aimSeconds = 6,           -- keep the gun on him while he opens the till
+    lookAwaySeconds = 2,      -- look away this long: he ALWAYS presses the silent alarm (you get a warning first)
     cowerSeconds = 6,         -- look away this long: he drops behind the counter, lockpick the till
+    shotResetMinutes = 5,     -- shot: he stays down this long, then the shop opens again
     grabSeconds = 7,          -- emptying the till
     pay = { 600, 1200 },      -- black_money
     cooldownMinutes = 20,     -- per store
@@ -152,6 +156,8 @@ Config.fence = {
         ['10kgoldchain'] = { price = 200, daily = 40 },
         diamond        = { price = 900,  daily = 15 },
         small_tv       = { price = 350,  daily = 20 },
+        stolen_radio   = { price = 160,  daily = 40 },
+        stolen_microwave = { price = 200, daily = 40 },
         stolen_laptop  = { price = 500,  daily = 20 },
         stolen_console = { price = 400,  daily = 20 },
         painting       = { price = 1400, daily = 8 },
@@ -173,22 +179,32 @@ Config.house = {
     searchSeconds = { 6, 9 },
     noise = {                             -- the noise meter (0-100): full = the owner wakes up and calls
         sprint = 9, run = 3, jump = 14, search = 3, safeFail = 18, pickFail = 10, window = 55, decay = 4, -- per second
+        shot = 100, shotSilenced = 40,    -- one shot (a suppressor still makes noise)
+        smash = 30,                       -- glass / something broken by a hit or a bullet
+        melee = 8,                        -- a punch or a swing
+        nearSleeper = 3,                  -- per second while you stand next to the sleeping owner (no calming down)
+        bark = 25,                        -- the dog barks
     },
+    sleeperReach = 2.5,                   -- "next to the sleeping owner"
+    dogSees = 7.0,                        -- the dog wakes when you come this close (and it can see you)
     sizes = {
-        small   = { tier = 1, label = 'شقة صغيرة', interior = 1, spots = { 5, 7 }, rolls = { 0, 2 }, safe = false, dog = false, pickup = 'small_tv' },
-        medium  = { tier = 2, label = 'بيت متوسط', interior = 2, spots = { 7, 9 }, rolls = { 0, 2 }, safe = { 800, 1200 }, dog = false, pickup = 'small_tv' },
-        mansion = { tier = 3, label = 'فيلا', interior = 3, spots = { 9, 12 }, rolls = { 1, 2 }, safe = { 1200, 1800 }, dog = true, pickup = 'painting', usb = 0.10 },
+        small   = { tier = 1, label = 'شقة صغيرة', interior = 1, spots = { 5, 7 }, rolls = { 1, 1 }, safe = false, dog = false, sleeper = true, pickup = 'small_tv' },
+        medium  = { tier = 2, label = 'بيت متوسط', interior = 2, spots = { 7, 9 }, rolls = { 1, 2 }, safe = { 800, 1200 }, dog = false, sleeper = true, pickup = 'small_tv' },
+        mansion = { tier = 3, label = 'فيلا', interior = 3, spots = { 9, 12 }, rolls = { 1, 2 }, safe = { 1200, 1800 }, dog = true, sleeper = true, pickup = 'painting', usb = 0.10 },
     },
-    -- what one search can find (weight = how often)
+    -- what one search can find (weight = how often): mostly things from the house (radios, microwaves,
+    -- electronics), some jewelry, a little dirty money. The TV / painting is the big item you carry out.
     loot = {
-        { item = 'black_money', amount = { 60, 240 }, weight = 30 },
-        { item = 'goldchain', amount = { 1, 1 }, weight = 14 },
-        { item = '10kgoldchain', amount = { 1, 2 }, weight = 14 },
-        { item = 'rolex', amount = { 1, 1 }, weight = 9 },
-        { item = 'diamond_ring', amount = { 1, 1 }, weight = 7 },
-        { item = 'stolen_laptop', amount = { 1, 1 }, weight = 8 },
-        { item = 'stolen_console', amount = { 1, 1 }, weight = 8 },
+        { item = 'stolen_radio', amount = { 1, 1 }, weight = 24 },
+        { item = 'stolen_microwave', amount = { 1, 1 }, weight = 20 },
+        { item = 'stolen_laptop', amount = { 1, 1 }, weight = 11 },
+        { item = 'stolen_console', amount = { 1, 1 }, weight = 11 },
+        { item = 'goldchain', amount = { 1, 1 }, weight = 8 },
+        { item = '10kgoldchain', amount = { 1, 1 }, weight = 7 },
+        { item = 'rolex', amount = { 1, 1 }, weight = 4 },
+        { item = 'diamond_ring', amount = { 1, 1 }, weight = 3 },
         { item = 'diamond', amount = { 1, 1 }, weight = 3, minTier = 3 },
+        { item = 'black_money', amount = { 40, 140 }, weight = 7 },
     },
     -- inside: exit = where you stand after coming in (and the [E] to leave); spots = drawers, closets, shelves;
     -- safe = the wall safe; pickup = the big item (carried out at walking speed); dog = where the guard dog sleeps
@@ -373,7 +389,7 @@ Config.rob = {
 -- the NPC negotiator (no-police mode): texts you when the units are on scene
 Config.negotiator = {
     number = '555-0119',      -- shows as the sender in the phone (also the admins' messages)
-    textAfter = 6,            -- seconds after they arrive
+    textAfter = 6,            -- seconds after they arrive (really there: out of their cars)
     surrenderXp = -5,
 }
 
