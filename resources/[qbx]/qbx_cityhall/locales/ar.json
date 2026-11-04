@@ -1,0 +1,21 @@
+{
+    "error": {
+        "not_enough_money": "لا تملك مالًا كافيًا",
+        "invalid_type": "نوع الوثيقة غير صحيح",
+        "invalid_job": "هذه الوظيفة غير صحيحة"
+    },
+    "success": {
+        "item_recieved": "استلمت: ",
+        "new_job": "مبارك! حصلت على وظيفتك الجديدة"
+    },
+    "info": {
+        "cityhall": "مركز التوظيف",
+        "open_cityhall": "[E] مركز التوظيف",
+        "target_open_cityhall": "مركز التوظيف",
+        "identity": "الوثائق الشخصية",
+        "employment": "التوظيف",
+        "obtain_license_identity": "استخرج هويتك ورخصك",
+        "select_job": "اختر وظيفة جديدة",
+        "price": "السعر: %s$"
+    }
+}
