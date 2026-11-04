@@ -71,10 +71,9 @@ lib.callback.register('qbx_spawn:server:getLastLocation', function(source)
             player.Functions.SetMetaData('currentPropertyId', nil)
             local door = property and decodeCoords(property.coords)
             if door then return door, nil end
-            -- the home itself is gone: the saved position is inside it, so use the city spawn
-            local spawn = require '@qbx_core.config.shared'.defaultSpawn
-            if spawn then return { x = spawn.x, y = spawn.y, z = spawn.z, w = spawn.w }, nil end
-            return nil
+            -- the home itself is gone: the saved position is inside it, so use the one city spawn
+            -- (EX_Tii: the new-player spawn next to the job center, same as exti_characters)
+            return { x = -265.49, y = -962.85, z = 31.22, w = 201.26 }, nil
         end
     end
 

@@ -763,3 +763,43 @@ lib.callback.register('exti_gangs:server:myGang', function(source)
 end)
 
 exports('GetMember', function(src) local g, m = GANG.memberOf(src); return g and { gang = g.name, label = g.label, type = g.type, rank = m.rank } or nil end)
+
+---------------------------------------------------------------------------
+-- deleted characters leave their gang (a deleted leader hands the gang to the highest rank,
+-- the longest-serving first). Runs when a character is deleted and once at start for old ones.
+---------------------------------------------------------------------------
+local function dropDeleted(cid)
+    local m = members[cid]
+    if not m then return end
+    if MySQL.scalar.await('SELECT 1 FROM `players` WHERE `citizenid` = ?', { cid }) then return end -- still exists
+    local g = gangs[m.gang]
+    if g and g.leader == cid then
+        local best
+        for c, mm in pairs(members) do
+            if c ~= cid and mm.gang == g.name and (not best or mm.rank > best.rank or (mm.rank == best.rank and (mm.joined or 0) < (best.joined or 0))) then best = mm end
+        end
+        if best then
+            setMember(best.citizenid, g, 3)
+            g.leader = best.citizenid
+            log(g, 'النظام', 'leader_auto', ('حُذفت شخصية الزعيم: %s أصبح الزعيم'):format(best.name))
+            GANG.toGang(g, ('%s أصبح زعيم العصابة'):format(best.name), 'inform', 0)
+        else
+            g.leader = nil
+        end
+        saveGang(g)
+    end
+    removeMember(cid, nil, true)
+    if g then log(g, 'النظام', 'left', ('شخصية محذوفة: %s'):format(m.name or '')) end
+end
+
+exports('RemoveDeletedCharacter', function(cid)
+    if type(cid) ~= 'string' or not GANG.ready then return end
+    dropDeleted(cid)
+end)
+
+CreateThread(function()
+    while not GANG.ready do Wait(1000) end
+    local gone = MySQL.query.await('SELECT m.`citizenid` FROM `exti_gang_members` m LEFT JOIN `players` p ON p.`citizenid` = m.`citizenid` WHERE p.`citizenid` IS NULL') or {}
+    for i = 1, #gone do dropDeleted(gone[i].citizenid) end
+    if #gone > 0 then lib.print.info(('removed %d deleted characters from gangs'):format(#gone)) end
+end)

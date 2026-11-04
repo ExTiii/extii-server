@@ -314,3 +314,22 @@ end)
 AddEventHandler('playerDropped', function() last[source] = nil; cached[source] = nil end)
 
 exports('CrewOf', function(src) local c = crewOf(H.cid(src)); return c and { id = c.id, name = c.name } or nil end)
+
+-- deleted characters leave their crew (a deleted leader hands it to the longest member; an empty crew closes).
+-- Runs when a character is deleted and once at start for old ones.
+local function dropDeleted(cid)
+    if MySQL.scalar.await('SELECT 1 FROM `players` WHERE `citizenid` = ?', { cid }) then return end -- still exists
+    local c = crewOf(cid)
+    if c then leave(cid, c.id, c.leader) end
+end
+
+exports('RemoveDeletedCharacter', function(cid)
+    if type(cid) == 'string' then dropDeleted(cid) end
+end)
+
+CreateThread(function()
+    Wait(5000)
+    local gone = MySQL.query.await('SELECT m.`cid` FROM `exti_heist_crew_members` m LEFT JOIN `players` p ON p.`citizenid` = m.`cid` WHERE p.`citizenid` IS NULL') or {}
+    for i = 1, #gone do dropDeleted(gone[i].cid) end
+    if #gone > 0 then print(('[exti_heists] removed %d deleted characters from crews'):format(#gone)) end
+end)

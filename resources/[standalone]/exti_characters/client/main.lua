@@ -905,6 +905,8 @@ RegisterNUICallback('delete', function(data, cb)
     if ui.phase ~= 'select' or type(data) ~= 'table' or not findCharacter(data.citizenid) then return cb({ ok = false }) end
     ui.phase = 'busy'
     local ok = lib.callback.await('qbx_core:server:deleteCharacter', false, data.citizenid)
+    -- EX_Tii: take the deleted character out of its gang and heist crew (the server checks it is really gone)
+    if ok == true then TriggerServerEvent('exti_characters:server:deleted', data.citizenid) end
     cb({ ok = ok == true })
     CreateThread(startSelect)
 end)
