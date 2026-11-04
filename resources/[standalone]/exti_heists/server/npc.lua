@@ -124,6 +124,7 @@ local function storm(r, why)
     negotiator(r, (why == 'hurt' and 'آذيت أحدهم. انتهى الكلام. فريق التدخل قادم.')
         or (why == 'attacked' and 'أطلقت النار على رجالنا. انتهى الكلام.')
         or (why == 'broken' and 'خرقت الاتفاق. لا كلام بعد الآن.')
+        or (why == 'talk' and 'انتهى الكلام معك. فريق التدخل يقتحم الآن.')
         or 'انتهى الوقت. فريق التدخل يقتحم الآن.')
     H.log(r.owner, 'npc_storm', ('%s · %s'):format(r.kind, why))
 end
@@ -170,6 +171,11 @@ function H.npcOnHostage(src)
 end
 function H.npcOnRelease(by, at, why)
     local r = H.npcOf(by)
+    -- no deal yet: letting one go is good faith (the negotiator remembers it)
+    if r and not r.deal and why == 'released' and r.standoff and not r.rage then
+        if H.negotiateGoodwill then H.negotiateGoodwill(r, by, heldBy(r)) end
+        return
+    end
     if not r or not r.deal or r.deal.kind ~= 'drop' then return end
     if why == 'released' then
         local sp = r.deal.spot
@@ -185,9 +191,10 @@ function H.npcOnRelease(by, at, why)
     local broken = r.deal.broken
     if why == 'released' and not broken then
         -- everyone's out at the spot: the head start
-        negotiator(r, ('رأيناه. معك %d ثانية.'):format(HG.dropHeadStart))
+        local secs = math.max(HG.dropHeadStart, r.bonusHead or 0)   -- (a head start he talked them into)
+        negotiator(r, ('رأيناهم في المكان. اتفاق شريف. معك %d ثانية.'):format(secs))
         H.log(by, 'npc_deal_done', r.kind)
-        headStart(r, HG.dropHeadStart)
+        headStart(r, secs)
     else
         -- let go at the wrong place, or the last one got away some other way: no hostage, no deal
         r.deal = nil; r.standoff = nil
@@ -229,8 +236,9 @@ function H.npcDeal(src, kind)
         each(r, function(x) TriggerClientEvent('exti_heists:client:dropSpotClear', x, r.id) end)
         for s in pairs(r.targets) do H.releaseAll(s, 'deal') end
         H.log(src, 'npc_deal_release', r.kind)
-        headStart(r, HG.releaseHeadStart)
-        return true, HG.releaseHeadStart
+        local secs = math.max(HG.releaseHeadStart, r.bonusHead or 0)   -- (a head start he talked them into)
+        headStart(r, secs)
+        return true, secs
     elseif kind == 'drop' then
         if r.deal and r.deal.broken then return false, 'broken' end
         if r.deal then return true, r.deal.spot, true end
@@ -453,6 +461,9 @@ CreateThread(function()
                         storm(r, 'deal time')
                     elseif t > r.standoff.untilT then
                         storm(r, 'time')
+                    elseif not r.warned2 and r.standoff.untilT - t <= 120 and not r.deal then
+                        r.warned2 = true   -- (two minutes left: the negotiator calls)
+                        if H.negotiateWarn then H.negotiateWarn(r) end
                     elseif heldBy(r) == 0 and not r.deal then
                         -- no hostage any more and no deal: nothing holds them back
                         r.standoff = nil; unhold(r); r.spawnedAt = t
@@ -509,6 +520,22 @@ end)
 function H.npcOf(src) local id = byPlayer[src]; return id and active[id] or nil end
 function H.npcTargets(r) return targetsList(r) end
 function H.npcStandoffLeft(r) return r.standoff and math.max(0, r.standoff.untilT - H.now()) or 0 end
+
+-- the negotiator ends the talk (negotiate.lua): the SWAT team
+function H.npcStorm(r, why) if r then storm(r, why) end end
+
+-- the negotiator gives more time (negotiate.lua decides how much, from the mood)
+function H.npcMoreTime(r, minutes)
+    if not r or not r.standoff or r.rage then return false end
+    local add = math.floor(minutes * 60)
+    r.standoff.untilT = r.standoff.untilT + add
+    r.standoffEnd = r.standoff.untilT
+    if r.deal then r.deal.deadline = r.deal.deadline + add end
+    H.npcHold(r, r.standoff.untilT - H.now(), r.deal and 'deal' or 'hostages')
+    return math.ceil((r.standoff.untilT - H.now()) / 60)
+end
+function H.npcHeld(r) return r and heldBy(r) or 0 end
+function H.npcHeadStart(r, secs) if r and active[r.id] == r and not r.rage then headStart(r, secs) end end
 
 -- a hostage was hurt: no more talking, the SWAT team
 function H.npcRage(src)

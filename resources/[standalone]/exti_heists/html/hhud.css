@@ -44,3 +44,36 @@
 #hnoise.hot .lb b { color: #ff8b8e; }
 #hnoise.alarm .tr i { width: 100% !important; animation: hnalarm .6s steps(2) infinite; }
 @keyframes hnalarm { 50% { opacity: .35; } }
+/* the negotiator's phone call: right side, black & gold */
+#hcall { position: fixed; right: 28px; top: 14%; max-height: 80vh; overflow: hidden; width: 372px; pointer-events: none; font-family: 'Kit Plex', sans-serif; direction: rtl; color: #f4f3ef;
+         background: linear-gradient(180deg, rgba(20,21,26,.96), rgba(11,12,15,.96)); border: 1px solid rgba(232,181,71,.28); border-radius: 18px;
+         box-shadow: 0 18px 48px rgba(0,0,0,.55); padding: 14px 14px 12px; animation: hcin .28s cubic-bezier(.2,.8,.2,1); }
+#hcall.off { display: none; }
+@keyframes hcin { from { opacity: 0; transform: translateX(18px); } }
+#hcall .ch { display: flex; align-items: center; gap: 11px; }
+#hcall .av { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #16130b; background: linear-gradient(180deg, #f3cd73, #e8b547); flex: none; }
+#hcall.ring .av { animation: hcring 1s ease-in-out infinite; }
+@keyframes hcring { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,181,71,.55); } 50% { box-shadow: 0 0 0 9px rgba(232,181,71,0); } }
+#hcall .who { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+#hcall .who b { font-size: 15px; font-weight: 700; }
+#hcall .who span { font-size: 12px; color: #3ddc97; }
+#hcall.ring .who span { color: #e8b547; }
+#hcall .tm { font: 600 13px/1 'Kit Plex', monospace; direction: ltr; color: #a19f99; font-variant-numeric: tabular-nums; }
+#hcall .tr { display: flex; align-items: center; gap: 8px; margin: 11px 2px 4px; font-size: 11.5px; color: #a19f99; }
+#hcall .tb { flex: 1; height: 4px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; position: relative; }
+#hcall .tb i { position: absolute; top: 0; bottom: 0; right: 0; width: 40%; background: #e8b547; transition: width .6s ease, background .3s; }
+#hcall .tb i.lo { background: #e5484d; } #hcall .tb i.hi { background: #3ddc97; }
+#hcall .msgs { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+#hcall .m { max-width: 88%; padding: 9px 12px; border-radius: 14px; font-size: 13.5px; line-height: 1.6; }
+#hcall .m.n { align-self: flex-start; background: rgba(255,255,255,.07); border-top-right-radius: 4px; }
+#hcall .m.me { align-self: flex-end; background: rgba(232,181,71,.16); border: 1px solid rgba(232,181,71,.3); color: #f6dc9d; border-top-left-radius: 4px; }
+#hcall .m.dots { display: flex; gap: 4px; padding: 12px 14px; }
+#hcall .m.dots i { width: 6px; height: 6px; border-radius: 50%; background: #a19f99; animation: hcdot 1s infinite; }
+#hcall .m.dots i:nth-child(2) { animation-delay: .15s; } #hcall .m.dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes hcdot { 50% { opacity: .25; transform: translateY(-2px); } }
+#hcall .opts { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 11px; border-top: 1px solid rgba(255,255,255,.07); }
+#hcall .opts.none { display: none; }
+#hcall .o { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border-radius: 11px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); }
+#hcall .o .k { flex: none; min-width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; font-size: 13px; font-weight: 700; color: #16130b; background: #e8b547; }
+#hcall .o .t { font-size: 13.5px; line-height: 1.55; padding-top: 1px; }
+@media (prefers-reduced-motion: reduce) { #hcall, #hcall .av, #hcall .m.dots i { animation: none !important; } }

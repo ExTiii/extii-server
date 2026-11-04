@@ -98,7 +98,9 @@ exports('RadialMenu', function()
     if not t then
         -- nobody to tie / walk: maybe someone down on the floor to search (client/rob.lua)
         local sid = HC.robTarget and HC.robTarget()
-        if sid then return { label = 'فتّشه', icon = 'magnifying-glass', items = { HC.robItem(sid) } } end
+        local neg = HC.negItem and HC.negItem()
+        if sid then return { label = 'فتّشه', icon = 'magnifying-glass', items = { HC.robItem(sid), neg } } end
+        if neg then return { label = 'المفاوض', icon = 'phone', items = { neg } } end   -- (the call, picked up again)
         return nil
     end
     local items = {}
@@ -113,6 +115,7 @@ exports('RadialMenu', function()
             else items[#items + 1] = { id = 'prone', label = 'انبطح أرضًا', icon = 'person-circle-xmark', action = 'event', arg = { name = 'exti_heists:client:radialCover', data = { net, 'prone' } } } end
         end
         if t.kind == 'player' then items[#items + 1] = HC.robItem(t.id) end -- hands up: search him
+        if HC.negItem and HC.negItem() then items[#items + 1] = HC.negItem() end
         return { label = 'الرهينة', icon = 'hands-holding', items = items }
     end
     local h = t.h or {}
@@ -139,6 +142,7 @@ exports('RadialMenu', function()
     end
     -- a tied player (not in a car): search him (never an officer: he uses the police search)
     if t.kind == 'player' and not cop and not t.inCar then items[#items + 1] = HC.robItem(t.id) end
+    if HC.negItem and HC.negItem() then items[#items + 1] = HC.negItem() end
     return { label = 'الرهينة', icon = 'hands-holding', items = items }
 end)
 

@@ -392,6 +392,7 @@ Config.rob = {
 Config.negotiator = {
     number = '555-0119',      -- shows as the sender in the phone (also the admins' messages)
     textAfter = 6,            -- seconds after they arrive (really there: out of their cars)
+    startTrust = 40,          -- the phone call: trust at the start (0-100; 0 = he ends the talk, the SWAT team)
     surrenderXp = -5,
 }
 
