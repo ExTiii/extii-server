@@ -53,7 +53,16 @@ local function clearBlips()
     for ent, b in pairs(blips) do if DoesBlipExist(b) then RemoveBlip(b) end blips[ent] = nil end
 end
 
-local function spawnPoint(pos, i)
+local function spawnPoint(pos, i, near)
+    if near then
+        -- (a pursuit car: on a road 90-140 m behind him, out of the way)
+        for _ = 1, 12 do
+            local a = math.rad(math.random(0, 359))
+            local d = math.random(90, 140)
+            local ok, node, heading = GetClosestVehicleNodeWithHeading(pos.x + math.cos(a) * d, pos.y + math.sin(a) * d, pos.z, 1, 3.0, 0)
+            if ok and #(node - pos) > 70.0 then return node, heading end
+        end
+    end
     -- a road node 160-260 m away, in a different direction for each car, out of the robber's sight if we can
     for _ = 1, 12 do
         local a = math.rad(math.random(0, 359) + i * 97)
@@ -68,9 +77,10 @@ end
 local function setupPed(ped, weapon, opts)
     opts = opts or {}
     SetPedRelationshipGroupHash(ped, REL)
-    SetPedArmour(ped, opts.armour or 50)
+    SetEntityMaxHealth(ped, N.health or 200); SetEntityHealth(ped, N.health or 200)
+    SetPedArmour(ped, opts.armour or N.armour or 50)
     SetPedAccuracy(ped, opts.accuracy or (own and own.rage and C.hostages.rageAccuracy) or (own and own.chase and C.hostages.chaseAccuracy) or N.accuracy)
-    SetPedCombatAbility(ped, opts.swat and 2 or 1)
+    SetPedCombatAbility(ped, 2)   -- professional
     SetPedCombatMovement(ped, opts.swat and 2 or 1)   -- defensive: hold the line (the SWAT team pushes in)
     SetPedCombatRange(ped, 1)
     SetPedCombatAttributes(ped, 0, true)  -- use cover
@@ -97,7 +107,7 @@ local function spawnUnits(id, pos, cars, weapons, opts)
     if not own or own.id ~= id then return end   -- (it ended while the models loaded)
     local netIds = {}
     for i = 1, cars do
-        local p, h = spawnPoint(pos, i)
+        local p, h = spawnPoint(pos, i, opts.pursuit)
         local veh = CreateVehicle(vehModel, p.x, p.y, p.z + 0.5, h, true, false)
         if veh ~= 0 then
             SetEntityAsMissionEntity(veh, true, true)
@@ -112,12 +122,18 @@ local function spawnUnits(id, pos, cars, weapons, opts)
                 local ped = CreatePedInsideVehicle(veh, 4, pedModel, seat, true, false)
                 if ped ~= 0 then setupPed(ped, weapons[(seat + 2)] or weapons[1], opts); unit.peds[#unit.peds + 1] = ped; netIds[#netIds + 1] = NetworkGetNetworkIdFromEntity(ped) end
             end
-            -- stop short of the door, a little to the side of it
-            local a = math.rad(math.random(0, 359))
-            local r0 = opts.swat and (8.0 + i * 3.0) or (12.0 + i * 4.0)
-            unit.park = vec3(pos.x + math.cos(a) * r0, pos.y + math.sin(a) * r0, pos.z)
             local drv = unit.peds[1]
-            if drv then TaskVehicleDriveToCoordLongrange(drv, veh, unit.park.x, unit.park.y, unit.park.z, opts.swat and 38.0 or 32.0, 786468, 8.0) end
+            if drv then SetDriverAbility(drv, 1.0); SetDriverAggressiveness(drv, 1.0) end
+            if opts.pursuit then
+                -- (the chase: straight after him)
+                unit.stage, unit.park = 'chase', pos
+            else
+                -- stop short of the door, a little to the side of it
+                local a = math.rad(math.random(0, 359))
+                local r0 = opts.swat and (8.0 + i * 3.0) or (12.0 + i * 4.0)
+                unit.park = vec3(pos.x + math.cos(a) * r0, pos.y + math.sin(a) * r0, pos.z)
+                if drv then TaskVehicleDriveToCoordLongrange(drv, veh, unit.park.x, unit.park.y, unit.park.z, opts.swat and 38.0 or 32.0, 786468, 8.0) end
+            end
             unit.since = GetGameTimer()
             own.units[#own.units + 1] = unit
             netIds[#netIds + 1] = NetworkGetNetworkIdFromEntity(veh)
@@ -308,7 +324,14 @@ local function think()
                         goto nextUnit
                     end
                     local drv = GetPedInVehicleSeat(veh, -1)
-                    if drv ~= 0 and u.chasing ~= tgt then u.chasing = tgt; TaskVehicleChase(drv, tgt); SetTaskVehicleChaseBehaviorFlag(drv, 1, true) end
+                    if drv ~= 0 and u.chasing ~= tgt then
+                        u.chasing = tgt
+                        TaskVehicleChase(drv, tgt)
+                        SetTaskVehicleChaseBehaviorFlag(drv, 1, true)
+                        SetTaskVehicleChaseBehaviorFlag(drv, 32, true)       -- (they may ram and box him in)
+                        SetTaskVehicleChaseIdealPursuitDistance(drv, 0.0)
+                        SetDriverAbility(drv, 1.0); SetDriverAggressiveness(drv, 1.0)
+                    end
                     for _, ped in ipairs(alive) do
                         if ped ~= drv and IsPedInVehicle(ped, veh, false) and u.shooting ~= tgt then TaskDriveBy(ped, tgt, 0, 0.0, 0.0, 0.0, 60.0, 30, false, `FIRING_PATTERN_BURST_FIRE_DRIVEBY`) end
                     end
@@ -527,6 +550,12 @@ local RB = C.hostages.roadblocks
 RegisterNetEvent('exti_heists:client:npcChase', function(id)
     if not own or own.id ~= id then return end
     own.chase = true
+    -- more cars join the chase, right behind him
+    local at
+    for _, s in ipairs(own.targets) do local p = pedOfServerId(s); if p then at = GetEntityCoords(p) break end end
+    if at and (C.hostages.pursuitCars or 0) > 0 then
+        CreateThread(function() spawnUnits(id, at, C.hostages.pursuitCars, { 'WEAPON_CARBINERIFLE', 'WEAPON_SMG' }, { pursuit = true, accuracy = C.hostages.chaseAccuracy }) end)
+    end
     own.rbCount, own.rbNext = own.rbCount or 0, GetGameTimer() + RB.every * 500
     for _, u in ipairs(own.units) do
         for _, ped in ipairs(u.peds) do if DoesEntityExist(ped) then SetPedAccuracy(ped, C.hostages.chaseAccuracy) end end

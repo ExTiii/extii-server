@@ -123,6 +123,7 @@ local function storm(r, why)
     each(r, function(s) TriggerClientEvent('exti_heists:client:npcHoldBar', s, r.id, 0, 'rage') end)
     negotiator(r, (why == 'hurt' and 'آذيت أحدهم. انتهى الكلام. فريق التدخل قادم.')
         or (why == 'attacked' and 'أطلقت النار على رجالنا. انتهى الكلام.')
+        or (why == 'broken' and 'خرقت الاتفاق. لا كلام بعد الآن.')
         or 'انتهى الوقت. فريق التدخل يقتحم الآن.')
     H.log(r.owner, 'npc_storm', ('%s · %s'):format(r.kind, why))
 end
@@ -191,8 +192,9 @@ function H.npcOnRelease(by, at, why)
         -- let go at the wrong place, or the last one got away some other way: no hostage, no deal
         r.deal = nil; r.standoff = nil
         each(r, function(x) TriggerClientEvent('exti_heists:client:dropSpotClear', x, r.id) end)
+        -- (EX_Tii) the deal is off: no more holding back, the SWAT team comes in hard
         if not broken then negotiator(r, 'لم يعد معك أحد. الاتفاق انتهى.') end
-        chase(r, true)
+        storm(r, 'broken')
     end
 end
 

@@ -37,12 +37,26 @@ local function gangHome(pos)
     return false
 end
 
+-- who may walk in through an open door: the robber who opened it and his heist crew (the police once the alarm went)
+local function crewOf(l)
+    local who = {}
+    if l.holder and GetPlayerName(l.holder) then
+        for _, s in ipairs(H.crewOnline and H.crewOnline(l.holder) or { l.holder }) do who[#who + 1] = s end
+    end
+    for s in pairs(l.members) do who[#who + 1] = s end
+    return who
+end
 local function publish()
     local open = {}
     for id, l in pairs(leads) do
-        if l.phase == 'open' then open[id] = { x = l.pos.x, y = l.pos.y, z = l.pos.z, size = l.size } end
+        if l.phase == 'open' then open[id] = { x = l.pos.x, y = l.pos.y, z = l.pos.z, size = l.size, who = crewOf(l), alarm = l.alarm == true } end
     end
     GlobalState['exti_heists:houses'] = open
+end
+local function mayEnter(l, src)
+    if l.holder == src or l.members[src] then return true end
+    for _, s in ipairs(crewOf(l)) do if s == src then return true end end
+    return false
 end
 
 local function view(l)
@@ -107,6 +121,7 @@ local function alarm(l, why, loud)
     end
     if l.mode and not l.mode.police and #list > 0 then H.npcRespond(list, l.pos, 'house') end
     for s in pairs(l.members) do TriggerClientEvent('exti_heists:client:houseAlarm', s, l.id, why) end
+    publish()   -- (the police may come in now)
     H.log(list[1], 'house_alarm', ('%s · %s'):format(l.area, why))
 end
 
@@ -192,6 +207,7 @@ lib.callback.register('exti_heists:server:houseEnter', function(src, id)
     if not H.near(src, l.pos, 3.5) or inside[src] then return false end
     local cop = H.isCopOnDuty(src)
     if cop and not l.alarm then return false end   -- (the police come in once the alarm has gone off)
+    if not cop and not mayEnter(l, src) then return false end   -- (someone else's break-in: not your door)
     setInside(src, l)
     if not cop then H.setHeat(src, HS.sizes[l.size].tier) else l.members[src] = nil; l.cops = l.cops or {}; l.cops[src] = true end
     local it = HS.interiors[HS.sizes[l.size].interior]

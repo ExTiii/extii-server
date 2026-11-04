@@ -75,7 +75,8 @@ Config.npc = {
     giveUpDistance = 220.0,  -- nobody this close to the spot when they arrive: they don't come
     copStandDown = 100.0,    -- a real cop this close to a robber: the NPCs back off
     maxMinutes = 12,         -- they give up after this long anyway
-    accuracy = 18,           -- GTA default is ~50 for cops: tense, not unfair
+    accuracy = 34,           -- EX_Tii: hard. A good shooter wins about half the fights against them
+    health = 200, armour = 75, -- each guard (GTA default 100 health)
     car = 'police4',         -- unmarked cruiser, no light bar (they are a private patrol, not LSPD)
     ped = 's_m_m_security_01',
     spawnDistance = { 160.0, 260.0 },
@@ -178,7 +179,7 @@ Config.house = {
     maxMinutes = 15,                      -- inside longer than this: the owner comes home (alarm)
     searchSeconds = { 6, 9 },
     noise = {                             -- the noise meter (0-100): full = the owner wakes up and calls
-        sprint = 9, run = 3, jump = 14, search = 3, safeFail = 18, pickFail = 10, window = 55, decay = 4, -- per second
+        sprint = 24, run = 11, jump = 14, search = 3, safeFail = 18, pickFail = 10, window = 55, decay = 3, -- per second (EX_Tii: running fills it, only walking lets it fall)
         shot = 100, shotSilenced = 40,    -- one shot (a suppressor still makes noise)
         smash = 30,                       -- glass / something broken by a hit or a bullet
         melee = 8,                        -- a punch or a swing
@@ -346,7 +347,7 @@ Config.hostages = {
     copFreeBonus = 250,       -- an officer who frees a hostage (bank): not his own, held 60 s+, 5 a day
     minHoldForBonus = 60, copFreeDaily = 5,
     hurtMinutes = 60,         -- a robber who hurt a hostage: double arrest bonus this long
-    rageAccuracy = 45,        -- NPC police after a hostage was hurt (or the standoff ran out)
+    rageAccuracy = 55,        -- NPC police after a hostage was hurt, the deal broke, or the standoff ran out
     -- NPC police with a hostage (no-police mode): they hold their fire until a deal, a hurt hostage, or the time
     standoffMinutes = 15,     -- no deal by then: they storm in
     moreTimeMinutes = 5,      -- "more time" (once)
@@ -359,9 +360,10 @@ Config.hostages = {
     chaseLostSeconds = 120,   -- out of their sight this long in that chase: you lost them
     surrenderJail = 10,       -- minutes of prison when you give up to them
     leaveJail = 15,           -- left with a hostage (logged out / went into a house): prison on return
-    swat = { cars = 3, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_CARBINERIFLE' }, armour = 100, accuracy = 45, ped = 's_m_y_swat_01', car = 'fbi2' },
-    roadblocks = { every = 75, max = 3, ahead = 260.0, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_PUMPSHOTGUN' } },
-    chaseAccuracy = 26,       -- the chase after a deal: they shoot to stop you
+    swat = { cars = 4, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_SPECIALCARBINE' }, armour = 100, accuracy = 55, ped = 's_m_y_swat_01', car = 'fbi2' },
+    roadblocks = { every = 45, max = 5, ahead = 260.0, weapons = { 'WEAPON_CARBINERIFLE', 'WEAPON_PUMPSHOTGUN' } },
+    pursuitCars = 2,          -- the chase after a deal: this many more cars join, right behind you
+    chaseAccuracy = 45,       -- the chase after a deal: they shoot to stop you
     blindProp = 'prop_money_bag_01', -- the cloth sack over the head
 }
 Config.calls.hostages = 'احتجاز رهائن'

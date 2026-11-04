@@ -487,7 +487,15 @@ CreateThread(function()
             end
             -- any open door (the crew): come in
             for id, d in pairs(openDoors) do
-                if #(here - v3(d)) < 2.0 and HC.canAct() and not carry then
+                local allowed = (lead and lead.id == id)
+                if not allowed then
+                    for _, w in ipairs(d.who or {}) do if w == cache.serverId then allowed = true break end end
+                end
+                if not allowed and d.alarm then
+                    local j = QBX and QBX.PlayerData and QBX.PlayerData.job
+                    allowed = j ~= nil and j.name == C.cops.job and j.onduty == true
+                end
+                if allowed and #(here - v3(d)) < 2.0 and HC.canAct() and not carry then
                     sleep = 0
                     text, act, alt = '[E] ادخل البيت', function() enter(id) end, nil
                 end

@@ -441,9 +441,12 @@ end
 
 local shown = nil
 local function showPrompt(text)
-    if shown == text then return end
+    local open, cur = lib.isTextUIOpen()
+    if shown == text and (not text or (open and cur == text)) then return end
+    local mine = shown
     shown = text
-    if text then lib.showTextUI(text, { position = 'left-center' }) else lib.hideTextUI() end
+    if text then lib.showTextUI(text, { position = 'left-center' })
+    elseif mine and open and cur == mine then lib.hideTextUI() end   -- (never someone else's text)
 end
 GC.textUI = showPrompt   -- (one owner for the left [E] line: weed selling uses it too)
 

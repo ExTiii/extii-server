@@ -38,9 +38,17 @@ function HC.prompt(text, owner)
     if owner then owners[owner] = text else owners = {} end
     local want
     for _, o in ipairs(ORDER) do if owners[o] then want = owners[o] break end end
-    if want == shown then return end
-    shown = want
-    if want then lib.showTextUI(want, { position = 'left-center' }) else lib.hideTextUI() end
+    -- the [E] line is shared with other scripts (the shop, the fuel pump...): if one of them hid it or put its
+    -- own text up, ours comes back; and we never hide a text that isn't ours
+    local open, cur = lib.isTextUIOpen()
+    if want then
+        if want == shown and open and cur == want then return end
+        shown = want
+        lib.showTextUI(want, { position = 'left-center' })
+    else
+        if shown and open and cur == shown then lib.hideTextUI() end
+        shown = nil
+    end
 end
 
 function HC.notify(text, kind, duration)

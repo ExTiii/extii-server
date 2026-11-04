@@ -59,9 +59,12 @@ end
 local shownText
 function POL.prompt(text)
     -- another script may have hidden it: show it again
-    if shownText == text and (not text or lib.isTextUIOpen()) then return end
+    local open, cur = lib.isTextUIOpen()
+    if shownText == text and (not text or (open and cur == text)) then return end
+    local mine = shownText
     shownText = text
-    if text then lib.showTextUI(text) else lib.hideTextUI() end
+    if text then lib.showTextUI(text)
+    elseif mine and open and cur == mine then lib.hideTextUI() end   -- (never someone else's text)
 end
 
 ---------------------------------------------------------------------------
