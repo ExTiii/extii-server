@@ -133,7 +133,6 @@ end)
 
 --- Deprecated. This event is kept for backward compatibility only and is no longer used internally.
 RegisterNetEvent('qbx_core:server:deleteCharacter', function(citizenId)
-    local src = source
-    DeleteCharacter(src --[[@as number]], citizenId)
-    Notify(src, locale('success.character_deleted'), 'success')
+    -- EX_Tii: players can't delete their character (one per player); admins use /delcharacter
+    local _ = citizenId
 end)

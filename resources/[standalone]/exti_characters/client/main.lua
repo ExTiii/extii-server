@@ -777,11 +777,21 @@ RegisterNUICallback('play', function(data, cb)
     cb({ ok = true })
 
     CreateThread(function()
+        -- EX_Tii: know if this character has a saved look even when it was never shown in the list
+        if hasLook[c.citizenid] == nil then
+            local clothing, model = lib.callback.await('qbx_core:server:getPreviewPedData', false, c.citizenid)
+            hasLook[c.citizenid] = (model and clothing) and true or false
+        end
         lib.callback.await('qbx_core:server:loadCharacter', false, c.citizenid)
         local loaded = waitFor(function()
             return QBX.PlayerData and QBX.PlayerData.citizenid == c.citizenid
-        end, 8000)
-        if not loaded then return startSelect() end
+        end, 30000)
+        if not loaded then
+            -- EX_Tii: the server may already have us logged in: log out there first, or pressing Play
+            -- again would kick the player as a cheat
+            if lib.callback.await('exti_characters:server:resetLogin', false) then return end
+            return startSelect()
+        end
 
         local info = c.charinfo or {}
         local text = { title = 'مرحبًا بعودتك', sub = ('%s %s'):format(info.firstname or '', info.lastname or '') }
@@ -862,7 +872,8 @@ RegisterNUICallback('create', function(data, cb)
 
     local y, m, d = tostring(data.birthdate or ''):match('^(%d%d%d%d)%-(%d%d)%-(%d%d)$')
     y, m, d = tonumber(y), tonumber(m), tonumber(d)
-    if not y or y < config.birthYearMin or y > config.birthYearMax or m < 1 or m > 12 or d < 1 or d > 31 then
+    local monthDays = { 31, (y and (y % 4 == 0 and (y % 100 ~= 0 or y % 400 == 0))) and 29 or 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+    if not y or y < config.birthYearMin or y > config.birthYearMax or m < 1 or m > 12 or d < 1 or d > monthDays[m] then
         return cb({ ok = false, error = 'birthdate' })
     end
 
@@ -881,7 +892,7 @@ RegisterNUICallback('create', function(data, cb)
         -- (starting items...); then carry on instead of leaving the player on this screen
         local made = waitFor(function()
             return LocalPlayer.state.isLoggedIn and QBX.PlayerData and QBX.PlayerData.citizenid ~= nil
-        end, 3000)
+        end, 15000)
         if made then
             cb({ ok = true })
             CreateThread(function()
@@ -890,6 +901,7 @@ RegisterNUICallback('create', function(data, cb)
             end)
             return
         end
+        if lib.callback.await('exti_characters:server:resetLogin', false) then return cb({ ok = false, error = 'failed' }) end
         ui.phase = 'create'
         return cb({ ok = false, error = 'failed' })
     end

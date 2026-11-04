@@ -20,8 +20,8 @@ Config.staffGroup   = 'group.support' -- who can use the staff command (support,
 --[[
     ================================================================
     STARTER KIT (given once per new character)
-    Qbox already gives every new character a phone, ID card,
-    driver licence, cash and bank money. This adds food and water.
+    Qbox gives every new character a phone and the starting money
+    (no ID card, no licence: those are bought). This adds food and water.
     ================================================================
 ]]
 Config.starterKit = {
@@ -104,7 +104,7 @@ Config.guide = {
                 { icon = 'bag', title = 'تفقّد حقيبتك', text = 'اضغط TAB. معك هاتف، و3 قوارير ماء و3 برغر.' },
                 { icon = 'cash', title = 'مالك', text = 'تبدأ بـ 500 دولار نقدًا و2,000 دولار في البنك. المال هنا صعب، فاصرفه بعقل.' },
                 { icon = 'car', title = 'رخصة السيارات أولًا', text = 'اذهب إلى مدرسة تعليم القيادة (روكفورد بلازا). اختبار نظري ثم عملي. كل الوظائف الأولى تحتاج هذه الرخصة.', tag = '250 دولار' },
-                { icon = 'briefcase', title = 'خذ وظيفة', text = 'من مركز التوظيف (الحقيبة على الخريطة): توصيل، أو نظافة، أو سحب سيارات.' },
+                { icon = 'briefcase', title = 'خذ وظيفة', text = 'من مركز التوظيف (الحقيبة على الخريطة): توصيل، أو نظافة، أو سحب سيارات. تدفع تأمينًا على مركبة العمل ويعود لك عندما تعيدها.', tag = 'تأمين 250 دولار' },
                 { icon = 'id', title = 'هويتك', text = 'اشترِ بطاقة الهوية من موظف مركز التوظيف. الشرطة قد تطلبها منك.', tag = '50 دولار' },
                 { icon = 'level', title = 'ارفع مستواك', text = 'كل عمل تقوم به يرفع مستواك، والمستويات تفتح وظائف أفضل ودخلًا أعلى.' },
                 { icon = 'shop', title = 'اشترِ سيارتك', text = 'من معرض السيارات عندما يكتمل معك المبلغ.' },
@@ -141,7 +141,7 @@ Config.guide = {
                 { key = 'X', title = 'ارفع يديك', text = 'عند التهديد بسلاح' },
                 { key = 'T', title = 'المحادثة', text = 'والأوامر مثل /guide' },
                 { key = 'N', title = 'الميكروفون', text = 'اضغط مطوّلًا لتتكلم (إن كان الضغط للتحدث مفعّلًا)' },
-                { key = 'F11', title = 'مدى الصوت', text = 'همس، عادي، صراخ' },
+                { key = '~', title = 'مدى الصوت', text = 'الزر الذي تحت Esc: همس، عادي، صراخ' },
             },
         },
         {

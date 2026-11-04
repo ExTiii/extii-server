@@ -1,16 +1,30 @@
 -- newplayer_guide / client.lua
 
 local text = Config.text
-local myJob
+local myJob -- the job table (name, type, onduty)
 
 local function refreshJob()
     local data = exports.qbx_core:GetPlayerData()
-    myJob = data and data.job and data.job.name or nil
+    myJob = data and data.job or nil
 end
 
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
-    myJob = job and job.name or nil
+    myJob = job
 end)
+RegisterNetEvent('QBCore:Client:SetDuty', function(onDuty)
+    if myJob then myJob.onduty = onDuty end
+end)
+
+-- EX_Tii: only police (any police job) and EMS who are ON DUTY may use weapons in a safe zone
+local function exempt()
+    if not myJob or not myJob.onduty then return false end
+    return myJob.type == 'leo' or myJob.type == 'ems' or Config.safeZones.ignoreJobs[myJob.name] == true
+end
+
+-- the label waits until the player is really in the city (not in the arrival movie)
+local function canShowLabel()
+    return LocalPlayer.state.isLoggedIn and GetRenderingCam() == -1
+end
 
 ---------------------------------------------------------------------
 -- Guide menu
@@ -60,6 +74,15 @@ AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() and guideOpen then SetNuiFocus(false, false) end
 end)
 
+-- logging out (back to the character list) closes the guide
+local function forceClose()
+    if not guideOpen then return end
+    SendNUIMessage({ action = 'close' })
+    closeGuide()
+end
+RegisterNetEvent('QBCore:Client:OnPlayerUnload', forceClose)
+RegisterNetEvent('qbx_core:client:playerLoggedOut', forceClose)
+
 ---------------------------------------------------------------------
 -- Welcome on first spawn: the guide opens by itself, on its first page
 ---------------------------------------------------------------------
@@ -94,14 +117,18 @@ local showingSafeUI = false
 local nextLabelCheck = 0
 
 local function blockCombat()
-    if Config.safeZones.ignoreJobs[myJob] then return end
+    if exempt() then
+        if showingSafeUI then lib.hideTextUI() showingSafeUI = false end
+        return
+    end
 
     -- EX_Tii: the "[E] ..." labels (job center, shops) use the same spot on screen; when one of them
-    -- closes, bring the safe-zone label back
-    if showingSafeUI and GetGameTimer() > nextLabelCheck then
+    -- closes, bring the safe-zone label back (and show it once the arrival movie is over)
+    if GetGameTimer() > nextLabelCheck then
         nextLabelCheck = GetGameTimer() + 500
-        if not lib.isTextUIOpen() then
+        if canShowLabel() and not lib.isTextUIOpen() then
             lib.showTextUI(text.safeZoneEnter, { position = 'top-center', icon = 'shield-halved' })
+            showingSafeUI = true
         end
     end
 
@@ -121,7 +148,7 @@ end
 
 local function onEnterSafeZone()
     zonesInside = zonesInside + 1
-    if zonesInside == 1 and not Config.safeZones.ignoreJobs[myJob] then
+    if zonesInside == 1 and not exempt() and canShowLabel() then
         lib.showTextUI(text.safeZoneEnter, { position = 'top-center', icon = 'shield-halved' })
         showingSafeUI = true
     end

@@ -1524,7 +1524,8 @@ function DeleteCharacter(source, citizenid)
     return success
 end
 
-lib.callback.register('qbx_core:server:deleteCharacter', DeleteCharacter)
+-- EX_Tii: players can't delete their character (one per player); admins use /delcharacter (exti_characters)
+lib.callback.register('qbx_core:server:deleteCharacter', function() return false end)
 
 ---@param citizenid string
 function ForceDeleteCharacter(citizenid)

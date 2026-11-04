@@ -6,7 +6,7 @@
 -- =====================================================================
 return {
     deposit = 250,          -- paid when the work vehicle is taken, given back when it is returned
-    licence = 'driver',     -- every job here needs a driver's licence (new players start with one)
+    licence = 'driver',     -- every job with a work vehicle needs the car licence (from the driving school; nobody starts with one)
 
     -- levels: tasks done in that job -> pay raise
     levelNames = { 'مبتدئ', 'متمرّس', 'محترف', 'خبير', 'نخبة' },

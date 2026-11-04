@@ -43,6 +43,30 @@ local function cleanupDeleted(citizenid)
     end)
 end
 
+-- someone playing that character is sent out first, so the save when they leave can't bring the
+-- character back after it is deleted
+local function deleteNow(citizenid)
+    local online = exports.qbx_core:GetPlayerByCitizenId(citizenid)
+    if online then
+        DropPlayer(tostring(online.PlayerData.source), 'حذفت الإدارة شخصيتك. تستطيع إنشاء شخصية جديدة عند دخولك.')
+        SetTimeout(4000, function()
+            exports.qbx_core:DeleteCharacter(citizenid)
+            cleanupDeleted(citizenid)
+        end)
+    else
+        exports.qbx_core:DeleteCharacter(citizenid)
+        cleanupDeleted(citizenid)
+    end
+end
+
+-- a character load that took too long on the player's side: log them out here too, so trying again
+-- does not look like a cheat to qbx_core
+lib.callback.register('exti_characters:server:resetLogin', function(source)
+    if not exports.qbx_core:GetPlayer(source) then return false end
+    pcall(function() exports.qbx_core:Logout(source) end)
+    return true -- the logout sends the player back to the character list by itself
+end)
+
 local function tell(src, text, kind)
     if src == 0 then return print(text) end
     TriggerClientEvent('ox_lib:notify', src, { description = text, type = kind or 'inform', position = 'top' })
@@ -72,8 +96,7 @@ lib.addCommand('delcharacter', {
     info = ok and type(info) == 'table' and info or {}
     local name = ('%s %s'):format(info.firstname or '?', info.lastname or '')
     if source == 0 then -- the server console: no box to confirm in
-        exports.qbx_core:DeleteCharacter(citizenid)
-        cleanupDeleted(citizenid)
+        deleteNow(citizenid)
         return print(('[exti_characters] deleted %s (%s)'):format(name, citizenid))
     end
     pendingDelete[source] = { citizenid = citizenid, name = name, at = os.time() }
@@ -86,8 +109,7 @@ RegisterNetEvent('exti_characters:server:confirmDelete', function(citizenid)
     pendingDelete[src] = nil
     if not p or p.citizenid ~= citizenid or os.time() - p.at > 120 then return end
     if not IsPlayerAceAllowed(src, 'command.delcharacter') then return end
-    exports.qbx_core:DeleteCharacter(citizenid)
-    cleanupDeleted(citizenid)
+    deleteNow(citizenid)
     tell(src, ('حُذفت شخصية %s'):format(p.name), 'success')
     lib.print.info(('%s deleted the character %s (%s)'):format(GetPlayerName(src), p.name, citizenid))
 end)

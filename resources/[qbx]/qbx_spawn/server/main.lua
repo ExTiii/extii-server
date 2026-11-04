@@ -50,7 +50,7 @@ lib.callback.register('qbx_spawn:server:getLastLocation', function(source)
     -- start at that home's door (before, the player was stuck in the character room)
     if currentPropertyId then
         -- (with the housing script off nobody can go inside: everyone starts at the door)
-        local housingOn = GetResourceState('qbx_properties'):find('start') ~= nil
+        local housingOn = false -- EX_Tii: no housing script yet (qbx_properties is only a stub), so nobody goes back inside a home
         local okQuery, property = pcall(MySQL.single.await, 'SELECT owner, keyholders, coords FROM properties WHERE id = ?', { currentPropertyId })
         if not okQuery then property = nil end
         local cid = player.PlayerData.citizenid
