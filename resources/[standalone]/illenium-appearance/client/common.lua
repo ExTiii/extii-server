@@ -51,7 +51,7 @@ end
 function OpenOutfitRoom(outfitRoom)
     local isAllowed = IsPlayerAllowedForOutfitRoom(outfitRoom)
     if isAllowed then
-        OpenMenu(nil, "outfit")
+        OpenWardrobe() -- EX_Tii: the new wardrobe screen instead of the old list
     end
 end
 

@@ -119,7 +119,7 @@ async function open() {
     S.orig = clone(dt.appearanceData);
     S.shop = shop || {};
     S.mode = pickMode();
-    S.step = 0; S.shown = {}; S.stripped = {}; S.tatPreview = null; S.busy = false;
+    S.step = 0; S.shown = {}; S.stripped = {}; S.tatPreview = null; S.busy = false; S.fromShop = false;
     if (S.mode === 'wardrobe') S.outfits = (S.shop.outfits || []);
     firstTab();
     S.open = true;

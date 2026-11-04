@@ -82,7 +82,7 @@ function faces(parent, title, key, skinKey) {
     for (let i = 0; i <= 45; i++) {
         const f = h('button', 'face' + (hb[key] === i ? ' on' : ''), `<span class="ph">${i + 1}</span>`); f.type = 'button';
         f.setAttribute('aria-label', `${title} ${i + 1}`);
-        photo(`img/parents/${i}.webp`, f);
+        photo(`img/p-${i}.webp`, f);
         f.onclick = () => {
             hb[key] = i; if (skinKey && S.linkSkin !== false) hb[skinKey] = i;
             g.querySelectorAll('.face.on').forEach((x) => x.classList.remove('on')); f.classList.add('on');
@@ -142,7 +142,7 @@ function viewHair(b) {
     const g = gender();
     list.forEach((d) => {
         const card = h('button', 'pc' + (d === hair.style ? ' on' : ''), `<span class="ph">${d === 0 ? icon('none') : d + 1}</span><span class="no">${d === 0 ? 'حلاقة' : '#' + (d + 1)}</span>`); card.type = 'button';
-        if (isFreemode()) photo(`img/clothes/${g}/c2/${d}.webp`, card);
+        if (isFreemode()) photo(`img/${g}-c2-${d}.webp`, card);
         card.onclick = async () => {
             hair.style = d; hair.texture = 0;
             grid.querySelectorAll('.pc.on').forEach((x) => x.classList.remove('on')); card.classList.add('on');
@@ -171,7 +171,7 @@ function viewOverlay(b, key) {
     grid.appendChild(none);
     for (let s = set.style.min; s <= set.style.max; s++) {
         const card = h('button', 'pc' + (ov.opacity > 0 && ov.style === s ? ' on' : ''), `<span class="ph">${s + 1}</span><span class="no">#${s + 1}</span>`); card.type = 'button';
-        if (isFreemode()) photo(`img/overlays/${g}/${key}/${s}.webp`, card);
+        if (isFreemode()) photo(`img/${g}-${key}-${s}.webp`, card);
         card.onclick = () => { ov.style = s; if (!ov.opacity) ov.opacity = 1; sendOverlays(); S.keepScroll = true; const t = $('#body').scrollTop; renderBody(); $('#body').scrollTop = t; renderFoot(); };
         grid.appendChild(card);
     }
@@ -253,7 +253,7 @@ function viewWardrobe(b) {
     btn.onclick = async () => {
         const name = inp.value.trim(); if (!name) { inp.focus(); return; }
         const res = await post('exti_outfit_save', { name, appearance: S.cur });
-        if (res && res.outfits) { S.outfits = res.outfits; inp.value = ''; toast('حُفظ الزي', 'ok'); renderBody(); }
+        if (res && res.outfits) { S.outfits = res.outfits; inp.value = ''; toast('حُفظ الزي', 'ok'); renderBody(); } else if (res && res.msg) toast(res.msg, 'bad');
     };
     row.append(inp, btn); b.appendChild(row);
     if (!S.outfits.length) { b.appendChild(h('div', 'empty', 'لا توجد أزياء محفوظة بعد.<br>البس ما تريد ثم احفظه باسم.')); return; }
@@ -262,7 +262,7 @@ function viewWardrobe(b) {
         const r = h('div', 'of', `<span class="o-ico">${icon('hanger')}</span><span class="o-name"></span>`);
         r.querySelector('.o-name').textContent = o.name;
         const wear = h('button', 'o-wear', 'البس'); wear.type = 'button';
-        wear.onclick = async () => { const res = await post('exti_outfit_wear', { id: o.id }); if (res && res.appearance) { S.cur = res.appearance; toast('لبست ' + o.name, 'ok'); } };
+        wear.onclick = async () => { const res = await post('exti_outfit_wear', { id: o.id }); if (res && res.msg) { toast(res.msg, 'bad'); return; } if (res && res.appearance) { S.cur = res.appearance; S.orig = clone(res.appearance); toast('لبست ' + o.name, 'ok'); } };
         const del = h('button', 'o-del', icon('trash')); del.type = 'button'; del.setAttribute('aria-label', 'احذف');
         del.onclick = async () => {
             if (!del.classList.contains('sure')) { del.classList.add('sure'); del.textContent = 'متأكد؟'; setTimeout(() => { if (del.isConnected) { del.classList.remove('sure'); del.innerHTML = icon('trash'); } }, 2500); return; }

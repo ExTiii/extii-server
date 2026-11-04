@@ -8,7 +8,14 @@ function renderFoot() {
     const f = $('#foot'); f.innerHTML = '';
     if (S.mode === 'clothing') return footClothing(f);
     if (S.mode === 'creator') return footCreator(f);
-    if (S.mode === 'wardrobe') { const a = h('div', 'acts one'); a.appendChild(btn('btn dark', 'تم', 'check', () => leave(false))); f.appendChild(a); return; }
+    if (S.mode === 'wardrobe') {
+        const a = h('div', S.fromShop ? 'acts' : 'acts one');
+        if (S.fromShop) {
+            a.appendChild(btn('btn gold', 'العودة للمتجر', 'hanger', () => backToShop()));
+            a.appendChild(btn('btn ghost', 'اخرج', null, () => post('appearance_exit')));
+        } else a.appendChild(btn('btn dark', 'تم', 'check', () => save()));
+        f.appendChild(a); return;
+    }
     if (S.mode === 'tattoo') {
         wallet(f);
         const a = h('div', 'acts one'); a.appendChild(btn('btn gold', 'انتهيت', 'check', () => save())); f.appendChild(a);
@@ -94,7 +101,8 @@ function goStep(i) {
 async function pay(method) {
     if (S.busy) return;
     S.busy = true;
-    const res = await post('exti_pay_cart', { method, appearance: S.cur });
+    const expected = cart().reduce((t, l) => t + l.price, 0);
+    const res = await post('exti_pay_cart', { method, appearance: S.cur, expected });
     S.busy = false;
     if (!res || !res.ok) { toast((res && res.msg) || 'لم يتم الدفع', 'bad'); if (res && res.cash != null) { S.shop.cash = res.cash; S.shop.bank = res.bank; renderFoot(); } return; }
     await post('appearance_save', S.cur);
@@ -113,6 +121,24 @@ function leave(confirmIt) {
     if (!dirty) { post('appearance_exit'); return; }
     ask('الخروج بلا حفظ؟', 'سيعود مظهرك كما كان قبل الدخول.', 'اخرج', () => post('appearance_exit'));
 }
+
+/* ---------------- the wardrobe inside a clothing store ---------------- */
+async function goWardrobe() {
+    if (S.busy) return;
+    const enter = async () => {
+        const res = await post('exti_outfit_list');
+        S.outfits = (res && res.outfits) || [];
+        S.mode = 'wardrobe'; S.fromShop = true; camFor(); render(); $('#body').scrollTop = 0;
+    };
+    const lines = cart();
+    if (!lines.length) return enter();
+    ask('قطع لم تدفع ثمنها', 'ستُرجع القطع التي في الفاتورة قبل فتح خزانتك.', 'تابع', async () => {
+        for (const l of lines) await undo(l.cat);
+        enter();
+    });
+}
+function backToShop() { S.mode = 'clothing'; S.fromShop = false; firstTab(); render(); $('#body').scrollTop = 0; }
+$('#wbtn').onclick = () => (S.mode === 'wardrobe' ? backToShop() : goWardrobe());
 
 /* ---------------- modal / toast ---------------- */
 function ask(title, text, yes, fn) {

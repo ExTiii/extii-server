@@ -40,6 +40,8 @@ client_scripts {
   "client/blips.lua",
   "client/props.lua",
   "client/client.lua",
+  "client/exti.lua",
+  "client/photo.lua",
 }
 
 server_scripts {
@@ -61,7 +63,8 @@ server_scripts {
   "server/framework/ox/main.lua",
   "server/util.lua",
   "server/server.lua",
-  "server/permissions.lua"
+  "server/permissions.lua",
+  "server/photo.lua"
 }
 
 shared_scripts {
@@ -90,8 +93,12 @@ shared_scripts {
 }
 
 files {
-  "web/dist/index.html",
-  "web/dist/assets/*.js"
+  "web/ex/index.html",
+  "web/ex/*.js",
+  "web/ex/*.css",
+  "web/ex/fonts/*.woff2",
+  "web/ex/img/*.webp"
 }
 
-ui_page "web/dist/index.html"
+-- EX_Tii: the new black & gold screen (web/ex). The old one is still in web/dist if ever needed.
+ui_page "web/ex/index.html"

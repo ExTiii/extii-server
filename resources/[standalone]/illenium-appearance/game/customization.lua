@@ -27,6 +27,8 @@ local function getAppearance()
     return playerAppearance
 end
 client.getAppearance = getAppearance
+-- EX_Tii: the wardrobe swaps the look you came in with, so leaving the screen keeps the outfit you put on
+function client.setBaseAppearance(appearance) playerAppearance = appearance end
 
 local function addToBlacklist(item, drawable, drawableId, blacklistSettings)
     if drawable == drawableId and item.textures then

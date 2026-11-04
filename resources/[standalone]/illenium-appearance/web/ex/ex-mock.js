@@ -55,7 +55,7 @@ const Mock = (() => {
         barber: { shopType: 'barber', cash: 1250, bank: 8400, flatCost: 100 },
         tattoo: { shopType: 'tattoo', cash: 1250, bank: 8400, tattooCost: 100 },
         surgeon: { shopType: 'surgeon', cash: 1250, bank: 8400, flatCost: 500 },
-        wardrobe: { wardrobe: true, outfits: [{ id: 1, name: 'بدلة العمل' }, { id: 2, name: 'ملابس السهرة' }, { id: 3, name: 'رياضي' }] },
+        wardrobe: { shopType: 'wardrobe', wardrobe: true, outfits: [{ id: 1, name: 'بدلة العمل' }, { id: 2, name: 'ملابس السهرة' }, { id: 3, name: 'رياضي' }] },
     }[mode] || {};
     function handle(name, data) {
         switch (name) {
@@ -66,7 +66,9 @@ const Mock = (() => {
             case 'appearance_change_prop': return Promise.resolve({ prop_id: data.prop_id, drawable: { min: -1, max: maxP[data.prop_id] }, texture: { min: -1, max: 3 }, blacklist: { drawables: [], textures: [] } });
             case 'exti_pay_cart': return Promise.resolve({ ok: data.method === 'bank', msg: 'ليس معك مال كافٍ نقدًا', cash: 1250, bank: 8400 });
             case 'appearance_apply_tattoo': return Promise.resolve(true);
-            case 'exti_outfit_save': shop.outfits.push({ id: Date.now(), name: data.name }); return Promise.resolve({ outfits: shop.outfits });
+            case 'exti_outfit_list': return Promise.resolve({ outfits: [{ id: 1, name: 'بدلة العمل' }, { id: 2, name: 'رياضي' }] });
+            case 'exti_outfit_wear': return Promise.resolve({ appearance: JSON.parse(JSON.stringify(app)) });
+            case 'exti_outfit_save': if (!shop.outfits) shop.outfits = []; shop.outfits.push({ id: Date.now(), name: data.name }); return Promise.resolve({ outfits: shop.outfits });
             case 'exti_outfit_delete': shop.outfits = shop.outfits.filter((o) => o.id !== data.id); return Promise.resolve({ outfits: shop.outfits });
             default: return Promise.resolve(1);
         }

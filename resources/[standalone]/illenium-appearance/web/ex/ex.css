@@ -83,6 +83,14 @@ body > svg { position: absolute; width: 0 !important; height: 0 !important; poin
     transition: background 0.12s, color 0.12s;
 }
 .icon-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--text); }
+.head-btn {
+    height: 36px; border-radius: 11px; padding: 0 12px 0 10px; flex: none; display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(232, 181, 71, 0.1); border: 1px solid rgba(232, 181, 71, 0.35); color: var(--gold-hi, #f3c865);
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.12s;
+}
+.head-btn svg { width: 17px; height: 17px; }
+.head-btn:hover { background: rgba(232, 181, 71, 0.18); }
+.head-btn.hidden { display: none; }
 
 /* creator steps: a real sequence, so they are numbered */
 .steps { list-style: none; margin: 2px 18px 10px; padding: 0; display: flex; gap: 6px; counter-reset: step; }

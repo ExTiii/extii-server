@@ -22,6 +22,9 @@ function render() {
     $('#subtitle').textContent = m.sub;
     $('.p-mark use').setAttribute('href', '#i-' + m.icon);
     $('#close').classList.toggle('hidden', S.config.enableExit === false);
+    const wb = $('#wbtn'), inShop = S.mode === 'clothing' || (S.mode === 'wardrobe' && S.fromShop);
+    wb.classList.toggle('hidden', !inShop);
+    wb.querySelector('span').textContent = S.mode === 'wardrobe' ? 'المتجر' : 'خزانتي';
     renderSteps(); renderTabs(); renderBody(); renderFoot(); renderDock();
 }
 
@@ -177,7 +180,7 @@ function viewPieces(b, cat) {
             card.innerHTML = `<span class="ph">${none ? icon('none') : (d + 1)}</span><span class="no">${none ? 'بدون' : '#' + (d + 1)}</span>`;
             if (S.mode === 'clothing' && !none) card.insertAdjacentHTML('beforeend', `<span class="tag${price ? '' : ' free'}">${price ? money(price) : 'مجانًا'}</span>`);
             if (orig && d === orig.drawable) card.insertAdjacentHTML('beforeend', '<span class="worn">ترتديه</span>');
-            if (!none && isFreemode()) photo(`img/clothes/${g}/${cat}/${d}.webp`, card);
+            if (!none && isFreemode()) photo(`img/${g}-${cat}-${d}.webp`, card);
             card.onclick = () => pick(cat, d, 0);
             grid.appendChild(card);
         });

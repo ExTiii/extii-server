@@ -352,3 +352,129 @@ lib.addCommand("clearstuckprops", { help = _L("commands.clearstuckprops.title") 
 end)
 
 lib.versionCheck("iLLeniumStudios/illenium-appearance")
+
+-- EX_Tii -----------------------------------------------------------------------------------------
+-- wallet, the clothing cart (price per piece) and the wardrobe for the new appearance screen
+
+local function extiPlayer(src)
+    local ok, player = pcall(function() return exports.qbx_core:GetPlayer(src) end)
+    return ok and player or nil
+end
+
+local function extiWallet(src)
+    local player = extiPlayer(src)
+    local money = player and player.PlayerData and player.PlayerData.money or {}
+    return { cash = math.floor(money.cash or 0), bank = math.floor(money.bank or 0) }
+end
+
+lib.callback.register("illenium-appearance:server:extiWallet", function(source)
+    return extiWallet(source)
+end)
+
+local function byId(list, key)
+    local out = {}
+    if type(list) ~= "table" then return out end
+    for _, v in pairs(list) do
+        if type(v) == "table" and tonumber(v[key]) then out[tonumber(v[key])] = v end
+    end
+    return out
+end
+
+local function cartTotal(old, new)
+    local total = 0
+    local oc, nc = byId(old.components, "component_id"), byId(new.components, "component_id")
+    for id, n in pairs(nc) do
+        local price = Config.ExtiPrices["c" .. id] or 0
+        local o = oc[id]
+        if price > 0 and (not o or tonumber(o.drawable) ~= tonumber(n.drawable) or tonumber(o.texture) ~= tonumber(n.texture)) then
+            total = total + price
+        end
+    end
+    local op, np = byId(old.props, "prop_id"), byId(new.props, "prop_id")
+    for id, n in pairs(np) do
+        local price = Config.ExtiPrices["p" .. id] or 0
+        local o = op[id] or { drawable = -1, texture = -1 }
+        local d = tonumber(n.drawable) or -1
+        if price > 0 and d ~= -1 and (tonumber(o.drawable) ~= d or tonumber(o.texture) ~= tonumber(n.texture)) then
+            total = total + price
+        end
+    end
+    return total
+end
+
+local paying = {}
+lib.callback.register("illenium-appearance:server:extiPayCart", function(source, method, appearance, expected)
+    local src = source
+    if paying[src] then return { ok = false, msg = "لحظة..." } end
+    if method ~= "cash" and method ~= "bank" then method = "cash" end
+    if type(appearance) ~= "table" or type(appearance.components) ~= "table" or type(appearance.props) ~= "table" then
+        return { ok = false, msg = "لم يتم الدفع، حاول مرة أخرى" }
+    end
+    local citizenID = Framework.GetPlayerID(src)
+    if not citizenID then return { ok = false, msg = "لم يتم الدفع، حاول مرة أخرى" } end
+    paying[src] = true
+    local old = Framework.GetAppearance(citizenID) or { components = {}, props = {} }
+    local total = cartTotal(old, appearance)
+    local wallet = extiWallet(src)
+    -- the screen prices the cart against the clothes you walked in with; the server prices it against
+    -- your saved look. They only differ when you walked in wearing something that was never saved
+    -- (a work uniform): never charge for pieces the screen did not show
+    expected = tonumber(expected)
+    if expected and total > expected then
+        paying[src] = nil
+        return { ok = false, cash = wallet.cash, bank = wallet.bank,
+            msg = "تلبس زيًا غير محفوظ (زي عمل؟). البس ملابسك العادية ثم عد للمتجر" }
+    end
+    if total > 0 then
+        if (wallet[method] or 0) < total or not Framework.RemoveMoney(src, method, total) then
+            paying[src] = nil
+            return { ok = false, cash = wallet.cash, bank = wallet.bank,
+                msg = method == "cash" and "ليس معك مال كافٍ نقدًا" or "ليس في حسابك البنكي ما يكفي" }
+        end
+        lib.notify(src, { type = "success", position = "top", title = "متجر الملابس",
+            description = ("دفعت $%d %s"):format(total, method == "cash" and "نقدًا" or "بالبطاقة") })
+    end
+    -- save the paid clothes right away (only clothes and accessories: the face and body stay as they were)
+    if old.model then
+        old.components = appearance.components
+        old.props = appearance.props
+        Framework.SaveAppearance(old, citizenID)
+    end
+    paying[src] = nil
+    return { ok = true, total = total }
+end)
+
+AddEventHandler("playerDropped", function() paying[source] = nil end)
+
+lib.callback.register("illenium-appearance:server:extiOutfitSave", function(source, name, model, components, props)
+    local citizenID = Framework.GetPlayerID(source)
+    if not citizenID or type(name) ~= "string" or name == "" or not model or type(components) ~= "table" or type(props) ~= "table" then
+        return { msg = "لم يُحفظ، حاول مرة أخرى" }
+    end
+    if outfitCache[citizenID] == nil then getOutfitsForPlayer(citizenID) end
+    local list = outfitCache[citizenID]
+    if #list >= 30 then return { msg = "الخزانة ممتلئة (30 زيًا). احذف زيًا أولًا" } end
+    for i = 1, #list do
+        if tostring(list[i].name):lower() == name:lower() then return { msg = "عندك زي بهذا الاسم" } end
+    end
+    local id = Database.PlayerOutfits.Add(citizenID, name, model, json.encode(components), json.encode(props))
+    if not id then return { msg = "لم يُحفظ، حاول مرة أخرى" } end
+    list[#list + 1] = { id = id, name = name, model = model, components = components, props = props }
+    return { outfits = list }
+end)
+
+lib.callback.register("illenium-appearance:server:extiOutfitDelete", function(source, id)
+    local citizenID = Framework.GetPlayerID(source)
+    if not citizenID then return {} end
+    if outfitCache[citizenID] == nil then getOutfitsForPlayer(citizenID) end
+    local list = outfitCache[citizenID]
+    for k, v in ipairs(list) do
+        if v.id == id then -- only your own outfits are in your list
+            Database.PlayerOutfitCodes.DeleteByOutfitID(id)
+            Database.PlayerOutfits.DeleteByID(id)
+            table.remove(list, k)
+            break
+        end
+    end
+    return { outfits = list }
+end)

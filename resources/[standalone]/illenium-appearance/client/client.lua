@@ -125,25 +125,37 @@ function InitializeCharacter(gender, onSubmit, onCancel)
     end, config)
 end
 
+-- EX_Tii: the clothing store charges per piece in the screen's cart (server/exti.lua), and tattoos are
+-- charged one by one when you buy them, so neither is charged a flat price at the door or at the end.
+local function flatCharge(shopType)
+    if shopType == "clothing" then return false end
+    if shopType == "tattoo" and Config.ChargePerTattoo then return false end
+    return true
+end
+
 function OpenShop(config, isPedMenu, shopType)
+    if ExtiShop then return end
     lib.callback("illenium-appearance:server:hasMoney", false, function(hasMoney, money)
-        if not hasMoney and not isPedMenu then
+        if not hasMoney and not isPedMenu and flatCharge(shopType) then
             lib.notify({
-                title = "Cannot Enter Shop",
-                description = "Not enough cash. Need $" .. money,
+                title = "لا تستطيع الدخول",
+                description = "تحتاج $" .. money .. " نقدًا",
                 type = "error",
                 position = Config.NotifyOptions.position
             })
             return
         end
 
+        ExtiShop = { shopType = shopType, isPedMenu = isPedMenu }
         client.startPlayerCustomization(function(appearance)
+            local shop = ExtiShop
+            ExtiShop = nil
             if appearance then
-                if not isPedMenu then
+                if not isPedMenu and flatCharge(shopType) then
                     TriggerServerEvent("illenium-appearance:server:chargeCustomer", shopType)
                 end
                 TriggerServerEvent("illenium-appearance:server:saveAppearance", appearance)
-            else
+            elseif not (shop and shop.paid) then
                 lib.notify({
                     title = _L("cancelled.title"),
                     description = _L("cancelled.description"),
@@ -628,7 +640,13 @@ RegisterNetEvent("illenium-appearance:client:openClothingShopMenu", function(isP
     if type(isPedMenu) == "table" then
         isPedMenu = false
     end
-    OpenMenu(isPedMenu, "default")
+    -- EX_Tii: the store opens straight into the new screen (the wardrobe is a button inside it);
+    -- the admin ped menu keeps the old list
+    if isPedMenu then
+        OpenMenu(isPedMenu, "default")
+    else
+        OpenClothingShop(false)
+    end
 end)
 
 RegisterNetEvent("illenium-appearance:client:OpenBarberShop", OpenBarberShop)

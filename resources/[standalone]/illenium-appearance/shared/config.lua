@@ -7,6 +7,26 @@ Config.BarberCost = 100
 Config.TattooCost = 100
 Config.SurgeonCost = 500 -- EX_Tii: only matters if the cosmetic clinic comes back (it is off, see Config.Stores)
 
+-- EX_Tii: clothing store price per piece (c = clothing slot, p = accessory slot). Only pieces you change
+-- are charged; taking an accessory off is free. Pay cash or bank at the receipt.
+Config.ExtiPrices = {
+    c11 = 220, -- jackets / tops
+    c8 = 80,   -- undershirts
+    c3 = 60,   -- arms / gloves
+    c7 = 180,  -- scarves / chains
+    c5 = 200,  -- bags
+    c10 = 40,  -- decals
+    c9 = 0,    -- body armour look (the real armour is an item)
+    c4 = 140,  -- pants
+    c6 = 120,  -- shoes
+    c1 = 150,  -- masks
+    p0 = 90,   -- hats
+    p1 = 110,  -- glasses
+    p2 = 150,  -- earrings
+    p6 = 350,  -- watches
+    p7 = 200,  -- bracelets
+}
+
 Config.ChargePerTattoo = true -- Charge players per tattoo. Config.TattooCost will become the cost of 1 tattoo. The cost can be overridden by adding `cost` key in shared/tattoos.lua for specific tattoos
 
 -- Only set this to true if you're using rcore_tattoos
