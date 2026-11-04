@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>دليل المدينة</title>
+<link rel="stylesheet" href="kit.css">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body class="kit">
+<div id="shade" class="shade hidden"></div>
+<main id="guide" class="guide hidden" role="dialog" aria-modal="true" aria-labelledby="g-title">
+    <aside class="side">
+        <div class="brand">
+            <img src="logo.png" alt="" class="logo">
+            <div>
+                <h1 id="g-title">دليل المدينة</h1>
+                <p id="g-sub">EX_Tii Roleplay</p>
+            </div>
+        </div>
+        <nav id="nav" class="nav" aria-label="صفحات الدليل"></nav>
+        <p class="hint">افتحه في أي وقت: <b>/guide</b></p>
+    </aside>
+    <section class="main">
+        <header class="m-head">
+            <div>
+                <h2 id="p-title"></h2>
+                <p id="p-intro"></p>
+            </div>
+            <button id="close" class="x" type="button" aria-label="إغلاق"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </header>
+        <div id="welcome" class="welcome hidden"></div>
+        <div id="body" class="m-body"></div>
+        <footer class="m-foot">
+            <button id="gps" class="gold" type="button"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>حدّد مركز التوظيف على الخريطة</span></button>
+            <button id="done" class="ghost" type="button">تم</button>
+        </footer>
+    </section>
+</main>
+<script src="guide.js"></script>
+</body>
+</html>

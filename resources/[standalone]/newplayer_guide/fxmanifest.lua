@@ -17,6 +17,16 @@ client_scripts {
 }
 server_script 'server.lua'
 
+ui_page 'html/index.html'
+files {
+    'html/index.html',
+    'html/guide.css',
+    'html/guide.js',
+    'html/kit.css',
+    'html/logo.png',
+    'html/fonts/*.woff2',
+}
+
 dependencies {
     'ox_lib',
     'qbx_core',

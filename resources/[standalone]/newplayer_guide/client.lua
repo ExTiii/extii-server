@@ -27,88 +27,52 @@ local function setCityHallWaypoint()
     lib.notify({ description = text.waypointSet, type = 'success' })
 end
 
-local function registerGuide()
-    local mainOptions = {}
+-- EX_Tii: the guide is our own black & gold screen (html/), its text is in config.lua (Config.guide)
+local guideOpen = false
 
-    for _, page in ipairs(Config.guide.pages) do
-        local pageId = 'npg_page_' .. page.id
-        local options = {}
-
-        for _, line in ipairs(page.lines) do
-            options[#options + 1] = {
-                title = line[1],
-                description = line[2],
-                readOnly = true,
-            }
-        end
-
-        if page.waypoint then
-            options[#options + 1] = {
-                title = 'حدّد مركز التوظيف على الخريطة',
-                icon = 'location-dot',
-                onSelect = setCityHallWaypoint,
-            }
-        end
-
-        lib.registerContext({
-            id = pageId,
-            title = page.title,
-            menu = 'npg_main',
-            options = options,
-        })
-
-        mainOptions[#mainOptions + 1] = {
-            title = page.title,
-            description = page.description,
-            icon = page.icon,
-            menu = pageId,
-            arrow = true,
-        }
-    end
-
-    mainOptions[#mainOptions + 1] = {
-        title = 'حدّد مركز التوظيف على الخريطة',
-        description = 'مركز التوظيف (Job Center): هنا تجد الوظائف',
-        icon = 'location-dot',
-        onSelect = setCityHallWaypoint,
-    }
-
-    lib.registerContext({
-        id = 'npg_main',
-        title = Config.guide.title,
-        options = mainOptions,
-    })
+local function openGuide(welcome)
+    if guideOpen then return end
+    guideOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'open', guide = Config.guide, welcome = welcome == true })
 end
 
-local function openGuide()
-    lib.showContext('npg_main')
+local function closeGuide()
+    if not guideOpen then return end
+    guideOpen = false
+    SetNuiFocus(false, false)
 end
 
-RegisterCommand(Config.guideCommand, openGuide, false)
-TriggerEvent('chat:addSuggestion', '/' .. Config.guideCommand, 'افتح دليل اللاعب الجديد')
+RegisterNUICallback('close', function(_, cb)
+    cb(1)
+    closeGuide()
+end)
+
+RegisterNUICallback('gps', function(_, cb)
+    cb(1)
+    setCityHallWaypoint()
+end)
+
+RegisterCommand(Config.guideCommand, function() openGuide(false) end, false)
+TriggerEvent('chat:addSuggestion', '/' .. Config.guideCommand, 'افتح دليل المدينة')
+
+AddEventHandler('onResourceStop', function(resource)
+    if resource == GetCurrentResourceName() and guideOpen then SetNuiFocus(false, false) end
+end)
 
 ---------------------------------------------------------------------
--- Welcome on first spawn
+-- Welcome on first spawn: the guide opens by itself, on its first page
 ---------------------------------------------------------------------
 
 local function showWelcome()
-    -- wait until the screen is visible after spawning
-    while IsScreenFadedOut() or IsScreenFadingIn() do
+    -- wait until the arrival movie is over and the player can move
+    local untilTime = GetGameTimer() + 60000
+    while (IsScreenFadedOut() or IsScreenFadingIn() or IsPlayerSwitchInProgress() or GetRenderingCam() ~= -1)
+        and GetGameTimer() < untilTime do
         Wait(500)
     end
-    Wait(3000)
-
-    local choice = lib.alertDialog({
-        header = text.welcomeHeader,
-        content = text.welcomeBody,
-        centered = true,
-        cancel = true,
-        labels = { confirm = text.welcomeConfirm, cancel = text.welcomeCancel },
-    })
-
-    if choice == 'confirm' then
-        openGuide()
-    end
+    Wait(2000)
+    openGuide(true)
 end
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
@@ -283,7 +247,6 @@ end)
 ---------------------------------------------------------------------
 
 CreateThread(function()
-    registerGuide()
     createSafeZones()
     startTagThreads()
     refreshJob()

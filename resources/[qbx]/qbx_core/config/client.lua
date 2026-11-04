@@ -6,7 +6,7 @@ return {
 
     characters = {
         useExternalCharacters = true, -- EX_Tii: our own character screens (exti_characters) handle this
-        enableDeleteButton = true, -- Whether players should be able to delete characters themselves.
+        enableDeleteButton = false, -- EX_Tii: one character per player; only admins delete (/delcharacter in exti_characters)
         startingApartment = false, -- EX_Tii: no free starter apartment; new players arrive at the job center (exti_characters)
 
         dateFormat = 'YYYY-MM-DD',

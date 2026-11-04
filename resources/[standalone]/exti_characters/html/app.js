@@ -124,8 +124,8 @@ function renderSelect() {
     const actions = [];
     if (c) actions.push(`<button class="btn primary" data-act="play">${ICON.play(16)} ادخل المدينة</button>`);
     if (canCreate) actions.push(`<button class="btn ${c ? '' : 'primary'}" data-act="new">${ICON.plus(18)} أنشئ شخصية جديدة</button>`);
-    if (c) actions.push(`<button class="btn link" data-act="delete">${ICON.trash(14)} حذف الشخصية</button>`);
-    const note = state.allowed === 1 ? `<div class="foot-note">${ICON.lock(13)} شخصية واحدة لكل لاعب</div>` : '';
+    // EX_Tii: one character per player, so players can't delete it themselves (admins: /delcharacter)
+    const note = state.allowed === 1 ? `<div class="foot-note">${ICON.lock(13)} شخصية واحدة لكل لاعب · لحذفها تواصل مع الإدارة</div>` : '';
 
     setScreen(`
         <header class="top">

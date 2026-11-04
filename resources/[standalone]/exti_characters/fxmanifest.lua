@@ -21,7 +21,10 @@ client_scripts {
     'client/main.lua',
 }
 
-server_script 'server/main.lua'
+server_scripts {
+    '@oxmysql/lib/MySQL.lua',
+    'server/main.lua',
+}
 
 ui_page 'html/index.html'
 

@@ -901,14 +901,9 @@ RegisterNUICallback('create', function(data, cb)
     end)
 end)
 
-RegisterNUICallback('delete', function(data, cb)
-    if ui.phase ~= 'select' or type(data) ~= 'table' or not findCharacter(data.citizenid) then return cb({ ok = false }) end
-    ui.phase = 'busy'
-    local ok = lib.callback.await('qbx_core:server:deleteCharacter', false, data.citizenid)
-    -- EX_Tii: take the deleted character out of its gang and heist crew (the server checks it is really gone)
-    if ok == true then TriggerServerEvent('exti_characters:server:deleted', data.citizenid) end
-    cb({ ok = ok == true })
-    CreateThread(startSelect)
+RegisterNUICallback('delete', function(_, cb)
+    -- EX_Tii: players can't delete their character (one per player); admins use /delcharacter
+    cb({ ok = false })
 end)
 
 -- ---------------------------------------------------------------------------
@@ -943,6 +938,19 @@ RegisterNetEvent('exti_characters:client:preview', function(kind)
         end
         preview = false
     end)
+end)
+
+-- admins: /delcharacter asks first, with the character's name
+RegisterNetEvent('exti_characters:client:confirmDelete', function(citizenid, name)
+    if GetInvokingResource() then return end
+    local choice = lib.alertDialog({
+        header = 'حذف شخصية نهائيًا',
+        content = ('ستُحذف شخصية **%s** (%s) وكل ما تملكه: المال، السيارات، الأغراض، العصابة.  \nلا يمكن التراجع.'):format(name, citizenid),
+        centered = true,
+        cancel = true,
+        labels = { confirm = 'احذف نهائيًا', cancel = 'إلغاء' },
+    })
+    if choice == 'confirm' then TriggerServerEvent('exti_characters:server:confirmDelete', citizenid) end
 end)
 
 -- ---------------------------------------------------------------------------
