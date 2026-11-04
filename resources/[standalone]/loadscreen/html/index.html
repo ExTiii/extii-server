@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>EX_Tii Roleplay</title>
+<link rel="stylesheet" href="./kit.css">
+<style>
+/* EX_Tii loading screen: a cinema frame. The film plays letterboxed, the UI lives in the black bars. */
+:root {
+    --gold: #e8b547; --gold-hi: #f3cd73; --ink: #16130b;
+    --text: #f4f1ea; --muted: #a8a39a; --faint: #6f6b64;
+    --bar: 13vh;            /* the letterbox bars */
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #050505; color: var(--text); font-family: 'Kit Plex', 'Segoe UI', sans-serif; user-select: none; }
+
+/* the film */
+#film { position: fixed; inset: 0; display: grid; place-items: center; background: #050505; }
+#film video { width: 100%; height: calc(100vh - var(--bar) * 2); object-fit: cover; opacity: 0; transition: opacity 1.6s ease; }
+#film video.on { opacity: 1; }
+#film::after { content: ''; position: absolute; inset: var(--bar) 0; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%),
+                linear-gradient(180deg, rgba(5,5,5,.55), transparent 22%, transparent 70%, rgba(5,5,5,.7)); }
+.grain { position: fixed; inset: 0; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    animation: grain 1s steps(4) infinite; }
+@keyframes grain { 25% { transform: translate(-2%, 1%); } 50% { transform: translate(1%, -2%); } 75% { transform: translate(2%, 2%); } }
+
+/* the bars */
+.bar { position: fixed; left: 0; right: 0; height: var(--bar); display: flex; align-items: center; padding: 0 4.2vw; z-index: 5; }
+.bar.top { top: 0; justify-content: space-between; }
+.bar.bottom { bottom: 0; gap: 3.2vw; align-items: center; }
+.bar.top::after, .bar.bottom::before { content: ''; position: absolute; left: 4.2vw; right: 4.2vw; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(232,181,71,.35), transparent); }
+.bar.top::after { bottom: 0; } .bar.bottom::before { top: 0; }
+
+/* brand (top, the start side) */
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand img { width: 6.6vh; height: 6.6vh; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px rgba(232,181,71,.45), 0 0 24px rgba(232,181,71,.18); }
+.brand .name { display: block; font-size: 2.3vh; font-weight: 700; letter-spacing: .2px; direction: ltr; text-align: right; }
+.brand .name span { color: var(--gold); }
+.brand small { display: block; margin-top: 2px; font-size: 1.45vh; color: var(--muted); }
+.hello { font-size: 1.6vh; color: var(--muted); }
+.hello b { color: var(--text); font-weight: 600; }
+
+/* sound (top, the end side) */
+.top-end { display: flex; align-items: center; gap: 2vw; }
+.sound { display: flex; align-items: center; gap: 9px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03);
+    color: var(--muted); font: inherit; font-size: 1.4vh; cursor: pointer; }
+.sound:hover { color: var(--text); border-color: rgba(232,181,71,.4); }
+.eq { display: flex; align-items: flex-end; gap: 2px; height: 1.6vh; }
+.eq i { width: 3px; background: var(--gold); border-radius: 1px; animation: eq 1s ease-in-out infinite; }
+.eq i:nth-child(2) { animation-delay: .2s; } .eq i:nth-child(3) { animation-delay: .4s; } .eq i:nth-child(4) { animation-delay: .1s; }
+@keyframes eq { 0%, 100% { height: 25%; } 50% { height: 100%; } }
+.sound.muted .eq i { animation: none; height: 20%; background: var(--faint); }
+.kbd { display: inline-grid; place-items: center; min-width: 2.2vh; height: 2.2vh; padding: 0 5px; border-radius: 5px; font-size: 1.25vh; font-weight: 700;
+    color: var(--text); background: linear-gradient(180deg, #2a2c33, #1c1d22); border: 1px solid rgba(255,255,255,.14); border-bottom-width: 2px; direction: ltr; }
+
+/* the tip (bottom, the start side) */
+.tip { flex: 1; min-width: 0; display: flex; align-items: center; gap: 16px; }
+.tip .tag { flex: none; font-size: 1.35vh; font-weight: 700; color: var(--ink); background: var(--gold); padding: 4px 10px; border-radius: 6px; }
+.tip p { margin: 0; font-size: 1.9vh; line-height: 1.55; max-width: 62ch; transition: opacity .45s ease, transform .45s ease; }
+.tip p.out { opacity: 0; transform: translateY(6px); }
+.tip .count { flex: none; font-size: 1.3vh; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* the progress (bottom, the end side) */
+.load { flex: none; width: 23vw; min-width: 260px; }
+.load .row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.load .what { font-size: 1.45vh; color: var(--muted); }
+.load .pct { font-size: 3.2vh; font-weight: 700; color: var(--gold-hi); font-variant-numeric: tabular-nums; direction: ltr; }
+.track { position: relative; height: 3px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+.track i { position: absolute; top: 0; bottom: 0; right: 0; width: 0; background: linear-gradient(270deg, var(--gold-hi), var(--gold)); box-shadow: 0 0 12px rgba(232,181,71,.6); transition: width .5s ease; }
+
+/* the keys strip (over the film, low) */
+.keys { position: fixed; bottom: calc(var(--bar) + 2.4vh); right: 4.2vw; display: flex; gap: 1.8vw; z-index: 4; opacity: .92; }
+.keys div { display: flex; align-items: center; gap: 8px; font-size: 1.4vh; color: #e2ded6; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
+
+/* the opening title (once) */
+#intro { position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; pointer-events: none; }
+#intro .t { text-align: center; }
+#intro img { width: 22vh; height: 22vh; border-radius: 50%; object-fit: cover; mask-image: radial-gradient(circle, #000 58%, transparent 71%); -webkit-mask-image: radial-gradient(circle, #000 58%, transparent 71%); }
+#intro .line { width: 0; height: 1px; margin: 2.4vh auto 1.6vh; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+#intro small { display: block; font-size: 1.7vh; color: var(--muted); letter-spacing: .4px; }
+#intro.go img { animation: ilogo 2.8s cubic-bezier(.2,.8,.2,1) both; }
+#intro.go .line { animation: iline 2.8s ease both; }
+#intro.go small { animation: itext 2.8s ease both; }
+#intro.done { opacity: 0; transition: opacity .9s ease; }
+@keyframes ilogo { 0% { opacity: 0; transform: scale(.92); filter: blur(6px); } 30% { opacity: 1; transform: scale(1); filter: none; } 100% { opacity: 1; } }
+@keyframes iline { 0%, 25% { width: 0; } 60%, 100% { width: 34vh; } }
+@keyframes itext { 0%, 45% { opacity: 0; } 70%, 100% { opacity: 1; } }
+.ui { opacity: 0; transition: opacity 1.2s ease; }
+.ui.on { opacity: 1; }
+
+/* done: the last moment before the character screen */
+.load.done .pct { color: #3ddc97; } .load.done .track i { background: #3ddc97; box-shadow: 0 0 12px rgba(61,220,151,.6); }
+@media (prefers-reduced-motion: reduce) { .grain, .eq i { animation: none; } #intro.go * { animation-duration: .01s !important; } }
+</style>
+</head>
+<body>
+<div id="film"><video id="video" src="./ex/city.webm" autoplay muted loop playsinline disablepictureinpicture></video></div>
+<div class="grain"></div>
+<audio id="music" src="./ex/theme.ogg" loop preload="auto"></audio>
+
+<div id="intro"><div class="t">
+    <img src="./assets/logo.png" alt="">
+    <div class="line"></div>
+    <small>حياة واقعية بالعربي</small>
+</div></div>
+
+<header class="bar top ui">
+    <div class="brand">
+        <img src="./assets/logo.png" alt="">
+        <div><b class="name">EX_Tii <span>Roleplay</span></b><small id="hello" class="hello">حياة واقعية بالعربي</small></div>
+    </div>
+    <div class="top-end">
+        <span class="hello">discord.gg/<b>a7G6aWrUyH</b></span>
+        <button id="sound" class="sound" type="button"><span class="eq"><i></i><i></i><i></i><i></i></span><span id="soundTxt">الموسيقى</span><span class="kbd">M</span></button>
+    </div>
+</header>
+
+<div class="keys ui">
+    <div><span class="kbd">Z</span>القائمة</div>
+    <div><span class="kbd">TAB</span>الحقيبة</div>
+    <div><span class="kbd">X</span>ارفع يديك</div>
+    <div><span class="kbd">~</span>مدى الصوت</div>
+    <div><span class="kbd">/guide</span>دليل المدينة</div>
+</div>
+
+<footer class="bar bottom ui">
+    <div class="tip">
+        <span class="tag" id="tipTag">البداية</span>
+        <p id="tipText"></p>
+        <span class="count" id="tipCount"></span>
+    </div>
+    <div class="load" id="load">
+        <div class="row"><span class="what" id="what">جارٍ تجهيز اللعبة</span><span class="pct" id="pct">0%</span></div>
+        <div class="track"><i id="bar"></i></div>
+    </div>
+</footer>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const AR = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+
+// ---------------------------------------------------------------- tips (what new players ask the most)
+const TIPS = [
+    ['البداية', 'افتح دليل المدينة في أي وقت بكتابة /guide: الوظائف، الأزرار، القوانين وكل ما تحتاجه.'],
+    ['الوظائف', 'التوصيل والقمامة والسحب لا تحتاج مستوى، فقط رخصة القيادة. ابدأ من مركز التوظيف.'],
+    ['المستوى', 'كل عمل حقيقي يرفع مستواك: الدواجن ٣، الزبيب ٨، المخبز ١٥، الصيد ٢٢، المعادن ٣٠، الأقمشة ٤٠.'],
+    ['الرخص', 'رخصة القيادة من مدرسة القيادة: اختبار نظري ثم اختبار على الطريق. لا وظيفة بمركبة بدونها.'],
+    ['البنك', 'النقود في حقيبتك يمكن أن تُسرق، أما البنك فآمن. أودع أموالك عند موظف البنك.'],
+    ['البنك', 'الصراف الآلي يكفي حتى ١٠٬٠٠٠$ في المرة. المبالغ الأكبر عند موظف البنك.'],
+    ['الفواتير', 'الغرامات تصلك فواتير. ادفعها من تابلت البنك قبل أن تتراكم.'],
+    ['الملابس', 'في متجر الملابس تدفع فقط ثمن القطع التي غيّرتها، وخلع أي قطعة مجاني.'],
+    ['الملابس', 'احفظ أزياءك في الخزانة داخل متجر الملابس، وارتدِها بعدها في أي وقت مجانًا.'],
+    ['القائمة', 'اضغط Z لقائمة المواطن: الهوية، الرخصة، طريقة المشي، الملابس والخريطة.'],
+    ['الصوت', 'اضغط ~ لتغيّر مدى صوتك بين الهمس والكلام العادي والصراخ.'],
+    ['الأمان', 'مركز التوظيف وساحة ليجن ونقطة الوصول والمستشفى مناطق آمنة: لا قتال ولا سرقة فيها.'],
+    ['الإسعاف', 'إذا سقطت، اطلب الإسعاف من الهاتف، أو انتظر وانهض في المستشفى مقابل فاتورة.'],
+    ['السيارات', 'الوقود ٢$ لكل لتر. اشترِ جالونًا من المضخة واحتفظ به في سيارتك للطوارئ.'],
+    ['السيارات', 'اركن سيارتك في المرآب قبل أن تخرج من اللعبة، وإلا تجدها في ساحة الحجز برسوم.'],
+    ['الهاتف', 'في هاتفك البنك والمرآب والرسائل. حتى لو سُرقت، لا أحد يستطيع أخذ هاتفك أو هويتك.'],
+    ['الجريمة', 'بلا شرطة في المدينة، تأتي حراسة الحي بدلًا منهم. وهي لا ترحم.'],
+    ['الجريمة', 'اكشف وجهك أثناء السرقة وتُكتب بحقك مذكرة توقيف. القناع يحميك.'],
+    ['الرهائن', 'معك رهائن؟ المفاوض سيتصل بك. كلامك يحدد الثقة، والثقة تحدد الاتفاق.'],
+    ['المتاجر', 'وجّه سلاحك على البائع ولا تُبعده عنه، وإلا ضغط زر الإنذار.'],
+    ['العصابات', 'العصابات تُسجَّل رسميًا عبر تذكرة في الديسكورد، ولكل نوع عصابة واحدة فقط.'],
+    ['التوظيف', 'تريد أن تكون شرطيًا أو مسعفًا أو ميكانيكيًا؟ قدّم طلبك من قسم التوظيف في الديسكورد.'],
+    ['القوانين', 'اقرأ القوانين في الديسكورد قبل أن تبدأ. اللعب الواقعي أولًا، دائمًا.'],
+    ['الدعم', 'تحتاج مساعدة؟ اكتب /report داخل اللعبة، أو افتح تذكرة دعم في الديسكورد.'],
+];
+let tipI = Math.floor(Math.random() * TIPS.length);
+function showTip(first) {
+    const [tag, text] = TIPS[tipI];
+    const p = $('tipText');
+    const draw = () => { $('tipTag').textContent = tag; p.textContent = text; $('tipCount').textContent = `${AR(tipI + 1)} / ${AR(TIPS.length)}`; p.classList.remove('out'); };
+    if (first) return draw();
+    p.classList.add('out');
+    setTimeout(draw, 450);
+}
+showTip(true);
+setInterval(() => { tipI = (tipI + 1) % TIPS.length; showTip(false); }, 9000);
+
+// ---------------------------------------------------------------- the player's name (from the server)
+try {
+    const v = window.nuiHandoverData && window.nuiHandoverData.vars;
+    if (v && v.playerName) { const h = $('hello'); h.textContent = ''; h.append('أهلًا '); const b = document.createElement('b'); b.textContent = v.playerName; h.append(b); h.append('، المدينة تنتظرك'); }
+} catch (e) {}
+
+// ---------------------------------------------------------------- the opening, then the film
+const video = $('video');
+const reveal = () => video.classList.add('on');
+video.addEventListener('playing', reveal);
+setTimeout(reveal, 1500);
+const intro = $('intro');
+requestAnimationFrame(() => intro.classList.add('go'));
+setTimeout(() => { intro.classList.add('done'); document.querySelectorAll('.ui').forEach((e) => e.classList.add('on')); }, 3000);
+
+// ---------------------------------------------------------------- music (on by default, M or the button to mute, remembered)
+const music = $('music');
+let muted = false;
+try { muted = localStorage.getItem('exti_ls_muted') === '1'; } catch (e) {}
+music.volume = 0;
+function fadeTo(v, ms) {
+    const from = music.volume, t0 = performance.now();
+    const step = (t) => { const k = Math.min(1, (t - t0) / ms); music.volume = Math.max(0, Math.min(1, from + (v - from) * k)); if (k < 1) requestAnimationFrame(step); else if (v === 0) music.pause(); };
+    requestAnimationFrame(step);
+}
+function applySound() {
+    $('sound').classList.toggle('muted', muted);
+    $('soundTxt').textContent = muted ? 'الموسيقى متوقفة' : 'الموسيقى';
+    if (muted) fadeTo(0, 400);
+    else { const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(0.32, 2500); }
+}
+function toggle() { muted = !muted; try { localStorage.setItem('exti_ls_muted', muted ? '1' : '0'); } catch (e) {} applySound(); }
+$('sound').addEventListener('click', toggle);
+window.addEventListener('keydown', (e) => { if (e.key === 'm' || e.key === 'M' || e.code === 'KeyM') toggle(); });
+setTimeout(applySound, 800);
+
+// ---------------------------------------------------------------- progress (FiveM's loading events)
+const PHASE = {
+    INIT_CORE: 'تجهيز اللعبة', INIT_BEFORE_MAP_LOADED: 'تجهيز اللعبة', MAP: 'تحميل الخريطة',
+    INIT_AFTER_MAP_LOADED: 'تحميل أنظمة المدينة', INIT_SESSION: 'الدخول إلى المدينة',
+};
+let shown = 0, target = 0;
+function setTarget(f) { target = Math.max(target, Math.min(1, f)); }
+function draw() {
+    shown += (target - shown) * 0.08;
+    if (target - shown < 0.001) shown = target;
+    const pct = Math.round(shown * 100);
+    $('pct').textContent = pct + '%';
+    $('bar').style.width = (shown * 100).toFixed(1) + '%';
+    requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+let done = false;
+function finish() {
+    if (done) return; done = true;
+    setTarget(1);
+    $('what').textContent = 'اكتمل التحميل · جارٍ فتح شاشة الشخصيات';
+    $('load').classList.add('done');
+}
+const H = {
+    loadProgress(d) { setTarget(d.loadFraction * 0.97); if (d.loadFraction >= 1) $('what').textContent = 'جارٍ تجهيز المدينة...'; },
+    startInitFunctionOrder(d) { if (PHASE[d.type]) $('what').textContent = PHASE[d.type]; },
+    startInitFunction(d) { if (PHASE[d.type]) $('what').textContent = PHASE[d.type]; },
+    startDataFileEntries() { $('what').textContent = PHASE.MAP; },
+};
+window.addEventListener('message', (e) => {
+    const d = e.data || {};
+    if (d.eventName && H[d.eventName]) H[d.eventName](d);
+    if (d.customEvent === 'finishedLoading') finish();
+});
+</script>
+</body>
+</html>
