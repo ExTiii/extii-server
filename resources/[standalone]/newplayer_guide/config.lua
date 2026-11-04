@@ -6,7 +6,7 @@ Config = {}
     ================================================================
 ]]
 Config.serverName = 'EX_Tii Roleplay'       -- your server name (shows in the welcome + guide)
-Config.discord    = ''  -- EX_Tii: no invite link yet (the help page line was removed); put the real link here later
+Config.discord    = 'discord.gg/a7G6aWrUyH' -- EX_Tii Roleplay Discord (never expires, gives the Citizen role)
 
 --[[
     ================================================================
@@ -146,7 +146,7 @@ Config.guide = {
         },
         {
             id = 'rules', title = 'القوانين', icon = 'scale',
-            intro = 'اقرأها قبل أن تلعب. القوانين الكاملة في الديسكورد.',
+            intro = 'اقرأها قبل أن تلعب. القوانين الكاملة في الديسكورد: discord.gg/a7G6aWrUyH',
             cards = {
                 { title = 'الاحترام أولًا', text = 'يُمنع سب الدين أو الأهل، وتُمنع العنصرية.' },
                 { title = 'لا قتل عشوائي', text = 'لا تقتل أحدًا أو تدهسه دون سبب في القصة.' },
@@ -160,7 +160,8 @@ Config.guide = {
             id = 'help', title = 'المساعدة', icon = 'help',
             intro = 'لا تبقَ وحدك إذا علقت.',
             cards = {
-                { title = 'تحتاج الإدارة؟', text = 'افتح تذكرة في قناة الدعم في الديسكورد.' },
+                { title = 'ديسكورد EX_Tii', text = 'discord.gg/a7G6aWrUyH  ·  الأخبار، القوانين، التقديم على الوظائف، والدعم.' },
+                { title = 'تحتاج الإدارة؟', text = 'افتح تذكرة من قناة "افتح تذكرة" في الديسكورد.' },
                 { title = 'وجدت خللًا؟', text = 'أبلغ عنه في الديسكورد واذكر ما حدث بالتفصيل.' },
                 { title = 'نسيت الطريق؟', text = 'اضغط زر "حدّد مركز التوظيف" في أسفل هذه الشاشة.' },
             },
