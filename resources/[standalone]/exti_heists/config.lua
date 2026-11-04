@@ -351,6 +351,25 @@ Config.hostages = {
 Config.calls.hostages = 'احتجاز رهائن'
 Config.calls.hostageHurt = 'رهينة أُصيبت'
 
+-- robbing a PLAYER (Z wheel → فتّشه): only someone with his hands up (X), tied with zip ties, or down.
+-- Someone cuffed by the police: only the officer searches him (exti_police, it all goes to the seized room).
+-- The robber searches for a few seconds, then the person's bag opens next to his own and he drags out
+-- what he wants. The victim is told, every item taken is written in the heist log.
+Config.rob = {
+    reach = 2.0,          -- how close to the person to start (meters)
+    keepReach = 3.0,      -- the bag closes if he moves farther than this
+    searchSeconds = 5,    -- the search before the bag opens
+    -- what always stays with its owner (his papers and his phone)
+    keep = { id_card = true, driver_license = true, weaponlicense = true, lawyerpass = true, phone = true },
+    -- no robbing here (the same safe zones as the new-player guide: job center, spawn, Legion Square, hospital)
+    safeZones = {
+        { coords = vec3(-232.44, -915.57, 32.30), radius = 35.0 },
+        { coords = vec3(-265.49, -962.85, 31.22), radius = 25.0 },
+        { coords = vec3(195.17, -933.77, 29.7), radius = 45.0 },
+        { coords = vec3(308.19, -595.35, 43.29), radius = 40.0 },
+    },
+}
+
 -- the NPC negotiator (no-police mode): texts you when the units are on scene
 Config.negotiator = {
     number = '555-0119',      -- shows as the sender in the phone (also the admins' messages)

@@ -95,7 +95,12 @@ local function ev(action, t) return { name = 'exti_heists:client:radial', data =
 
 exports('RadialMenu', function()
     local t = HC.radialTarget()
-    if not t then return nil end
+    if not t then
+        -- nobody to tie / walk: maybe someone down on the floor to search (client/rob.lua)
+        local sid = HC.robTarget and HC.robTarget()
+        if sid then return { label = 'فتّشه', icon = 'magnifying-glass', items = { HC.robItem(sid) } } end
+        return nil
+    end
     local items = {}
     local cop = isCop()
     if not t.tied then
@@ -107,6 +112,7 @@ exports('RadialMenu', function()
             if t.cover == 'prone' then items[#items + 1] = { id = 'up', label = 'قف (ارفع يديك)', icon = 'person-circle-check', action = 'event', arg = { name = 'exti_heists:client:radialCover', data = { net, 'up' } } }
             else items[#items + 1] = { id = 'prone', label = 'انبطح أرضًا', icon = 'person-circle-xmark', action = 'event', arg = { name = 'exti_heists:client:radialCover', data = { net, 'prone' } } } end
         end
+        if t.kind == 'player' then items[#items + 1] = HC.robItem(t.id) end -- hands up: search him
         return { label = 'الرهينة', icon = 'hands-holding', items = items }
     end
     local h = t.h or {}
@@ -131,6 +137,8 @@ exports('RadialMenu', function()
         items[#items + 1] = { id = 'free', label = 'فك الرباط', icon = 'lock-open', action = 'event', arg = ev('free', t) }
         if h.blind then items[#items + 1] = { id = 'unblind', label = 'انزع الكيس', icon = 'eye', action = 'event', arg = ev('unblind', t) } end
     end
+    -- a tied player (not in a car): search him (never an officer: he uses the police search)
+    if t.kind == 'player' and not cop and not t.inCar then items[#items + 1] = HC.robItem(t.id) end
     return { label = 'الرهينة', icon = 'hands-holding', items = items }
 end)
 
