@@ -11,19 +11,21 @@ function AreKeysJobShared(vehicle, skipNotification)
     local jobProfile = config.sharedKeys[job.name]
     if not jobProfile then return end
 
+    -- EX_Tii: first, is this one of the job's vehicles at all? (before, an off-duty cop got
+    -- "this vehicle is for on-duty staff" on EVERY car, over and over)
+    local isShared = (jobProfile.classes and jobProfile.classes[GetVehicleClass(vehicle)])
+        or (jobProfile.vehicles and jobProfile.vehicles[GetEntityModel(vehicle)])
+    if not isShared then return end
+
     if jobProfile.requireOnDuty and not job.onduty then
-        if not skipNotification then
+        if not skipNotification and GetGameTimer() > (DutyNotifyAt or 0) then
+            DutyNotifyAt = GetGameTimer() + 5000   -- once every 5 seconds at most
             exports.qbx_core:Notify(locale('notify.require_on_duty'), 'error')
         end
         return
     end
 
-    local isSharedVehicleClass = jobProfile.classes
-        and jobProfile.classes[GetVehicleClass(vehicle)]
-
-    return isSharedVehicleClass
-        or (jobProfile.vehicles
-       and jobProfile.vehicles[GetEntityModel(vehicle)])
+    return isShared
 end
 
 ---Checks if player has vehicle keys
