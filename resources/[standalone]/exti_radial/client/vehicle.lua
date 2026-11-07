@@ -229,3 +229,15 @@ RAD.actions.takeKeys = function()
         notify('نظام المفاتيح غير مفعّل', 'error')
     end
 end
+
+-- EX_Tii: /unhook in a tow truck lets go of the car on the hook (GTA's own key is hard to find)
+RegisterCommand('unhook', function()
+    local tow = cache.vehicle
+    if not tow or not IsVehicleModel(tow, `towtruck`) and not IsVehicleModel(tow, `towtruck2`) then
+        return notify('اجلس في شاحنة السحب أولًا', 'error')
+    end
+    local car = GetEntityAttachedToTowTruck(tow)
+    if not car or car == 0 then return notify('لا توجد مركبة على الخطّاف', 'error') end
+    DetachVehicleFromTowTruck(tow, car)
+    notify('أفلتّ المركبة من الخطّاف', 'success')
+end, false)
