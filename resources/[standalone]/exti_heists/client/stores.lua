@@ -28,7 +28,24 @@ AddStateBagChangeHandler('exti_heists:clerkDown', 'global', function(_, _, v) do
 AddStateBagChangeHandler('exti_heists:safes', 'global', function(_, _, v) safeTimers = v or {} end)
 AddStateBagChangeHandler('exti_heists:spots', 'global', function(_, _, v) spots = v or {} end)
 
-local function clerkOf(i) local ok, ped = pcall(function() return exports.exti_shops:Clerk(i) end); return ok and ped or nil end
+local fallback = {}   -- [i] = { ped, at }: the shopkeeper found by looking, if the shops script didn't say
+local function clerkOf(i)
+    local ok, ped = pcall(function() return exports.exti_shops:Clerk(i) end)
+    if ok and ped and ped ~= 0 and DoesEntityExist(ped) then return ped end
+    local s = stores[i]; if not s then return nil end
+    local f = fallback[i]
+    if f and GetGameTimer() - f.at < 1500 then return f.ped end
+    local best, bd
+    local c = vec3(s.clerk.x, s.clerk.y, s.clerk.z)
+    for _, p in ipairs(GetGamePool('CPed')) do
+        if not IsPedAPlayer(p) then
+            local d = #(GetEntityCoords(p) - c)
+            if d < 2.5 and (not bd or d < bd) then best, bd = p, d end
+        end
+    end
+    fallback[i] = { ped = best, at = GetGameTimer() }
+    return best
+end
 local function clerkPos(s) return vec3(s.clerk.x, s.clerk.y, s.clerk.z) end
 -- the till: GTA's own register on the counter next to the clerk (found once it has loaded), else a guess
 local TILLS = { `prop_till_01`, `prop_till_01_dam`, `prop_till_02`, `prop_till_03` }

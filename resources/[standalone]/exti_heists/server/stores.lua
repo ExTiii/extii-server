@@ -80,8 +80,21 @@ end
 
 local function isFirearm(src)
     local ok, w = pcall(function() return exports.ox_inventory:GetCurrentWeapon(src) end)
-    if not ok or type(w) ~= 'table' or not w.name then return false end
-    local okI, item = pcall(function() return exports.ox_inventory:Items(w.name) end)
+    local name = ok and type(w) == 'table' and w.name or nil
+    if not name then
+        -- the inventory didn't say: ask the game which gun is in his hand
+        local hash = GetSelectedPedWeapon(GetPlayerPed(src))
+        if not hash or hash == 0 then return false end
+        hash = hash & 0xFFFFFFFF
+        local okA, all = pcall(function() return exports.ox_inventory:Items() end)
+        if okA and type(all) == 'table' then
+            for n, it in pairs(all) do
+                if type(it) == 'table' and it.weapon and (GetHashKey(n) & 0xFFFFFFFF) == hash then name = n break end
+            end
+        end
+        if not name then return false end
+    end
+    local okI, item = pcall(function() return exports.ox_inventory:Items(name) end)
     return okI and type(item) == 'table' and item.ammoname ~= nil
 end
 
@@ -107,14 +120,23 @@ RegisterNetEvent('exti_heists:server:holdUp', function(i)
     local src = source
     i = math.tointeger(i)
     local st = i and stores[i]
-    if not st or state[i] then return end
-    if not H.near(src, clerkPos(st), 9.0) then return end
-    if H.isCopOnDuty(src) then return end
-    if not isFirearm(src) then return end
+    local function no(why, msg)
+        print(('[exti_heists] hold-up refused: %s (#%s) store %s: %s'):format(GetPlayerName(src) or '?', src, tostring(i), why))
+        if msg then H.notify(src, msg, 'error') end
+    end
+    if not st then return no('not a store that can be robbed') end
+    if state[i] then
+        if state[i].by ~= src then return no('already being robbed', 'هذا المحل يُسرق الآن') end
+        return
+    end
+    if not H.near(src, clerkPos(st), 9.0) then return no('too far', 'اقترب من البائع أكثر') end
+    if H.isCopOnDuty(src) then return no('police on duty', 'أنت شرطي في الخدمة: اخرج من الخدمة لتسرق') end
+    if not isFirearm(src) then return no('no firearm', 'تحتاج سلاحًا ناريًا (مسدس أو رشاش) لتهدّده') end
     local left = H.cooldownLeft(storeKey(i, 'till'))
     if left > 0 then return H.notify(src, ('أُفرغ الصندوق قبل قليل · %s'):format(H.mmss(left)), 'error') end
     local mode = H.modeFor(R.tier)
-    if not mode then return end
+    if not mode then return no('no mode') end
+    print(('[exti_heists] hold-up started: %s (#%s) store %d %s'):format(GetPlayerName(src) or '?', src, i, st.area or ''))
     state[i] = { phase = 'held', by = src, mode = mode, at = H.now(), alarm = false, rolled = false }
     H.setHeat(src, R.tier)
     publish()

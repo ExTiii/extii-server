@@ -85,13 +85,27 @@ local function rotToDir(r)
 end
 function HC.aimingAt(ped, maxDist)
     if not ped or not DoesEntityExist(ped) then return false end
-    if not IsPedArmed(cache.ped, 4) or not IsPlayerFreeAiming(cache.playerId) then return false end
+    if not IsPedArmed(cache.ped, 4) then return false end
+    if not (IsPlayerFreeAiming(cache.playerId) or IsAimCamActive() or IsControlPressed(0, 25)) then return false end
+    -- what GTA itself says you're aiming at
+    local okA, ent = GetEntityPlayerIsFreeAimingAt(cache.playerId)
+    if okA and ent == ped and #(GetEntityCoords(ped) - GetEntityCoords(cache.ped)) <= (maxDist or 12.0) then return true end
+    -- else: the crosshair is on his body (chest or head), seen from the camera
     local cam = GetGameplayCamCoord()
-    local target = GetPedBoneCoords(ped, 24818, 0.0, 0.0, 0.0)   -- upper chest
-    local to = target - cam
-    local dist = #to
-    if dist > (maxDist or 12.0) or dist < 0.5 then return false end
     local dir = rotToDir(GetGameplayCamRot(2))
-    local cos = (to.x * dir.x + to.y * dir.y + to.z * dir.z) / dist
-    return cos > math.cos(math.rad(9.0)) and HasEntityClearLosToEntity(cache.ped, ped, 17)
+    for _, bone in ipairs({ 24818, 31086, 11816 }) do   -- upper chest, head, pelvis
+        local target = GetPedBoneCoords(ped, bone, 0.0, 0.0, 0.0)
+        local to = target - cam
+        local dist = #to
+        if dist <= (maxDist or 12.0) + 3.0 and dist >= 0.5
+            and #(target - GetEntityCoords(cache.ped)) <= (maxDist or 12.0)
+            and (to.x * dir.x + to.y * dir.y + to.z * dir.z) / dist > math.cos(math.rad(12.0)) then
+            -- nothing solid between the camera and him (the counter is lower than his chest)
+            local ray = StartExpensiveSynchronousShapeTestLosProbe(cam.x, cam.y, cam.z, target.x, target.y, target.z, 1 | 16, cache.ped, 7)
+            local _, hit, pos = GetShapeTestResult(ray)
+            if hit ~= 1 and hit ~= true then return true end
+            if #(pos - target) < 0.8 then return true end
+        end
+    end
+    return false
 end
