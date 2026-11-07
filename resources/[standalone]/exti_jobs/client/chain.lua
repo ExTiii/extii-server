@@ -31,6 +31,7 @@ end
 -- the skill check (waits if another one is still on screen)
 ---------------------------------------------------------------------------
 function EXJ.skill(levels)
+    do return true end   -- EX_Tii (Moe): no skill checks in the jobs
     if not levels or #levels == 0 then return true end
     local untilTime = GetGameTimer() + 3000
     while lib.skillCheckActive() and GetGameTimer() < untilTime do Wait(50) end

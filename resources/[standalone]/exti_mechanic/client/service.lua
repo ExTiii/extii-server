@@ -50,6 +50,7 @@ local function skillFree()
 end
 
 local function skill()
+    do return true end   -- EX_Tii (Moe): no skill checks in the jobs, the work is the animation and the progress bar
     for _ = 1, 40 do
         if skillFree() then break end
         Wait(50)
@@ -74,12 +75,7 @@ end
 local function runStep(step)
     local kind, label, n = step[1], step[2], step[3]
     if kind == 'wait' then return wait(label, n) end
-    if kind == 'skill' then
-        lib.showTextUI(label, { position = 'top-center' })
-        local ok = skill()
-        lib.hideTextUI()
-        return ok
-    end
+    if kind == 'skill' then return wait(label, 2.5) end   -- EX_Tii (Moe): no skill check, a short progress bar instead
     return miniGame(kind, label, n, kind == 'scrub')
 end
 
