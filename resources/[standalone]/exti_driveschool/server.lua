@@ -546,3 +546,24 @@ CreateThread(function()
         end
     end
 end)
+
+-- EX_Tii admin panel (F1): give a licence like passing the test, or take it away (exti_admin checks the rights)
+exports('AdminGive', function(src, k, on)
+    k = normKey(k)
+    local p = getPlayer(src)
+    if not p or not k then error('bad licence') end
+    local ds = markNew(p)
+    if on then
+        setLicence(p, k, true)
+        ds[k] = { passed = true, at = os.time() }
+        p.Functions.SetMetaData('driveschool', ds)
+        pcall(function() exports.qbx_idcard:CreateMetaLicense(src, L[k].item) end)
+        notify(src, 'success', ('حصلت على %s'):format(L[k].label))
+    else
+        setLicence(p, k, false)
+        ds[k] = { passed = false }
+        p.Functions.SetMetaData('driveschool', ds)
+        notify(src, 'error', ('سحبت الإدارة %s'):format(L[k].label))
+    end
+    return true
+end)

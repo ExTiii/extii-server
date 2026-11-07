@@ -67,7 +67,7 @@ RegisterNUICallback('do', function(req, cb)
 end)
 
 RegisterNUICallback('fetch', function(req, cb)
-    local name = ({ players = 'exti_admin:players', server = 'exti_admin:server', gangs = 'exti_admin:gangs', logs = 'exti_admin:logs', heist = 'exti_admin:heist', bans = 'exti_admin:bans', staff = 'exti_admin:staff' })[req.what]
+    local name = ({ players = 'exti_admin:players', server = 'exti_admin:server', gangs = 'exti_admin:gangs', logs = 'exti_admin:logs', heist = 'exti_admin:heist', bans = 'exti_admin:bans', staff = 'exti_admin:staff', pinfo = 'exti_admin:pinfo' })[req.what]
     if not name then return cb(false) end
     cb(lib.callback.await(name, false, req.q) or false)
 end)

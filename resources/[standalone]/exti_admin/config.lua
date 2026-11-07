@@ -6,13 +6,27 @@ Config = {}
 -- the key (players can change it in GTA Settings > Key Bindings > FiveM)
 Config.key = 'F1'
 
--- who can do what. "owner" = anyone with group.admin in server.cfg (you).
--- staff you add in the tablet get "admin" or "helper".
+-- EX_Tii (Moe): 5 staff ranks. Each rank can do everything the rank below it can, plus its own list.
+-- "owner" = anyone with group.admin in server.cfg (you), or a staff member you made owner in the panel.
+Config.roleOrder = { 'helper', 'moderator', 'admin', 'senior', 'owner' }
 Config.roles = {
-    helper = { label = 'مساعد', can = { 'view', 'goto', 'bring', 'spectate', 'freeze', 'revive', 'heal', 'kick', 'message', 'reports', 'noclip', 'tp' } },
-    admin  = { label = 'أدمن', can = { 'view', 'goto', 'bring', 'spectate', 'freeze', 'revive', 'heal', 'kick', 'message', 'reports', 'noclip', 'tp',
-                                       'ban', 'money', 'item', 'job', 'gang', 'inventory', 'me', 'car', 'world', 'announce', 'gangs', 'test', 'logs' } },
-    owner  = { label = 'المالك', can = '*' },
+    helper    = { level = 1, label = 'مساعد',     desc = 'انتقال، نوكليب، إنعاش وعلاج، رسائل، البلاغات',
+                  can = { 'view', 'goto', 'tp', 'noclip', 'revive', 'heal', 'message', 'reports' } },
+    moderator = { level = 2, label = 'مشرف',      desc = '+ جلب، مراقبة، تجميد، إنذار، طرد، حظر قصير (حتى 3 أيام)',
+                  can = { 'bring', 'spectate', 'freeze', 'warn', 'kick', 'ban', 'names' } },
+    admin     = { level = 3, label = 'أدمن',      desc = '+ مال وأغراض وسيارات (بحد يومي)، وظائف، عصابة لاعب، الطقس والوقت، إعلانات، التجربة، حظر حتى 30 يومًا',
+                  can = { 'money', 'item', 'car', 'givecar', 'licence', 'job', 'gang', 'world', 'announce', 'me', 'test', 'clearcars' } },
+    senior    = { level = 4, label = 'أدمن أول',  desc = '+ إدارة العصابات، فتح الحقائب وتفريغها، حظر دائم وفك الحظر، السجل، إنعاش الجميع',
+                  can = { 'gangs', 'inventory', 'clearinv', 'unban', 'logs', 'reviveall' } },
+    owner     = { level = 5, label = 'المالك',    desc = 'كل شيء: الطاقم والرتب، إعادة تشغيل الموارد، بلا حدود',
+                  can = '*' },
+}
+-- the longest ban each rank may give, in hours (0 = permanent allowed)
+Config.banMax = { moderator = 72, admin = 720, senior = 0, owner = 0 }
+-- what each rank may hand out in one day (to anyone, themselves included). nil = no limit
+Config.limits = {
+    admin  = { money = 100000, items = 50, kits = 5, cars = 3 },
+    senior = { money = 1000000, items = 500, kits = 30, cars = 15 },
 }
 
 -- resources the tablet will NOT restart (restarting them breaks everyone)

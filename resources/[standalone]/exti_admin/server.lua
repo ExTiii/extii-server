@@ -27,6 +27,8 @@ MySQL.ready(function()
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS `exti_admin_bans` (
         `id` INT AUTO_INCREMENT PRIMARY KEY, `license` VARCHAR(80), `license2` VARCHAR(80), `fivem` VARCHAR(60), `discord` VARCHAR(60),
         `name` VARCHAR(80), `reason` VARCHAR(300), `by` VARCHAR(80), `at` INT, `until` INT, `active` TINYINT NOT NULL DEFAULT 1, KEY (`license`))]])
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `exti_admin_warns` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY, `cid` VARCHAR(60), `license` VARCHAR(80), `name` VARCHAR(80), `reason` VARCHAR(300), `by` VARCHAR(80), `at` INT, KEY (`cid`), KEY (`license`))]])
     for _, r in ipairs(MySQL.query.await('SELECT * FROM `exti_admin_staff`') or {}) do staff[r.license] = { name = r.name, role = r.role } end
 end)
 
@@ -42,14 +44,24 @@ local function roleOf(src)
     local s = staff[license(src) or '']
     return s and Config.roles[s.role] and s.role or nil
 end
+-- every right of a rank = its own list + every list of the ranks below it
+local function rightsSet(r)
+    local role = Config.roles[r]; if not role then return nil end
+    if role.can == '*' then return { ['*'] = true } end
+    local out = {}
+    for _, name in ipairs(Config.roleOrder) do
+        local x = Config.roles[name]
+        if x.level <= role.level and type(x.can) == 'table' then for _, v in ipairs(x.can) do out[v] = true end end
+    end
+    return out
+end
 local function can(src, right)
     local r = roleOf(src); if not r then return false end
-    local c = Config.roles[r].can
-    if c == '*' then return true end
-    for _, v in ipairs(c) do if v == right then return true end end
-    return false
+    local set = rightsSet(r)
+    return set and (set['*'] or set[right]) and true or false
 end
-local RANK = { helper = 1, admin = 2, owner = 3 }
+local RANK = {}
+for name, x in pairs(Config.roles) do RANK[name] = x.level end
 -- staff can't use their powers on someone of the same or higher rank (an admin can't ban another admin)
 local function outranks(src, t)
     if t == src then return true end
@@ -57,11 +69,32 @@ local function outranks(src, t)
 end
 local function rightsOf(src)
     local r = roleOf(src); if not r then return nil end
-    local c = Config.roles[r].can
-    local out = {}
-    if c == '*' then out['*'] = true else for _, v in ipairs(c) do out[v] = true end end
-    return r, out
+    return r, rightsSet(r)
 end
+
+---------------------------------------------------------------------------
+-- daily limits (money, items, kits, cars) per staff member, kept across restarts
+---------------------------------------------------------------------------
+local function limitKey(src, kind) return ('lim:%s:%s:%s'):format(os.date('%Y-%m-%d'), license(src) or tostring(src), kind) end
+local function limitOf(src, kind)
+    local L = Config.limits[roleOf(src) or '']
+    return L and L[kind] or nil
+end
+local function usedToday(src, kind) return GetResourceKvpInt(limitKey(src, kind)) end
+local function leftToday(src, kind)
+    local max = limitOf(src, kind); if not max then return nil end
+    return math.max(0, max - usedToday(src, kind))
+end
+-- true when it fits in today's limit (and counts it), or false + how much is left
+local function spend(src, kind, n)
+    local left = leftToday(src, kind)
+    if left == nil then return true end
+    if n > left then return false, left end
+    SetResourceKvpInt(limitKey(src, kind), usedToday(src, kind) + n)
+    return true
+end
+local LIMIT_WORD = { money = 'المال', items = 'الأغراض', kits = 'عُدد التجربة', cars = 'السيارات المملوكة' }
+local function limitMsg(kind, left) return ('وصلت حدك اليومي من %s (بقي لك اليوم %s)'):format(LIMIT_WORD[kind] or kind, kind == 'money' and ('$' .. left) or tostring(left)) end
 
 ---------------------------------------------------------------------------
 -- log (database + Discord if set: set exti_admin_webhook "https://discord.com/api/webhooks/..."  -- use set, not setr: setr sends it to every player)
@@ -126,6 +159,16 @@ AddEventHandler('playerDropped', function()
     for _, r in pairs(reports) do if r.src == src and r.status == 'open' then r.left = true end end
 end)
 
+-- every car of the dealership (for the search and "give a car")
+CATALOG = {}
+do
+    local src = LoadResourceFile('qbx_vehicleshop', 'config/catalog.lua')
+    local ok, data = pcall(function() return src and load(src, '@qbx_vehicleshop/config/catalog.lua')() end)
+    if ok and type(data) == 'table' then
+        for _, v in ipairs(data.vehicles or {}) do CATALOG[#CATALOG + 1] = { model = v.model, label = ((v.brand and v.brand .. ' ') or '') .. (v.name or v.model), price = v.price } end
+    end
+end
+
 ---------------------------------------------------------------------------
 -- the tablet opens: who am I, what can I do
 ---------------------------------------------------------------------------
@@ -146,8 +189,19 @@ lib.callback.register('exti_admin:open', function(src)
     table.sort(jobs, function(a, b) return a.label < b.label end)
     local gangTypes = {}
     pcall(function() gangTypes = exports.exti_gangs:AdminTypes() end)
-    return { role = role, roleLabel = Config.roles[role].label, rights = rights, me = src, items = items, jobs = jobs, gangTypes = gangTypes,
-             kits = Config.kits, minigames = Config.minigames, cars = Config.cars, weathers = Config.weathers }
+    local roles = {}
+    for _, name in ipairs(Config.roleOrder) do
+        local x = Config.roles[name]
+        roles[#roles + 1] = { id = name, label = x.label, desc = x.desc, level = x.level }
+    end
+    local limits = {}
+    for _, k in ipairs({ 'money', 'items', 'kits', 'cars' }) do
+        local max = limitOf(src, k)
+        if max then limits[k] = { max = max, left = leftToday(src, k) } end
+    end
+    return { role = role, roleLabel = Config.roles[role].label, level = RANK[role], rights = rights, me = src, items = items, jobs = jobs, gangTypes = gangTypes,
+             kits = Config.kits, minigames = Config.minigames, cars = Config.cars, catalog = CATALOG, weathers = Config.weathers,
+             roles = roles, limits = limits, banMax = Config.banMax[role] }
 end)
 
 -- the live lists (the tablet refreshes them while it's open)
@@ -224,7 +278,7 @@ lib.callback.register('exti_admin:staff', function(src)
     for lic, s in pairs(staff) do
         local online
         for _, id in ipairs(GetPlayers()) do if license(tonumber(id)) == lic then online = tonumber(id) end end
-        out[#out + 1] = { license = lic, name = s.name, role = s.role, roleLabel = Config.roles[s.role] and Config.roles[s.role].label or s.role, online = online }
+        out[#out + 1] = { license = lic, name = s.name, role = s.role, roleLabel = Config.roles[s.role] and Config.roles[s.role].label or s.role, level = RANK[s.role] or 0, online = online }
     end
     return out
 end)
@@ -297,6 +351,9 @@ A.ban = { 'ban', function(src, d)
     if t and not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
     if roleOf(t) == 'owner' then return false, 'لا يمكن حظر المالك' end
     local hours = num(d.hours, 0, 24 * 365 * 5) or 0
+    local max = Config.banMax[roleOf(src)]
+    if max == nil then return false, 'ليس لك الحظر' end
+    if max > 0 and (hours == 0 or hours > max) then return false, ('أقصى حظر لرتبتك %d ساعة (الحظر الأطول للأعلى رتبة)'):format(max) end
     local reason = tostring(d.reason or 'مخالفة القوانين'):sub(1, 300)
     local untilT = hours == 0 and 0 or os.time() + hours * 3600
     local id = MySQL.insert.await('INSERT INTO `exti_admin_bans` (`license`, `license2`, `fivem`, `discord`, `name`, `reason`, `by`, `at`, `until`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -306,7 +363,7 @@ A.ban = { 'ban', function(src, d)
     DropPlayer(t, ('حُظرت من EX_Tii Roleplay (%s). السبب: %s · رقم الحظر %s'):format(hours == 0 and 'دائم' or (hours .. ' ساعة'), reason, tostring(id)))
     return true, 'حظرته'
 end }
-A.unban = { 'ban', function(src, d)
+A.unban = { 'unban', function(src, d)
     local id = num(d.ban, 1, 2 ^ 31); if not id then return false end
     MySQL.update.await('UPDATE `exti_admin_bans` SET `active` = 0 WHERE `id` = ?', { id })
     log(src, 'unban', '#' .. id); return true, 'فككت الحظر'
@@ -324,7 +381,10 @@ A.money = { 'money', function(src, d)
     local p = getPlayer(t); if not p then return false, 'اللاعب لم يختر شخصيته بعد' end
     local acc = d.account == 'bank' and 'bank' or 'cash'
     local amount = num(d.amount, -100000000, 100000000); if not amount or amount == 0 then return false, 'اكتب المبلغ' end
-    if amount > 0 then p.Functions.AddMoney(acc, amount, 'admin')
+    if amount > 0 then
+        local okL, left = spend(src, 'money', amount)
+        if not okL then return false, limitMsg('money', left) end
+        p.Functions.AddMoney(acc, amount, 'admin')
     elseif not p.Functions.RemoveMoney(acc, -amount, 'admin') then return false, 'ليس معه هذا المبلغ' end
     log(src, 'money', GetPlayerName(t), ('%s %+d'):format(acc, amount)); return true, 'تم'
 end }
@@ -341,6 +401,8 @@ A.item = { 'item', function(src, d)
     local item = type(d.item) == 'string' and d.item or nil; if not item or not ox:Items(item) then return false, 'غرض غير معروف' end
     local count = num(d.count, 1, 100000) or 1
     if not fits(t, item, count) then return false, 'لا مكان في حقيبته (الوزن أو الخانات)' end
+    local okL, left = spend(src, 'items', count)
+    if not okL then return false, limitMsg('items', left) end
     local ok = ox:AddItem(t, item, count)
     if ok then log(src, 'item', GetPlayerName(t), ('%s × %d'):format(item, count)) end
     return ok and true or false, ok and 'أعطيته' or 'لم ينجح'
@@ -491,6 +553,8 @@ end }
 -- tests (for me)
 A.kit = { 'test', function(src, d)
     local k = Config.kits[num(d.kit, 1, #Config.kits) or 0]; if not k then return false end
+    local okL, left = spend(src, 'kits', 1)
+    if not okL then return false, limitMsg('kits', left) end
     local got, missed = 0, 0
     for _, it in ipairs(k.items) do
         if ox:Items(it[1]) and fits(src, it[1], it[2]) and ox:AddItem(src, it[1], it[2]) then got = got + 1 else missed = missed + 1 end
@@ -538,13 +602,31 @@ end }
 -- staff (owner)
 A.staffadd = { 'staff', function(src, d)
     local t = target(d); if not t then return false, 'اختر لاعبًا' end
-    local role = d.role == 'admin' and 'admin' or 'helper'
+    local role = Config.roles[d.role] and d.role or 'helper'
+    if RANK[role] > RANK[roleOf(src)] then return false, 'لا تستطيع إعطاء رتبة أعلى من رتبتك' end
+    if t == src then return false, 'لا تغيّر رتبتك بنفسك' end
     local lic = license(t); if not lic then return false, 'لا رخصة' end
     staff[lic] = { name = GetPlayerName(t), role = role }
     MySQL.insert('INSERT INTO `exti_admin_staff` (`license`, `name`, `role`, `added_by`, `added_at`) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `role` = VALUES(`role`), `name` = VALUES(`name`)',
         { lic, GetPlayerName(t), role, GetPlayerName(src), os.time() })
     notify(t, ('صرت %s في EX_Tii: اضغط %s لفتح لوحة الإدارة'):format(Config.roles[role].label, Config.key), 'success')
     log(src, 'staff_add', GetPlayerName(t), role); return true, 'أُضيف للطاقم'
+end }
+A.staffrank = { 'staff', function(src, d)
+    local lic = tostring(d.license or ''); if not staff[lic] then return false, 'غير موجود' end
+    local role = Config.roles[d.role] and d.role or nil; if not role then return false end
+    if RANK[role] > RANK[roleOf(src)] then return false, 'لا تستطيع إعطاء رتبة أعلى من رتبتك' end
+    if lic == license(src) then return false, 'لا تغيّر رتبتك بنفسك' end
+    staff[lic].role = role
+    MySQL.update.await('UPDATE `exti_admin_staff` SET `role` = ? WHERE `license` = ?', { role, lic })
+    for _, id in ipairs(GetPlayers()) do
+        local t = tonumber(id)
+        if license(t) == lic then
+            TriggerClientEvent('exti_admin:client:close', t)
+            notify(t, ('رتبتك الآن: %s (اضغط %s)'):format(Config.roles[role].label, Config.key), 'inform')
+        end
+    end
+    log(src, 'staff_rank', staff[lic].name, role); return true, 'تغيّرت الرتبة'
 end }
 A.staffremove = { 'staff', function(src, d)
     local lic = tostring(d.license or ''); if not staff[lic] then return false end
@@ -554,6 +636,96 @@ A.staffremove = { 'staff', function(src, d)
     for _, id in ipairs(GetPlayers()) do if license(tonumber(id)) == lic then TriggerClientEvent('exti_admin:client:close', tonumber(id)) end end
     log(src, 'staff_remove', name); return true, 'أُزيل من الطاقم'
 end }
+
+-- a warning: on his screen now, kept on his record (staff see the count on his card)
+A.warn = { 'warn', function(src, d)
+    local t = target(d); if not t then return false, 'اللاعب غير موجود' end
+    if not outranks(src, t) then return false, 'لا تستطيع هذا على طاقم برتبة مثلك أو أعلى' end
+    local reason = tostring(d.reason or ''):gsub('[%c]', ''):sub(1, 300)
+    if #reason < 3 then return false, 'اكتب سبب الإنذار' end
+    local p = getPlayer(t)
+    MySQL.insert.await('INSERT INTO `exti_admin_warns` (`cid`, `license`, `name`, `reason`, `by`, `at`) VALUES (?, ?, ?, ?, ?, ?)',
+        { p and p.PlayerData.citizenid or nil, license(t), GetPlayerName(t), reason, GetPlayerName(src), os.time() })
+    local n = MySQL.scalar.await('SELECT COUNT(*) FROM `exti_admin_warns` WHERE `license` = ?', { license(t) }) or 1
+    TriggerClientEvent('exti_admin:client:message', t, ('⚠ إنذار من الإدارة (رقم %d): %s'):format(n, reason))
+    log(src, 'warn', GetPlayerName(t), reason); return true, ('أُنذر (إنذاره رقم %d)'):format(n)
+end }
+
+-- a car that is really his (in his garage list, with keys), from the dealership list or any model
+A.givecar = { 'givecar', function(src, d)
+    local t = target(d) or (d.self and src); if not t then return false, 'اللاعب غير موجود' end
+    local p = getPlayer(t); if not p then return false, 'اللاعب لم يختر شخصيته بعد' end
+    local model = tostring(d.model or ''):lower():gsub('[^%w_]', '')
+    if model == '' then return false, 'اختر السيارة' end
+    local okL, left = spend(src, 'cars', 1)
+    if not okL then return false, limitMsg('cars', left) end
+    local ok, id = pcall(function() return exports.qbx_vehicles:CreatePlayerVehicle({ model = model, citizenid = p.PlayerData.citizenid, garage = d.garage or 'ls_legion' }) end)
+    if not ok or not id then return false, 'لم تُعطَ (موديل غير صالح؟)' end
+    notify(t, ('أعطتك الإدارة سيارة (%s): تجدها في مرآب ليجن سكوير'):format(model), 'success')
+    log(src, 'give_car', GetPlayerName(t), model); return true, 'أُعطيت، في مرآب ليجن سكوير'
+end }
+
+-- licences: driving school ones (car / truck / boat / heli) and the weapon licence
+A.licence = { 'licence', function(src, d)
+    local t = target(d) or (d.self and src); if not t then return false, 'اللاعب غير موجود' end
+    local p = getPlayer(t); if not p then return false, 'لا شخصية' end
+    local kind, on = tostring(d.kind or ''), d.on == true
+    if kind == 'weapon' then
+        local lic = p.PlayerData.metadata.licences or {}
+        lic.weapon = on
+        p.Functions.SetMetaData('licences', lic)
+    else
+        if GetResourceState('exti_driveschool') ~= 'started' then return false, 'مدرسة القيادة لا تعمل' end
+        local okG = pcall(function() exports.exti_driveschool:AdminGive(t, kind, on) end)
+        if not okG then
+            -- (older driving school: give through its own command logic)
+            local okS = pcall(function() exports.exti_driveschool:SetLicence(t, kind, on) end)
+            if not okS then return false, 'لم ينجح' end
+        end
+    end
+    log(src, 'licence', GetPlayerName(t), ('%s %s'):format(kind, on and 'on' or 'off')); return true, on and 'أُعطي الرخصة' or 'سُحبت الرخصة'
+end }
+
+-- every empty vehicle around you goes away (players' own cars go back to their garage list as "out")
+A.clearcars = { 'clearcars', function(src, d)
+    local r = num(d.radius, 10, 300) or 50
+    local me = GetEntityCoords(GetPlayerPed(src))
+    local n = 0
+    for _, veh in ipairs(GetAllVehicles()) do
+        if #(GetEntityCoords(veh) - me) <= r then
+            local busy = false
+            for seat = -1, 7 do if GetPedInVehicleSeat(veh, seat) ~= 0 then busy = true break end end
+            if not busy then DeleteEntity(veh); n = n + 1 end
+        end
+    end
+    log(src, 'clear_cars', tostring(r) .. 'm', tostring(n)); return true, ('حُذفت %d مركبة فارغة'):format(n)
+end }
+
+A.reviveall = { 'reviveall', function(src)
+    local n = 0
+    for _, id in ipairs(GetPlayers()) do
+        local t = tonumber(id)
+        pcall(function() exports.qbx_medical:Revive(t) end)
+        pcall(function() exports.exti_medical:ClearWounds(t) end)
+        TriggerClientEvent('exti_admin:client:heal', t)
+        n = n + 1
+    end
+    log(src, 'revive_all', tostring(n)); return true, ('أُنعش %d لاعب'):format(n)
+end }
+
+-- a player's card: warnings, cars, licences
+lib.callback.register('exti_admin:pinfo', function(src, id)
+    if not can(src, 'view') then return false end
+    local t = math.tointeger(tonumber(id)); if not t or GetPlayerPing(t) <= 0 then return false end
+    local p = getPlayer(t)
+    local warns = MySQL.query.await('SELECT `reason`, `by`, `at` FROM `exti_admin_warns` WHERE `license` = ? ORDER BY `id` DESC LIMIT 20', { license(t) }) or {}
+    local cars = {}
+    if p then
+        cars = MySQL.query.await('SELECT `vehicle`, `plate`, `state`, `garage` FROM `player_vehicles` WHERE `citizenid` = ? LIMIT 30', { p.PlayerData.citizenid }) or {}
+    end
+    local lic = p and p.PlayerData.metadata and p.PlayerData.metadata.licences or {}
+    return { warns = warns, cars = cars, licences = { driver = lic.driver == true, weapon = lic.weapon == true } }
+end)
 
 lib.callback.register('exti_admin:do', function(src, action, d)
     local a = A[action]
@@ -567,7 +739,7 @@ end)
 
 -- the client asks before using powers on itself (noclip, god, invisible...): logged, checked
 lib.callback.register('exti_admin:self', function(src, what, on)
-    local need = ({ noclip = 'noclip', tp = 'tp', god = 'me', invisible = 'me', fix = 'car', delete = 'car', names = 'me' })[what]
+    local need = ({ noclip = 'noclip', tp = 'tp', god = 'me', invisible = 'me', fix = 'car', delete = 'car', names = 'names' })[what]
     if not need or not can(src, need) then return false end
     log(src, 'self_' .. what, nil, on ~= nil and tostring(on) or nil)
     return true
