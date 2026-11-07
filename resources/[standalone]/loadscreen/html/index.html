@@ -99,7 +99,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #050505; col
 <body>
 <div id="film"><video id="video" src="./ex/city.webm" autoplay muted loop playsinline disablepictureinpicture></video></div>
 <div class="grain"></div>
-<audio id="music" src="./ex/theme.ogg" loop preload="auto"></audio>
 
 <div id="intro"><div class="t">
     <img src="./assets/logo.png" alt="">
@@ -198,20 +197,21 @@ requestAnimationFrame(() => intro.classList.add('go'));
 setTimeout(() => { intro.classList.add('done'); document.querySelectorAll('.ui').forEach((e) => e.classList.add('on')); }, 3000);
 
 // ---------------------------------------------------------------- music (on by default, M or the button to mute, remembered)
-const music = $('music');
+// (Moe: the film's own sound, not a separate track)
+const music = $('video');
 let muted = false;
 try { muted = localStorage.getItem('exti_ls_muted') === '1'; } catch (e) {}
 music.volume = 0;
 function fadeTo(v, ms) {
     const from = music.volume, t0 = performance.now();
-    const step = (t) => { const k = Math.min(1, (t - t0) / ms); music.volume = Math.max(0, Math.min(1, from + (v - from) * k)); if (k < 1) requestAnimationFrame(step); else if (v === 0) music.pause(); };
+    const step = (t) => { const k = Math.min(1, (t - t0) / ms); music.volume = Math.max(0, Math.min(1, from + (v - from) * k)); if (k < 1) requestAnimationFrame(step); else if (v === 0) music.muted = true; };
     requestAnimationFrame(step);
 }
 function applySound() {
     $('sound').classList.toggle('muted', muted);
     $('soundTxt').textContent = muted ? 'الموسيقى متوقفة' : 'الموسيقى';
     if (muted) fadeTo(0, 400);
-    else { const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(0.32, 2500); }
+    else { music.muted = false; const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(0.6, 2500); }
 }
 function toggle() { muted = !muted; try { localStorage.setItem('exti_ls_muted', muted ? '1' : '0'); } catch (e) {} applySound(); }
 $('sound').addEventListener('click', toggle);
