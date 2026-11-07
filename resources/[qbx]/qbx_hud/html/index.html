@@ -1,0 +1,284 @@
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta id="viewport" name="viewport" content ="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" type="text/css" href="styles.css"/>
+        <link rel="stylesheet" type="text/css" href="responsive.css"/>
+        <link rel="stylesheet" type="text/css" href="kit.css"/>
+        <link rel="stylesheet" type="text/css" href="kit-hud.css"/>
+        <link href="https://cdn.jsdelivr.net/npm/quasar@2.1.0/dist/quasar.prod.css" rel="stylesheet" type="text/css"/>
+        <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet" type="text/css"/>
+        <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.13.0/css/all.css"/>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/quasar@2.1.0/dist/quasar.umd.prod.js" defer></script>
+        <script src="app.js" defer></script>
+        <style>
+            /* numbers under the icons inside the HUD circles */
+            .hud-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; gap: 2px; }
+            .hud-num { font-family: Roboto, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+            .hud-word { font-family: Tahoma, 'Segoe UI', Arial, sans-serif; font-size: 9px; margin-top: -2px; font-weight: 700; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+        </style>
+    </head>
+    <body>
+        <div id="baseplate-container" v-show="show">
+            <div v-if="showStreets" class="street-container">
+                <div class="street2">{{street2}}</div>
+                <div class="street1">{{street1}}</div>
+            </div>
+            <div class="baseplate" v-show="show">
+                <div v-if="showPointer" class="pointer">˅</div>
+                <div v-if="showDegrees" class="degrees"></div>
+                    <svg class="bezel">
+                        <rect width="3" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="20" x="-90"/>
+                        <rect width="3" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="9" x="-45"/>
+                        <rect width="4.5" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="20" x="0"/>
+                        <rect width="3" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="9" x="45"/>
+                        <rect width="4.5" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="20" x="90"/>
+                        <rect width="3" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="9" x="135"/>
+                        <rect width="4.5" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="20" x="180"/>
+                        <rect width="3" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="9" x="225"/>
+                        <rect width="4.5" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="20" x="270"/>
+                        <rect width="3" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="9" x="315"/>
+                        <rect width="4.5" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="20" x="360"/>
+                        <rect width="3" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="9" x="405"/>
+                        <rect width="3" stroke="black" fill="white" stroke-width="0.5" stroke-opacity="0.6" v-if="showCompass" height="20" x="450"/>
+                    </svg>
+            
+                    <svg class="bearing">
+                        <text v-if="showCompass" x="0" y="1.5" dominant-baseline="middle" text-anchor="middle" fill="#e8b547">ش</text>
+                        <text v-if="showCompass" x="360" y="1.5" dominant-baseline="middle" text-anchor="middle" fill="#e8b547">ش</text>
+                        <text style="font-size: 1.4vh!important; font-weight: 800!important;" v-if="showCompass" x="315" y="-11" dominant-baseline="middle" text-anchor="middle" fill="white">ش.غ</text>
+                        <text style="font-size: 1.4vh!important; font-weight: 800!important;" v-if="showCompass" x="-45" y="-11" dominant-baseline="middle" text-anchor="middle" fill="white">ش.غ</text>
+                        <text style="font-size: 1.4vh!important; font-weight: 800!important;" v-if="showCompass" x="45" y="-11" dominant-baseline="middle" text-anchor="middle" fill="white">ش.ق</text>
+                        <text style="font-size: 1.4vh!important; font-weight: 800!important;" v-if="showCompass" x="405" y="-11" dominant-baseline="middle" text-anchor="middle" fill="white">ش.ق</text>
+                        <text v-if="showCompass" x="90" y="1.5" dominant-baseline="middle" text-anchor="middle" fill="white">ق</text>
+                        <text style="font-size: 1.4vh!important; font-weight: 800!important;" v-if="showCompass" x="135" y="-11" dominant-baseline="middle" text-anchor="middle" fill="white">ج.ق</text>
+                        <text v-if="showCompass" x="180" y="1.5" dominant-baseline="middle" text-anchor="middle" fill="white">ج</text>
+                        <text style="font-size: 1.4vh!important; font-weight: 800!important;" v-if="showCompass" x="225" y="-11" dominant-baseline="middle" text-anchor="middle" fill="white">ج.غ</text>
+                        <text v-if="showCompass" x="270" y="1.5" dominant-baseline="middle" text-anchor="middle" fill="white">غ</text>
+                    </svg>
+                </div>
+            </div>
+        <div id="openmenu">
+            <div id="menu">
+                <q-splitter v-model="splitterModel" style="height: 50vh;">
+                    <template v-slot:before>
+                        <q-tabs v-model="tab" active-bg-color="active-tab" inline-label indicator-color="transparent" vertical class="text-tabcolor bg-panel">
+                            <q-tab name="hud" icon="view_list" label="الواجهة" style="height: 5.5vh; padding-left: 1vh; justify-content: end;"></q-tab>
+                        </q-tabs>
+                    </template>
+                    <template v-slot:after>
+                        <q-tab-panels v-model="tab" animated swipeable vertical transition-prev="jump-up" transition-next="jump-up" class="bg-active-tab">
+                            <q-tab-panel name="hud">
+                                <div class="q-mb-md">
+                                    <div class="text-h6 q-mb-md">إعادة ضبط الواجهة <img class="brand-logo" align="right" src="./brand-logo.svg"></img></div>
+                                    <div class="q-pa-md q-gutter-sm">
+                                        <q-btn v-on:click="resetStorage($event)" :loading="progress[0].loading" :percentage="progress[0].percentage" text-color="textbutton" color="bgbutton" @click="startComputing(0)" style="width: 150px"> إعادة الإعدادات
+                                        <template v-slot:loading> <q-spinner-gears class="on-left"></q-spinner-gears> جارٍ الضبط... </template></q-btn>
+                                        <div class="text-h7 q-mb-md">لإرجاع إعداداتك إلى الوضع الافتراضي اضغط هذا الزر. <br> (يجب أن تخرج وتدخل من جديد حتى تظهر التغييرات في القائمة)</div>
+                                        <q-btn v-on:click="restartHud($event)" :loading="progress[1].loading" :percentage="progress[1].percentage" text-color="textbutton" color="bgbutton" @click="startComputing(1)" style="width: 150px"> إعادة تشغيل الواجهة
+                                        <template v-slot:loading> <q-spinner-gears class="on-left"></q-spinner-gears> جارٍ الضبط... </template></q-btn>
+                                        <div class="text-h7 q-mb-md">إذا حدث خلل في الواجهة أعد تشغيلها من هنا، أو اكتب /resethud</div>
+                                    </div>
+                                    <hr>
+                                    <div class="text-h6 q-mb-md">الخيارات</div>
+                                    <div class="text-h7">
+                                        <q-item borderless tag="label" v-ripple>
+                                            <q-item-section avatar>
+                                                <q-checkbox v-model="isOutMapChecked" v-on:click="showOutMap($event)" color="checkbox" val="1"></q-checkbox>
+                                            </q-item-section>
+                                            <q-item-section>
+                                                <q-item-label>إظهار الخريطة المصغرة داخل المركبة فقط</q-item-label>
+                                                <q-item-label class="text-h7" caption>عند إلغاء هذا الخيار تبقى الخريطة المصغرة ظاهرة دائمًا</q-item-label>
+                                            </q-item-section>
+                                        </q-item>
+                                        <q-item borderless tag="label" v-ripple>
+                                            <q-item-section avatar>
+                                                <q-checkbox v-model="isOutCompassChecked" v-on:click="showOutCompass($event)" color="checkbox" val="2"></q-checkbox>
+                                            </q-item-section>
+                                            <q-item-section>
+                                                <q-item-label>إظهار البوصلة داخل المركبة فقط</q-item-label>
+                                                <q-item-label class="text-h7" caption>عند إلغاء هذا الخيار تبقى البوصلة ظاهرة دائمًا</q-item-label>
+                                            </q-item-section>
+                                        </q-item>
+                                        <q-item borderless tag="label" v-ripple>
+                                            <q-item-section avatar>
+                                                <q-checkbox v-model="isCompassFollowChecked" v-on:click="showFollowCompass($event)" color="checkbox" val="3"></q-checkbox>
+                                            </q-item-section>
+                                            <q-item-section>
+                                                <q-item-label>البوصلة تتبع الكاميرا</q-item-label>
+                                                <q-item-label class="text-h7" caption>عند إلغاء هذا الخيار لن تدور البوصلة مع حركة الفأرة</q-item-label>
+                                            </q-item-section>
+                                        </q-item>
+                                    </div>
+                                    <hr>
+                                    <div class="text-h6 q-mb-md">الإشعارات</div>
+                                    <div class="text-h7">
+                                        <q-checkbox v-on:click="showMapNotif($event)" label='إشعارات الخريطة' v-model="isMapNotifChecked" color="checkbox" val="7" style="display: flex;"></q-checkbox>
+                                        <q-checkbox v-on:click="showFuelAlert($event)" label='تنبيه انخفاض الوقود' v-model="isLowFuelChecked" color="checkbox" val="8" style="display: flex;"></q-checkbox>
+                                        <q-checkbox v-on:click="showCinematicNotif($event)" label='إشعارات الوضع السينمائي' v-model="isCinematicNotifChecked" color="checkbox" val="9" style="display: flex;"></q-checkbox>
+                                    </div>
+                                </div>                        
+                                <hr>
+                                <div class="text-h6 q-mb-md">الحالة</div>
+                                <div class="text-h7">
+                                    <q-checkbox v-on:click="dynamicOxygen($event)" label='إخفاء الأكسجين عندما يكون ممتلئًا' v-model="isDynamicOxygenChecked" color="checkbox" val="15" style="display: flex;"></q-checkbox>
+                                </div>
+                                <hr>
+                                <div class="text-h6 q-mb-md">المركبة</div>
+                                <div class="text-h7">
+                                    <q-toggle v-on:click="changeFPS($event)" size="lg" keep-color icon-color="toggleicons" color="checkbox" :label="`عداد السرعة: ${isChangeFPSChecked === 'Optimized' ? 'محسّن' : 'متزامن'}`" unchecked-icon="60fps" false-value="Synced" true-value="Optimized" checked-icon="30fps" v-model="isChangeFPSChecked"></q-toggle>
+                                    <div class="text-h7 q-mb-md-d">الوضع المتزامن يجعل عداد السرعة يتحدث لحظيًا، لكنه أثقل على جهازك. الوضع المحسّن أخف.</div>
+                                    <q-toggle v-on:click="ToggleMapShape($event)" size="lg" keep-color icon-color="toggleicons" color="checkbox" :label="`شكل الخريطة: ${isToggleMapShapeChecked === 'square' ? 'مربع' : 'دائري'}`" unchecked-icon="radio_button_unchecked" false-value="circle" true-value="square" checked-icon="check_box_outline_blank" v-model="isToggleMapShapeChecked"></q-toggle>
+                                    <div class="text-h7 q-mb-md-d">اختر شكل الخريطة المصغرة: مربع أو دائري.</div>
+                                    <q-checkbox v-on:click="HideMap($event)" label='إظهار الخريطة المصغرة' v-model="isHideMapChecked" color="checkbox" val="15" style="display: flex;"></q-checkbox>
+                                    <q-checkbox v-on:click="ToggleMapBorders($event)" label='إظهار حدود الخريطة المصغرة' v-model="isToggleMapBordersChecked" color="checkbox" val="16" style="display: flex;"></q-checkbox>
+                                    <q-checkbox v-on:click="dynamicEngine($event)" label='إخفاء حالة المحرك عندما يكون سليمًا' v-model="isDynamicEngineChecked" color="checkbox" val="17" style="display: flex;"></q-checkbox>
+                                    <q-checkbox v-on:click="dynamicNitro($event)" label='إخفاء النيترو عندما يكون فارغًا' v-model="isDynamicNitroChecked" color="checkbox" val="18" style="display: flex;"></q-checkbox>
+                                </div>
+                                <hr>
+                                <div class="text-h6 q-mb-md">البوصلة</div>
+                                <div class="text-h7">
+                                    <q-toggle v-on:click="changeCompassFPS($event)" size="lg" keep-color icon-color="toggleicons" color="checkbox" :label="`البوصلة: ${isChangeCompassFPSChecked === 'Optimized' ? 'محسّن' : 'متزامن'}`" unchecked-icon="60fps" false-value="Synced" true-value="Optimized" checked-icon="30fps" v-model="isChangeCompassFPSChecked"></q-toggle>
+                                    <div class="text-h7 q-mb-md-d">الوضع المتزامن يجعل البوصلة تتحدث لحظيًا، لكنه أثقل على جهازك. الوضع المحسّن أخف.</div>
+                                    <q-item borderless tag="label" v-ripple>
+                                        <q-item-section avatar>
+                                            <q-checkbox v-on:click="showCompassBase($event)" v-model="isShowCompassChecked" color="checkbox" val="19"></q-checkbox>
+                                        </q-item-section>
+                                        <q-item-section >
+                                            <q-item-label>إظهار البوصلة</q-item-label>
+                                            <q-item-label class="text-h7" caption>عند إلغاء هذا الخيار تختفي البوصلة</q-item-label>
+                                        </q-item-section>
+                                    </q-item>
+                                    <q-item borderless tag="label" v-ripple>
+                                        <q-item-section avatar>
+                                            <q-checkbox v-on:click="showStreetsNames($event)" v-model="isShowStreetsChecked" color="checkbox" val="20"></q-checkbox>
+                                        </q-item-section>
+                                        <q-item-section>
+                                            <q-item-label>إظهار أسماء الشوارع</q-item-label>
+                                            <q-item-label class="text-h7" caption>عند إلغاء هذا الخيار تختفي أسماء الشوارع والمناطق</q-item-label>
+                                        </q-item-section>
+                                    </q-item>
+                                    <q-item borderless tag="label" v-ripple>
+                                        <q-item-section avatar>
+                                            <q-checkbox v-on:click="showPointerIndex($event)" v-model="isPointerShowChecked" color="checkbox" val="21"></q-checkbox>
+                                        </q-item-section>
+                                        <q-item-section>
+                                            <q-item-label>إظهار مؤشر البوصلة</q-item-label>
+                                            <q-item-label class="text-h7" caption>عند إلغاء هذا الخيار يختفي المؤشر الذي يحدد اتجاهك بدقة</q-item-label>
+                                        </q-item-section>
+                                    </q-item>
+                                    <q-item borderless tag="label" v-ripple>
+                                        <q-item-section avatar>
+                                            <q-checkbox v-on:click="showDegreesNum($event)" v-model="isDegreesShowChecked" color="checkbox" val="22"></q-checkbox>
+                                        </q-item-section>
+                                        <q-item-section>
+                                            <q-item-label>إظهار درجات البوصلة</q-item-label>
+                                            <q-item-label class="text-h7" caption>عند إلغاء هذا الخيار تختفي درجة اتجاهك</q-item-label>
+                                        </q-item-section>
+                                    </q-item>
+                                </div>
+                                <hr>
+                                <div class="text-h6 q-mb-md">الوضع السينمائي</div>
+                                <div class="text-h7">
+                                    <q-checkbox v-on:click="cinematicMode($event)" label='مفعّل' v-model="isCineamticModeChecked" color="checkbox" val="23" style="display: flex;"></q-checkbox>
+                                </div>
+                                <br>
+                            </q-tab-panel>
+                        </q-tab-panels>
+                    </template>
+                </q-splitter>
+            </div>
+        </div>
+        <div id="main-container">
+            <div id="money-container">
+                <div class="kh-money-wrap" v-show="hudShown">
+                    <div class="kh-money" v-if="showCash">
+                        <span class="kh-money-ico"><i class="fas fa-wallet"></i></span>
+                        <span class="kh-money-label">نقدًا</span>
+                        <span class="kh-money-amt">{{ fmt(cash) }}</span>
+                    </div>
+                    <div class="kh-money" v-if="showBank">
+                        <span class="kh-money-ico"><i class="fas fa-university"></i></span>
+                        <span class="kh-money-label">البنك</span>
+                        <span class="kh-money-amt">{{ fmt(bank) }}</span>
+                    </div>
+                    <div class="kh-money-change" v-if="showUpdate" :class="plus ? 'up' : 'down'">{{ (plus ? '+' : '-') + fmt(amount) }}</div>
+                </div>
+            </div>
+            <div id="ui-container">
+                <div id="playerHud" v-show="show" :class="{ 'kh-hidden': !show }">
+                    <div class="kh-card kh-status">
+                        <div class="kh-chips" v-if="showParachute || showDev">
+                            <span class="kh-chip" v-if="showParachute"><i class="fas fa-parachute-box"></i>مظلة</span>
+                            <span class="kh-chip dev" v-if="showDev"><i class="fas fa-terminal"></i>وضع المطور</span>
+                        </div>
+                        <div class="kh-row2" v-for="bar in extraRows" :key="bar.key">
+                            <i class="kh-ico2" :class="bar.icon" :style="{color: bar.iconColor}"></i>
+                            <span class="kh-bar2" :style="{background: bar.track}"><b :style="{width: bar.value + '%', background: bar.color}"></b></span>
+                        </div>
+                        <!-- EX_Tii: voice (sound) indicator removed on request -->
+                        <div class="kh-row2" v-for="bar in bars" :key="bar.key">
+                            <i class="kh-ico2" :class="bar.icon" :style="{color: bar.iconColor}"></i>
+                            <span class="kh-bar2" :style="{background: bar.track}"><b :style="{width: bar.value + '%', background: bar.color}"></b></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="veh-container">
+                <div v-show="show">
+                    <div class="kh-veh2">
+                        <div class="kh-small">
+                            <div class="kh-gauge-sm">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="trk" cx="50" cy="50" r="40" transform="rotate(45 50 50)" :style="smallArc(100, 'rgba(255,255,255,0.18)')"></circle>
+                                    <circle class="val" cx="50" cy="50" r="40" transform="rotate(45 50 50)" :style="smallArc(engine, engineColor)"></circle>
+                                </svg>
+                                <i class="fas fa-oil-can" :style="{color: engineColor}"></i>
+                            </div>
+                            <div class="kh-gauge-sm">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="trk" cx="50" cy="50" r="40" transform="rotate(45 50 50)" :style="smallArc(100, 'rgba(255,255,255,0.18)')"></circle>
+                                    <circle class="val" cx="50" cy="50" r="40" transform="rotate(45 50 50)" :style="smallArc(fuelPct, fuelKitColor)"></circle>
+                                </svg>
+                                <i class="fas fa-gas-pump" :style="{color: fuelKitColor}"></i>
+                            </div>
+                            <div class="kh-gauge-sm" v-if="nos > 0">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="trk" cx="50" cy="50" r="40" transform="rotate(45 50 50)" :style="smallArc(100, 'rgba(255,255,255,0.18)')"></circle>
+                                    <circle class="val" cx="50" cy="50" r="40" transform="rotate(45 50 50)" :style="smallArc(nos, nitroActive ? '#ff3d7f' : '#ff8fb1')"></circle>
+                                </svg>
+                                <i class="fas fa-meteor" :style="{color: nitroActive ? '#ff3d7f' : '#ff8fb1'}"></i>
+                            </div>
+                        </div>
+                        <div class="kh-ring">
+                            <svg viewBox="0 0 100 100">
+                                <circle class="trk" cx="50" cy="50" r="44" transform="rotate(135 50 50)" :style="bigArc(1)"></circle>
+                                <circle class="val" cx="50" cy="50" r="44" transform="rotate(135 50 50)" :style="bigArc(speedPct)"></circle>
+                            </svg>
+                            <div class="kh-ring-in">
+                                <span class="kh-gear">{{ gear }}</span>
+                                <span class="kh-spd">{{ speed }}</span>
+                                <span class="kh-unit">كم/س</span>
+                                <span class="kh-odo" v-if="!showAltitude">{{ odoText }}<b>كم</b></span>
+                                <span class="kh-odo" v-else>{{ altitude }}<b>م</b></span>
+                            </div>
+                            <div class="kh-flags">
+                                <i v-if="showSeatbelt" :class="seatbelt ? 'fas fa-user-check' : 'fas fa-user-slash'" :style="{color: seatbelt ? '#3ddc97' : '#ff5f5f'}"></i>
+                                <i class="fas fa-tachometer-alt" :style="{color: cruise ? '#e8b547' : 'rgba(255,255,255,0.28)'}"></i>
+                                <i v-if="harness" class="fas fa-user-shield" style="color: #e8b547"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border">
+                        <div class="square" v-if="showSquare"></div>
+                    </div>
+                    <div class="border">
+                        <div class="circle" v-if="showCircle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
