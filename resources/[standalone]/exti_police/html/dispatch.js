@@ -55,7 +55,7 @@
             const where = [c.street, c.area].filter(Boolean).join(' · ') || '—';
             const status = c.mine ? `<span class="dp-taken mine">${svg('info', 13)} استلمته · الطريق على الخريطة</span>`
                 : c.takenBy ? `<span class="dp-taken">${svg('info', 13)} استلمه ${esc(c.takenBy)}</span>`
-                : '<span class="dp-key"><kbd>G</kbd> استلم البلاغ</span>';
+                : '<span class="dp-key"><kbd>G</kbd> استلم البلاغ</span><span class="dp-key dim"><kbd>J</kbd> أخفِه</span>';
             return `<div class="dp-card ${c.urgent ? 'urgent' : ''} ${fresh ? 'in' : ''} ${c.focus ? 'focus' : ''}">
                 <div class="dp-head"><span class="dp-code">${esc(c.code)}</span><b class="dp-title">${svg(c.icon, 16)}${esc(c.label)}</b><span class="dp-id">#${c.id}</span></div>
                 <div class="dp-row">${svg('pin')}<span class="ltr">${esc(where)}</span></div>
