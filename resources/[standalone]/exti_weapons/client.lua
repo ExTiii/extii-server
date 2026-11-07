@@ -113,3 +113,14 @@ CreateThread(function()
         end
     end
 end)
+
+-- EX_Tii (Moe): no aim assist. GTA's "assisted aim" snaps the gun to the nearest person, even one lying
+-- on the ground, so the aim jumps down like an aimbot. Everyone uses free aim, and the soft lock-on is off.
+CreateThread(function()
+    while true do
+        SetPlayerTargetingMode(3)                 -- free aim
+        SetPlayerLockon(PlayerId(), false)        -- no lock-on to people
+        SetPlayerLockonRangeOverride(PlayerId(), 0.0)
+        Wait(2000)
+    end
+end)
