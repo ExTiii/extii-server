@@ -338,6 +338,10 @@ exports('RadialMenu', function()
         items[#items + 1] = { id = 'duty', label = 'ابدأ الدوام من المركز', icon = 'shield-halved', disabled = true }
         return { label = 'الشرطة', icon = 'handcuffs', items = items }
     end
+    -- EX_Tii (Moe): impound the car next to you (nobody needs to be there)
+    if closestVehicle() then
+        items[#items + 1] = { id = 'impound', label = 'حجز المركبة', icon = 'truck-pickup', action = 'event', arg = { name = 'exti_police:client:impound' } }
+    end
     local target, targetPed = closestPlayer(S.reach)
     local escorting = LocalPlayer.state.escorting
     if type(escorting) == 'number' then
@@ -387,4 +391,37 @@ AddEventHandler('onResourceStop', function(resource)
         phoneOff(false)
     end
     if escortedBy then DetachEntity(cache.ped, true, false) end
+end)
+
+---------------------------------------------------------------------------
+-- EX_Tii: impound the vehicle next to you: the fee the owner pays at the impound lot, and why
+---------------------------------------------------------------------------
+local IMPOUND_ERR = {
+    vehicle = 'لا توجد مركبة قريبة', occupied = 'أنزل من في المركبة أولًا', fleet = 'هذه مركبة من أسطول الشرطة',
+    kind = 'لا يمكن حجز القوارب والطائرات من هنا', reason = 'اكتب سبب الحجز', amount = 'اختر رسوم الإفراج',
+}
+AddEventHandler('exti_police:client:impound', function()
+    local veh = closestVehicle()
+    if not veh then return POL.notify('error', IMPOUND_ERR.vehicle) end
+    local plate = GetVehicleNumberPlateText(veh):match('^%s*(.-)%s*$')
+    local input = lib.inputDialog(('حجز المركبة %s'):format(plate), {
+        { type = 'select', label = 'رسوم الإفراج (يدفعها المالك في ساحة الحجز)', required = true, default = '1000',
+          options = { { value = '500', label = '500$' }, { value = '1000', label = '1,000$' }, { value = '2500', label = '2,500$' }, { value = '5000', label = '5,000$' } } },
+        { type = 'input', label = 'سبب الحجز', placeholder = 'مثال: وقوف مخالف، مركبة مستعملة في جريمة', required = true, min = 3, max = 120 },
+    })
+    if not input then return end
+    TaskTurnPedToFaceEntity(cache.ped, veh, 600)
+    local done = lib.progressCircle({
+        duration = 6000, label = 'تتصل بشركة السحب...', position = 'bottom', canCancel = true,
+        disable = { move = true, car = true, combat = true },
+        anim = { dict = 'random@arrests', clip = 'generic_radio_chatter', flag = 49 },
+    })
+    if not done then return end
+    if not DoesEntityExist(veh) then return POL.notify('error', IMPOUND_ERR.vehicle) end
+    local ok, err = lib.callback.await('exti_police:server:impound', false, NetworkGetNetworkIdFromEntity(veh), tonumber(input[1]), input[2])
+    if not ok then
+        if IMPOUND_ERR[err] then return POL.notify('error', IMPOUND_ERR[err]) end
+        return POL.error(err)
+    end
+    POL.notify('success', ('حُجزت المركبة %s ونُقلت إلى ساحة الحجز'):format(err.plate))
 end)

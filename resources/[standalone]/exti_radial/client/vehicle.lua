@@ -111,6 +111,7 @@ function RAD.vehicleMenu()
         end
     end
     items[#items + 1] = { id = 'keys', label = 'إعطاء المفتاح', icon = 'key', action = 'giveKeys' }
+    items[#items + 1] = { id = 'takekeys', label = 'استرجاع المفاتيح', icon = 'key', action = 'takeKeys' }
     return items
 end
 
@@ -210,5 +211,21 @@ RAD.actions.giveKeys = function()
         notify('ليس معك مفتاح هذه المركبة', 'error')
     elseif err == 'nobody' then
         notify('لا يوجد أحد قريب منك', 'error')
+    end
+end
+
+RAD.actions.takeKeys = function()
+    RAD.close()
+    local ok, err = lib.callback.await('exti_radial:server:takeKeys', false)
+    if ok then
+        notify(err and err > 1 and ('استرجعت %d مفاتيح لمركبتك'):format(err) or 'استرجعت مفتاح مركبتك', 'success')
+    elseif err == 'vehicle' then
+        notify('لا توجد مركبة قريبة', 'error')
+    elseif err == 'owner' then
+        notify('هذه المركبة ليست ملكك', 'error')
+    elseif err == 'nobody' then
+        notify('لم تعطِ مفتاح هذه المركبة لأحد', 'error')
+    elseif err == 'nokeys' then
+        notify('نظام المفاتيح غير مفعّل', 'error')
     end
 end

@@ -25,8 +25,8 @@ lib.callback.register('exti_radial:server:giveKeys', function(source)
     local coords = GetEntityCoords(ped)
     local vehicle = lib.getClosestVehicle(coords, Config.vehicleReach)
     if not vehicle then return false, 'vehicle' end
-    local hasKeys = true
-    pcall(function() hasKeys = exports.qbx_vehiclekeys:HasKeys(source, vehicle) end)
+    local hasKeys = false   -- (EX_Tii: no answer from the key system = no key)
+    pcall(function() hasKeys = exports.qbx_vehiclekeys:HasKeys(source, vehicle) == true end)
     if not hasKeys then return false, 'keys' end
     -- in a car: everyone inside gets a key; outside: the closest person within 3 m
     local given = false
@@ -52,4 +52,32 @@ lib.callback.register('exti_radial:server:giveKeys', function(source)
     end
     if not given then return false, 'nobody' end
     return true
+end)
+
+-- EX_Tii (Moe): the owner takes back every key of his car he gave out (from everyone who has one)
+lib.callback.register('exti_radial:server:takeKeys', function(source)
+    local player = getPlayer(source)
+    if not player then return false end
+    if GetResourceState('qbx_vehiclekeys') ~= 'started' then return false, 'nokeys' end
+    local ped = GetPlayerPed(source)
+    local vehicle = lib.getClosestVehicle(GetEntityCoords(ped), Config.vehicleReach)
+    if not vehicle then return false, 'vehicle' end
+    local owner = Entity(vehicle).state.owner
+    if not owner or owner ~= player.PlayerData.citizenid then return false, 'owner' end
+    local session = Entity(vehicle).state.sessionId
+    if not session then return false, 'nobody' end
+    local taken = 0
+    for _, id in ipairs(GetPlayers()) do
+        id = tonumber(id)
+        if id ~= source then
+            local keys = Player(id).state.keysList
+            if type(keys) == 'table' and keys[session] then
+                local ok = pcall(function() exports.qbx_vehiclekeys:RemoveKeys(id, vehicle) end)
+                if ok then taken = taken + 1 end
+            end
+        end
+    end
+    if taken == 0 then return false, 'nobody' end
+    lib.logger(source, 'keys', ('took back %d key(s) of %s'):format(taken, GetVehicleNumberPlateText(vehicle)))
+    return true, taken
 end)

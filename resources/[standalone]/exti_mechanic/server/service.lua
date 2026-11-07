@@ -266,9 +266,23 @@ local function report(src, veh, rec, withHistory)
     return out
 end
 
+-- EX_Tii (Moe): car service only inside a workshop (not on any car in the street)
+local function inWorkshop(src)
+    local ped = pedOf(src)
+    if not ped then return false end
+    local p = GetEntityCoords(ped)
+    local area = (Config.tuning and Config.tuning.area) or 70.0
+    for _, st in pairs(Config.stations) do
+        local c = st.duty or (st.garage and st.garage.coords)
+        if c and #(p - vec3(c.x, c.y, c.z)) <= area then return true end
+    end
+    return false
+end
+
 local function mechanicAt(src, netId)
     local player = getPlayer(src)
     if not onDuty(player) then return nil, nil, 'off_duty' end
+    if not inWorkshop(src) then return nil, nil, 'not_workshop' end
     local veh = vehicleOf(netId)
     if not veh then return nil, nil, 'no_car' end
     if not nearCar(src, veh, 3.0) then return nil, nil, 'too_far' end

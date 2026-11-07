@@ -233,6 +233,14 @@ RegisterNetEvent('exti_mechanic:client:tablet', function()
 end)
 RegisterKeyMapping('mechtablet', 'تابلت الورشة (Mechanic)', 'keyboard', Config.tabletKey)
 
+RegisterNUICallback('mecReceipt', function(_, cb)
+    cb(true)
+    local veh = lib.getClosestVehicle(GetEntityCoords(cache.ped), 6.0, true)
+    if not veh then return MEC.error('no_car') end
+    closeTablet()
+    SetTimeout(350, function() MEC.openReceipt(veh) end)
+end)
+
 RegisterNUICallback('ptClose', function(_, cb)
     cb(true)
     if tablet.open then

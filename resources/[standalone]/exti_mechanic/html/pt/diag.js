@@ -59,6 +59,7 @@
                     <div class="dg-hp"><span>الهيكل</span><div class="dg-bar"><s class="${tone(r.body)}" style="width:${Math.max(2, r.body)}%"></s></div><em>${Math.max(0, r.body)}%</em></div>
                     <p class="dg-note">${r.wax ? `${I('check', 13, 2.4)} محميّة بالواكس حتى ${esc(fmtStamp(r.wax))}` : 'المحرك والهيكل يُصلحان بعُدة الإصلاح.'}</p>
                     <button class="pt-btn primary xs" data-act="diagScan">${I('refresh', 14, 2)} إعادة الفحص</button>
+                    <button class="pt-btn green xs" data-act="diagReceipt" style="margin-top:8px">${I('check', 14, 2.4)} انتهى العمل: أرسل الإيصال للمالك</button>
                 </aside>
                 <section class="dg-main">
                     <div class="dg-grid">${r.parts.map(partCard).join('')}</div>
@@ -75,6 +76,6 @@
     PT.app('diagnostics', {
         view,
         enter() { scan(); },
-        act: { diagScan: scan },
+        act: { diagScan: scan, diagReceipt: () => PT.post('mecReceipt', {}) },
     });
 })();

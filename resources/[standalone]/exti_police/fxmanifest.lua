@@ -55,6 +55,7 @@ server_scripts {
     'server/cctv.lua',
     'server/doors.lua',
     'server/records.lua',
+    'server/impound.lua',
     'server/photos.js',
 }
 

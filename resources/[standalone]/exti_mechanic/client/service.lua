@@ -16,7 +16,7 @@ local ERR = {
     no_car = 'لا توجد سيارة بجانبك', too_far = 'اقترب من السيارة', no_part = 'لا تحمل القطعة المطلوبة',
     not_this_car = 'هذه القطعة ليست في هذه السيارة', too_fast = 'لم تكتمل العملية', cancelled = 'أُلغيت العملية',
     off_duty = 'ابدأ مناوبتك في الورشة أولًا', wait = 'انتظر لحظة',
-    gone = 'هذا التعديل لم يعد موجودًا', full = 'أسطوانة النيترو ممتلئة', claimed = 'هذا الطلب مع ميكانيكي آخر', not_workshop = 'التعديل داخل الورشة فقط',
+    gone = 'هذا التعديل لم يعد موجودًا', full = 'أسطوانة النيترو ممتلئة', claimed = 'هذا الطلب مع ميكانيكي آخر', not_workshop = 'هذا داخل الورشة فقط',
 }
 local function fail(code) lib.notify({ type = 'error', description = ERR[code] or 'حدث خطأ، حاول مرة أخرى' }) end
 
@@ -324,8 +324,18 @@ function MEC.openService(veh)
 end
 
 -- the "[E]" next to a car (on duty, on foot)
+local function inWorkshop(p)
+    local area = (Config.tuning and Config.tuning.area) or 70.0
+    for _, st in pairs(Config.stations) do
+        local c = st.duty or (st.garage and st.garage.coords)
+        if c and #(p - vec3(c.x, c.y, c.z)) <= area then return true end
+    end
+    return false
+end
+
 function MEC.servicePrompt(p)
     if working or cache.vehicle or not MEC.onDuty() then return end
+    if not inWorkshop(p) then return end   -- EX_Tii (Moe): only inside the workshop
     local veh = lib.getClosestVehicle(p, 3.0, false)
     if not veh or not NetworkGetEntityIsNetworked(veh) then return end
     local class = GetVehicleClass(veh)

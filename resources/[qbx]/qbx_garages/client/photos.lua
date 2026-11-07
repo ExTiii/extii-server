@@ -259,7 +259,9 @@ end
 ---@param vehicleId integer
 ---@param props table ox_lib vehicle properties
 ---@param force? boolean take a new photo even if the car looks the same
+local PHOTOS_ON = false -- EX_Tii (Moe): the car photo session is off (it was laggy). The garage shows the stock pictures.
 local function refreshPhoto(vehicleId, props, force)
+    if not PHOTOS_ON then return end
     if type(vehicleId) ~= 'number' or vehicleId % 1 ~= 0 or type(props) ~= 'table' or type(props.model) ~= 'number' then return end
     if queued[vehicleId] then
         queued[vehicleId].props = props
@@ -280,7 +282,7 @@ exports('RefreshVehiclePhoto', function(vehicleId, props)
 end)
 
 -- /carphoto: take a new photo of the car you are sitting in (your own cars only)
-RegisterCommand('carphoto', function()
+if PHOTOS_ON then RegisterCommand('carphoto', function()
     local vehicle = cache.vehicle
     if not vehicle then
         return exports.qbx_core:Notify('اجلس داخل مركبتك أولًا', 'error')
@@ -291,7 +293,7 @@ RegisterCommand('carphoto', function()
     end
     exports.qbx_core:Notify('سنلتقط صورة جديدة لمركبتك الآن', 'inform')
     refreshPhoto(vehicleId, lib.getVehicleProperties(vehicle), true)
-end, false)
+end, false) end
 
 -- the garage screen asks for the real photos it does not have yet
 RegisterNUICallback('photos', function(data, cb)
@@ -302,6 +304,6 @@ RegisterNUICallback('photos', function(data, cb)
             if n and n % 1 == 0 and n > 0 then ids[#ids + 1] = math.floor(n) end
         end
     end
-    if #ids == 0 then return cb({}) end
+    if #ids == 0 or not PHOTOS_ON then return cb({}) end
     cb(lib.callback.await('qbx_garages:server:getPhotos', false, ids) or {})
 end)

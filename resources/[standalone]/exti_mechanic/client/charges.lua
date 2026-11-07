@@ -13,6 +13,11 @@ local CHARGE_ERRORS = {
     no_bank = 'البنك لا يعمل الآن، حاول بعد قليل',
     nobody = 'لا يوجد زبون بجانبك',
     wait = 'انتظر لحظة',
+    no_owner = 'هذه السيارة ليست ملك أحد',
+    owner_away = 'صاحب السيارة ليس في المدينة الآن',
+    own_car = 'هذه سيارتك أنت',
+    not_workshop = 'هذا داخل الورشة فقط',
+    no_car = 'لا توجد سيارة بجانبك',
 }
 for k, v in pairs(CHARGE_ERRORS) do MEC.ERRORS[k] = v end
 
@@ -28,7 +33,7 @@ end
 -- the person walks away, the officer goes off duty / down: the sheet closes
 CreateThread(function()
     while true do
-        if sheet and not sheet.done then
+        if sheet and not sheet.done and not sheet.receipt then
             local pid = GetPlayerFromServerId(sheet.target)
             local ped = pid ~= -1 and GetPlayerPed(pid) or 0
             if not MEC.onDuty() or MEC.isDown() or ped == 0
@@ -46,6 +51,18 @@ function MEC.openCharge(target)
     local data, err = lib.callback.await('exti_mechanic:server:chargeOpen', false, target)
     if not data then return MEC.error(err) end
     sheet = { target = target }
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'charge', open = true, data = data })
+end
+
+-- EX_Tii (Moe): the receipt for the car next to you goes to its owner (from the tablet's scan)
+function MEC.openReceipt(veh)
+    if sheet then return end
+    if not MEC.onDuty() then return MEC.error('off_duty') end
+    if not veh or not DoesEntityExist(veh) or not NetworkGetEntityIsNetworked(veh) then return MEC.error('no_car') end
+    local data, err = lib.callback.await('exti_mechanic:server:receiptOpen', false, NetworkGetNetworkIdFromEntity(veh))
+    if not data then return MEC.error(err) end
+    sheet = { target = data.target.id, receipt = true }
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'charge', open = true, data = data })
 end
@@ -87,9 +104,7 @@ local function closestPlayer(radius)
     return best
 end
 
-RegisterNetEvent('exti_mechanic:client:bill', function(target)
-    if type(target) == 'number' then MEC.openCharge(target) end
-end)
+-- (the old Z-wheel bill: gone)
 
 exports('RadialMenu', function()
     if not MEC.isCop() or cache.vehicle then return nil end
@@ -98,8 +113,7 @@ exports('RadialMenu', function()
         items[#items + 1] = { id = 'duty', label = 'ابدأ الدوام من الورشة', icon = 'wrench', disabled = true }
         return { label = 'الورشة', icon = 'wrench', items = items }
     end
-    local target = closestPlayer(REACH)
-    items[#items + 1] = { id = 'bill', label = target and 'فاتورة للزبون' or 'لا زبون بجانبك', icon = 'file-invoice-dollar',
-                          action = 'event', arg = { name = 'exti_mechanic:client:bill', data = { target } }, disabled = target == nil }
+    -- EX_Tii (Moe): no bill to whoever stands next to you. The bill (receipt) goes to the car's owner
+    -- from the tablet: الفحص -> إرسال الإيصال للمالك.
     return { label = 'الورشة', icon = 'wrench', items = items }
 end)

@@ -462,8 +462,9 @@ end
 
 --- SetLicence(src, licence, on) -> ok, why  (old form SetLicence(src, on) = the car)
 --- on = true only works for a licence passed at the school (why = 'not_passed')
-exports('SetLicence', function(src, k, on)
-    if type(k) == 'boolean' then on, k = k, 'car' end
+--- seconds (optional): how long the police take it (it comes back by itself after that)
+exports('SetLicence', function(src, k, on, seconds)
+    if type(k) == 'boolean' then on, k, seconds = k, 'car', on end
     k = normKey(k)
     local p = getPlayer(src)
     if not p or not k then return false end
@@ -472,18 +473,26 @@ exports('SetLicence', function(src, k, on)
     if on and not (type(ds[k]) == 'table' and ds[k].passed == true) then return false, 'not_passed' end
     setLicence(p, k, on)
     ds[k].suspended = (not on) and ds[k].passed == true or nil
+    ds[k].suspendedUntil = (not on) and tonumber(seconds) and (os.time() + math.floor(seconds)) or nil
     p.Functions.SetMetaData('driveschool', ds)
-    notify(src, on and 'success' or 'error', (on and 'أعادت لك الشرطة %s' or 'سحبت منك الشرطة %s'):format(L[k].label))
+    if on then
+        notify(src, 'success', ('أعادت لك الشرطة %s'):format(L[k].label))
+    elseif ds[k].suspendedUntil then
+        local h = math.floor(seconds / 3600 + 0.5)
+        notify(src, 'error', ('سحبت منك الشرطة %s لمدة %s، وتعود إليك تلقائيًا بعدها'):format(L[k].label, h == 1 and 'ساعة واحدة' or (h == 24 and '24 ساعة' or (h .. ' ساعات'))))
+    else
+        notify(src, 'error', ('سحبت منك الشرطة %s'):format(L[k].label))
+    end
     return true
 end)
 
 --- SetLicenceOffline(citizenid, licence, on) -> ok, why (the player may be away)
-exports('SetLicenceOffline', function(cid, k, on)
-    if type(k) == 'boolean' then on, k = k, 'car' end
+exports('SetLicenceOffline', function(cid, k, on, seconds)
+    if type(k) == 'boolean' then on, k, seconds = k, 'car', on end
     k = normKey(k)
     if not k then return false end
     local online = exports.qbx_core:GetPlayerByCitizenId(cid)
-    if online then return exports[RES]:SetLicence(online.PlayerData.source, k, on) end
+    if online then return exports[RES]:SetLicence(online.PlayerData.source, k, on, seconds) end
     local r = MySQL.single.await('SELECT `metadata` FROM `players` WHERE `citizenid` = ?', { cid })
     if not r then return false end
     local ok, meta = pcall(json.decode, r.metadata or '')
@@ -496,6 +505,7 @@ exports('SetLicenceOffline', function(cid, k, on)
     meta.licences = type(meta.licences) == 'table' and meta.licences or {}
     meta.licences[L[k].metaKey] = on and true or false
     ds[k].suspended = (not on) and ds[k].passed == true or nil
+    ds[k].suspendedUntil = (not on) and tonumber(seconds) and (os.time() + math.floor(seconds)) or nil
     meta.driveschool = ds
     MySQL.update.await('UPDATE `players` SET `metadata` = ? WHERE `citizenid` = ?', { json.encode(meta), cid })
     return true
@@ -513,4 +523,26 @@ exports('Licences', function()
     local out = {}
     for k, v in pairs(L) do out[k] = { label = v.label, short = v.short, metaKey = v.metaKey, item = v.item, order = v.order } end
     return out
+end)
+
+-- EX_Tii (Moe): a licence the police took for a time comes back by itself (checked every minute for
+-- everyone in the city; someone who was away gets it back a minute after coming in)
+CreateThread(function()
+    while true do
+        Wait(60000)
+        local now = os.time()
+        for _, sid in ipairs(GetPlayers()) do
+            local src = tonumber(sid)
+            local p = getPlayer(src)
+            local ds = p and p.PlayerData.metadata and p.PlayerData.metadata.driveschool
+            if type(ds) == 'table' then
+                for k, v in pairs(ds) do
+                    if L[k] and type(v) == 'table' and v.suspended and tonumber(v.suspendedUntil) and v.suspendedUntil <= now then
+                        local ok = exports[RES]:SetLicence(src, k, true)
+                        if ok then lib.logger(src, 'driveschool', ('licence %s back after the police suspension'):format(k)) end
+                    end
+                end
+            end
+        end
+    end
 end)

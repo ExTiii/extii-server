@@ -25,7 +25,7 @@ local hardLockpickSkillCheck = {
 
 return {
     vehicleMaximumLockingDistance = 5.0, -- Maximum distance for vehicle locking
-    getKeysWhenEngineIsRunning = true, -- when enabled, gives keys to a player who doesn't have them if they enter the driver seat when the engine is running
+    getKeysWhenEngineIsRunning = false, -- EX_Tii: no free keys from a car left running (it needs its key or a hotwire). When enabled, gives keys to a player who doesn't have them if they enter the driver seat when the engine is running
     keepEngineOnWhenAbandoned = true, -- when enabled, keeps a vehicle's engine running after exiting
     getKeysWhenEntering = false, -- when enabled, gives keys once player is in driver seat (no matter if he has had keys before or not)
 

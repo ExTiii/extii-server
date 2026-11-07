@@ -59,8 +59,8 @@
             <div class="pt-ffields">
                 <div class="pt-ffield"><small>العمل</small><p>${esc(z.job || '—')}${z.jobGrade ? ` · ${esc(z.jobGrade)}` : ''}</p></div>
                 <div class="pt-ffield"><small>الرخص</small><p class="pt-tags">${lic(d.citizen.licences.weapon, 'سلاح')}
-                    ${PT.list(d.citizen.driving).map((l) => `<span class="pt-licrow">${lic(l.has, l.short)}${l.suspended ? '<em class="pt-tag red">مسحوبة</em>' : ''}
-                        ${l.has ? `<button class="pt-mini danger" data-act="recLicence" data-key="${esc(l.key)}" data-on="0" title="${esc(l.label)}">سحب</button>`
+                    ${PT.list(d.citizen.driving).map((l) => `<span class="pt-licrow">${lic(l.has, l.short)}${l.suspended ? `<em class="pt-tag red">مسحوبة${l.left ? ` · تعود بعد ${l.left > 60 ? Math.ceil(l.left / 60) + ' س' : l.left + ' د'}` : ''}</em>` : ''}
+                        ${l.has ? [1, 6, 24].map((h) => `<button class="pt-mini danger" data-act="recLicence" data-key="${esc(l.key)}" data-on="0" data-hours="${h}" title="${esc(l.label)}">سحب ${h} س</button>`).join('')
                             : l.passed ? `<button class="pt-mini green" data-act="recLicence" data-key="${esc(l.key)}" data-on="1" title="${esc(l.label)}">إرجاع</button>`
                             : '<em class="pt-tag grey">لم يجتز الاختبار</em>'}</span>`).join('')}</p></div>
             </div>
@@ -128,9 +128,11 @@
                 if (!c.cur) return;
                 const on = el.dataset.on === '1';
                 const key = el.dataset.key || 'car';
+                const hours = Number(el.dataset.hours) || 0;
                 const l = PT.list(c.cur.citizen.driving).find((x) => x.key === key) || { label: 'الرخصة' };
-                ask({ title: on ? `إرجاع ${l.label}` : `سحب ${l.label}`, sub: 'المواطنون', text: on ? `${c.cur.citizen.name} يستعيد ${l.label}.` : `${c.cur.citizen.name} لن يستطيع استعمال ${l.label} قانونيًا حتى تُرجعها الشرطة، ولا يستطيع إعادة الاختبار.`, ok: on ? 'إرجاع' : 'سحب', danger: !on }, () => {
-                    call('licenceSet', c.cur.citizen.cid, key, on).then((res) => { if (!res.ok) return fail(res); l.has = !!res.r.has; l.suspended = !on && l.passed; toast(on ? 'أُرجعت الرخصة' : 'سُحبت الرخصة', 'success'); render(); });
+                const hText = hours === 1 ? 'ساعة واحدة' : hours === 24 ? '24 ساعة' : `${hours} ساعات`;
+                ask({ title: on ? `إرجاع ${l.label}` : `سحب ${l.label} لمدة ${hText}`, sub: 'المواطنون', text: on ? `${c.cur.citizen.name} يستعيد ${l.label} الآن.` : `${c.cur.citizen.name} لن يستطيع استعمال ${l.label} قانونيًا لمدة ${hText}، ثم تعود إليه تلقائيًا. يجب أن يكون مقيّدًا بجانبك أو داخل سيارتك.`, ok: on ? 'إرجاع' : 'سحب', danger: !on }, () => {
+                    call('licenceSet', c.cur.citizen.cid, key, on, hours).then((res) => { if (!res.ok) return fail(res); l.has = !!res.r.has; l.suspended = !on && l.passed; l.left = on ? 0 : hours * 60; toast(on ? 'أُرجعت الرخصة' : `سُحبت الرخصة لمدة ${hText}`, 'success'); render(); });
                 });
             },
             recOpenReport: (el) => { S.rep.pending = Number(el.dataset.id); PT.openApp('reports'); },

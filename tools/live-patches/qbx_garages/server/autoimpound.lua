@@ -96,6 +96,7 @@ end
 
 ---@return boolean done
 local function impound(vehicle, why)
+    if not DoesEntityExist(vehicle) then return false end
     local vehicleId = ownedVehicleId(vehicle)
     local plate = GetVehicleNumberPlateText(vehicle)
     if not vehicleId then
@@ -122,6 +123,7 @@ local function impound(vehicle, why)
     local fee = Config.calculateImpoundFee(vehicleId, owned.modelName) or 500
     if why == 'dumped' then fee = math.min(fee, dumpedFee) end
     local depot = depotFor(owned.modelName)
+    if not DoesEntityExist(vehicle) then return false end   -- (gone while we asked the database)
     local saved = exports.qbx_vehicles:SaveVehicle(vehicle, {
         state = VehicleState.IMPOUNDED,
         depotPrice = fee,
@@ -166,6 +168,10 @@ local function check(forceSeconds)
     local seen = {}
     for _, vehicle in ipairs(GetAllVehicles()) do
         seen[vehicle] = true
+        -- EX_Tii: one vehicle at a time in its own pcall. A vehicle can be deleted while we wait for the
+        -- database (another script, a player storing it): that one is skipped quietly, the rest go on.
+        local okOne, errOne = pcall(function()
+        if not DoesEntityExist(vehicle) then tracked[vehicle] = nil return end
         local skip = GetVehicleType(vehicle) == 'train'
             or GetEntityRoutingBucket(vehicle) ~= 0
             or GetEntityAttachedTo(vehicle) ~= 0
@@ -199,12 +205,17 @@ local function check(forceSeconds)
                         need = offlineSeconds
                     end
                 end
-                if idle >= need and not playerNear(coords, 0, players, near) then
+                if idle >= need and DoesEntityExist(vehicle) and not playerNear(coords, 0, players, near) then
                     local ok, done = pcall(impound, vehicle, why)
-                    if not ok then lib.print.error('[auto impound] ' .. tostring(done)) end
+                    if not ok and DoesEntityExist(vehicle) then lib.print.error('[auto impound] ' .. tostring(done)) end
                     if ok and done then tracked[vehicle] = nil end
                 end
             end
+        end
+        end)
+        if not okOne then
+            tracked[vehicle] = nil
+            if DoesEntityExist(vehicle) then lib.print.warn('[auto impound] skipped a vehicle: ' .. tostring(errOne)) end
         end
     end
     for vehicle in pairs(tracked) do

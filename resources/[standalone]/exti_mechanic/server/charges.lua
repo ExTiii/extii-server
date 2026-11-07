@@ -161,6 +161,12 @@ end)
 ---------------------------------------------------------------------------
 local REACH = Config.billReach or 3.0
 
+local function previousCount(cid)
+    return MySQL.scalar.await('SELECT COUNT(*) FROM `exti_mechanic_charges` WHERE `citizenid` = ?', { cid }) or 0
+end
+
+local receipts = {}   -- [mechanic src] = { tid, plate, at } (a receipt sheet opened from the tablet)
+
 local function nearTarget(copSrc, targetId)
     local cop = getPlayer(copSrc)
     if not onDuty(cop) then return nil, nil, 'off_duty' end
@@ -169,13 +175,55 @@ local function nearTarget(copSrc, targetId)
     local target = getPlayer(tid)
     local cped, tped = pedOf(copSrc), pedOf(tid)
     if not target or not cped or not tped then return nil, nil, 'nobody' end
-    if #(GetEntityCoords(cped) - GetEntityCoords(tped)) > REACH + 2.5 then return nil, nil, 'too_far' end
-    return cop, target, nil, tid
+    -- a receipt goes to the car's owner wherever he is (opened from the tablet next to his car)
+    local r = receipts[copSrc]
+    if r and r.tid == tid and os.time() - r.at < 600 then return cop, target, nil, tid end
+    -- EX_Tii (Moe): no more bills to whoever stands next to you
+    return nil, nil, 'nobody'
 end
 
-local function previousCount(cid)
-    return MySQL.scalar.await('SELECT COUNT(*) FROM `exti_mechanic_charges` WHERE `citizenid` = ?', { cid }) or 0
+local function inWorkshop(src)
+    local ped = pedOf(src)
+    if not ped then return false end
+    local p = GetEntityCoords(ped)
+    local area = (Config.tuning and Config.tuning.area) or 70.0
+    for _, st in pairs(Config.stations) do
+        local c = st.duty or (st.garage and st.garage.coords)
+        if c and #(p - vec3(c.x, c.y, c.z)) <= area then return true end
+    end
+    return false
 end
+
+lib.callback.register('exti_mechanic:server:receiptOpen', function(source, netId)
+    local cop = getPlayer(source)
+    if not onDuty(cop) then return false, 'off_duty' end
+    if not inWorkshop(source) then return false, 'not_workshop' end
+    local veh = type(netId) == 'number' and NetworkGetEntityFromNetworkId(netId) or 0
+    if veh == 0 or not DoesEntityExist(veh) then return false, 'no_car' end
+    local cped = pedOf(source)
+    if not cped or #(GetEntityCoords(cped) - GetEntityCoords(veh)) > 7.0 then return false, 'too_far' end
+    local plate = GetVehicleNumberPlateText(veh):match('^%s*(.-)%s*$')
+    local cid = Entity(veh).state.owner
+    if not cid then
+        cid = MySQL.scalar.await('SELECT `citizenid` FROM `player_vehicles` WHERE TRIM(`plate`) = ? LIMIT 1', { plate })
+    end
+    if not cid then return false, 'no_owner' end
+    local owner = exports.qbx_core:GetPlayerByCitizenId(cid)
+    if not owner then return false, 'owner_away' end
+    local tid = owner.PlayerData.source
+    if tid == source then return false, 'own_car' end
+    receipts[source] = { tid = tid, plate = plate, at = os.time() }
+    return {
+        target = { id = tid, name = nameOf(owner) .. ' · ' .. plate, cid = cid, previous = previousCount(cid) },
+        officer = nameOf(cop),
+        offences = offences(),
+        maxPicks = C.maxPicks,
+        noteLength = C.noteLength,
+        bank = GetResourceState('exti_bank') == 'started',
+    }
+end)
+AddEventHandler('playerDropped', function() receipts[source] = nil end)
+
 
 lib.callback.register('exti_mechanic:server:chargeOpen', function(source, targetId)
     local cop, target, err, tid = nearTarget(source, targetId)
@@ -267,7 +315,13 @@ lib.callback.register('exti_mechanic:server:chargeIssue', function(source, targe
             and ('حكم عليك الميكانيكي %s بالسجن %d دقيقة وغرامة $%d'):format(officer, jail, fine)
             or ('حكم عليك الميكانيكي %s بالسجن %d دقيقة'):format(officer, jail))
     else
-        notify(tid, 'inform', ('أرسل لك الميكانيكي %s فاتورة بقيمة $%d — ادفعها من البنك أو الصراف أو الهاتف'):format(officer, fine))
+        local r = receipts[source]
+        if r and r.tid == tid then
+            notify(tid, 'success', ('مركبتك (%s) جاهزة في الورشة! أرسل لك الميكانيكي %s الإيصال: $%d — ادفعه من البنك أو الصراف أو الهاتف'):format(r.plate, officer, fine))
+            receipts[source] = nil
+        else
+            notify(tid, 'inform', ('أرسل لك الميكانيكي %s فاتورة بقيمة $%d — ادفعها من البنك أو الصراف أو الهاتف'):format(officer, fine))
+        end
     end
     return { id = chargeId, fine = withBill and fine or 0, jail = wantJail and jail or 0, count = #picked, jailed = wantJail }
 end)

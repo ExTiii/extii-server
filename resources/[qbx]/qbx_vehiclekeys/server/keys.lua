@@ -20,15 +20,15 @@ local function getCitizenId(source)
     return player.PlayerData.citizenid
 end
 
+-- EX_Tii: keys belong to the character, not to the player's session. A second character on the same
+-- account starts with no keys (before, the keys of the last character stayed and opened his cars).
 RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function()
     local src = source
     local citizenId = getCitizenId(src)
     if not citizenId then return end
-    if loggedOutKeys[citizenId] then
-        Player(src).state:set('keysList', loggedOutKeys[citizenId], true)
-        loggedOutKeys[citizenId] = nil
-        logedOutTime[citizenId] = nil
-    end
+    Player(src).state:set('keysList', loggedOutKeys[citizenId] or nil, true)
+    loggedOutKeys[citizenId] = nil
+    logedOutTime[citizenId] = nil
 end)
 
 local function onPlayerUnload(src)
@@ -36,6 +36,7 @@ local function onPlayerUnload(src)
     if not citizenId then return end
     loggedOutKeys[citizenId] = Player(src).state.keysList
     logedOutTime[citizenId] = os.time()
+    Player(src).state:set('keysList', nil, true)
 end
 
 RegisterNetEvent('QBCore:Server:OnPlayerUnload', onPlayerUnload)

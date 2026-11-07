@@ -246,7 +246,8 @@ cb('citizenGet', function(source, player, cid)
         local ds = type(meta.driveschool) == 'table' and meta.driveschool or {}
         for k, v in pairs(okL and type(types) == 'table' and types or {}) do
             local me = type(ds[k]) == 'table' and ds[k] or {}
-            c.driving[#c.driving + 1] = { key = k, label = v.label, short = v.short, order = v.order or 9, has = lic[v.metaKey] == true, suspended = me.suspended == true, passed = me.passed == true }
+            c.driving[#c.driving + 1] = { key = k, label = v.label, short = v.short, order = v.order or 9, has = lic[v.metaKey] == true, suspended = me.suspended == true, passed = me.passed == true,
+                left = me.suspended and tonumber(me.suspendedUntil) and math.max(1, math.ceil((me.suspendedUntil - os.time()) / 60)) or nil }
         end
         table.sort(c.driving, function(a, b) return a.order < b.order end)
     end
@@ -295,20 +296,47 @@ cb('citizenNoteDelete', function(source, player, id)
 end)
 
 -- a driving-school licence (car / truck / boat / heli): suspended / given back (exti_driveschool keeps it)
-cb('licenceSet', function(source, player, cid, kind, on)
+local HOURS = { [1] = true, [6] = true, [24] = true }
+
+-- EX_Tii (Moe): a licence is only taken from someone detained: cuffed next to the officer, or sitting in his car
+local function detainedBy(source, cid)
+    local target = exports.qbx_core:GetPlayerByCitizenId(cid)
+    if not target then return false, 'offline' end
+    local tsrc = target.PlayerData.source
+    local myPed, theirPed = GetPlayerPed(source), GetPlayerPed(tsrc)
+    if myPed == 0 or theirPed == 0 then return false, 'offline' end
+    local theirCar = GetVehiclePedIsIn(theirPed, false)
+    if theirCar ~= 0 then
+        -- in a car the officer drives, or a car he is sitting in / right next to (a police car he left a moment ago)
+        if theirCar == GetVehiclePedIsIn(myPed, false) then return true end
+        if #(GetEntityCoords(myPed) - GetEntityCoords(theirCar)) <= 6.0 and Player(tsrc).state.cuffed == true then return true end
+        return false, 'not_detained'
+    end
+    if Player(tsrc).state.cuffed == true and #(GetEntityCoords(myPed) - GetEntityCoords(theirPed)) <= 5.0 then return true end
+    return false, 'not_detained'
+end
+
+cb('licenceSet', function(source, player, cid, kind, on, hours)
     if type(cid) ~= 'string' then return false, 'failed' end
     if type(kind) == 'boolean' then on, kind = kind, 'car' end
     if type(kind) ~= 'string' then return false, 'failed' end
+    on = on == true
+    if not on then
+        hours = math.tointeger(tonumber(hours))
+        if not hours or not HOURS[hours] then return false, 'hours' end
+        local okD, why = detainedBy(source, cid)
+        if not okD then return false, why end
+    end
     if GetResourceState('exti_driveschool') ~= 'started' then return false, 'failed' end
     local okL, types = pcall(function() return exports.exti_driveschool:Licences() end)
     local info = okL and type(types) == 'table' and types[kind] or nil
     if not info then return false, 'failed' end
-    local ok, done, why = pcall(function() return exports.exti_driveschool:SetLicenceOffline(cid, kind, on == true) end)
+    local ok, done, why = pcall(function() return exports.exti_driveschool:SetLicenceOffline(cid, kind, on, (not on) and hours * 3600 or nil) end)
     if not ok then return false, 'failed' end
     if not done then return false, why or 'failed' end
     local row = MySQL.single.await('SELECT `charinfo` FROM `players` WHERE `citizenid` = ?', { cid })
     local who = row and decode(row.charinfo) or {}
-    POL.log(source, on and 'licence_restored' or 'licence_suspended', ('%s %s · %s'):format(who.firstname or '', who.lastname or cid, info.short or kind))
+    POL.log(source, on and 'licence_restored' or 'licence_suspended', ('%s %s · %s%s'):format(who.firstname or '', who.lastname or cid, info.short or kind, on and '' or (' · %d h'):format(hours)))
     return { key = kind, has = on == true }
 end)
 
