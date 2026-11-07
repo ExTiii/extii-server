@@ -138,7 +138,7 @@ end)
 local mine = nil   -- { i, lookAway = 0, sent2 = false, sentCower = false, untilOpen }
 local lastTry, lastShot = 0, 0
 RegisterNetEvent('exti_heists:client:holdUp', function(i, secs, modeText)
-    mine = { i = i, lookAway = 0, sent2 = false, sentCower = false, untilOpen = GetGameTimer() + secs * 1000 }
+    mine = { i = i, lookAway = 0, sent2 = false, sentCower = false, untilOpen = GetGameTimer() + secs * 1000, at = GetGameTimer() }
     HC.notify(('أبقِ السلاح عليه حتى يفتح الصندوق · %s'):format(modeText), 'inform', 7000)
 end)
 RegisterNetEvent('exti_heists:client:tillOpen', function(i)
@@ -152,7 +152,7 @@ RegisterNetEvent('exti_heists:client:silentAlarm', function(i)
 end)
 RegisterNetEvent('exti_heists:client:clerkShot', function(i)
     HC.notify('أطلقت النار على صاحب المحل: الشرطة في الطريق · اكسر قفل الصندوق (lockpick)', 'error', 8000)
-    if not mine or mine.i ~= i then mine = { i = i, lookAway = 0, sent2 = true, sentCower = true, untilOpen = 0 } end
+    if not mine or mine.i ~= i then mine = { i = i, lookAway = 0, sent2 = true, sentCower = true, untilOpen = 0, at = GetGameTimer() } end
 end)
 
 local function grabTill(i, s)
@@ -174,7 +174,7 @@ local function pickTill(i, s)
     HC.prompt(nil)
     local ok, token, params = lib.callback.await('exti_heists:server:tillPickBegin', false, i)
     if not ok then if token then HC.notify(token, 'error') end return end
-    if not mine or mine.i ~= i then mine = { i = i, lookAway = 0, sent2 = true, sentCower = true, untilOpen = 0 } end
+    if not mine or mine.i ~= i then mine = { i = i, lookAway = 0, sent2 = true, sentCower = true, untilOpen = 0, at = GetGameTimer() } end
     local ped = cache.ped
     TaskTurnPedToFaceCoord(ped, tillPos(s).x, tillPos(s).y, tillPos(s).z, 600)
     Wait(500)
@@ -329,7 +329,8 @@ CreateThread(function()
         HC.prompt(text, 'stores')
         if act and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then act() end
         if mine and (not near or (phases[mine.i] ~= 'held' and phases[mine.i] ~= 'open' and phases[mine.i] ~= 'cower')) then
-            if not phases[mine.i] or phases[mine.i] == 'emptied' then mine = nil end
+            -- (the server's "it's yours" message can arrive before the store's new state does: give it 5 s)
+            if (not phases[mine.i] and GetGameTimer() - (mine.at or 0) > 5000) or phases[mine.i] == 'emptied' then mine = nil end
         end
         Wait(sleep)
     end
