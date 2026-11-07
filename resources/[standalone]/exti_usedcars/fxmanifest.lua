@@ -9,4 +9,5 @@ shared_scripts { '@ox_lib/init.lua', 'config.lua' }
 client_script 'client.lua'
 server_scripts { '@oxmysql/lib/MySQL.lua', 'server.lua' }
 
-dependencies { 'ox_lib', 'oxmysql', 'qbx_core', 'qbx_vehicles' }
+-- (qbx_vehicles is server-only: listing it here stopped the game from starting this resource)
+dependencies { 'ox_lib', 'oxmysql', 'qbx_core' }
