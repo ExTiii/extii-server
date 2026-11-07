@@ -223,7 +223,7 @@ lib.callback.register('exti_heists:server:grabTill', function(src, i)
     i = math.tointeger(i)
     local st = i and state[i]
     if not st or st.phase ~= 'open' or st.by ~= src then return false end
-    if not H.near(src, clerkPos(stores[i]), 3.2) then return false end
+    if not H.near(src, clerkPos(stores[i]), 3.8) then return false end
     if H.now() - (st.openAt or 0) < R.grabSeconds - 1 then return false end
     st.phase = 'emptied'; publish()
     H.touch(src, clerkPos(stores[i]))
@@ -246,7 +246,7 @@ end)
 lib.callback.register('exti_heists:server:tillPickBegin', function(src, i)
     i = math.tointeger(i)
     local s = i and stores[i]
-    if not s or not H.near(src, clerkPos(s), 3.2) or H.isCopOnDuty(src) then return false end
+    if not s or not H.near(src, clerkPos(s), 3.8) or H.isCopOnDuty(src) then return false end
     local st = state[i]
     if st and not (st.phase == 'cower' and st.by == src) then return false end
     if not st then

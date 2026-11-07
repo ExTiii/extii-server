@@ -63,8 +63,10 @@ local function tillPos(s)
 end
 -- standing at the till: across the counter, height doesn't matter much
 local function atTill(here, s)
-    local t = tillPos(s)
-    return #(vec2(here.x, here.y) - vec2(t.x, t.y)) < 1.5 and math.abs(here.z - t.z) < 2.0
+    local t, c = tillPos(s), clerkPos(s)
+    if math.abs(here.z - t.z) >= 2.0 then return false end
+    -- standing in front of the counter is enough (the till is on the far side, by the shopkeeper)
+    return #(vec2(here.x, here.y) - vec2(t.x, t.y)) < 2.4 or #(vec2(here.x, here.y) - vec2(c.x, c.y)) < 2.6
 end
 
 ---------------------------------------------------------------------------
@@ -290,6 +292,9 @@ CreateThread(function()
             end
 
             -- 3) the till
+            if ph == 'open' and mine and mine.i == near and not atTill(here, s) then
+                text = 'الصندوق مفتوح: اقترب من الطاولة لتأخذ المال'
+            end
             if atTill(here, s) then
                 if ph == 'open' and mine and mine.i == near then
                     text, act = '[E] أفرغ الصندوق', function() grabTill(near, s) end
