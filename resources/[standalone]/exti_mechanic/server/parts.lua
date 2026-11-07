@@ -148,8 +148,13 @@ lib.callback.register('exti_mechanic:server:collectParts', function(source, stat
         if changed and changed > 0 then
             local missing = {}
             for _, it in ipairs(decode(r.items)) do
-                local ok, added = pcall(function() return exports.ox_inventory:AddItem(MEC.SHELF_ID, it.item, it.count) end)
-                if ok and added then moved = moved + it.count else missing[#missing + 1] = it left = left + it.count end
+                -- EX_Tii: an item that doesn't exist (any more) is dropped, it never blocks the box ("the shelf is full")
+                if not exports.ox_inventory:Items(it.item) then
+                    lib.print.warn(('[mechanic] parts order %d: unknown item %s dropped'):format(r.id, tostring(it.item)))
+                else
+                    local ok, added = pcall(function() return exports.ox_inventory:AddItem(MEC.SHELF_ID, it.item, it.count) end)
+                    if ok and added then moved = moved + it.count else missing[#missing + 1] = it left = left + it.count end
+                end
             end
             if #missing > 0 then
                 -- the shelf is full: what did not fit stays at the delivery spot

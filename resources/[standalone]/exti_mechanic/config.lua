@@ -434,7 +434,7 @@ Config.parts = {
         { item = 'car_wax',            price = 40,   category = 'تنظيف' },
         { item = 'repairkit',          price = 150,  category = 'عُدد' },
         { item = 'advancedrepairkit',  price = 400,  category = 'عُدد' },
-        { item = 'tirekit',            price = 100,  category = 'عُدد' },
+        -- (EX_Tii: 'tirekit' removed: no such item, it blocked the boxes on the shelf)
         -- tuning (part C)
         { item = 'engine_kit',         price = 900,  category = 'أداء' },
         { item = 'brake_kit',          price = 600,  category = 'أداء' },
