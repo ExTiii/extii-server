@@ -300,6 +300,8 @@ CreateThread(function()
 
             -- 4) the safe
             local sp = spots.safes and spots.safes[s.key]
+            -- GTA's own safe spots are guesses: only inside the store (a guess that lands on the street shows nothing)
+            if sp and sp.builtin and GetInteriorFromEntity(cache.ped) == 0 then sp = nil end
             if sp then
                 local pos = vec3(sp.x, sp.y, sp.z)
                 local t = safeTimers[near]
