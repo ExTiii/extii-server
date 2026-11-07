@@ -61,7 +61,7 @@ return {
         { model = 'boxville',     price = 35000,   category = 'trucks',      name = 'Boxville',           brand = 'Brute' },
         { model = 'utillitruck3', price = 40000,   category = 'trucks',      name = 'Utility Truck',      brand = 'Vapid' },
         { model = 'mule',         price = 45000,   category = 'trucks',      name = 'Mule',               brand = 'Maibatsu' },
-        { model = 'towtruck',     price = 60000,   category = 'trucks',      name = 'Tow Truck',          brand = 'Vapid' },
+        -- (EX_Tii: the tow truck is not sold: its hook drags away anyone's car. The tow job and the mechanics have their own)
 
         -- Motorcycles (4 are GTA lookalikes, real names)
         { model = 'bagger',       price = 15000,   category = 'motorcycles', name = 'Bagger',             brand = 'Western' },
