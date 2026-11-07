@@ -1,0 +1,43 @@
+{
+ "error": {
+  "no_space": "يوجد مركبة أخرى في المكان",
+  "no_access": "لا يمكنك استخدام هذا المرآب",
+  "no_vehicles": "لا توجد لديك مركبات في هذا المكان",
+  "not_impound": "مركبتك ليست في الحجز",
+  "not_owned": "لا يمكن ركن هذه المركبة",
+  "not_correct_type": "لا يمكن ركن هذا النوع من المركبات هنا",
+  "not_enough": "لا تملك مالًا كافيًا",
+  "vehicle_occupied": "لا يمكن ركن المركبة وفيها أحد",
+  "in_vehicle": "أنت داخل مركبة بالفعل",
+  "spawn_failed": "حدث خطأ أثناء إخراج المركبة",
+  "spawn_in_progress": "انتظر قليلًا حتى تصل مركبتك..."
+ },
+ "success": {
+  "vehicle_parked": "تم ركن المركبة"
+ },
+ "menu": {
+  "information": "المعلومات",
+  "description": "الاسم: %s\nاللوحة: %s\nرسوم الحجز: %s$",
+  "body": "الهيكل",
+  "engine": "المحرك",
+  "fuel": "الوقود",
+  "take_out": "إخراج",
+  "veh_impounded": "حجزت الشرطة مركبتك"
+ },
+ "info": {
+  "car_e": "[E] افتح المرآب",
+  "park_e": "[E] اركن المركبة",
+  "impound_e": "[E] افتح الحجز",
+  "car_radial": "المرآب",
+  "park_radial": "ركن",
+  "impound_radial": "الحجز"
+ },
+ "ui": {
+  "keys_received": "%s شاركك مفتاح %s، تجدها في مرآبك",
+  "vehicle_received": "أصبحت مالك %s، تجدها في %s",
+  "transfer_title": "هدية مركبة",
+  "transfer_text": "%s يريد أن يعطيك %s (اللوحة %s). هل تقبلها؟",
+  "accept": "قبول",
+  "decline": "رفض"
+ }
+}

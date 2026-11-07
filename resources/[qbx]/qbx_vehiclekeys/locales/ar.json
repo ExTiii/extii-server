@@ -1,0 +1,56 @@
+{
+ "addcom": {
+  "addkeys": "addkeys",
+  "addkeys_help": "إضافة مفاتيح مركبة للاعب",
+  "addkeys_id": "الرقم",
+  "addkeys_id_help": "رقم اللاعب",
+  "addkeys_plate": "اللوحة",
+  "addkeys_plate_help": "رقم لوحة المركبة",
+  "givekeys": "givekeys",
+  "givekeys_help": "أعطِ المفاتيح لشخص. بدون رقم تذهب لأقرب شخص أو لكل من في المركبة.",
+  "givekeys_id": "الرقم",
+  "givekeys_id_help": "رقم اللاعب",
+  "givekeys_plate": "اللوحة",
+  "givekeys_plate_help": "رقم لوحة المركبة",
+  "removekeys": "removekeys",
+  "removekeys_help": "سحب مفاتيح مركبة من لاعب",
+  "removekeys_id": "الرقم",
+  "removekeys_id_help": "رقم اللاعب",
+  "removekeys_plate": "اللوحة",
+  "removekeys_plate_help": "رقم لوحة المركبة"
+ },
+ "info": {
+  "engine": "تشغيل أو إطفاء المحرك",
+  "search_keys_dispatch": "[H] ابحث عن المفاتيح",
+  "search_keys": "ابحث عن مفاتيح المركبة",
+  "toggle_locks": "قفل أو فتح المركبة",
+  "vehicle_theft": "سرقة مركبة جارية. النوع: "
+ },
+ "notify": {
+  "carjack_failed": "فشلت سرقة المركبة",
+  "failed_lockedpick": "فشلت في فتح القفل",
+  "failed_keys": "لم تجد المفاتيح",
+  "fpid": "أدخل رقم اللاعب ورقم اللوحة",
+  "gave_keys": "سلّمت المفاتيح",
+  "added_keys": "أعطيت نسخة من مفاتيح المركبة %s للاعب %s",
+  "keys_taken": "حصلت على مفاتيح المركبة",
+  "keys_removed": "فقدت مفاتيح المركبة",
+  "no_keys": "لا تملك مفاتيح هذه المركبة",
+  "not_near": "لا يوجد أحد قريب لتسليمه المفاتيح",
+  "vehicle_not_near": "أنت بعيد عن المركبة",
+  "vehicle_locked": "تم قفل المركبة",
+  "vehicle_lockedpick": "نجحت في فتح قفل الباب",
+  "vehicle_unlocked": "تم فتح المركبة",
+  "removed_keys": "تم سحب مفاتيح اللوحة %s من اللاعب %s",
+  "removed_keys_player": "تم سحب مفاتيحك للوحة %s",
+  "player_offline": "هذا اللاعب غير متصل",
+  "vehicle_is_unlocked": "المركبة مفتوحة بالفعل",
+  "not_optin": "لم تفعّل وضع الإدارة. اكتب /optin لتفعيله.",
+  "require_on_duty": "هذه المركبة مخصصة للموظفين أثناء العمل فقط"
+ },
+ "progress": {
+  "attempting_carjack": "جارٍ محاولة سرقة المركبة...",
+  "searching_keys": "جارٍ البحث عن المفاتيح...",
+  "takekeys": "جارٍ أخذ المفاتيح..."
+ }
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <title>المرآب</title>
+    <link rel="stylesheet" href="kit.css?v=8" />
+    <link rel="stylesheet" href="style.css?v=8" />
+</head>
+<body class="kit">
+    <div id="garage" class="garage" aria-hidden="true">
+        <section class="panel" role="dialog" aria-label="المرآب">
+            <!-- List screen -->
+            <div class="screen screen-list" id="screen-list">
+                <header class="top">
+                    <div class="brand">
+                        <span class="brand-icon" id="garage-icon"></span>
+                        <div class="brand-text">
+                            <h1 id="garage-title">المرآب</h1>
+                            <p id="garage-subtitle"></p>
+                        </div>
+                    </div>
+                    <button class="icon-btn" data-action="close" aria-label="إغلاق"></button>
+                </header>
+
+                <div class="tools">
+                    <div class="tools-row">
+                        <label class="search">
+                            <span class="search-icon"></span>
+                            <input id="search" type="text" maxlength="40" placeholder="ابحث بالاسم أو رقم اللوحة" autocomplete="off" />
+                        </label>
+                        <div class="view-toggle" role="group" aria-label="طريقة العرض">
+                            <button class="vt" data-view="list" aria-label="قائمة"></button>
+                            <button class="vt" data-view="grid" aria-label="شبكة"></button>
+                        </div>
+                    </div>
+                    <div class="chips" id="chips"></div>
+                </div>
+
+                <div class="list-wrap" id="list-wrap">
+                    <div id="list"></div>
+                </div>
+                <footer class="foot" id="foot"></footer>
+            </div>
+
+            <!-- Details screen -->
+            <div class="screen screen-detail" id="screen-detail"></div>
+
+            <!-- Bottom sheets -->
+            <div class="sheet-layer" id="sheet-layer">
+                <div class="sheet-backdrop" data-action="sheet-close"></div>
+                <div class="sheet" id="sheet"></div>
+            </div>
+
+            <div class="toast" id="toast" role="status"></div>
+        </section>
+    </div>
+    <!-- photo session: shown while the game takes a photo of your car -->
+    <div id="photo-overlay" class="photo-overlay" aria-hidden="true">
+        <div class="po-bg"></div>
+        <div class="po-shoot">
+            <div class="po-top"><span class="po-rec"></span>جلسة تصوير</div>
+            <div class="po-frame">
+                <i class="po-c tl"></i><i class="po-c tr"></i><i class="po-c bl"></i><i class="po-c br"></i>
+                <div class="po-grid"></div>
+                <div class="po-scan"></div>
+                <svg class="po-iris" id="po-iris" viewBox="0 0 100 100" aria-hidden="true"></svg>
+                <div class="po-focus"></div>
+            </div>
+            <div class="po-name" id="po-name"></div>
+            <div class="po-sub">نلتقط صورة لمركبتك بلونها الحقيقي</div>
+        </div>
+        <div class="po-reveal">
+            <div class="po-card">
+                <div class="po-photo"><img id="po-img" alt="" draggable="false" /><span class="po-sheen"></span></div>
+                <div class="po-caption">
+                    <svg class="po-check" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" /><path d="M12.5 20.5l5 5 10-11" /></svg>
+                    <svg class="po-x" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" /><path d="M14 14l12 12M26 14L14 26" /></svg>
+                    <div class="po-text"><b id="po-title">تم حفظ صورة مركبتك</b><small id="po-label"></small></div>
+                </div>
+            </div>
+        </div>
+        <div class="po-shutter po-sh-top"></div>
+        <div class="po-shutter po-sh-bottom"></div>
+        <div class="po-flash"></div>
+    </div>
+    <script src="app.js?v=8"></script>
+</body>
+</html>
