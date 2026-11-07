@@ -241,8 +241,11 @@ AddEventHandler('playerDropped', function()
     testDrives[src] = nil
 end)
 
+-- EX_Tii (Moe): no giving / transferring cars to other players any more (sell to the used-car buyer instead).
+-- The old command stays here, switched off.
+local TRANSFER_ON = false
 -- Transfer vehicle to player in passenger seat
-lib.addCommand('transfervehicle', {
+if TRANSFER_ON then lib.addCommand('transfervehicle', {
     help = locale('general.command_transfervehicle'),
     params = {
         {
@@ -370,4 +373,4 @@ lib.addCommand('transfervehicle', {
             SetHasFinanced(buyerId, true)
         end
     end, GetEntityModel(vehicle), sellAmount)
-end)
+end) end
