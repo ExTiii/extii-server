@@ -17,8 +17,10 @@ end
 RegisterNetEvent('exti_heists:client:negRing', function()
     HC.negActive = true
     SendNUIMessage({ action = 'call', ring = true })
-    PlaySoundFrontend(-1, 'Remote_Ring', 'Phone_SoundSet_Michael', true)
-    SetTimeout(1300, function() PlaySoundFrontend(-1, 'Remote_Ring', 'Phone_SoundSet_Michael', true) end)
+    -- (GTA's ring loops by itself: play it on our own sound id and stop it after two rings)
+    local id = GetSoundId()
+    PlaySoundFrontend(id, 'Remote_Ring', 'Phone_SoundSet_Michael', true)
+    SetTimeout(2400, function() StopSound(id); ReleaseSoundId(id) end)
 end)
 
 RegisterNetEvent('exti_heists:client:negCall', function(p)

@@ -41,6 +41,8 @@ function HC.prompt(text, owner)
     -- the [E] line is shared with other scripts (the shop, the fuel pump...): if one of them hid it or put its
     -- own text up, ours comes back; and we never hide a text that isn't ours
     local open, cur = lib.isTextUIOpen()
+    -- (tell the shopkeeper script a robbery/heist prompt is up: it stays quiet and ignores E)
+    if (want ~= nil) ~= (LocalPlayer.state.extiPrompt == true) then LocalPlayer.state:set('extiPrompt', want ~= nil, false) end
     if want then
         if want == shown and open and cur == want then return end
         shown = want
