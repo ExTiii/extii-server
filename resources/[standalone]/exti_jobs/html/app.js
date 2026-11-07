@@ -411,7 +411,12 @@ function renderCenter() {
                </aside>
                <main class="main">${jobDetails(selectedJob())}</main>
            </div>`;
+    // (keep the list where it was: picking a job doesn't jump back to the top)
+    const side = document.querySelector('#screen .side');
+    const keep = side ? side.scrollTop : 0;
     $('#screen').innerHTML = headerCenter() + body;
+    const side2 = document.querySelector('#screen .side');
+    if (side2 && keep) side2.scrollTop = keep;
 }
 
 // ---------------------------------------------------------------- the HQ panel

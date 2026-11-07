@@ -1,10 +1,56 @@
 -- =====================================================================
 -- EX_Tii jobs: settings shared by the game and the server
 -- Three jobs to start with: tow, garbage, delivery.
--- Money: about $2,300-2,600 an hour at level 1, ~$3,500 at level 5 (plus the $50 paycheck every 10 minutes).
--- (EX_Tii economy: pay cut 35% so a nice car takes real work)
+-- Money (Moe's hard grind, rank 1): starter jobs ~$1,600 an hour, poultry $2,100, raisins $2,600, bread $3,200,
+-- fishing $3,900, metals $4,700, fabrics $5,600. Every rank in a job adds 10% (up to +40%).
+-- XP: every job gives about 600 XP an hour (exti_level: level 40 after about 60 hours).
 -- =====================================================================
-return {
+-- EX_Tii (Moe): the level jobs have no mini games any more. Every station = an animation with a progress
+-- circle, then a short skill check ([E] when the marker is in the zone). Fail = nothing is lost, you just
+-- do the station again. One stage = { label, ms, skill levels, what the [E] does, anim, prop }.
+-- =====================================================================
+local A = {
+    chase  = { dict = 'anim@mp_snowball', clip = 'pickup_snowball' },
+    bin    = { dict = 'amb@prop_human_bum_bin@base', clip = 'base' },
+    cut    = { dict = 'anim@amb@business@coc@coc_unpack_cut_left@', clip = 'coke_cut_v1_coccutter' },
+    bench  = { dict = 'mini@repair', clip = 'fixing_a_ped' },
+    meter  = { dict = 'amb@prop_human_parking_meter@male@base', clip = 'base' },
+    plant  = { dict = 'amb@world_human_gardener_plant@male@base', clip = 'base' },
+    kneel  = { dict = 'amb@medic@standing@kneel@base', clip = 'base' },
+    fish   = { dict = 'amb@world_human_stand_fishing@idle_a', clip = 'idle_c' },
+    mine   = { dict = 'melee@large_wpn@streamed_core', clip = 'ground_attack_on_spot' },
+    weld   = { dict = 'amb@world_human_welding@male@base', clip = 'base' },
+}
+local P = {
+    -- the head of the pickaxe points forward and down, the handle in the right hand
+    pickaxe = { model = 'prop_tool_pickaxe', bone = 57005, pos = vec3(0.08, -0.1, -0.04), rot = vec3(78.0, -20.0, 175.0) },
+    rod     = { model = 'prop_fishing_rod_01', bone = 60309, pos = vec3(0.0, 0.0, 0.0), rot = vec3(0.0, 0.0, 0.0) },
+}
+local function st(label, ms, skill, hint, anim, prop) return { label = label, ms = ms, skill = skill, hint = hint, anim = anim, prop = prop } end
+local E1, E2, EM, M1, M2, MH = { 'easy' }, { 'easy', 'easy' }, { 'easy', 'medium' }, { 'medium' }, { 'medium', 'medium' }, { 'medium', 'hard' }
+local S = {
+    catch     = { st('تطارد الدجاج في الحظيرة...', 10000, E2, 'امسك الدجاجة', A.chase), st('تضع الدجاج في الأقفاص...', 8000, E1, 'أغلق القفص', A.bin) },
+    slaughter = { st('تثبّت الدجاج على الطاولة...', 8000, E1, 'ثبّت الدجاجة', A.cut), st('تذبح الدجاج...', 10000, EM, 'اذبح بضربة واحدة', A.cut) },
+    pack      = { st('ترتّب الدجاج في الصواني...', 9000, E2, 'ضع الدجاجة في الصينية', A.bin), st('تغلّف الصواني...', 8000, E1, 'أغلق الغلاف', A.bench) },
+    pick      = { st('تقطف عناقيد العنب...', 10000, E2, 'اقطع العنقود', A.plant), st('تجمع العنب في السلال...', 8000, E1, 'ضع العنقود في السلة', A.bin) },
+    dry       = { st('تفرش العنب على المناشر...', 9000, E1, 'افرش العنب', A.bench), st('تقلّب العنب حتى يجفّ...', 9000, E2, 'قلّب العنب', A.bench) },
+    box       = { st('تملأ الكراتين بالزبيب...', 9000, E2, 'اغرف الزبيب', A.bin), st('تغلق الكراتين بالشريط...', 8000, E1, 'ألصق الشريط', A.bench) },
+    harvest   = { st('تحصد القمح بالمنجل...', 10000, EM, 'اضرب بالمنجل', A.plant), st('تربط حزم القمح...', 8000, E1, 'اربط الحزمة', A.kneel) },
+    mill      = { st('تصبّ القمح في المطحنة...', 9000, E1, 'افتح الفتحة', A.meter), st('تطحن القمح وتعبّئ الدقيق...', 9000, EM, 'أوقف الحجر', A.meter) },
+    bake      = { st('تعجن العجين وتشكّل الأرغفة...', 9000, EM, 'اعجن', A.bench), st('تخبز الأرغفة في الفرن...', 9000, M1, 'أخرج الخبز في وقته', A.meter) },
+    fish      = { st('ترمي الصنارة وتنتظر...', 10000, EM, 'اسحب حين تعلق السمكة', A.fish, P.rod), st('تلفّ الخيط وتخرج السمك...', 8000, M1, 'شدّ الخيط', A.fish, P.rod) },
+    fillet    = { st('تنظّف السمك بالسكين...', 9000, EM, 'اقطع على الخط', A.cut), st('تقطّع الشرائح...', 9000, M1, 'افصل الشريحة', A.cut) },
+    icepack   = { st('ترصّ السمك في الصواني...', 9000, EM, 'ضع السمكة', A.bin), st('تغطّي السمك بالثلج وتختم العلب...', 8000, M1, 'اختم العلبة', A.bench) },
+    mine      = { st('تحفر جدار المنجم...', 10000, M2, 'اضرب الصخرة', A.mine, P.pickaxe), st('تكسر الصخور الكبيرة...', 9000, M1, 'اضرب بقوة', A.mine, P.pickaxe) },
+    sort_ore  = { st('تفرز الخام على الحزام...', 9000, M2, 'ارمِ الحجر الفارغ', A.bench), st('تغسل الخام...', 8000, M1, 'اغسل الخام', A.bin) },
+    smelt     = { st('تحمّي الفرن وتذيب الخام...', 9000, M1, 'ارفع الحرارة', A.weld), st('تصبّ المعدن في القوالب...', 9000, MH, 'أوقف الصبّ عند الخط', A.bench) },
+    shear     = { st('تثبّت الخروف...', 8000, M1, 'ثبّت الخروف', A.kneel), st('تجزّ الصوف...', 10000, M2, 'مرّر المجزّة', A.kneel) },
+    weave     = { st('تجهّز خيوط النول...', 8000, M1, 'شدّ الخيط', A.meter), st('تنسج القماش...', 10000, MH, 'ارمِ المكوك', A.meter) },
+    sew       = { st('تقصّ القماش...', 8000, M1, 'قصّ على الخط', A.bench), st('تخيط الملابس...', 10000, MH, 'ثبّت الإبرة على الخط', A.meter) },
+}
+
+
+local CONFIG = {
     deposit = 250,          -- paid when the work vehicle is taken, given back when it is returned
     licence = 'driver',     -- every job with a work vehicle needs the car licence (from the driving school; nobody starts with one)
 
@@ -14,7 +60,7 @@ return {
 
     -- bonus for bringing the work vehicle back at the end of the shift:
     -- base + per finished round (up to max), times how healthy the vehicle is
-    returnBonus = { base = 65, perRound = 33, max = 260 },
+    returnBonus = { base = 42, perRound = 21, max = 170 },
 
     -- jobs anyone may switch away from at the job center (police, EMS and other team jobs can't)
     freeJobs = { unemployed = true, tow = true, garbage = true, delivery = true, chicken = true, raisin = true, bread = true, fishing = true, metals = true, fabrics = true, taxi = true, bus = true, trucker = true, reporter = true, vineyard = true },
@@ -68,12 +114,12 @@ return {
                 'كل جولة 3 مركبات، وبعدها تصلك جولة جديدة مباشرة.',
             },
             extra = 'المركبات التي تُترك دون سائق أكثر من 10 دقائق يمكنك سحبها إلى ساحة الحجز، ويدفع صاحبها رسوم الاستلام.',
-            payText = 'حوالي 125$ لكل مركبة',
-            hourText = '2,300$ – 2,600$',
+            payText = 'حوالي 80$ لكل مركبة',
+            hourText = '1,600$',
             taskWord = { 'مركبة', 'مركبات' },
             levelSteps = { 0, 25, 70, 140, 240 },
-            pay = { base = 114, perMeter = 0.02, maxDistance = 45 }, -- cars are 300-950 m away: about 120-135$ each
-            abandonedPay = 160,
+            pay = { base = 74, perMeter = 0.013, maxDistance = 45 }, -- cars are 300-950 m away: about 78-86$ each
+            abandonedPay = 104,
             impoundFee = 500,
             abandonedMinutes = 10, -- tow drivers may take a car left this long (the impound staff take it at 15)
             perRound = 3,
@@ -111,11 +157,11 @@ return {
                 'كل حاوية فيها كيسان أو ثلاثة، وكل جولة 6 حاويات قريبة من بعضها.',
                 'بعد آخر حاوية عد إلى المستودع وادخل بالشاحنة الدائرة الذهبية لتفريغها، فتبدأ جولة جديدة.',
             },
-            payText = '26$ لكل كيس (حوالي 65$ لكل حاوية)',
-            hourText = '2,300$ – 2,600$',
+            payText = '17$ لكل كيس (حوالي 42$ لكل حاوية)',
+            hourText = '1,600$',
             taskWord = { 'حاوية', 'حاويات' },
             levelSteps = { 0, 45, 120, 240, 420 },
-            pay = { perBag = 26 },
+            pay = { perBag = 17 },
             bags = { 2, 3 },
             perRound = 6,
             vehicle = { model = 'trash', label = 'شاحنة نفايات', plate = 'LSC', blipName = 'شاحنة النفايات' },
@@ -147,11 +193,11 @@ return {
                 'ادخل المتجر وقف في الدائرة الذهبية عند المحاسب، ثم اضغط E لتسليم الطرد.',
                 'بعد آخر طرد عد إلى المستودع لتحميل جولة جديدة.',
             },
-            payText = 'حوالي 70$ لكل طرد (أكثر للمسافات الأبعد)',
-            hourText = '2,300$ – 2,600$',
+            payText = 'حوالي 45$ لكل طرد (أكثر للمسافات الأبعد)',
+            hourText = '1,600$',
             taskWord = { 'طرد', 'طرود' },
             levelSteps = { 0, 45, 120, 240, 420 },
-            pay = { base = 58, perMeter = 0.023, maxDistance = 40 },
+            pay = { base = 38, perMeter = 0.015, maxDistance = 40 },
             perRound = 6,
             vehicle = { model = 'boxville2', label = 'شاحنة توصيل GoPostal', plate = 'GOP', blipName = 'شاحنة التوصيل' },
             vanBack = -3.6, -- metres behind the middle of the van where the parcels are taken out
@@ -192,18 +238,18 @@ return {
             steps = {
                 'تحدّث مع المشرف لتسجّل دخولك، فتلبس زي العمل تلقائيًا.',
                 'اشترِ عُدد الدواجن من بقالة 24/7: كل عدة = دجاجة واحدة (العدة ثقيلة، تحمل حوالي 20).',
-                'في الحظيرة تتحوّل كل العُدد التي معك إلى دجاج حي: امسك الدجاج الهارب في اللعبة.',
-                'عند طاولة الذبح تذبح كل الدجاج مرة واحدة: اضغط في اللحظة الصحيحة.',
-                'عند خط التعبئة اسحب الدجاج إلى الصواني، ثم بِع كل الدجاج المعبأ للتاجر.',
+                'في الحظيرة تمسك الدجاج وتضعه في الأقفاص: كل العُدد التي معك تصير دجاجًا حيًا.',
+                'عند طاولة الذبح تذبح كل الدجاج مرة واحدة، ثم تعبّئه في الصواني عند خط التعبئة.',
+                'بِع كل الدجاج المعبأ لتاجر الدواجن: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
             },
-            extra = 'كلما أتقنت الألعاب خسرت دجاجًا أقل. الدجاج لا يوضع في صندوق السيارة أو المخزن أو على الأرض.',
-            payText = '50$ لكل دجاجة معبأة',
-            hourText = '2,700$',
-            taskWord = { 'دجاجة', 'دجاجات' },
-            levelSteps = { 0, 15, 40, 80, 140 }, -- (counted in sales)
+            extra = 'في كل محطة: حركة وشريط تقدّم ثم فحص مهارة، اضغط E حين يكون المؤشر في المنطقة. إن فشلت لا تخسر شيئًا، لكن تعيد المحطة. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
+            payText = '33$ لكل دجاجة معبأة',
+            hourText = '2,100$',
+            taskWord = { 'جولة', 'جولات' },
+            levelSteps = { 0, 15, 40, 80, 140 }, -- (counted in runs: a sale of at least half a load)
             perRound = 20,
             roundMinutes = 17,
-            xpRate = 0.20,
+            xpRate = 0.286,
             supplies = { 'poultry_kit' },
             hq = {
                 label = 'مزرعة الدواجن',
@@ -216,22 +262,22 @@ return {
             chain = {
                 { id = 'catch', kind = 'batch', label = 'اصطد الدجاج', place = 'حظيرة الدجاج', blip = 126,
                   spot = vec3(-62.90, 6241.46, 31.09),
-                  take = 'poultry_kit', give = 'live_chicken', game = 'catch', seconds = 28,
+                  take = 'poultry_kit', give = 'live_chicken', game = 'catch', stages = S.catch, seconds = 0,
                   anim = { dict = 'anim@mp_snowball', clip = 'pickup_snowball' },
                   done = 'صار معك %d دجاجة حية', lost = 'هرب منك %d' },
                 { id = 'slaughter', kind = 'batch', label = 'اذبح الدجاج', place = 'طاولة الذبح', blip = 273,
                   spot = vec3(-77.99, 6229.06, 31.09),
-                  take = 'live_chicken', give = 'slaughtered_chicken', game = 'slaughter', seconds = 28,
+                  take = 'live_chicken', give = 'slaughtered_chicken', game = 'slaughter', stages = S.slaughter, seconds = 0,
                   anim = { dict = 'anim@amb@business@coc@coc_unpack_cut_left@', clip = 'coke_cut_v1_coccutter' },
                   done = 'ذبحت %d دجاجة', lost = 'تلف منك %d' },
                 { id = 'pack', kind = 'batch', label = 'عبّئ الدجاج', place = 'خط التعبئة', blip = 478,
                   spot = vec3(-101.98, 6208.80, 31.03),
-                  take = 'slaughtered_chicken', give = 'packed_chicken', game = 'pack', seconds = 28,
+                  take = 'slaughtered_chicken', give = 'packed_chicken', game = 'pack', stages = S.pack, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' },
                   done = 'عبّأت %d دجاجة', lost = 'سقط منك %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع الدجاج', place = 'تاجر الدواجن', blip = 431,
                   spot = vec3(-596.16, -889.32, 25.51),
-                  take = 'packed_chicken', price = 50, seconds = 20,
+                  take = 'packed_chicken', price = 33, seconds = 12,
                   anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'تسلّم الدجاج للتاجر وتعدّ الصناديق...', sold = 'بعت %d دجاجة' },
             },
@@ -252,18 +298,18 @@ return {
             steps = {
                 'تحدّث مع المشرف في مزارع مارلو لتسجّل دخولك، فتلبس زي العمل تلقائيًا.',
                 'اشترِ عُدد العنب من بقالة 24/7: كل عدة = عنقود واحد (تحمل حوالي 30).',
-                'عند الكروم تقطف كل العناقيد مرة واحدة: اضغط الحرف الظاهر على كل عنقود بسرعة.',
-                'عند مناشر التجفيف حافظ على الحرارة في المنطقة الذهبية (اضغط مسافة للتسخين).',
-                'عند طاولة التعبئة اسحب المغرفة إلى الكرتونة 3 مرات، اضغط عليها لتغلقها، ثم اسحب الشريط من اليسار إلى اليمين. بعدها بِع الكراتين للتاجر.',
+                'عند الكروم تقطف كل العناقيد مرة واحدة وتجمعها في السلال.',
+                'عند مناشر التجفيف تفرش العنب وتقلّبه حتى يصير زبيبًا، ثم تعبّئه في الكراتين عند طاولة التعبئة.',
+                'بِع الكراتين لتاجر الزبيب: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
             },
-            extra = 'كلما أتقنت الألعاب خسرت أقل. العنب والزبيب لا يوضعان في صندوق السيارة أو المخزن أو على الأرض.',
-            payText = '38$ لكل كرتونة زبيب',
-            hourText = '2,900$',
-            taskWord = { 'كرتونة', 'كراتين' },
-            levelSteps = { 0, 15, 40, 80, 140 }, -- (counted in sales)
+            extra = 'في كل محطة: حركة وشريط تقدّم ثم فحص مهارة، اضغط E حين يكون المؤشر في المنطقة. إن فشلت لا تخسر شيئًا، لكن تعيد المحطة. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
+            payText = '22$ لكل كرتونة زبيب',
+            hourText = '2,600$',
+            taskWord = { 'جولة', 'جولات' },
+            levelSteps = { 0, 15, 40, 80, 140 }, -- (counted in runs)
             perRound = 30,
             roundMinutes = 13,
-            xpRate = 0.18,
+            xpRate = 0.23,
             supplies = { 'grape_kit' },
             hq = {
                 label = 'مزارع مارلو للعنب',
@@ -276,22 +322,22 @@ return {
             chain = {
                 { id = 'pick', kind = 'batch', label = 'اقطف العنب', place = 'كروم العنب', blip = 85,
                   spot = vec3(-1875.41, 2100.37, 138.86),
-                  take = 'grape_kit', give = 'grape_bunch', game = 'pick', seconds = 28,
+                  take = 'grape_kit', give = 'grape_bunch', game = 'pick', stages = S.pick, seconds = 0,
                   anim = { dict = 'amb@world_human_gardener_plant@male@base', clip = 'base' },
                   done = 'قطفت %d عنقودًا', lost = 'سقط منك %d' },
                 { id = 'dry', kind = 'batch', label = 'جفّف العنب', place = 'مناشر التجفيف', blip = 478,
                   spot = vec3(-1881.50, 2062.60, 135.92),
-                  take = 'grape_bunch', give = 'raisins', game = 'dry', seconds = 28,
+                  take = 'grape_bunch', give = 'raisins', game = 'dry', stages = S.dry, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' },
                   done = 'جفّفت %d', lost = 'احترق أو فسد %d' },
                 { id = 'box', kind = 'batch', label = 'عبّئ الزبيب', place = 'طاولة التعبئة', blip = 478,
                   spot = vec3(-1876.00, 2061.30, 135.92),
-                  take = 'raisins', give = 'raisin_box', game = 'box', seconds = 28,
+                  take = 'raisins', give = 'raisin_box', game = 'box', stages = S.box, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' },
                   done = 'عبّأت %d كرتونة', lost = 'رميت %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع الزبيب', place = 'تاجر الزبيب', blip = 431,
                   spot = vec3(-596.16, -889.32, 25.51),
-                  take = 'raisin_box', price = 38, seconds = 20,
+                  pedModel = 'a_m_m_farmer_01', take = 'raisin_box', price = 22, seconds = 12,
                   anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'تسلّم الكراتين للتاجر...', sold = 'بعت %d كرتونة زبيب' },
             },
@@ -311,18 +357,18 @@ return {
             steps = {
                 'تحدّث مع المشرف في مزرعة غريبسيد لتسجّل دخولك، فتلبس زي العمل تلقائيًا.',
                 'اشترِ أكياس الخميرة من بقالة 24/7: كل كيس = رغيف واحد (تحمل حوالي 25).',
-                'في الحقل اضغط واسحب المنجل بسرعة عبر كل حزمة قمح قبل أن تذبل.',
-                'في المطحنة اضغط مسافة حين يمرّ مجرى الحجر تحت فتحة القمح.',
-                'في الفرن أخرج كل رغيف حين يصير ذهبيًا (لا نيئًا ولا محروقًا)، ثم بِع الخبز للتاجر.',
+                'في الحقل تحصد القمح بالمنجل وتربطه حزمًا.',
+                'في المطحنة تطحن القمح وتعبّئ الدقيق، ثم تعجن وتخبز الأرغفة في الفرن.',
+                'بِع الخبز لتاجر الخبز: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
             },
-            extra = 'كلما أتقنت الألعاب خسرت أقل. القمح والدقيق والخبز لا توضع في صندوق السيارة أو المخزن.',
-            payText = '38$ لكل رغيف',
-            hourText = '3,100$',
-            taskWord = { 'رغيف', 'أرغفة' },
+            extra = 'في كل محطة: حركة وشريط تقدّم ثم فحص مهارة، اضغط E حين يكون المؤشر في المنطقة. إن فشلت لا تخسر شيئًا، لكن تعيد المحطة. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
+            payText = '33$ لكل رغيف',
+            hourText = '3,200$',
+            taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 },
             perRound = 25,
             roundMinutes = 14,
-            xpRate = 0.20,
+            xpRate = 0.19,
             supplies = { 'yeast_pack' },
             hq = {
                 label = 'مزرعة القمح', place = 'غريبسيد',
@@ -332,16 +378,16 @@ return {
             },
             chain = {
                 { id = 'harvest', kind = 'batch', label = 'احصد القمح', place = 'حقل القمح', blip = 285, spot = vec3(2080.00, 4930.00, 40.90),
-                  take = 'yeast_pack', give = 'wheat_bundle', game = 'harvest', seconds = 28,
+                  take = 'yeast_pack', give = 'wheat_bundle', game = 'harvest', stages = S.harvest, seconds = 0,
                   anim = { dict = 'amb@world_human_gardener_plant@male@base', clip = 'base' }, done = 'حصدت %d حزمة', lost = 'سقط منك %d' },
                 { id = 'mill', kind = 'batch', label = 'اطحن القمح', place = 'المطحنة', blip = 478, spot = vec3(2016.00, 4973.00, 41.60),
-                  take = 'wheat_bundle', give = 'flour_bag', game = 'mill', seconds = 28,
+                  take = 'wheat_bundle', give = 'flour_bag', game = 'mill', stages = S.mill, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'طحنت %d كيس دقيق', lost = 'فسد %d' },
                 { id = 'bake', kind = 'batch', label = 'اخبز الخبز', place = 'الفرن', blip = 478, spot = vec3(2005.00, 4986.00, 42.00),
-                  take = 'flour_bag', give = 'bread_loaf', game = 'bake', seconds = 28,
+                  take = 'flour_bag', give = 'bread_loaf', game = 'bake', stages = S.bake, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'خبزت %d رغيفًا', lost = 'احترق %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع الخبز', place = 'تاجر الخبز', blip = 431, spot = vec3(-593.00, -893.00, 25.50),
-                  take = 'bread_loaf', price = 38, seconds = 20, anim = { dict = 'mp_common', clip = 'givetake1_a' },
+                  pedModel = 's_m_y_chef_01', take = 'bread_loaf', price = 33, seconds = 12, anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'تسلّم الخبز للتاجر...', sold = 'بعت %d رغيفًا' },
             },
         },
@@ -357,18 +403,18 @@ return {
             steps = {
                 'تحدّث مع المشرف عند رصيف ديل بيرو لتسجّل دخولك.',
                 'اشترِ علب الطُعم من بقالة 24/7: كل علبة = سمكة واحدة (تحمل حوالي 24).',
-                'في آخر الرصيف ارمِ الصنارة: حين يغطس العوّام اضغط بسرعة، ثم أبقِ الشدّ في المنطقة الخضراء حتى تخرج السمكة.',
-                'على طاولة التنظيف اسحب السكين على الخط المنقّط من الرأس إلى الذيل.',
-                'عند صناديق الثلج ضع السمك في الصينية، غطّه بمغرفتي ثلج ثم اضغط لتختمها. بعدها بِع العلب في سوق السمك.',
+                'في آخر الرصيف ترمي الصنارة وتخرج السمك.',
+                'على طاولة التنظيف تنظّف السمك وتقطّعه شرائح، ثم ترصّه على الثلج وتختم العلب.',
+                'بِع العلب في سوق السمك: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
             },
-            extra = 'كلما أتقنت الألعاب خسرت أقل. السمك لا يوضع في صندوق السيارة أو المخزن.',
-            payText = '42$ لكل علبة سمك',
-            hourText = '3,300$',
-            taskWord = { 'علبة', 'علب' },
+            extra = 'في كل محطة: حركة وشريط تقدّم ثم فحص مهارة، اضغط E حين يكون المؤشر في المنطقة. إن فشلت لا تخسر شيئًا، لكن تعيد المحطة. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
+            payText = '41$ لكل علبة سمك',
+            hourText = '3,900$',
+            taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 },
             perRound = 24,
             roundMinutes = 14,
-            xpRate = 0.20,
+            xpRate = 0.154,
             supplies = { 'fish_bait' },
             hq = {
                 label = 'رصيف الصيد', place = 'ديل بيرو',
@@ -378,16 +424,16 @@ return {
             },
             chain = {
                 { id = 'fish', kind = 'batch', label = 'اصطد السمك', place = 'آخر الرصيف', blip = 68, spot = vec3(-1850.50, -1248.80, 8.62),
-                  take = 'fish_bait', give = 'raw_fish', game = 'fish', seconds = 28,
+                  take = 'fish_bait', give = 'raw_fish', game = 'fish', stages = S.fish, seconds = 0,
                   anim = { dict = 'amb@world_human_stand_fishing@idle_a', clip = 'idle_c' }, done = 'اصطدت %d سمكة', lost = 'هربت %d' },
                 { id = 'clean', kind = 'batch', label = 'نظّف السمك', place = 'طاولة التنظيف', blip = 478, spot = vec3(-1670.00, -1110.00, 13.15),
-                  take = 'raw_fish', give = 'fish_fillet', game = 'fillet', seconds = 28,
+                  take = 'raw_fish', give = 'fish_fillet', game = 'fillet', stages = S.fillet, seconds = 0,
                   anim = { dict = 'anim@amb@business@coc@coc_unpack_cut_left@', clip = 'coke_cut_v1_coccutter' }, done = 'نظّفت %d سمكة', lost = 'تلف %d' },
                 { id = 'pack', kind = 'batch', label = 'عبّئ السمك', place = 'صناديق الثلج', blip = 478, spot = vec3(-1665.00, -1105.00, 13.15),
-                  take = 'fish_fillet', give = 'fish_pack', game = 'icepack', seconds = 28,
+                  take = 'fish_fillet', give = 'fish_pack', game = 'icepack', stages = S.icepack, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'عبّأت %d علبة', lost = 'فسد %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع السمك', place = 'سوق السمك', blip = 431, spot = vec3(-1038.90, -1396.70, 5.55),
-                  take = 'fish_pack', price = 42, seconds = 20, anim = { dict = 'mp_common', clip = 'givetake1_a' },
+                  pedModel = 's_m_y_dockwork_01', take = 'fish_pack', price = 41, seconds = 12, anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'تسلّم علب السمك...', sold = 'بعت %d علبة سمك' },
             },
         },
@@ -403,18 +449,18 @@ return {
             steps = {
                 'تحدّث مع المشرف في منجم ديفيس كوارتز لتسجّل دخولك.',
                 'اشترِ بطاريات مصباح الرأس من بقالة 24/7: كل بطارية = صخرة واحدة (الصخور ثقيلة، تحمل حوالي 20).',
-                'في جدار المنجم حرّك ضوء الخوذة، ابحث عن الخام اللامع واضربه 3 مرات قبل أن يختفي.',
-                'عند حزام الفرز اضغط على الحجارة الرمادية التي بلا معدن لترميها، واترك الخام يمرّ.',
-                'في المسبك اضغط مع الاستمرار لتصبّ واترك حين يمتلئ القالب حتى الخط دون أن يفيض، ثم بِع السبائك: نحاس وحديد، وأحيانًا ذهب.',
+                'عند جدار المنجم تحفر الصخور بالفأس.',
+                'عند حزام الفرز تفرز الخام وتغسله، ثم تصهره وتصبّه في القوالب في المسبك.',
+                'بِع السبائك في مكتب المسبك (نحاس وحديد، وأحيانًا ذهب): البيعة الكاملة = جولة.',
             },
-            extra = 'السبائك تخرج مختلطة: أغلبها نحاس وحديد، والذهب نادر وسعره أعلى بكثير.',
-            payText = 'نحاس 50$ · حديد 45$ · ذهب 260$',
-            hourText = '3,500$',
-            taskWord = { 'سبيكة', 'سبائك' },
+            extra = 'في كل محطة: حركة وشريط تقدّم ثم فحص مهارة، اضغط E حين يكون المؤشر في المنطقة. إن فشلت لا تخسر شيئًا، لكن تعيد المحطة. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
+            payText = 'نحاس 54$ · حديد 48$ · ذهب 280$',
+            hourText = '4,700$',
+            taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 },
             perRound = 20,
             roundMinutes = 15,
-            xpRate = 0.22,
+            xpRate = 0.128,
             supplies = { 'headlamp_battery' },
             hq = {
                 label = 'منجم ديفيس كوارتز', place = 'سان شيانسكي',
@@ -424,17 +470,17 @@ return {
             },
             chain = {
                 { id = 'mine', kind = 'batch', label = 'احفر الصخور', place = 'جدار المنجم', blip = 618, spot = vec3(2950.00, 2790.00, 40.90),
-                  take = 'headlamp_battery', give = 'ore_rock', game = 'mine', seconds = 28,
+                  take = 'headlamp_battery', give = 'ore_rock', game = 'mine', stages = S.mine, seconds = 0,
                   anim = { dict = 'melee@large_wpn@streamed_core', clip = 'ground_attack_on_spot' }, done = 'حفرت %d صخرة', lost = 'تفتّت %d' },
                 { id = 'sort', kind = 'batch', label = 'افرز الخام', place = 'حزام الفرز', blip = 478, spot = vec3(2964.00, 2753.00, 43.30),
-                  take = 'ore_rock', give = 'washed_ore', game = 'sort_ore', seconds = 28,
+                  take = 'ore_rock', give = 'washed_ore', game = 'sort_ore', stages = S.sort_ore, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'فرزت %d', lost = 'رميت %d صخرًا بلا معدن' },
                 { id = 'smelt', kind = 'batch', label = 'اصهر الخام', place = 'المسبك', blip = 478, spot = vec3(1083.50, -1974.00, 31.00),
-                  take = 'washed_ore', give = 'copper_bar', game = 'smelt', seconds = 28,
+                  take = 'washed_ore', give = 'copper_bar', game = 'smelt', stages = S.smelt, seconds = 0,
                   giveMix = { { 'copper_bar', 60 }, { 'iron_bar', 35 }, { 'gold_bar', 5 } },
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'صببت %d سبيكة', lost = 'فسد %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع السبائك', place = 'مكتب المسبك', blip = 431, spot = vec3(1090.00, -1993.00, 30.90),
-                  take = 'copper_bar', price = 50, takeAlso = { iron_bar = 45, gold_bar = 260 }, seconds = 20,
+                  pedModel = 's_m_y_construct_02', take = 'copper_bar', price = 54, takeAlso = { iron_bar = 48, gold_bar = 280 }, seconds = 12,
                   anim = { dict = 'mp_common', clip = 'givetake1_a' }, progress = 'يزن التاجر السبائك...', sold = 'بعت %d سبيكة' },
             },
         },
@@ -450,18 +496,18 @@ return {
             steps = {
                 'تحدّث مع المشرف في مصنع النسيج في لا ميسا لتسجّل دخولك.',
                 'اشترِ بكرات الخيط من بقالة 24/7: كل بكرة = قطعة ملابس واحدة (تحمل حوالي 24).',
-                'في مزرعة غريبسيد جزّ صوف الخراف: مرّر المجزّة على كل الصوف.',
-                'على النول حين يصل المكوك إلى طرف اضغط A (يسار) أو D (يمين) لترميه للطرف الآخر.',
-                'على ماكينة الخياطة اضغط مع الاستمرار وحرّك الفأرة يمينًا ويسارًا لتبقي الإبرة على خط الطباشير، ثم بِع الملابس لمتجر بينكو.',
+                'في مزرعة غريبسيد تثبّت الخراف وتجزّ صوفها.',
+                'في المصنع تنسج القماش على النول، ثم تقصّه وتخيط الملابس على الماكينة.',
+                'بِع الملابس لمتجر بينكو: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
             },
-            extra = 'كلما أتقنت الألعاب خسرت أقل. الصوف والقماش والملابس لا توضع في صندوق السيارة أو المخزن.',
-            payText = '51$ لكل قطعة',
-            hourText = '3,700$',
-            taskWord = { 'قطعة', 'قطع' },
+            extra = 'في كل محطة: حركة وشريط تقدّم ثم فحص مهارة، اضغط E حين يكون المؤشر في المنطقة. إن فشلت لا تخسر شيئًا، لكن تعيد المحطة. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
+            payText = '63$ لكل قطعة',
+            hourText = '5,600$',
+            taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 },
             perRound = 22,
             roundMinutes = 14,
-            xpRate = 0.22,
+            xpRate = 0.107,
             supplies = { 'thread_spool' },
             hq = {
                 label = 'مصنع النسيج', place = 'لا ميسا',
@@ -471,18 +517,31 @@ return {
             },
             chain = {
                 { id = 'shear', kind = 'batch', label = 'جزّ الصوف', place = 'حظيرة الخراف', blip = 141, spot = vec3(2441.60, 4976.40, 46.80),
-                  take = 'thread_spool', give = 'raw_wool', game = 'shear', seconds = 28,
+                  take = 'thread_spool', give = 'raw_wool', game = 'shear', stages = S.shear, seconds = 0,
                   anim = { dict = 'amb@world_human_gardener_plant@male@base', clip = 'base' }, done = 'جززت %d', lost = 'ضاع %d' },
                 { id = 'weave', kind = 'batch', label = 'انسج القماش', place = 'النول', blip = 478, spot = vec3(716.00, -962.00, 30.40),
-                  take = 'raw_wool', give = 'fabric_roll', game = 'weave', seconds = 28,
+                  take = 'raw_wool', give = 'fabric_roll', game = 'weave', stages = S.weave, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'نسجت %d لفة', lost = 'تمزّق %d' },
                 { id = 'sew', kind = 'batch', label = 'خِط الملابس', place = 'ماكينة الخياطة', blip = 478, spot = vec3(710.00, -960.00, 30.40),
-                  take = 'fabric_roll', give = 'sewn_clothes', game = 'sew', seconds = 28,
+                  take = 'fabric_roll', give = 'sewn_clothes', game = 'sew', stages = S.sew, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'خِطت %d قطعة', lost = 'أفسدت %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع الملابس', place = 'متجر بينكو', blip = 431, spot = vec3(425.60, -806.30, 29.50),
-                  take = 'sewn_clothes', price = 51, seconds = 20, anim = { dict = 'mp_common', clip = 'givetake1_a' },
+                  pedModel = 's_f_y_shop_low', take = 'sewn_clothes', price = 63, seconds = 12, anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'يعدّ المتجر القطع...', sold = 'بعت %d قطعة' },
             },
         },
     },
 }
+
+-- every station takes as long as its stages (the server checks this time really passed)
+for _, job in pairs(CONFIG.jobs) do
+    for _, step in ipairs(job.chain or {}) do
+        if step.stages then
+            local ms = 0
+            for _, sg in ipairs(step.stages) do ms = ms + sg.ms end
+            step.seconds = math.floor(ms / 1000)
+        end
+    end
+end
+
+return CONFIG

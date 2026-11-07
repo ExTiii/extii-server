@@ -18,9 +18,9 @@ local function setBlip()
     if r.stage == 'stops' then
         local stop = r.stops[r.index]
         if not stop then return end
-        local street = EXJ.street(stop.coords)
+        -- (no GTA street name: it is English)
         local name = ('حاوية قمامة %d من %d'):format(r.index, r.total or #r.stops)
-        G.blip = EXJ.blip(stop.coords, 677, street and (name .. ' - ' .. street) or name, true) -- pick up: a dumpster
+        G.blip = EXJ.blip(stop.coords, 677, name, true) -- pick up: a dumpster
     elseif r.stage == 'return' then
         G.blip = EXJ.blip(job.hq.dock, 794, 'تفريغ الشاحنة', true) -- drop off: bring the truck here
     end

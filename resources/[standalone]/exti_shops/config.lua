@@ -26,7 +26,7 @@ Config.types = {
             { name = 'burger', price = 10, category = 'food' },
             { name = 'water', price = 10, category = 'food' },
             { name = 'sprunk', price = 10, category = 'food' },
-            { name = 'redbull', price = 50, category = 'food', max = 10 }, -- 1 minute of sprinting without getting tired
+            { name = 'redbull', price = 50, category = 'food', max = 3, daily = 3 }, -- 1 minute of sprinting without getting tired (3 a day per person, every shop together)
             -- EX_Tii: no bandage here any more: medicine is sold at the two hospital pharmacies
             -- EX_Tii level jobs (exti_jobs): the supplies used up every run
             { name = 'poultry_kit', price = 3, category = 'work', max = 25, desc = 'لوظيفة الدواجن: كل عدة = دجاجة واحدة' },
@@ -52,7 +52,7 @@ Config.types = {
             { name = 'burger', price = 10, category = 'food' },
             { name = 'water', price = 10, category = 'food' },
             { name = 'sprunk', price = 10, category = 'food' },
-            { name = 'redbull', price = 50, category = 'food', max = 10 },
+            { name = 'redbull', price = 50, category = 'food', max = 3, daily = 3 },
         },
     },
 
@@ -66,7 +66,7 @@ Config.types = {
         products = {
             { name = 'water', price = 10, category = 'food' },
             { name = 'sprunk', price = 10, category = 'food' },
-            { name = 'redbull', price = 50, category = 'food', max = 10 },
+            { name = 'redbull', price = 50, category = 'food', max = 3, daily = 3 },
             { name = 'burger', price = 15, category = 'food' },
         },
     },
@@ -82,7 +82,7 @@ Config.types = {
             -- EX_Tii: repair kits are for mechanics only now (they get them at the workshop)
             -- EX_Tii gangs: no lockpicks in shops any more (only the Chop Shop gang makes them)
             { name = 'screwdriverset', price = 120, category = 'tools', max = 2 },
-            { name = 'binoculars', price = 250, category = 'tools', max = 1 },
+            { name = 'binoculars', price = 250, category = 'tools', max = 1, daily = 1 },
             { name = 'lighter', price = 15, category = 'tools', max = 3 },
             -- EX_Tii gangs: turf graffiti
             { name = 'spray_can', price = 150, category = 'tools', max = 5 },

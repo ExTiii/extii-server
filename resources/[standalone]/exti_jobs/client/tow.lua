@@ -41,10 +41,9 @@ local function setBlips()
     end
     local m = mission()
     if m then
-        local street = EXJ.street(m.coords)
         local r = T.round
         local name = (r and r.index and r.total) and ('مركبة معطلة %d من %d'):format(r.index, r.total) or 'مركبة معطلة'
-        T.blip = EXJ.blip(m.coords, 380, street and (name .. ' - ' .. street) or name, true) -- pick up: the broken-down car
+        T.blip = EXJ.blip(m.coords, 380, name, true) -- pick up: the broken-down car
     end
 end
 

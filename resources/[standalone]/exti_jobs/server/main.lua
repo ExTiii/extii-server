@@ -117,7 +117,7 @@ local function addTask(player, job)
 end
 
 -- pay a task: level bonus included, into the bank, counted in the shift
-local function payTask(src, shift, base, reason)
+local function payTask(src, shift, base, reason, counts)
     local player = getPlayer(src)
     if not player then return 0 end
     local info = levelInfo(shift.job, tasksDone(player, shift.job))
@@ -125,13 +125,16 @@ local function payTask(src, shift, base, reason)
     player.Functions.AddMoney('bank', amount, reason)
     -- the player level (exti_level): XP for the work itself (the base pay, not the rank bonus)
     local job = config.jobs[shift.job]
-    local xp = round(base * (job.xpRate or 0.25))
+    local xp = round(base * (job.xpRate or 0.375))   -- (about 600 XP an hour in every job)
     if xp > 0 and GetResourceState('exti_level') == 'started' then
         pcall(function() exports.exti_level:AddXP(src, xp, job.xpText or job.label) end)
     end
     shift.earned = shift.earned + amount
-    shift.tasks = shift.tasks + 1
-    addTask(player, shift.job)
+    -- (level jobs: only a real run counts toward the rank: a sale of at least half a load)
+    if counts ~= false then
+        shift.tasks = shift.tasks + 1
+        addTask(player, shift.job)
+    end
     notify(src, ('+%s$ في حسابك البنكي'):format(amount), 'success', 3500)
     return amount
 end
@@ -1269,10 +1272,11 @@ local function batchFinish(source, token, score)
             end
         end
         if total < 1 then return false, 'missing', step.take end
-        local paid = payTask(source, shift, money, 'job-' .. shift.job)
-        shift.rounds = shift.rounds + 1
+        local run = total >= math.ceil((job.perRound or 2) / 2)
+        local paid = payTask(source, shift, money, 'job-' .. shift.job, run)
+        if run then shift.rounds = shift.rounds + 1 end
         lib.logger(source, 'jobs', ('sold %d bars for %d$'):format(total, paid))
-        return true, { sold = total, paid = paid }
+        return true, { sold = total, paid = paid, run = run }
     end
 
     local count = math.min(pending.count, countOf(source, step.take))
@@ -1280,10 +1284,11 @@ local function batchFinish(source, token, score)
 
     if step.kind == 'sellall' then
         if not ox:RemoveItem(source, step.take, count) then return false, 'missing', step.take end
-        local paid = payTask(source, shift, count * step.price, 'job-' .. shift.job)
-        shift.rounds = shift.rounds + 1
+        local run = count >= math.ceil((job.perRound or 2) / 2)
+        local paid = payTask(source, shift, count * step.price, 'job-' .. shift.job, run)
+        if run then shift.rounds = shift.rounds + 1 end
         lib.logger(source, 'jobs', ('sold %d %s for %d$'):format(count, step.take, paid))
-        return true, { sold = count, paid = paid }
+        return true, { sold = count, paid = paid, run = run }
     end
 
     score = tonumber(score) or 0

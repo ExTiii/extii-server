@@ -99,8 +99,15 @@ local function nextStep()
     return 1
 end
 
+-- EX_Tii (Moe): every sell place has a buyer (a person). Placed with /jobspots, or standing on the circle's spot.
+local function buyerAt(step)
+    if step.ped then return step.ped end
+    if (step.kind == 'sellall' or step.kind == 'sell') and step.spot then return vec4(step.spot.x, step.spot.y, step.spot.z, 0.0) end
+end
+
 local function stepCenter(step)
-    if step.ped then return step.ped.xyz end
+    local bp = buyerAt(step)
+    if bp then return bp.xyz end
     if step.kind ~= 'collect' then return step.spot end
     local x, y, z, n = 0.0, 0.0, 0.0, #step.spots
     for _, p in ipairs(step.spots) do x, y, z = x + p.x, y + p.y, z + p.z end
@@ -139,7 +146,7 @@ local function spawnBuyer(key, step)
     if buyers[key] and DoesEntityExist(buyers[key]) then return end
     local model = joaat(step.pedModel or 's_m_m_linecook')
     if not EXJ.loadModel(model) then return end
-    local p = step.ped
+    local p = buyerAt(step)
     RequestCollisionAtCoord(p.x, p.y, p.z)
     local found, gz = GetGroundZFor_3dCoord(p.x, p.y, p.z + 0.6, false)
     local ped = CreatePed(0, model, p.x, p.y, found and math.abs(gz - p.z) < 3.0 and gz or p.z - 1.0, p.w, false, false)
@@ -157,9 +164,10 @@ CreateThread(function()
         local me = GetEntityCoords(cache.ped)
         for name, job in pairs(config.jobs) do
             for _, st in ipairs(job.chain or {}) do
-                if st.ped then
+                local bp = buyerAt(st)
+                if bp then
                     local key = name .. ':' .. st.id
-                    local d = #(me - st.ped.xyz)
+                    local d = #(me - bp.xyz)
                     if d < 100.0 then spawnBuyer(key, st) elseif d > 130.0 and buyers[key] then removeBuyer(key) end
                 end
             end
@@ -266,6 +274,61 @@ local function playAnim(anim)
     TaskPlayAnim(cache.ped, anim.dict, anim.clip, 8.0, -8.0, -1, 1, 0, false, false, false)
 end
 
+-- EX_Tii (Moe): one station = its stages. Each stage: the animation (and the tool in your hand), a progress
+-- circle, then a short skill check ([E]). Fail or cancel = nothing is taken, do the station again.
+local held = nil   -- the tool in your hand (pickaxe, fishing rod)
+local function dropTool()
+    if held and DoesEntityExist(held) then DetachEntity(held, true, false); DeleteEntity(held) end
+    held = nil
+end
+
+local function holdTool(prop)
+    dropTool()
+    if not prop then return end
+    local model = joaat(prop.model)
+    if not EXJ.loadModel(model) then return end
+    local c = GetEntityCoords(cache.ped)
+    local obj = CreateObject(model, c.x, c.y, c.z + 0.2, true, true, false)
+    SetModelAsNoLongerNeeded(model)
+    SetEntityCollision(obj, false, false)
+    AttachEntityToEntity(obj, cache.ped, GetPedBoneIndex(cache.ped, prop.bone), prop.pos.x, prop.pos.y, prop.pos.z,
+        prop.rot.x, prop.rot.y, prop.rot.z, true, true, false, true, 1, true)
+    held = obj
+end
+
+local function loopAnim(anim)
+    if not anim or not EXJ.loadDict(anim.dict) then return end
+    if not IsEntityPlayingAnim(cache.ped, anim.dict, anim.clip, 3) then
+        TaskPlayAnim(cache.ped, anim.dict, anim.clip, 6.0, -6.0, -1, 1, 0, false, false, false)
+    end
+end
+
+-- returns true when every stage was done, false on a failed check, nil when cancelled
+local function runStages(stages)
+    for _, sg in ipairs(stages) do
+        loopAnim(sg.anim)
+        if sg.prop then
+            local same = held and DoesEntityExist(held) and GetEntityModel(held) == joaat(sg.prop.model)
+            if not same then dropTool(); holdTool(sg.prop) end
+        else
+            dropTool()
+        end
+        local done = lib.progressCircle({
+            duration = sg.ms, label = sg.label, position = 'bottom', useWhileDead = false, canCancel = true,
+            disable = { move = true, car = true, combat = true, sprint = true },
+        })
+        if not done then return nil end
+        if sg.skill and #sg.skill > 0 then
+            loopAnim(sg.anim)
+            EXJ.prompt('chain', ('[E] %s'):format(sg.hint or 'اضغط في المنطقة'))
+            local ok = EXJ.skill(sg.skill)
+            EXJ.clearPrompt('chain')
+            if not ok then return false end
+        end
+    end
+    return true
+end
+
 local function actBatch(index, spot)
     local step = C.job.chain[index]
     C.busy = true
@@ -284,23 +347,32 @@ local function actBatch(index, spot)
     end
     local score = 1.0
     if step.kind == 'sellall' then
-        local done = lib.progressBar({
-            duration = info.seconds * 1000, label = step.progress or step.label, useWhileDead = false, canCancel = true,
+        local done = lib.progressCircle({
+            duration = info.seconds * 1000, label = step.progress or step.label, position = 'bottom', useWhileDead = false, canCancel = true,
             disable = { move = true, car = true, combat = true },
-            anim = step.anim and { dict = step.anim.dict, clip = step.anim.clip, flag = 1 } or nil,
+            anim = step.anim and { dict = step.anim.dict, clip = step.anim.clip, flag = 49 } or nil,
         })
         if not done then C.busy = false return end
     else
-        playAnim(step.anim)
         FreezeEntityPosition(cache.ped, true)
-        score = EXJ.playGame(step.game, info.count, info.seconds)
+        local result = step.stages and runStages(step.stages) or true
         FreezeEntityPosition(cache.ped, false)
+        dropTool()
         ClearPedTasks(cache.ped)
-        if score == nil then EXJ.notify(ERR.failed, 'error') C.busy = false return end   -- the game didn't run: nothing taken
+        if result ~= true then
+            if result == false then
+                PlaySoundFrontend(-1, 'Place_Prop_Fail', 'DLC_Dmod_Prop_Editor_Sounds', false)
+                EXJ.notify('فشلت! لم تخسر شيئًا، أعد المحاولة', 'error', 4000)
+            end
+            C.busy = false
+            return
+        end
     end
     local done, r, why = lib.callback.await('exti_jobs:server:batchFinish', false, info.token, score)
     if done and step.kind == 'sellall' then
-        EXJ.notify((step.sold or 'بعت %d'):format(r.sold), 'success', 5000)
+        local text = (step.sold or 'بعت %d'):format(r.sold)
+        if r.run == false then text = text .. ' · بيعة صغيرة: لا تُحسب جولة (بِع نصف حمولة على الأقل)' end
+        EXJ.notify(text, 'success', 6000)
     elseif done then
         local text = (step.done or 'أنجزت %d'):format(r.got)
         if r.lost > 0 then text = text .. ' · ' .. (step.lost or 'خسرت %d'):format(r.lost) end
@@ -312,11 +384,17 @@ local function actBatch(index, spot)
         EXJ.notify(text, r.lost > 0 and 'inform' or 'success', 6000)
     elseif r == 'missing' then
         EXJ.notify(('تحتاج %s'):format(itemLabel(why)), 'error')
+    elseif r == 'fast' then
+        EXJ.notify(ERR.fast, 'error')
     else
         EXJ.notify(ERR[r] or ERR.failed, 'error')
     end
     C.busy = false
 end
+
+AddEventHandler('onResourceStop', function(resource)
+    if resource == GetCurrentResourceName() then dropTool() end
+end)
 
 -- the "[E] ..." text for a step, or why it can't be done yet
 local function promptFor(index)
@@ -380,18 +458,25 @@ local function loop()
             local prompted = false
             for i, st in ipairs(C.job.chain) do
                 local list = st.kind == 'collect' and st.spots or { st.spot }
-                if st.ped then
-                    -- the buyer: walk up to him and press E (no circle)
-                    local h = math.rad(st.ped.w)
-                    local front = vec3(st.ped.x - math.sin(h) * 1.1, st.ped.y + math.cos(h) * 1.1, st.ped.z)
-                    if #(me - front) < SHOW then sleep = 0 end
-                    if onFoot and not C.busy and not prompted and #(me.xy - front.xy) < 1.4 and math.abs(me.z - st.ped.z) < 2.5 then
+                local bp = buyerAt(st)
+                if bp then
+                    -- the buyer: walk up to him (any side) and press E (no circle). He turns to look at you.
+                    local d = #(me.xy - bp.xy)
+                    if d < SHOW then sleep = math.min(sleep, d < 6.0 and 0 or 250) end
+                    local ped = buyers[C.name .. ':' .. st.id]
+                    if d < 4.0 and ped and DoesEntityExist(ped) and not C.busy then
+                        local want = GetHeadingFromVector_2d(me.x - bp.x, me.y - bp.y)
+                        local cur = GetEntityHeading(ped)
+                        local diff = (want - cur + 540.0) % 360.0 - 180.0
+                        if math.abs(diff) > 3.0 then SetEntityHeading(ped, cur + diff * 0.15) end
+                    end
+                    if onFoot and not C.busy and not prompted and d < 2.0 and math.abs(me.z - bp.z) < 2.5 then
                         local text, why = promptFor(i)
                         prompted = true
                         if text then
                             EXJ.prompt('chain', text)
                             if EXJ.pressedE() then
-                                if st.kind == 'batch' or st.kind == 'sellall' then actBatch(i, st.ped.xyz) else act(i, nil, st.ped.xyz) end
+                                if st.kind == 'batch' or st.kind == 'sellall' then actBatch(i, bp.xyz) else act(i, nil, bp.xyz) end
                             end
                         else
                             EXJ.prompt('chain', why)
@@ -453,9 +538,9 @@ for name, job in pairs(config.jobs) do
                 local supplies = {}
                 for _, item in ipairs(job.supplies or {}) do supplies[#supplies + 1] = itemLabel(item) end
                 if job.noVehicle then
-                    EXJ.notify(('سجّلت دخولك ولبست زي العمل. اشترِ %s من بقالة 24/7 ثم اتبع الخط الذهبي'):format(table.concat(supplies, '، ')), 'success', 10000)
+                    EXJ.notify(('سجّلت دخولك ولبست زي العمل. اشترِ %s من بقالة 24/7 ثم اتبع العلامات على الخريطة'):format(table.concat(supplies, '، ')), 'success', 10000)
                 else
-                    EXJ.notify(('بدأت المناوبة! خذ الشاحنة واتبع الخط الذهبي. لا تنسَ %s من بقالة 24/7'):format(table.concat(supplies, '، ')), 'success', 10000)
+                    EXJ.notify(('بدأت المناوبة! خذ الشاحنة واتبع العلامات على الخريطة. لا تنسَ %s من بقالة 24/7'):format(table.concat(supplies, '، ')), 'success', 10000)
                 end
                 loop()
             end,

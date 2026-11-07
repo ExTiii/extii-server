@@ -88,6 +88,8 @@ function EXJ.prompt(owner, text)
     if promptOwner == owner and promptText == text and lib.isTextUIOpen() then return end
     promptOwner, promptText = owner, text
     lib.showTextUI(text)
+    -- (shops and other E prompts on the same spot stay quiet while a job prompt is up)
+    if LocalPlayer.state.extiJobPrompt ~= true then LocalPlayer.state:set('extiJobPrompt', true, false) end
 end
 
 function EXJ.clearPrompt(owner)
@@ -96,6 +98,7 @@ function EXJ.clearPrompt(owner)
         promptOwner, promptText = nil, nil
         lib.hideTextUI()
     end
+    if LocalPlayer.state.extiJobPrompt == true then LocalPlayer.state:set('extiJobPrompt', false, false) end
 end
 
 ---------------------------------------------------------------------------
@@ -180,7 +183,7 @@ do
         for i = 1, #list do
             local o = list[i]
             -- the same circle as before (it may move a little, like the back of a parked truck)
-            if o.radius == radius and now - o.last <= GRACE_MS + FADE_MS and (o.x - x) ^ 2 + (o.y - y) ^ 2 < 9.0 then
+            if o.radius == radius and now - o.last <= GRACE_MS + FADE_MS and (o.x - x) ^ 2 + (o.y - y) ^ 2 < 0.36 then   -- (0.6 m: two places close together keep two circles)
                 c = o
                 break
             end
@@ -263,8 +266,8 @@ function EXJ.blip(coords, sprite, label, route)
     SetBlipColour(blip, GO_COLOUR)
     SetBlipScale(blip, ICON_SIZE)
     SetBlipAsShortRange(blip, false)
+    -- EX_Tii (Moe): no GPS line on the road any more, only the icon on the map (it flashes when it is the next place)
     if route then
-        lineOn(blip, coords)
         SetBlipFlashes(blip, true)
         SetBlipFlashTimer(blip, 3000)
     end
@@ -603,7 +606,7 @@ function EXJ.clockMenu(name)
         opts[#opts + 1] = { title = rank, description = ('زيادة أجرك +%d%%'):format(math.floor((data.level.bonus or 0) * 100 + 0.5)), icon = 'star', readOnly = true }
     else
         local s = data.shift
-        opts[#opts + 1] = { title = ('كسبت %s$ في هذه المناوبة'):format(s.earned), description = ('%d بيعة · %d دقيقة عمل'):format(s.tasks, s.minutes), icon = 'sack-dollar', readOnly = true }
+        opts[#opts + 1] = { title = ('كسبت %s$ في هذه المناوبة'):format(s.earned), description = ('%d جولة · %d دقيقة عمل'):format(s.tasks, s.minutes), icon = 'sack-dollar', readOnly = true }
         opts[#opts + 1] = { title = 'سجّل خروجك', description = 'تنتهي المناوبة وترجع ملابسك', icon = 'right-from-bracket',
             onSelect = function()
                 local ok, result = lib.callback.await('exti_jobs:server:endShift', false, true)

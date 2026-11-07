@@ -39,7 +39,8 @@ local function close(tellServer)
     ui.open = false
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
-    if ui.kind == 'bank' then putTabletAway() else ClearPedTasks(cache.ped) end
+    -- (the ATM: let go at once, no long walk-away animation that keeps you stuck)
+    if ui.kind == 'bank' then putTabletAway() else ClearPedTasksImmediately(cache.ped) end
     PlaySoundFrontend(-1, 'BACK', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
     if tellServer ~= false then lib.callback.await('exti_bank:server:close', false) end
     ui.kind = nil
