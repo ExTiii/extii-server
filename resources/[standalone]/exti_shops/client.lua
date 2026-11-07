@@ -267,6 +267,16 @@ local function openPanel(place)
     ui.place = place
     hidePrompt()
     say(place, 'GENERIC_HI')
+    -- EX_Tii: the server doesn't know an item's own picture (ox_inventory keeps `client.image` in the game
+    -- only), so the pictures of items like the job kits, the tow chain or the light vest come from here
+    local okI, items = pcall(function() return exports.ox_inventory:Items() end)
+    if okI and type(items) == 'table' and type(data.products) == 'table' then
+        for _, p in ipairs(data.products) do
+            local it = items[p.name]
+            local img = it and it.client and it.client.image
+            if type(img) == 'string' and img ~= '' then p.image = img end
+        end
+    end
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'open', shop = data })
 end

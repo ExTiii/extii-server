@@ -39,14 +39,25 @@ end)
 RegisterNetEvent('exti_heists:client:waypoint', function(p) if p and p.x then SetNewWaypoint(p.x + 0.0, p.y + 0.0) end end)
 
 -- the stranger's tip: a wide circle where the fence is today
-local fenceArea
+local fenceArea, fenceMark
 RegisterNetEvent('exti_heists:client:fenceArea', function(p, radius, minutes)
     if fenceArea and DoesBlipExist(fenceArea) then RemoveBlip(fenceArea) end
-    if not p then fenceArea = nil return end   -- (he found him)
+    if fenceMark and DoesBlipExist(fenceMark) then RemoveBlip(fenceMark) end
+    fenceArea, fenceMark = nil, nil
+    if not p then return end   -- (he found him)
+    -- EX_Tii: the circle was too faint to see: a stronger circle and a "?" icon in it (the area, never the spot)
     fenceArea = AddBlipForRadius(p.x + 0.0, p.y + 0.0, p.z + 0.0, radius + 0.0)
-    SetBlipColour(fenceArea, 5); SetBlipAlpha(fenceArea, 110)
-    local mine = fenceArea
-    SetTimeout((minutes or 30) * 60000, function() if DoesBlipExist(mine) then RemoveBlip(mine) end end)
+    SetBlipColour(fenceArea, 5); SetBlipAlpha(fenceArea, 150); SetBlipHighDetail(fenceArea, true)
+    fenceMark = AddBlipForCoord(p.x + 0.0, p.y + 0.0, p.z + 0.0)
+    SetBlipSprite(fenceMark, 66); SetBlipColour(fenceMark, 5); SetBlipScale(fenceMark, 0.8); SetBlipAsShortRange(fenceMark, false)
+    SetBlipFlashes(fenceMark, true); SetBlipFlashTimer(fenceMark, 6000)
+    BeginTextCommandSetBlipName('STRING'); AddTextComponentSubstringPlayerName('المصرّف في مكان ما هنا'); EndTextCommandSetBlipName(fenceMark)
+    HC.notify('وصلتك رسالة: علامة صفراء على خريطتك، المصرّف في مكان ما داخل الدائرة', 'inform', 8000)
+    local a1, a2 = fenceArea, fenceMark
+    SetTimeout((minutes or 30) * 60000, function()
+        if DoesBlipExist(a1) then RemoveBlip(a1) end
+        if DoesBlipExist(a2) then RemoveBlip(a2) end
+    end)
 end)
 
 RegisterNetEvent('exti_heists:client:houseDone', function(id, why)

@@ -222,27 +222,39 @@ function viewTattoos(b, zone) {
         row.appendChild(act);
         row.onclick = (e) => {
             if (e.target === act || own) return;
-            S.tatPreview = t.name;
+            S.tatPreview = t.name; S.tatPick = { t, zone };
             post('appearance_preview_tattoo', { data: S.cur.tattoos, tattoo: Object.assign({ opacity: 1 }, t) });
             box.querySelectorAll('.tat.preview').forEach((x) => x.classList.remove('preview')); row.classList.add('preview');
+            renderFoot();   // (the gold button becomes "buy this tattoo")
         };
         act.onclick = async () => {
             if (own) {
                 const i = mine.findIndex((x) => x.name === t.name); if (i >= 0) mine.splice(i, 1);
                 await post('appearance_delete_tattoo', S.cur.tattoos);
                 toast('أُزيل الوشم', 'ok');
+                renderTabs(); renderBody(); renderFoot();
             } else {
-                const updated = clone(S.cur.tattoos); updated[zone] = updated[zone] || [];
-                updated[zone].push(Object.assign({ opacity: 1 }, t));
-                const paid = await post('appearance_apply_tattoo', { tattoo: t, updatedTattoos: updated });
-                if (paid === false) { toast('ليس معك مال كافٍ نقدًا', 'bad'); return; }
-                S.cur.tattoos = updated; S.tatPreview = null;
-                toast(`اشتريت الوشم · ${money(t.cost || cost)}`, 'ok');
+                await buyTattoo(t, zone);
             }
-            renderTabs(); renderBody();
         };
         box.appendChild(row);
     });
+}
+
+// EX_Tii: buy one tattoo (the row's button, or the gold button at the bottom for the one you are trying on)
+async function buyTattoo(t, zone) {
+    if (S.busy) return;
+    S.busy = true;
+    const cost = t.cost || S.shop.tattooCost || 0;
+    const updated = clone(S.cur.tattoos || {}); updated[zone] = updated[zone] || [];
+    if (!updated[zone].some((x) => x.name === t.name)) updated[zone].push(Object.assign({ opacity: 1 }, t));
+    const paid = await post('appearance_apply_tattoo', { tattoo: t, updatedTattoos: updated });
+    S.busy = false;
+    if (paid !== true) { toast(paid === false ? 'ليس معك مال كافٍ (نقدًا أو في البنك)' : 'تعذّر الشراء، حاول مرة أخرى', 'bad'); return; }
+    S.cur.tattoos = updated; S.tatPreview = null; S.tatPick = null;
+    if (S.shop.cash != null) { const c = Math.min(S.shop.cash, cost); S.shop.cash -= c; S.shop.bank = (S.shop.bank || 0) - (cost - c); }
+    toast(`اشتريت الوشم · ${money(cost)}`, 'ok');
+    renderTabs(); renderBody(); renderFoot();
 }
 
 /* ---------------- wardrobe ---------------- */

@@ -83,9 +83,10 @@ end)
 RegisterNUICallback("appearance_apply_tattoo", function(data, cb)
     local paid = not data.tattoo or not Config.ChargePerTattoo or lib.callback.await("illenium-appearance:server:payForTattoo", false, data.tattoo)
     if paid then
-        client.addPedTattoo(cache.ped, data.updatedTattoos or data)
+        -- EX_Tii: kept as the ped's tattoos at once (a bought tattoo never disappears when the screen closes)
+        client.setPedTattoos(cache.ped, data.updatedTattoos or data)
     end
-    cb(paid)
+    cb(paid == true)
 end)
 
 RegisterNUICallback("appearance_preview_tattoo", function(previewTattoo, cb)
@@ -95,7 +96,7 @@ end)
 
 RegisterNUICallback("appearance_delete_tattoo", function(data, cb)
     cb(1)
-    client.removePedTattoo(cache.ped, data)
+    client.setPedTattoos(cache.ped, data)
 end)
 
 RegisterNUICallback("appearance_wear_clothes", function(dataWearClothes, cb)

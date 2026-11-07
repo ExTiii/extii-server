@@ -18,6 +18,9 @@ local function debugPrint(...)
     print(finalMsg)
 end
 
+-- EX_Tii: who npwd knows right now (unloading someone npwd doesn't know printed "getIdentifier ... null")
+local loaded = {}
+
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
     local playerIdent = player.PlayerData.citizenid
     local phoneNumber = tostring(player.PlayerData.charinfo.phone)
@@ -26,6 +29,7 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
 
     MySQL.update.await('UPDATE players SET phone_number = ? WHERE citizenid = ?', { phoneNumber, playerIdent })
 
+    loaded[playerSrc] = true
     exports.npwd:newPlayer({
         source = playerSrc,
         phoneNumber = tostring(charInfo.phone),
@@ -38,8 +42,13 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
 end)
 
 RegisterNetEvent('qbx_npwd:server:UnloadPlayer', function()
-    exports.npwd:unloadPlayer(source)
+    local src = source
+    if not loaded[src] then return end
+    loaded[src] = nil
+    pcall(function() exports.npwd:unloadPlayer(src) end)
 end)
+
+AddEventHandler('playerDropped', function() loaded[source] = nil end)
 
 AddEventHandler('onServerResourceStart', function(resName)
     if resName ~= currentResourceName then return end
@@ -48,6 +57,7 @@ AddEventHandler('onServerResourceStart', function(resName)
     local players = exports.qbx_core:GetQBPlayers()
 
     for _, v in pairs(players) do
+        loaded[v.PlayerData.source] = true
         exports.npwd:newPlayer({
             source = v.PlayerData.source,
             identifier = v.PlayerData.citizenid,

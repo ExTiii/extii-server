@@ -18,7 +18,16 @@ function renderFoot() {
     }
     if (S.mode === 'tattoo') {
         wallet(f);
-        const a = h('div', 'acts one'); a.appendChild(btn('btn gold', 'انتهيت', 'check', () => save())); f.appendChild(a);
+        // EX_Tii: trying a tattoo on -> the gold button buys it; nothing picked -> "done" saves and leaves
+        const pick = S.tatPick && S.tatPreview === S.tatPick.t.name ? S.tatPick : null;
+        if (pick) {
+            const a = h('div', 'acts');
+            a.appendChild(btn('btn gold', `اشترِ الوشم · ${money(pick.t.cost || S.shop.tattooCost || 0)}`, 'check', () => buyTattoo(pick.t, pick.zone)));
+            a.appendChild(btn('btn ghost', 'انتهيت', null, () => save()));
+            f.appendChild(a);
+        } else {
+            const a = h('div', 'acts one'); a.appendChild(btn('btn gold', 'انتهيت', 'check', () => save())); f.appendChild(a);
+        }
         return;
     }
     if (S.mode === 'barber' || S.mode === 'surgeon') {

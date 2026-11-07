@@ -85,3 +85,31 @@ AddEventHandler('gameEventTriggered', function(name, args)
         lib.notify({ type = 'inform', duration = 6000, description = ('%s · %s · -%d صحة · الباقي %d%s'):format(who, where, before - now, now, armour > 0 and (' · درع %d'):format(armour) or '') })
     end)
 end)
+
+-- EX_Tii (Moe): no shooting while a screen is open (a tablet, the phone, a menu): clicking on the
+-- screen with a gun in your hand fired it before
+local function phoneOpen()
+    if GetResourceState('npwd') ~= 'started' then return false end
+    local ok, open = pcall(function() return exports.npwd:isPhoneVisible() end)
+    return ok and open == true
+end
+CreateThread(function()
+    local phone, nextPhone = false, 0
+    while true do
+        local now = GetGameTimer()
+        if now >= nextPhone then phone, nextPhone = phoneOpen(), now + 300 end
+        if IsNuiFocused() or phone or IsPauseMenuActive() then
+            DisablePlayerFiring(PlayerId(), true)
+            DisableControlAction(0, 24, true)    -- attack
+            DisableControlAction(0, 25, true)    -- aim
+            DisableControlAction(0, 140, true)   -- melee
+            DisableControlAction(0, 141, true)
+            DisableControlAction(0, 142, true)
+            DisableControlAction(0, 257, true)   -- attack 2
+            DisableControlAction(0, 263, true)   -- melee 1
+            Wait(0)
+        else
+            Wait(150)
+        end
+    end
+end)

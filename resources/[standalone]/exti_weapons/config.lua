@@ -52,5 +52,6 @@ Config.shots = {
                   'DTVINE', 'EAST_V', 'EBURO', 'ELYSIAN', 'GOLF', 'HAWICK', 'HORS', 'KOREAT', 'LEGSQU', 'LMESA', 'LOSPUER', 'MIRR', 'MORN',
                   'MOVIE', 'MURRI', 'NOOSE', 'PBOX', 'RANCHO', 'RICHM', 'ROCKF', 'SKID', 'STAD', 'STRAW', 'TERMINA', 'TEXTI', 'VCANA', 'VESP',
                   'VINE', 'WVINE', 'ZP_ORT', 'PALHIGH', 'TATAMO', 'RGLEN', 'OBSERV', 'GREATC', 'PBLUFF' },
-    townZones = { 'SANDY', 'GRAPES', 'PALETO', 'HARMO', 'CHU', 'SLAB', 'GALFISH' },
+    townZones = { 'SANDY', 'GRAPES', 'PALETO', 'HARMO', 'CHU', 'SLAB', 'GALFISH', 'ALAMO', 'DESRT', 'SANCHIA' },
+    streakStep = 0.25,           -- each burst that wasn't reported (within 45 s) adds 25% (half with a suppressor)
 }

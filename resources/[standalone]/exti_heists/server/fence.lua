@@ -201,7 +201,7 @@ function H.fenceHint(src)
     local to = H.phoneOf(src)
     if to and GetResourceState('npwd') == 'started' then
         pcall(function() exports.npwd:emitMessage({ senderNumber = F.hintNumber, targetNumber = to,
-            message = ('سمعت أن معك أشياء تريد بيعها. هناك رجل يشتري كل شيء ولا يسأل. اليوم تجده في مكان ما قرب %s. ابحث عن رجل يدخن وحده.'):format(bd and bd < 300 and name or 'المكان الذي على خريطتك') }) end)
+            message = ('سمعت أن معك أشياء تريد بيعها. هناك رجل يشتري كل شيء ولا يسأل. اليوم تجده في مكان ما قرب %s. وضعت لك علامة على الخريطة. ابحث عن رجل يدخن وحده.'):format(bd and bd < 300 and name or 'المكان الذي على خريطتك') }) end)
     end
     -- a wide circle on the map, the fence somewhere inside it (not in the middle)
     local a, r = math.random() * math.pi * 2, math.random(40, 110)

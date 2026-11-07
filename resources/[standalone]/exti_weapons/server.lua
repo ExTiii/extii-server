@@ -7,6 +7,7 @@ for _, z in ipairs(S.cityZones) do CITY[z] = true end
 for _, z in ipairs(S.townZones) do TOWN[z] = true end
 
 local lastPlayer = {}  -- [src] = os.time()
+local streak = {}       -- [src] = { n = bursts not reported, at = last burst }
 local lastArea = {}    -- [cell] = os.time()
 
 local function isCop(src)
@@ -41,7 +42,14 @@ RegisterNetEvent('exti_weapons:server:shots', function(c, street, zone, silenced
     zone = type(zone) == 'string' and zone or ''
     local chance = CITY[zone] and S.city or TOWN[zone] and S.town or S.wild
     if silenced == true then chance = chance * S.suppressor end
-    if math.random() >= chance then return end
+    -- EX_Tii (Moe): someone who keeps shooting gets reported sooner or later: every burst that wasn't
+    -- reported in the last 45 s adds to the chance (non-stop loud shooting in Sandy = a call after a few bursts)
+    local st = streak[src]
+    if not st or now - st.at > 45 then st = { n = 0 } end
+    st.at = now
+    chance = math.min(1.0, chance + st.n * (S.streakStep or 0.25) * (silenced == true and 0.5 or 1.0))
+    if math.random() >= chance then st.n = st.n + 1; streak[src] = st; return end
+    streak[src] = nil
     lastArea[cell] = now
     if GetResourceState('exti_police') ~= 'started' then return end
     local where = clean(street, 60)
@@ -51,7 +59,7 @@ RegisterNetEvent('exti_weapons:server:shots', function(c, street, zone, silenced
     end)
 end)
 
-AddEventHandler('playerDropped', function() lastPlayer[source] = nil end)
+AddEventHandler('playerDropped', function() lastPlayer[source] = nil; streak[source] = nil end)
 
 CreateThread(function()
     while true do

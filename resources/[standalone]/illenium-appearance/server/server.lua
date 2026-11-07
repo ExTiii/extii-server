@@ -104,9 +104,10 @@ end)
 
 lib.callback.register("illenium-appearance:server:payForTattoo", function(source, tattoo)
     local src = source
-    local cost = tattoo.cost or Config.TattooCost
-
-    if Framework.RemoveMoney(src, "cash", cost) then
+    if type(tattoo) ~= "table" then return false end
+    local cost = tonumber(tattoo.cost) or Config.TattooCost
+    -- EX_Tii: cash first, then the bank card
+    if Framework.RemoveMoney(src, "cash", cost) or Framework.RemoveMoney(src, "bank", cost) then
         lib.notify(src, {
             title = _L("purchase.tattoo.success.title"),
             description = string.format(_L("purchase.tattoo.success.description"), tattoo.label, cost),
