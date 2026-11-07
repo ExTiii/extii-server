@@ -472,6 +472,11 @@ CreateThread(function()
         -- (a robbery or job prompt right here shows next to ours: exti_interact lists both, the wheel picks)
         local busy = IsNuiFocused() or lib.progressActive() or GetGameTimer() < spotCooldown or isDown()
         if busy then target = nil end
+        -- a store being robbed (or just robbed) is closed: no "talk to the seller" line next to the till
+        if target then
+            local robbed = GlobalState['exti_heists:stores']
+            if robbed and robbed[target.index] then target = nil end
+        end
         local spot = not busy and not target and not ui.open and service or nil
         if target then
             showPrompt(target.kind.prompt or '[E] تحدّث مع البائع')
