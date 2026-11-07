@@ -303,7 +303,7 @@ CreateThread(function()
             end
             if nearId then
                 lib.showTextUI(('[E] %s'):format(S.schools[nearId].label))
-                if IsControlJustPressed(0, 38) then
+                if (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
                     lib.hideTextUI()
                     openUi(nearId)
                 end

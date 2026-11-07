@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+/* EX_Tii interact: the prompt lines, just right of the crosshair */
+html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
+#box { position: fixed; left: 53.5%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: .55vh; direction: ltr; }
+.it { display: flex; align-items: center; gap: .7vh; min-height: 3.6vh; padding: .5vh 1.3vh .5vh .55vh; border-radius: 1vh;
+      background: rgba(12, 12, 14, .82); border: 1px solid rgba(255, 255, 255, .08); color: rgba(244, 241, 234, .62);
+      font-size: 1.5vh; font-weight: 600; box-shadow: 0 .4vh 1.4vh rgba(0, 0, 0, .35); transition: background .12s, border-color .12s, color .12s, transform .12s;
+      animation: pop .16s ease-out; max-width: 34vw; }
+.it .k { flex: none; min-width: 2.6vh; height: 2.6vh; padding: 0 .55vh; border-radius: .6vh; display: grid; place-items: center;
+         background: rgba(255, 255, 255, .1); color: #fff; font-size: 1.35vh; font-weight: 800; }
+.it .t { direction: rtl; unicode-bidi: plaintext; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.it.info { padding-left: 1.3vh; }
+.it.on { background: rgba(18, 16, 10, .92); border-color: rgba(232, 181, 71, .75); color: #fff; transform: translateX(.4vh); }
+.it.on .k { background: #e8b547; color: #16130b; }
+.it.single { color: #fff; }
+.it.single .k { background: #e8b547; color: #16130b; }
+.hint { margin-top: .2vh; font-size: 1.15vh; color: rgba(244, 241, 234, .5); direction: rtl; padding-right: .4vh; }
+@keyframes pop { from { opacity: 0; transform: translateX(-.8vh); } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div id="box"></div>
+<script>
+const box = document.getElementById('box');
+const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+window.addEventListener('message', (e) => {
+    const d = e.data || {};
+    if (d.action !== 'list') return;
+    const items = d.items || [];
+    const single = items.length === 1;
+    box.innerHTML = items.map((it) => {
+        const cls = ['it'];
+        if (!it.key) cls.push('info');
+        if (single) cls.push('single'); else if (it.on) cls.push('on');
+        return `<div class="${cls.join(' ')}">${it.key ? `<span class="k">${esc(it.key)}</span>` : ''}<span class="t">${esc(it.label)}</span></div>`;
+    }).join('') + (d.many ? '<div class="hint">عجلة الفأرة أو الأسهم للاختيار · E للتنفيذ</div>' : '');
+});
+</script>
+</body>
+</html>

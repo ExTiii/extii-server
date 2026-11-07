@@ -129,7 +129,7 @@ CreateThread(function()
         if target and not pulling then
             local open, text = lib.isTextUIOpen()
             if not shown and not open then lib.showTextUI(PULL_TEXT, { position = 'left-center' }); shown = true end
-            if IsControlJustReleased(0, 38) and shown then
+            if (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and shown then
                 lib.hideTextUI(); shown = false
                 pull(target)
             end

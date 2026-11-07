@@ -287,7 +287,7 @@ CreateThread(function()
         end
         if want and not busy then
             showPrompt(want.text)
-            if want.run and IsControlJustPressed(0, 38) then
+            if want.run and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
                 hidePrompt()
                 busy = true
                 CreateThread(function() want.run(); busy = false end)

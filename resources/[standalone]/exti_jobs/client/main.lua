@@ -78,7 +78,7 @@ EXJ.isDown = isDown
 
 -- E for any job action (never while you are down)
 function EXJ.pressedE()
-    return IsControlJustPressed(0, 38) and not isDown()
+    return (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and not isDown()
 end
 
 local promptOwner, promptText = nil, nil

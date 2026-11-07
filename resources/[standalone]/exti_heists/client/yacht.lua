@@ -65,7 +65,7 @@ CreateThread(function()
             end
         end
         HC.prompt(text, 'yacht')
-        if action and IsControlJustPressed(0, 38) then CreateThread(action); Wait(400) end
+        if action and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then CreateThread(action); Wait(400) end
         if bar and not (HC.hunted and HC.hunted()) then SendNUIMessage({ action = 'hud', state = bar }); barShown = true
         elseif barShown and not (HC.hunted and HC.hunted()) then SendNUIMessage({ action = 'hud', state = nil }); barShown = false end
         Wait(sleep)

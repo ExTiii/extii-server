@@ -55,7 +55,7 @@ local function goTo(veh, pos, label)
         DrawMarker(0, pos.x, pos.y, pos.z + 0.55, 0, 0, 0, 0, 0, 0, 0.22, 0.22, 0.22, 232, 181, 71, 190, true, true, 2, false, nil, nil, false)
         if d < 1.4 then
             lib.showTextUI(('[E] %s   ·   [G] إيقاف'):format(label), { position = 'left-center' })
-            if IsControlJustReleased(0, 38) then lib.hideTextUI(); return true end
+            if (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then lib.hideTextUI(); return true end
         else
             lib.showTextUI(('اذهب إلى: %s   ·   [G] إيقاف'):format(label), { position = 'left-center' })
         end
@@ -227,7 +227,7 @@ CreateThread(function()
                     local veh = nearestCar(center, C.chop.garageRadius)
                     if veh then
                         prompt('[E] افحص السيارة للتفكيك')
-                        if IsControlJustReleased(0, 38) then prompt(nil); startChop(veh) end
+                        if (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then prompt(nil); startChop(veh) end
                     else
                         prompt(nil)
                     end

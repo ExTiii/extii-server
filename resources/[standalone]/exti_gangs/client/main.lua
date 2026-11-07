@@ -467,7 +467,7 @@ CreateThread(function()
             end
         end
         if not GC.holdText then showPrompt(best and (best.label or LABELS[best.kind]) or nil) end
-        if best and IsControlJustReleased(0, 38) then
+        if best and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
             busy = true; showPrompt(nil)
             local k = best.kind
             if k == 'laptop' then openLaptop()

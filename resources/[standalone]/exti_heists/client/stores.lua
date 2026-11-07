@@ -303,7 +303,7 @@ CreateThread(function()
             bellOff()
         end
         HC.prompt(text, 'stores')
-        if act and IsControlJustReleased(0, 38) then act() end
+        if act and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then act() end
         if mine and (not near or (phases[mine.i] ~= 'held' and phases[mine.i] ~= 'open' and phases[mine.i] ~= 'cower')) then
             if not phases[mine.i] or phases[mine.i] == 'emptied' then mine = nil end
         end

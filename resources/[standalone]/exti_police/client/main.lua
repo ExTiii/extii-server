@@ -287,7 +287,7 @@ CreateThread(function()
             end
         end
         POL.prompt(text)
-        if action and IsControlJustPressed(0, 38) then
+        if action and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
             POL.prompt(nil)
             CreateThread(action)
             Wait(400)

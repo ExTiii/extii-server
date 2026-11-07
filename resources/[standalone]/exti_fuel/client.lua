@@ -599,7 +599,7 @@ CreateThread(function()
         end
 
         local holdingCan = onFoot and not blocked and GetSelectedPedWeapon(ped) == CAN
-        local pressed = IsControlJustPressed(0, 38)
+        local pressed = (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName()))
 
         if here then
             sleep = 0

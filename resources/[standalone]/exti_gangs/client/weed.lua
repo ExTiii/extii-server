@@ -267,7 +267,7 @@ local function sellLoop(nextIn)
                     local untilT = GetGameTimer() + 12000
                     local sold = nil
                     while GetGameTimer() < untilT and selling do
-                        if IsControlJustReleased(0, 38) then sold = true break end
+                        if (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then sold = true break end
                         if IsControlJustReleased(0, 47) then sold = false break end
                         Wait(0)
                     end

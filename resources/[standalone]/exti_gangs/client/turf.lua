@@ -304,7 +304,7 @@ local function drawZone(id, oldName)
             open[#open + 1] = { x = here.x, y = here.y, z = here.z }   -- the next corner follows you
             drawWalls(open, 229, 72, 77)
         end
-        if IsControlJustReleased(0, 38) then                                  -- E
+        if (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then                                  -- E
             if #points >= T.maxPoints then GC.notify(('الحد %d نقطة'):format(T.maxPoints), 'error')
             else points[#points + 1] = { x = here.x, y = here.y, z = here.z }; PlaySoundFrontend(-1, 'SELECT', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false) end
         elseif IsControlJustReleased(0, 73) and #points > 0 then              -- X

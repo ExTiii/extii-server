@@ -744,7 +744,7 @@ CreateThread(function()
                 local canOpen = here and math.abs(me.z - fz) < 2.5 and not talking
                     and not LocalPlayer.state.isInTestDrive and not isDown()
                 setPrompt(canOpen)
-                if canOpen and IsControlJustReleased(0, 38) then
+                if canOpen and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
                     CreateThread(function() talkTo(seller) end)
                 end
             else

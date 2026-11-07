@@ -671,7 +671,7 @@ CreateThread(function()
             end
             if prompt and not busy and not isDown() then
                 showPrompt(prompt)
-                if IsControlJustReleased(0, 38) then
+                if (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
                     if action == 'talk' then CreateThread(function() talkTo(target) end)
                     else CreateThread(function() parkHere(target) end) end
                 end

@@ -153,7 +153,7 @@ local function ZonesLoop()
         local sleep = 1000
         if currentZone then
             sleep = 5
-            if IsControlJustReleased(0, 38) then
+            if (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
                 if currentZone.name == "clothingRoom" then
                     local clothingRoom = Config.ClothingRooms[currentZone.index]
                     local outfits = GetPlayerJobOutfits(clothingRoom.job)

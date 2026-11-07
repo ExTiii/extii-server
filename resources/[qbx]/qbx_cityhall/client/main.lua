@@ -388,7 +388,7 @@ local function goldCircle(current)
                         inRangeCityhall = true
                         lib.showTextUI(locale('info.open_cityhall'))
                     end
-                    if IsControlJustPressed(0, 38) then
+                    if (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
                         lib.hideTextUI()
                         -- EX_Tii: the job center tablet (jobs + documents); the old menu only if it is missing
                         if GetResourceState('exti_jobs') == 'started' then
@@ -436,7 +436,7 @@ local function spawnPeds()
                         inRangeCityhall = false
                     end,
                     inside = function()
-                        if IsControlJustPressed(0, 38) then
+                        if (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
                             openCityhallMenu()
                             lib.hideTextUI()
                         end

@@ -293,7 +293,7 @@ CreateThread(function()
             end
         end
         MEC.prompt(text)
-        if action and IsControlJustPressed(0, 38) then
+        if action and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
             MEC.prompt(nil)
             CreateThread(action)
             Wait(400)

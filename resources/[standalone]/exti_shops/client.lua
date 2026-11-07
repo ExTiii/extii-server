@@ -469,20 +469,20 @@ CreateThread(function()
             end
         end
 
-        -- (a robbery or job prompt is up right here: the shopkeeper waits, E is theirs)
-        local busy = IsNuiFocused() or lib.progressActive() or GetGameTimer() < spotCooldown or isDown() or LocalPlayer.state.extiPrompt == true or LocalPlayer.state.extiJobPrompt == true
+        -- (a robbery or job prompt right here shows next to ours: exti_interact lists both, the wheel picks)
+        local busy = IsNuiFocused() or lib.progressActive() or GetGameTimer() < spotCooldown or isDown()
         if busy then target = nil end
         local spot = not busy and not target and not ui.open and service or nil
         if target then
             showPrompt(target.kind.prompt or '[E] تحدّث مع البائع')
-            if IsControlJustPressed(0, 38) then
+            if (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
                 hidePrompt()
                 CreateThread(function() openPanel(target) end)
             end
         elseif spot then
             sleep = 0
             showPrompt(spot.prompt)
-            if IsControlJustPressed(0, 38) then
+            if (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
                 hidePrompt()
                 spotCooldown = GetGameTimer() + 2500
                 CreateThread(spot.run)

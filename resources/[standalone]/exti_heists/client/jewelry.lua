@@ -139,7 +139,7 @@ CreateThread(function()
         end
         quietShown = showQuiet
         HC.prompt(text, 'jewel')
-        if act and IsControlJustReleased(0, 38) then act() end
+        if act and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then act() end
         Wait(sleep)
     end
 end)
