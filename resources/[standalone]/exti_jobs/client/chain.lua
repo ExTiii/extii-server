@@ -318,7 +318,8 @@ local function runStages(stages)
             disable = { move = true, car = true, combat = true, sprint = true },
         })
         if not done then return nil end
-        if sg.skill and #sg.skill > 0 then
+        -- EX_Tii (Moe): no skill check, just the animation and the progress circle
+        if false and sg.skill and #sg.skill > 0 then
             loopAnim(sg.anim)
             EXJ.prompt('chain', ('[E] %s'):format(sg.hint or 'اضغط في المنطقة'))
             local ok = EXJ.skill(sg.skill)
