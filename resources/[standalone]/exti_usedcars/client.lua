@@ -97,9 +97,62 @@ local function refreshCars()
     for id in pairs(shown) do if not alive[id] then removeCar(id) end end
 end
 
+-- EX_Tii: no GTA traffic or parked cars on the lot: the car generators there are off, and an ambient car
+-- that still ends up on a lot space is removed (never a player's car: those are script cars, not ambient)
+local genBox = nil
+local function lotBox()
+    local list = {}
+    for _, sl in ipairs(slots()) do list[#list + 1] = sl.xyz end
+    list[#list + 1] = spot().xyz
+    local mn, mx = vec3(1e9, 1e9, 1e9), vec3(-1e9, -1e9, -1e9)
+    for _, p in ipairs(list) do
+        mn = vec3(math.min(mn.x, p.x), math.min(mn.y, p.y), math.min(mn.z, p.z))
+        mx = vec3(math.max(mx.x, p.x), math.max(mx.y, p.y), math.max(mx.z, p.z))
+    end
+    return mn - vec3(15.0, 15.0, 6.0), mx + vec3(15.0, 15.0, 6.0)
+end
+local function generatorsOff()
+    if genBox then SetAllVehicleGeneratorsActiveInArea(genBox[1].x, genBox[1].y, genBox[1].z, genBox[2].x, genBox[2].y, genBox[2].z, true, true) end
+    local mn, mx = lotBox()
+    genBox = { mn, mx }
+    SetAllVehicleGeneratorsActiveInArea(mn.x, mn.y, mn.z, mx.x, mx.y, mx.z, false, false)
+    RemoveVehiclesFromGeneratorsInArea(mn.x, mn.y, mn.z, mx.x, mx.y, mx.z)
+end
+
+local function clearSpaces()
+    local mine = {}
+    for _, v in pairs(shown) do mine[v] = true end
+    for _, sl in ipairs(slots()) do
+        for _, v in ipairs(lib.getNearbyVehicles(sl.xyz, 3.0, true)) do
+            local veh = v.vehicle
+            local pop = GetEntityPopulationType(veh)
+            if not mine[veh] and pop ~= 7 and pop ~= 0 and not IsEntityAMissionEntity(veh) and GetPedInVehicleSeat(veh, -1) == 0 then
+                if NetworkGetEntityIsNetworked(veh) and not NetworkHasControlOfEntity(veh) then
+                    NetworkRequestControlOfEntity(veh)
+                else
+                    SetEntityAsMissionEntity(veh, true, true)
+                    DeleteVehicle(veh)
+                end
+            end
+        end
+    end
+end
+
+CreateThread(function()
+    Wait(2000)
+    generatorsOff()
+    while true do
+        if #(GetEntityCoords(cache.ped) - spot().xyz) < 250.0 then
+            RemoveVehiclesFromGeneratorsInArea(genBox[1].x, genBox[1].y, genBox[1].z, genBox[2].x, genBox[2].y, genBox[2].z)
+            clearSpaces()
+        end
+        Wait(3000)
+    end
+end)
+
 AddStateBagChangeHandler('exti_usedcars:list', 'global', function() SetTimeout(50, refreshCars) end)
 AddStateBagChangeHandler('exti_usedcars:slots', 'global', function()
-    SetTimeout(50, function() for id in pairs(shown) do removeCar(id) end refreshCars() end)
+    SetTimeout(50, function() for id in pairs(shown) do removeCar(id) end refreshCars(); generatorsOff() end)
 end)
 AddStateBagChangeHandler('exti_usedcars:spot', 'global', function() SetTimeout(100, function() removePed(); makeBlip() end) end)
 
@@ -250,5 +303,6 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     removePed()
     for id in pairs(shown) do removeCar(id) end
+    if genBox then SetAllVehicleGeneratorsActiveInArea(genBox[1].x, genBox[1].y, genBox[1].z, genBox[2].x, genBox[2].y, genBox[2].z, true, true) end
     if prompt then lib.hideTextUI() end
 end)
