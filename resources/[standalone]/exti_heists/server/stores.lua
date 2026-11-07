@@ -146,6 +146,7 @@ RegisterNetEvent('exti_heists:server:holdUp', function(i)
     SetTimeout(R.aimSeconds * 1000, function()
         if state[i] == started and started.phase == 'held' then
             started.phase = 'open'; started.openAt = H.now(); publish()
+            print(('[exti_heists] till open: store %d for %s'):format(i, GetPlayerName(src) or '?'))
             TriggerClientEvent('exti_heists:client:tillOpen', src, i)
             -- nobody empties it within 90 s: he closes it again and the shop calls it in
             SetTimeout(90 * 1000, function()
@@ -165,6 +166,7 @@ RegisterNetEvent('exti_heists:server:lookAway', function(i, secs)
     local st = i and state[i]
     if not st or st.by ~= src or st.phase ~= 'held' then return end
     secs = tonumber(secs) or 0
+    print(('[exti_heists] looked away %.1f s: store %d, %s'):format(secs, i, GetPlayerName(src) or '?'))
     -- (EX_Tii: no dice any more: look away and he ALWAYS presses the silent alarm, the game warns you first)
     if secs >= R.lookAwaySeconds and not st.alarm then
         st.alarm = true
@@ -222,10 +224,14 @@ end)
 lib.callback.register('exti_heists:server:grabTill', function(src, i)
     i = math.tointeger(i)
     local st = i and state[i]
-    if not st or st.phase ~= 'open' or st.by ~= src then return false end
-    if not H.near(src, clerkPos(stores[i]), 3.8) then return false end
-    if H.now() - (st.openAt or 0) < R.grabSeconds - 1 then return false end
+    local function no(why, msg) print(('[exti_heists] till grab refused: store %s, %s: %s'):format(tostring(i), GetPlayerName(src) or '?', why)); return false, msg end
+    if not st then return no('no robbery here', 'لا يوجد سطو هنا الآن') end
+    if st.phase ~= 'open' then return no('till is ' .. tostring(st.phase), 'الصندوق ليس مفتوحًا') end
+    if st.by ~= src then return no('not his robbery', 'ليس سطوك') end
+    if not H.near(src, clerkPos(stores[i]), 3.8) then return no('too far', 'اقترب من الطاولة') end
+    if H.now() - (st.openAt or 0) < R.grabSeconds - 1 then return no('too fast', 'انتظر قليلًا') end
     st.phase = 'emptied'; publish()
+    print(('[exti_heists] till emptied: store %d by %s'):format(i, GetPlayerName(src) or '?'))
     H.touch(src, clerkPos(stores[i]))
     local pay = H.payOf(R.pay, st.mode)
     H.giveLoot(src, 'black_money', pay)

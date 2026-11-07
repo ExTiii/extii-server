@@ -141,11 +141,18 @@ RegisterNetEvent('exti_heists:client:holdUp', function(i, secs, modeText)
     mine = { i = i, lookAway = 0, sent2 = false, sentCower = false, untilOpen = GetGameTimer() + secs * 1000, at = GetGameTimer() }
     HC.notify(('أبقِ السلاح عليه حتى يفتح الصندوق · %s'):format(modeText), 'inform', 7000)
 end)
+-- (the server only sends these to the robber: if this game lost track of the hold-up, take it back)
+local function claim(i)
+    if not mine or mine.i ~= i then mine = { i = i, lookAway = 0, sent2 = true, sentCower = true, untilOpen = 0, at = GetGameTimer() } end
+    mine.at = GetGameTimer()
+end
 RegisterNetEvent('exti_heists:client:tillOpen', function(i)
-    if mine and mine.i == i then HC.notify('فتح الصندوق: خذ المال', 'success') end
+    claim(i)
+    HC.notify('فتح الصندوق: اذهب إلى الطاولة واضغط E لتأخذ المال', 'success', 8000)
 end)
 RegisterNetEvent('exti_heists:client:clerkCowers', function(i)
-    if mine and mine.i == i then HC.notify('اختبأ خلف الطاولة: اكسر قفل الصندوق', 'warning', 6000) end
+    claim(i)
+    HC.notify('اختبأ خلف الطاولة: اكسر قفل الصندوق', 'warning', 6000)
 end)
 RegisterNetEvent('exti_heists:client:silentAlarm', function(i)
     if mine and mine.i == i then HC.notify('أبعدت السلاح عنه: ضغط زر الإنذار الصامت', 'error', 6000) end
@@ -167,7 +174,8 @@ local function grabTill(i, s)
     })
     if not done then return end
     local ok, pay = lib.callback.await('exti_heists:server:grabTill', false, i)
-    if ok then HC.notify(('أخذت %d$ مالًا قذرًا · اخرج بسرعة'):format(pay), 'success', 7000); mine = nil end
+    if ok then HC.notify(('أخذت %d$ مالًا قذرًا · اخرج بسرعة'):format(pay), 'success', 7000); mine = nil
+    elseif pay then HC.notify(pay, 'error') end
 end
 
 local function pickTill(i, s)
@@ -276,7 +284,9 @@ CreateThread(function()
 
             -- 2) holding him: keep the gun on him
             if mine and mine.i == near and ph == 'held' then
-                if HC.aimingAt(clerk, 14.0) then
+                -- still aiming a gun inside the store counts (he's scared of the gun, not of a perfect aim)
+                local aiming = IsPedArmed(cache.ped, 4) and (IsPlayerFreeAiming(cache.playerId) or IsAimCamActive() or IsControlPressed(0, 25))
+                if HC.aimingAt(clerk, 14.0) or (aiming and #(here - clerkPos(s)) < 10.0) then
                     mine.lookAway = 0
                 else
                     mine.lookAway = mine.lookAway + GetFrameTime()
