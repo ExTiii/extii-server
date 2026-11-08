@@ -101,13 +101,13 @@ local function aim(view)
     elseif view == "ear" then
         target = bone("head"); pos = target + fwd * 0.3 - right * 0.62; fov = 28.0
     elseif view == "chest" then
-        -- shoulders to the waist
-        target = bone("chest") - up * 0.02; pos = target + fwd * 1.35; fov = 34.0
+        -- shoulders to the waist: halfway between the head and the hips (the spine bones sit too low)
+        target = (bone("head") + bone("pelvis")) / 2 - up * 0.02; pos = target + fwd * 1.05; fov = 34.0
     elseif view == "back" then
-        target = bone("chest") - up * 0.02; pos = target - fwd * 1.4; fov = 34.0
+        target = (bone("head") + bone("pelvis")) / 2 - up * 0.02; pos = target - fwd * 1.1; fov = 34.0
     elseif view == "legs" then
         -- hips to the ankles
-        target = bone("pelvis") - up * 0.48; pos = target + fwd * 1.8; fov = 36.0
+        target = bone("pelvis") - up * 0.48; pos = target + fwd * 1.6; fov = 36.0
     elseif view == "feet" then
         target = (bone("lfoot") + bone("rfoot")) / 2 + up * 0.06; pos = target + fwd * 0.95 + up * 0.35; fov = 34.0
     elseif view == "lwrist" then
@@ -123,7 +123,7 @@ local function aim(view)
     local side = vec3(flat.y, -flat.x, 0.0)
     local wc = target + flat * 2.2
     local coords = GetEntityCoords(ped)
-    local fz = coords.z - 0.96
+    local fz = coords.z - 0.98
     screen = {
         wall = {
             wc + side * 6.0 + up * 6.0, wc - side * 6.0 + up * 6.0,
@@ -217,11 +217,12 @@ end
 local restore
 local saved = {}
 local function run(onlyG, onlyKey)
-    local at = vec4(-1267.0, -3013.0, 13.945, 330.0) -- the airport, in a private world (only you)
+    local at = vec4(-1267.0, -3013.0, 420.0, 330.0) -- high above the airport, in a private world (only you): nothing but sky behind the green
     local back = GetEntityCoords(cache.ped)
     local look = client.getPedAppearance(cache.ped)
     saved.back, saved.look = back, look
     TriggerServerEvent("illenium-appearance:server:ChangeRoutingBucket")
+    LocalPlayer.state:set("characterScreen", true, false)   -- (the HUD hides itself, like on the character screen)
     DoScreenFadeOut(300); Wait(400)
     NetworkOverrideClockTime(12, 0, 0)
     SetWeatherTypeNowPersist("EXTRASUNNY")
@@ -320,6 +321,7 @@ end
 -- put the admin back as they were (also used when the tool stops on an error)
 restore = function(back, look)
     screen = nil
+    LocalPlayer.state:set("characterScreen", false, false)
     RenderScriptCams(false, false, 0, true, true)
     if cam then DestroyCam(cam, false); cam = nil end
     DoScreenFadeOut(300); Wait(400)
