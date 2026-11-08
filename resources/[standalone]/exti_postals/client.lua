@@ -61,12 +61,19 @@ end
 local LABEL = 'رمز المنطقة'
 local X, Y = 0.0155, 0.722          -- left edge of the minimap, a little above its top
 local NUM_S, LBL_S = 0.40, 0.33
+local MAP_H = 0.241                  -- the minimap's height under the bar
+local BX, BY = 0.0028, 0.005         -- frame thickness (sides, bottom)
 CreateThread(function()
     local W, H = 0.216, 0.032       -- as wide as the minimap: a header bar over its top edge
     while true do
         if current and loggedIn() and not IsRadarHidden() and not IsPauseMenuActive() and IsMinimapRendering() then
             local mid = X + W / 2
             DrawRect(mid, Y + H / 2, W, H, 10, 10, 12, 195)
+            -- the same dark colour as a frame round the minimap (the bar is its top side)
+            local top, bot = Y + H, Y + H + MAP_H
+            DrawRect(X + BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)            -- left
+            DrawRect(X + W - BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)        -- right
+            DrawRect(mid, bot - BY / 2, W, BY, 10, 10, 12, 195)                                -- bottom
             DrawRect(X + 0.0013, Y + H / 2, 0.0026, H, 232, 181, 71, 235)
             -- in the middle: the gold number, then the word
             SetTextFont(4); SetTextScale(0.0, NUM_S); SetTextColour(232, 181, 71, 255); SetTextDropShadow()
