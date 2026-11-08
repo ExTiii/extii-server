@@ -219,25 +219,45 @@ function repaint(img, target) {
     const greyBody = coloured < opaque * 0.08;
     let peak = 0; for (let i = 1; i < 36; i++) if (hist[i] > hist[peak]) peak = i;
     const bodyHue = peak * 10 + 5;
+    const hueDist = (a, b) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
     const isBody = (hh, ss, ll) => greyBody
-        ? (ss < 0.24 && ll > 0.15 && ll < 0.985)
-        : (ss > 0.2 && ll > 0.08 && ll < 0.95 && Math.min(Math.abs(hh - bodyHue), 360 - Math.abs(hh - bodyHue)) < 24);
-    for (let i = 0; i < px.length; i += 4) {
+        ? (ss < 0.24 && ll > 0.15)
+        : (ss > 0.12 && ll > 0.06 && ll < 0.97 && hueDist(hh, bodyHue) < 26);
+    // 2) the body mask, then small holes in it (reflections, speckles) are filled from their neighbours
+    const n = w * h, mask = new Uint8Array(n), HSL = new Float32Array(n * 3);
+    for (let i = 0, k = 0; i < px.length; i += 4, k++) {
         if (px[i + 3] < 40) continue;
         const [hh, ss, ll] = rgb2hsl(px[i], px[i + 1], px[i + 2]);
-        if (isBody(hh, ss, ll)) L.push(ll);
+        HSL[k * 3] = hh; HSL[k * 3 + 1] = ss; HSL[k * 3 + 2] = ll;
+        if (isBody(hh, ss, ll)) { mask[k] = 1; L.push(ll); }
     }
     if (L.length < opaque * 0.05) return null;
+    // (two passes of a 7x7 "most of my neighbours are body" fill: a livery pattern or a reflection streak on
+    // the body gets repainted with it instead of showing through as speckles)
+    let filled = mask;
+    for (let pass = 0; pass < 2; pass++) {
+        const next = new Uint8Array(filled);
+        for (let y = 3; y < h - 3; y++) for (let x = 3; x < w - 3; x++) {
+            const k = y * w + x;
+            if (filled[k] || px[k * 4 + 3] < 40) continue;
+            const ll = HSL[k * 3 + 2];
+            if (ll < 0.05) continue;   // never the tyres / the black of the grille
+            let c = 0;
+            for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) c += filled[k + dy * w + dx];
+            if (c >= 22) next[k] = 1;
+        }
+        filled = next;
+    }
     L.sort((a, b) => a - b);
     const median = L[Math.floor(L.length / 2)];
-    // 2) repaint: the owner's hue and saturation, the picture's own light and shade around the new colour
+    // 3) repaint: the owner's hue and saturation, the picture's own light and shade around the new colour
     const [th, ts, tl] = rgb2hsl(target[0], target[1], target[2]);
     const dark = tl < 0.18, light = tl > 0.85;
-    for (let i = 0; i < px.length; i += 4) {
-        if (px[i + 3] < 40) continue;
-        const [hh, ss, ll] = rgb2hsl(px[i], px[i + 1], px[i + 2]);
-        if (!isBody(hh, ss, ll)) continue;
-        let nl = tl + (ll - median) * (dark ? 0.55 : light ? 0.5 : 0.8);
+    for (let k = 0; k < n; k++) {
+        if (!filled[k]) continue;
+        const i = k * 4;
+        const ss = HSL[k * 3 + 1], ll = HSL[k * 3 + 2];
+        let nl = tl + (ll - median) * (dark ? 0.5 : light ? 0.35 : 0.8);
         if (dark && ll > median + 0.25) nl += (ll - median - 0.25) * 0.8;    // keep the highlights on a black car
         nl = Math.max(0.02, Math.min(0.98, nl));
         const ns = Math.max(0, Math.min(1, ts * (0.85 + ss * 0.3)));
