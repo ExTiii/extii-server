@@ -125,6 +125,68 @@
         return h + '</div>';
     }
 
+    // ------------------------------------------------------------------
+    // EX_Tii (Moe): quick care — one scan shows every body part, one game heals everything
+    // ------------------------------------------------------------------
+    function isQuick() { return !!(S.data && S.data.quick); }
+    function quickHtml() {
+        const d = S.data, q = S.quick || {};
+        const p = plan();
+        const status = p.death === 3 ? 'لا يوجد نبض' : p.death === 2 ? 'على الأرض' : (d.patient.female ? 'واعية' : 'واعٍ');
+        let h = `<div class="tr-plan tx">
+            <h1>${esc(d.patient.name)} <span>${esc(status)}</span></h1>
+            <div class="who">${d.patient.fake ? 'مريض تجريبي · ' : ''}${q.scan ? (q.scan.down ? 'يحتاج إنعاشًا' : `الصحة ${q.scan.health}%`) : 'افحصه أولًا'}</div>`;
+        if (!q.scan) {
+            h += `<h2>الفحص</h2><div class="tk todo"><i></i><div><b>افحص المريض</b><small>ضغطة واحدة تعرض كل أجزاء الجسم: سليم أو ماذا فيه</small></div></div>
+                <button class="fin" data-scan style="background:var(--accent);color:var(--accent-ink)">فحص المريض</button>`;
+        } else {
+            h += '<h2>نتيجة الفحص</h2>';
+            ZONES.forEach((z) => {
+                const r = q.scan.zones[z] || { level: 0, items: [] };
+                const bad = (r.level || 0) > 0;
+                const what = bad ? list(r.items).map((it) => esc(it.text || it.kind || '')).filter(Boolean).join(' · ') : 'سليم';
+                h += `<div class="tk ${bad ? 'todo' : 'done'}"><i>${bad ? '!' : '✓'}</i><div><b>${ZONE[z]}</b><small>${what}</small></div></div>`;
+            });
+            const needs = q.scan.down || q.scan.health < 100 || q.scan.wounds > 0;
+            if (needs) h += `<button class="fin" data-heal>${q.scan.down ? 'أنعشه الآن' : 'عالج كل الجروح'}</button>`;
+            else h += '<div class="tk done"><i>✓</i><div><b>المريض بخير</b><small>لا يحتاج علاجًا</small></div></div>';
+        }
+        return h + '</div>';
+    }
+    async function quickScan() {
+        if (S.game || S.busy) return;
+        await timed('جارٍ فحص المريض…', 2, null, async () => {
+            const res = await post('treatScan', {});
+            if (res && res.ok) { S.quick = { scan: res.data }; return { ok: true, data: S.data }; }
+            return res;
+        });
+        // the points take the scan's colours
+        const zones = plan().zones || {};
+        if (S.quick && S.quick.scan) ZONES.forEach((z) => { const r = S.quick.scan.zones[z] || {}; zones[z] = { checked: true, level: r.level || 0, todo: 0 }; });
+        render();
+    }
+    async function quickHeal() {
+        if (S.game || S.busy) return;
+        S.game = 'wait';
+        const res = await post('treatQuick', { stage: 'start' });
+        S.game = null;
+        if (!S.on) return;
+        if (!res || !res.ok) { toast(errText(res && res.error), 'error'); render(); return; }
+        const d = res.data || {};
+        const done = async (result) => {
+            closeGame();
+            const fin = await post('treatQuick', { stage: 'finish', token: d.token, result });
+            if (!S.on) return;
+            if (!fin || !fin.ok) {
+                toast(fin && fin.error === 'not_passed' ? 'ما نجحت — حاول مرة ثانية' : errText(fin && fin.error), 'error');
+                render(); return;
+            }
+            showDone((fin.data && fin.data.paid) || 0);
+        };
+        const cancel = () => { closeGame(); post('treatQuick', { stage: 'cancel' }); render(); };
+        openGame(d.game, d.params || {}, d.down ? 'defib' : 'extract', done, cancel);
+    }
+
     function miniHtml() {
         const m = (S.data && S.data.mini) || {};
         const p = plan();
@@ -264,10 +326,14 @@
         if (!S.on || !S.data) { root.classList.add('hidden'); return; }
         root.classList.remove('hidden');
         ensureLayers();
-        let h = planHtml();
+        const quick = isQuick();
+        let h = quick ? quickHtml() : planHtml();
         h += `<div class="tr-top tx"><span class="tr-pill"><span class="dot"></span>وضع العلاج · ${esc(S.data.patient.name)}</span><span class="tr-pill btn" data-exit>خروج <kbd>Backspace</kbd></span></div>`;
-        h += miniHtml();
-        if (!S.game) {
+        if (!quick) h += miniHtml();
+        if (!S.game && quick) {
+            if (S.busy) h += `<div class="tr-busy tx"><div class="l">${esc(S.busy.label)}</div><div class="bar"><i id="tr-busybar"></i></div></div>`;
+            else h += `<div class="tr-hint">${(S.quick && S.quick.scan) ? 'اضغط <b>عالج</b> في اللوحة · <kbd>Backspace</kbd> للخروج' : 'اضغط <b>فحص المريض</b> في اللوحة'}</div>`;
+        } else if (!S.game) {
             h += popHtml();
             h += barHtml();
             if (S.busy) {
@@ -313,6 +379,7 @@
     // ------------------------------------------------------------------
     function pointClick(z) {
         if (S.game || S.busy) return;
+        if (isQuick()) return;   // (quick care: the points only show the scan's result)
         if (S.pick) {
             const acts = woundActions().filter((a) => a.zone === z && !a.action.blocked && list(a.action.items).includes(S.pick));
             const key = S.pick;
@@ -887,9 +954,11 @@
     // ------------------------------------------------------------------
     root.addEventListener('click', (e) => {
         if (!S.on) return;
-        const t = e.target.closest('[data-exit],[data-unsel],[data-probe],[data-use],[data-item],[data-tool],[data-task],[data-complete]');
+        const t = e.target.closest('[data-exit],[data-unsel],[data-probe],[data-use],[data-item],[data-tool],[data-task],[data-complete],[data-scan],[data-heal]');
         if (!t) return;
         if (t.hasAttribute('data-exit')) return exit();
+        if (t.hasAttribute('data-scan')) return quickScan();
+        if (t.hasAttribute('data-heal')) return quickHeal();
         if (t.hasAttribute('data-unsel')) { S.sel = null; return render(); }
         if (t.dataset.probe) return probe(t.dataset.probe);
         if (t.dataset.use && t.dataset.act) return startAction(t.dataset.act, Number(t.dataset.wid), t.dataset.use);
@@ -946,7 +1015,7 @@
         if (!msg || typeof msg.action !== 'string' || msg.action.indexOf('treat') !== 0) return;
         if (msg.action === 'treatOpen') {
             closeGame();
-            S.on = true; S.sel = null; S.pick = null; S.busy = null; S.done = null; S.seen = {}; S.pts = {};
+            S.on = true; S.sel = null; S.pick = null; S.busy = null; S.done = null; S.seen = {}; S.pts = {}; S.quick = null;
             setView(msg.data);
             render();
         } else if (msg.action === 'treatView') {
@@ -983,6 +1052,14 @@
     function previewPost(name, body) {
         if (name === 'treatBp' && body && body.stage === 'start') return { ok: true, data: { token: 1, sys: 98, dia: 62, hr: 116 } };
         if (name === 'treatStart') return { ok: true, data: { token: 1, game: params.get('game') || 'bullet', params: { power: 2, turns: 3, item: 'pressure', part: 'الصدر', cycle: 1, of: 3, breaths: 3, seconds: 4 } } };
+        if (name === 'treatScan') {
+            const zones = {}; ZONES.forEach((z) => { zones[z] = { level: 0, items: [] }; });
+            zones.chest = { level: 3, items: [{ text: 'جرح ناري بدون مخرج — الرصاصة ما زالت في الداخل' }] };
+            zones.r_arm = { level: 2, items: [{ text: 'جرح قطعي، طوله 6 سم تقريبًا' }] };
+            return { ok: true, data: { zones, down: params.get('down') !== '0', health: 0, wounds: 2 } };
+        }
+        if (name === 'treatQuick' && body && body.stage === 'start') return { ok: true, data: { token: 1, game: params.get('down') !== '0' ? 'defib' : 'bullet', params: { power: 2, turns: 3 }, down: params.get('down') !== '0' } };
+        if (name === 'treatQuick' && body && body.stage === 'finish') return { ok: true, data: { stable: true, paid: 300 } };
         return { ok: true, data: S.data };
     }
     if (!inGame && params.get('treat') === '1') {
@@ -1004,6 +1081,7 @@
         zones.r_leg = { checked: true, level: 3, todo: 0, wounds: [W(3, 'تورّم وتشوّه واضح — اشتباه كسر', [['يحتاج أشعة', 'o'], ['جبيرة', 'g']], 3, [])] };
         S.data = {
             target: -1001, patient: { name: 'خالد الحربي', fake: true },
+            quick: params.get('quick') === '1' || undefined,
             mini: { hr: 116, spo2: 89, bp: '98/62' },
             items,
             times: { zone: 3, pulse: 6, spo2: 4, ask: 2 },

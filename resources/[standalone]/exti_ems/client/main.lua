@@ -94,7 +94,7 @@ local function buildSpots()
         for _, kind in ipairs({ 'duty', 'cloakroom', 'storage', 'locker' }) do
             if h[kind] then list[#list + 1] = { hospital = name, kind = kind, coords = h[kind] } end
         end
-        if h.supply then list[#list + 1] = { hospital = name, kind = 'supply', coords = h.supply.coords, shopId = h.supply.shopId } end
+        if h.supply and Config.supplyCabinet ~= false then list[#list + 1] = { hospital = name, kind = 'supply', coords = h.supply.coords, shopId = h.supply.shopId } end
         if h.garage then list[#list + 1] = { hospital = name, kind = 'garage', coords = h.garage.coords } end
         if h.heli then list[#list + 1] = { hospital = name, kind = 'heli', coords = h.heli.coords } end
         for i, floor in ipairs(h.lift or {}) do
@@ -308,8 +308,8 @@ function openPatient(target)
     if info.state ~= 'ok' and EMS.openTreatment then
         options[#options + 1] = {
             title = 'علاج المريض', icon = 'kit-medical', iconColor = '#ff6b6b',
-            description = info.state == 'down' and 'خطة علاج خطوة بخطوة حتى يقوم المريض (أجرك $' .. Config.pay.revive .. ')'
-                or 'أوقف النزيف، ضمّد الجروح، أعطه ما يحتاج',
+            description = info.state == 'down' and ('فحص بضغطة ثم إنعاش بلعبة واحدة (أجرك $' .. Config.pay.revive .. ')')
+                or ('فحص بضغطة ثم علاج كل الجروح بلعبة واحدة (أجرك $' .. Config.pay.treat .. ')'),
             onSelect = function() EMS.openTreatment(target) end,
         }
     end

@@ -41,6 +41,8 @@ Config.items = {
     revive = 'firstaid',          -- revive kit (إسعافات أولية), from the supply cabinet
     treat = 'gauze',              -- gauze, from the supply cabinet or the pharmacy
 }
+-- EX_Tii (Moe): quick care needs no medical items any more, so the supply cabinet spot is gone (true brings it back)
+Config.supplyCabinet = false
 Config.reviveTime = 12            -- seconds of CPR
 Config.treatTime = 6              -- seconds to treat
 Config.reach = 2.5                -- how close to the patient you must be (meters)

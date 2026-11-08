@@ -237,6 +237,7 @@ function Med.treatView(src, s, target, patient)
         turns = C.wrapTurns,
         pending = pending[src] and pending[src].action or nil,
         stable = s.stable and os.time() - s.stable < 60 or nil,
+        quick = C.quick == true or nil,
     }
 end
 
@@ -537,6 +538,79 @@ lib.callback.register('exti_medical:server:treatComplete', function(src, target)
     return true, Med.treatView(src, s, target, patient), { stable = true, paid = paid }
 end)
 
+-- ---------------------------------------------------------------------
+-- EX_Tii (Moe): quick care — one scan, one game, the patient is stable
+-- ---------------------------------------------------------------------
+local quick = {}   -- [medic] = { token, target, at }
+
+local function quickCheck(src, target)
+    local e = api()
+    local patient, medic = e.check(src, target)
+    if not patient then return nil, medic end
+    target = tonumber(target)
+    local s = e.sessionOf(patient, false)
+    if not s or not s.treat[src] then return nil, 'not_open' end
+    return patient, medic, s, target
+end
+
+-- every body part at once: clean or what is wrong with it
+lib.callback.register('exti_medical:server:quickScan', function(src, target)
+    local patient, medic, s, t = quickCheck(src, target)
+    if not patient then return false, medic end
+    local zones, wounds = {}, Med.list(t)
+    for zone, z in pairs(Config.zones) do
+        local inZone = {}
+        for _, p in ipairs(z.parts) do inZone[p] = true end
+        local items, level = {}, 0
+        for _, w in ipairs(wounds) do
+            if inZone[w.p] then
+                local item = Med.T.wound(w)
+                items[#items + 1] = item
+                level = math.max(level, item.level)
+            end
+        end
+        table.sort(items, function(a, b) return a.level > b.level end)
+        s.checked[zone] = true
+        s.results[zone] = { label = z.label, level = level, items = items }
+        zones[zone] = { label = z.label, level = level, items = items }
+    end
+    api().notifyPatient(t, ('المسعف %s يفحصك'):format(api().nameOf(medic)))
+    return true, { zones = zones, down = rawDeath(t) ~= 1, health = healthOf(t), wounds = #wounds }
+end)
+
+lib.callback.register('exti_medical:server:quickStart', function(src, target)
+    local patient, medic, s, t = quickCheck(src, target)
+    if not patient then return false, medic end
+    local down = rawDeath(t) ~= 1
+    if not down and healthOf(t) >= 100 and #Med.list(t) == 0 then return false, 'healthy' end
+    local token = ('%d-%d-%d'):format(src, t, math.random(100000, 999999))
+    quick[src] = { token = token, target = t, at = GetGameTimer() }
+    api().notifyPatient(t, down and ('المسعف %s يجري لك إنعاشًا — لا تتحرك'):format(api().nameOf(medic))
+        or ('المسعف %s يعالج جروحك — لا تتحرك'):format(api().nameOf(medic)))
+    -- down = the shock game; hurt = the bullet game (both take a few seconds)
+    return true, { token = token, game = down and 'defib' or 'bullet', params = { power = 2, turns = 3 }, down = down }
+end)
+
+lib.callback.register('exti_medical:server:quickFinish', function(src, target, token, result)
+    local q = quick[src]
+    if not q or q.token ~= token then return false, 'failed' end
+    local patient, medic, s, t = quickCheck(src, target)
+    if not patient or t ~= q.target then quick[src] = nil return false, patient and 'failed' or medic end
+    if GetGameTimer() - q.at < (C.quickMin or 2.5) * 1000 then quick[src] = nil return false, 'failed' end
+    if type(result) ~= 'table' or result.ok ~= true then return false, 'not_passed' end   -- (try again)
+    quick[src] = nil
+    Med.clear(t)                      -- every wound goes
+    local ok, paid = finish(src, t, s, patient, medic)
+    if not ok then return false, 'failed' end
+    api().push(s, t, patient, src)
+    return true, { stable = true, paid = paid }
+end)
+
+lib.callback.register('exti_medical:server:quickCancel', function(src)
+    quick[src] = nil
+    return true
+end)
+
 -- a bag ended: the plan changes (update the screens, maybe the patient is stable now)
 CreateThread(function()
     while true do
@@ -564,4 +638,5 @@ end)
 
 AddEventHandler('playerDropped', function()
     pending[source] = nil
+    quick[source] = nil
 end)

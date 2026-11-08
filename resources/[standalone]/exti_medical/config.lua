@@ -195,6 +195,10 @@ Config.treat = {
         morphine = { drop = 6, minutes = 45 },   -- for strong pain (6 and more)
     },
     wrapTurns = { gauze = 3, pressure = 4, quickclot = 2 },
+    -- EX_Tii (Moe): quick care. One scan shows every body part, ONE game heals everything (revive included),
+    -- no medical items needed: a patient is back on his feet in under 15 seconds. false = the old step by step.
+    quick = true,
+    quickMin = 2.5,           -- the quick game can't be finished faster than this (seconds, server check)
 }
 
 -- EX_Tii gun rework: a bullet in the head does this much more than a body shot (0.5 = +50%)

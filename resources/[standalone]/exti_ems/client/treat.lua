@@ -275,6 +275,30 @@ RegisterNUICallback('treatComplete', function(_, cb)
     reply(cb, ok, view, extra)
 end)
 
+-- EX_Tii (Moe): quick care — one scan, one game
+RegisterNUICallback('treatScan', function(_, cb)
+    if not tr.on then return cb({ ok = false, error = 'not_open' }) end
+    local ok, res = ask('exti_medical:server:quickScan', tr.target)
+    reply(cb, ok, res)
+end)
+
+RegisterNUICallback('treatQuick', function(data, cb)
+    if not tr.on or type(data) ~= 'table' then return cb({ ok = false, error = 'not_open' }) end
+    if data.stage == 'start' then
+        local ok, res = ask('exti_medical:server:quickStart', tr.target)
+        if ok then play(res.down and 'cpr' or 'tend') end
+        reply(cb, ok, res)
+    elseif data.stage == 'finish' then
+        local ok, res = ask('exti_medical:server:quickFinish', tr.target, data.token, data.result)
+        if tr.on then play('kneel') end
+        reply(cb, ok, res)
+    else
+        ask('exti_medical:server:quickCancel')
+        if tr.on then play('kneel') end
+        cb({ ok = true })
+    end
+end)
+
 RegisterNUICallback('treatExit', function(_, cb)
     cb({ ok = true })
     close(true)
