@@ -11,8 +11,11 @@ end
 -- repair kits: the old mechanic job had these; while it is still on the server it keeps doing them
 if GetResourceState('qbx_mechanicjob'):find('start') then return end
 
--- EX_Tii: only an on-duty mechanic can use a repair kit (exti_mechanic decides)
+-- EX_Tii (Moe): anyone can use a repair kit on his own car now (kits are sold in the shops).
+-- Set MECHANIC_ONLY = true to go back to on-duty mechanics only.
+local MECHANIC_ONLY = false
 local function mechanicOnly(source)
+    if not MECHANIC_ONLY then return true end
     if GetResourceState('exti_mechanic') ~= 'started' then return true end
     local ok, allowed = pcall(function() return exports.exti_mechanic:CanUseKit(source) end)
     if ok and allowed then return true end
