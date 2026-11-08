@@ -5,10 +5,11 @@ return {
     ---@type table<WeaponTypeGroup, number>
     carjackChance = {                    -- Probability of successful carjacking based on weapon used
         [WeaponTypeGroup.MELEE] = 0.0,
-        [WeaponTypeGroup.HANDGUN] = 0.5,
-        [WeaponTypeGroup.SMG] = 0.75,
-        [WeaponTypeGroup.SHOTGUN] = 0.90,
-        [WeaponTypeGroup.RIFLE] = 0.90,
+        -- EX_Tii (Moe): any gun on the driver: he always gives up the car and the keys
+        [WeaponTypeGroup.HANDGUN] = 1.0,
+        [WeaponTypeGroup.SMG] = 1.0,
+        [WeaponTypeGroup.SHOTGUN] = 1.0,
+        [WeaponTypeGroup.RIFLE] = 1.0,
         [WeaponTypeGroup.LMG] = 0.99,
         [WeaponTypeGroup.SNIPER] = 0.99,
         [WeaponTypeGroup.HEAVY] = 0.99,

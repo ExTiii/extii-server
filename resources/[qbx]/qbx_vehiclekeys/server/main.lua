@@ -10,11 +10,22 @@ local function setLockState(veh, state)
 end
 exports('SetLockState', setLockState)
 
+-- EX_Tii (Moe): keys taken by force (hotwire, carjack) are not real keys: that player can't lock / unlock the car
+local function markStolen(src, vehicle)
+    if not DoesEntityExist(vehicle) then return end
+    local st = Entity(vehicle).state
+    local t = type(st.exti_stolen) == 'table' and st.exti_stolen or {}
+    t[tostring(src)] = true
+    st:set('exti_stolen', t, true)
+end
+exports('MarkStolen', markStolen)
+
 lib.callback.register('qbx_vehiclekeys:server:findKeys', function(source, netId)
     local vehicle = NetworkGetEntityFromNetworkId(netId)
     if not IsPlayerNearVehicle(source, vehicle) then return end
     if math.random() <= GetVehicleConfig(vehicle).findKeysChance then
         GiveKeys(source, vehicle)
+        markStolen(source, vehicle)
         return true
     end
 end)
@@ -25,6 +36,7 @@ lib.callback.register('qbx_vehiclekeys:server:carjack', function(source, netId, 
     local chance = config.carjackChance[weaponTypeGroup] or 0.5
     if math.random() <= chance then
         GiveKeys(source, vehicle)
+        markStolen(source, vehicle)
         setLockState(vehicle, 'unlock')
         return true
     end
@@ -50,6 +62,7 @@ RegisterNetEvent('qbx_vehiclekeys:server:hotwiredVehicle', function(netId)
     local vehicle = NetworkGetEntityFromNetworkId(netId)
     if not IsPlayerNearVehicle(src, vehicle) then return end
     GiveKeys(src, vehicle)
+    markStolen(src, vehicle)
 end)
 
 RegisterNetEvent('qb-vehiclekeys:server:breakLockpick', function(itemName)
@@ -58,6 +71,12 @@ RegisterNetEvent('qb-vehiclekeys:server:breakLockpick', function(itemName)
 end)
 
 RegisterNetEvent('qb-vehiclekeys:server:setVehLockState', function(netId, state)
+    -- EX_Tii: a thief (keys by force) can't lock or unlock it
+    do
+        local v = NetworkGetEntityFromNetworkId(netId)
+        local st = v and v ~= 0 and Entity(v).state.exti_stolen
+        if type(st) == 'table' and st[tostring(source)] then return end
+    end
     local vehicle = NetworkGetEntityFromNetworkId(netId)
 	if type(state) ~= 'number' or not DoesEntityExist(vehicle) then return end
     if state == 2 then state = 'lock' else state = 'unlock' end

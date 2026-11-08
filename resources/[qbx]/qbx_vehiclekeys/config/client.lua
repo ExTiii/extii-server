@@ -31,13 +31,13 @@ return {
 
     -- Carjack Settings
     carjackEnable = true,                -- Enables the ability to carjack pedestrian vehicles, stealing them by pointing a weapon at them
-    carjackingTimeInMs = 7500,           -- Time it takes to successfully carjack in miliseconds
+    carjackingTimeInMs = 3000,           -- EX_Tii (Moe): a gun on the driver: 3 s and he gives up the car           -- Time it takes to successfully carjack in miliseconds
     delayBetweenCarjackingsInMs = 10000, -- Time before you can attempt another carjack in miliseconds
 
     -- Hotwire Settings
     timeBetweenHotwires = 5000, -- Time in milliseconds between hotwire attempts
-    minKeysSearchTime = 20000,  -- Minimum hotwire time in milliseconds
-    maxKeysSearchTime = 40000,  -- Maximum hotwire time in milliseconds
+    minKeysSearchTime = 7000,   -- EX_Tii (Moe): hotwiring from the seat ([H]) takes 7-12 s
+    maxKeysSearchTime = 12000,
 
     -- Police Alert Settings
     alertCooldown = 10000,         -- Cooldown period in milliseconds (10 seconds)

@@ -6,6 +6,12 @@ local function toggleLock(vehicle)
     if not vehicle then return end
     local vehicleConfig = GetVehicleConfig(vehicle)
     if vehicleConfig.noLock or vehicleConfig.shared then return end
+    -- EX_Tii (Moe): keys taken by force (hotwire / carjack) don't lock or unlock the car
+    local stolen = Entity(vehicle).state.exti_stolen
+    if type(stolen) == 'table' and stolen[tostring(cache.serverId)] then
+        exports.qbx_core:Notify('ليس معك مفتاح هذه السيارة: لا يمكنك قفلها أو فتحها', 'error')
+        return
+    end
     if GetIsVehicleAccessible(vehicle) then
         Entity(cache.ped).state:set('qbx_vehiclekeys:keyFob', true, true)
 

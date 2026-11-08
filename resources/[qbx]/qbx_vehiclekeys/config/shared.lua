@@ -18,7 +18,7 @@ return {
             shared = false,
             removeNormalLockpickChance = 0.4,
             removeAdvancedLockpickChance = 0.2,
-            findKeysChance = 0.5,
+            findKeysChance = 0.7, -- EX_Tii (Moe): hotwiring from the seat works 70% of the time
         },
         ---@type table<VehicleClass, VehicleConfig>
         classes = {

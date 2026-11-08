@@ -149,3 +149,53 @@ if config.carjackEnable then
     end)
     watchCarjackingAttempts()
 end
+
+
+---------------------------------------------------------------------------
+-- EX_Tii (Moe):
+--  * a driver pulled out of his car (F) just runs away, he never fights back or comes back for the car
+--  * the cars NPCs are driving are never locked: you can always pull the driver out
+---------------------------------------------------------------------------
+CreateThread(function()
+    local victim
+    while true do
+        local me = PlayerPedId()
+        if IsPedJacking(me) then
+            local t = GetJackTarget(me)
+            if t and t ~= 0 and not IsPedAPlayer(t) then victim = t end
+            Wait(100)
+        else
+            if victim and DoesEntityExist(victim) and not IsPedAPlayer(victim) then
+                local v = victim; victim = nil
+                SetBlockingOfNonTemporaryEvents(v, true)
+                SetPedCombatAttributes(v, 46, false)   -- never fights
+                SetPedCombatAttributes(v, 5, false)
+                SetPedFleeAttributes(v, 0, false)
+                ClearPedTasks(v)
+                TaskSmartFleePed(v, me, 150.0, -1, false, false)
+                ResetPedLastVehicle(v)
+                SetTimeout(20000, function() if DoesEntityExist(v) and not IsPedAPlayer(v) then SetEntityAsNoLongerNeeded(v) end end)
+            end
+            Wait(250)
+        end
+    end
+end)
+
+CreateThread(function()
+    while true do
+        local me = PlayerPedId()
+        local here = GetEntityCoords(me)
+        for _, veh in ipairs(GetGamePool('CVehicle')) do
+            if #(GetEntityCoords(veh) - here) < 40.0 then
+                local driver = GetPedInVehicleSeat(veh, -1)
+                -- an NPC at the wheel, not a player's car (those carry their lock state), and locked: unlock it
+                if driver ~= 0 and not IsPedAPlayer(driver) and Entity(veh).state.doorslockstate == nil and Entity(veh).state.vehicleid == nil
+                    and GetVehicleDoorLockStatus(veh) >= 2 then
+                    SetVehicleDoorsLocked(veh, 1)
+                    SetVehicleDoorsLockedForAllPlayers(veh, false)
+                end
+            end
+        end
+        Wait(1000)
+    end
+end)
