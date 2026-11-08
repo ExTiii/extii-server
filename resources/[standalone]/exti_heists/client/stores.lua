@@ -136,13 +136,17 @@ end)
 -- the hold-up
 ---------------------------------------------------------------------------
 local mine = nil   -- { i, lookAway = 0, sent2 = false, sentCower = false, untilOpen }
+local emptied = {}  -- [i] = GetGameTimer() I emptied that till: no till prompt there for a while
+local function tillDone(i) return emptied[i] and GetGameTimer() - emptied[i] < (R.cooldownMinutes or 20) * 60000 end
 local lastTry, lastShot = 0, 0
 RegisterNetEvent('exti_heists:client:holdUp', function(i, secs, modeText)
+    emptied[i] = nil   -- (a new hold-up here: the server allowed it, so the till is full again)
     mine = { i = i, lookAway = 0, sent2 = false, sentCower = false, untilOpen = GetGameTimer() + secs * 1000, at = GetGameTimer() }
     HC.notify(('أبقِ السلاح عليه حتى يفتح الصندوق · %s'):format(modeText), 'inform', 7000)
 end)
 -- (the server only sends these to the robber: if this game lost track of the hold-up, take it back)
 local function claim(i)
+    emptied[i] = nil
     if not mine or mine.i ~= i then mine = { i = i, lookAway = 0, sent2 = true, sentCower = true, untilOpen = 0, at = GetGameTimer() } end
     mine.at = GetGameTimer()
 end
@@ -174,8 +178,8 @@ local function grabTill(i, s)
     })
     if not done then return end
     local ok, pay = lib.callback.await('exti_heists:server:grabTill', false, i)
-    if ok then HC.notify(('أخذت %d$ مالًا قذرًا · اخرج بسرعة'):format(pay), 'success', 7000); mine = nil
-    elseif pay then HC.notify(pay, 'error') end
+    if ok then HC.notify(('أخذت %d$ مالًا قذرًا · اخرج بسرعة'):format(pay), 'success', 7000); mine = nil; emptied[i] = GetGameTimer()
+    else mine = nil; emptied[i] = GetGameTimer(); if pay then HC.notify(pay, 'error') end end
 end
 
 local function pickTill(i, s)
@@ -190,7 +194,7 @@ local function pickTill(i, s)
     local passed = HC.play('lockpick', params, 'قفل الصندوق')
     ClearPedTasks(ped)
     local res, why = lib.callback.await('exti_heists:server:tillPickEnd', false, token, passed)
-    if res then HC.notify(('أخذت %d$ مالًا قذرًا · اخرج بسرعة'):format(why), 'success', 7000); mine = nil
+    if res then HC.notify(('أخذت %d$ مالًا قذرًا · اخرج بسرعة'):format(why), 'success', 7000); mine = nil; emptied[i] = GetGameTimer()
     elseif why == 'broke' then HC.notify('انكسر مفتاح الفتح', 'error')
     elseif why == 'failed' then HC.notify('لم يُفتح القفل: حاول مرة أخرى', 'error') end
 end
@@ -302,10 +306,10 @@ CreateThread(function()
             end
 
             -- 3) the till
-            if ph == 'open' and mine and mine.i == near and not atTill(here, s) then
+            if ph == 'open' and mine and mine.i == near and not tillDone(near) and not atTill(here, s) then
                 text = 'الصندوق مفتوح: اقترب من الطاولة لتأخذ المال'
             end
-            if atTill(here, s) then
+            if atTill(here, s) and not tillDone(near) and ph ~= 'emptied' then
                 if ph == 'open' and mine and mine.i == near then
                     text, act = '[E] أفرغ الصندوق', function() grabTill(near, s) end
                 elseif (ph == 'cower' and mine and mine.i == near) or (not ph and not mine and HC.count('lockpick') > 0 and not IsPedArmed(cache.ped, 4)) then
