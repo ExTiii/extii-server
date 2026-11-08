@@ -326,7 +326,7 @@ lib.callback.register('qbx_garages:server:getGarageData', function(source, garag
         shares = {},
         ownerNames = {},
         finance = financeOf(ids),
-        photos = {}, -- EX_Tii (Moe): car photos are off, the stock pictures are used
+        photos = PhotoVersions and PhotoVersions(ids) or {}, -- EX_Tii: the real photos (taken silently), stock picture otherwise
     }
 
     if #ids > 0 then

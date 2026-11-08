@@ -159,38 +159,51 @@ local function takePhoto(props, notBefore)
         local center = GetOffsetFromEntityInWorldCoords(veh, centerLocal.x, centerLocal.y, centerLocal.z)
         local half = dist + 8.0
 
+        -- EX_Tii (Moe): nobody sees the studio. Everything above is prepared out of sight (the copy is 320 m up);
+        -- then the screen goes black for a blink, the camera jumps to the box, one frame is captured, and the
+        -- camera comes straight back. No "taking a photo" screen, no shutter animation.
+        while notBefore and GetGameTimer() < notBefore do Wait(0) end
+        -- not in the middle of a fast drive, a fight or a menu (the blink would be in the way): wait up to 30 s
+        local waitUntil = GetGameTimer() + 30000
+        while GetGameTimer() < waitUntil do
+            local moving = cache.vehicle and GetEntitySpeed(cache.vehicle) > 4.0
+            if not moving and not IsNuiFocused() and not IsPauseMenuActive() and not IsPedShooting(cache.ped) and not IsPlayerFreeAiming(cache.playerId) then break end
+            Wait(250)
+        end
+
+        cam = CreateCamWithParams('DEFAULT_SCRIPTED_CAMERA', camPos.x, camPos.y, camPos.z, 0.0, 0.0, 0.0, FOV, false, 2)
+        PointCamAtCoord(cam, center.x, center.y, center.z)
+        SetCamActive(cam, true)
+
+        SendNUIMessage({ action = 'photoBlink', show = true })
+        Wait(0); Wait(0)   -- the black is on screen before anything changes behind it
         drawing = true
         CreateThread(function()
             while drawing do
                 NetworkOverrideClockTime(12, 30, 0)
                 drawBox(center, half)
                 HideHudAndRadarThisFrame()
-                DisableAllControlActions(0)
                 Wait(0)
             end
         end)
-
-        cam = CreateCamWithParams('DEFAULT_SCRIPTED_CAMERA', camPos.x, camPos.y, camPos.z, 0.0, 0.0, 0.0, FOV, false, 2)
-        PointCamAtCoord(cam, center.x, center.y, center.z)
-        SetCamActive(cam, true)
         RenderScriptCams(true, false, 0, true, true)
-
-        for _ = 1, 12 do Wait(0) end
-        while notBefore and GetGameTimer() < notBefore do Wait(0) end
+        for _ = 1, 4 do Wait(0) end
 
         local raw = awaitWithTimeout(function(settle)
-            exports.screencapture:requestScreenshot({ encoding = 'png', maxWidth = 1280, maxHeight = 720 }, function(data)
+            exports.screencapture:requestScreenshot({ encoding = 'png', maxWidth = 960, maxHeight = 540 }, function(data)
                 settle(data)
             end)
-        end, 8000)
+        end, 6000)
         return raw
     end)
 
     drawing = false
     RenderScriptCams(false, false, 0, true, true)
     if cam and DoesCamExist(cam) then DestroyCam(cam, false) end
-    if DoesEntityExist(veh) then DeleteEntity(veh) end
     NetworkOverrideClockTime(clockH, clockM, clockS)
+    Wait(0); Wait(0)   -- the world is back on screen before the black goes
+    SendNUIMessage({ action = 'photoBlink', show = false })
+    if DoesEntityExist(veh) then DeleteEntity(veh) end
 
     if not ok then
         lib.print.warn('[car photos] studio failed: ' .. tostring(result))
@@ -202,7 +215,7 @@ local function takePhoto(props, notBefore)
     local token = ('%d-%d'):format(GetGameTimer(), math.random(100000, 999999))
     local processed = awaitWithTimeout(function(settle)
         pendingResults[token] = settle
-        SendNUIMessage({ action = 'photoProcess', token = token, image = result })
+        SendNUIMessage({ action = 'photoProcess', token = token, image = result, silent = true })
     end, 10000)
     pendingResults[token] = nil
 
@@ -243,9 +256,8 @@ local function runQueue()
             local okLook, storedLook = lib.callback.await('qbx_garages:server:getPhotoLook', false, job.vehicleId)
             local look = lookOf(job.props)
             if okLook and (job.force or storedLook ~= look) then
-                SendNUIMessage({ action = 'photoOverlay', show = true, label = labelOf(job.props.model) })
-                local photo = takePhoto(job.props, GetGameTimer() + 1100)
-                SendNUIMessage({ action = 'photoOverlay', show = false })
+                -- (a few seconds after the trigger, so it never lands in the middle of the purchase / parking moment)
+                local photo = takePhoto(job.props, GetGameTimer() + 4000)
                 if photo then
                     TriggerLatentServerEvent('qbx_garages:server:savePhoto', 200000, job.vehicleId, look, photo)
                     Wait(4500) -- the server accepts one photo every few seconds
@@ -259,7 +271,7 @@ end
 ---@param vehicleId integer
 ---@param props table ox_lib vehicle properties
 ---@param force? boolean take a new photo even if the car looks the same
-local PHOTOS_ON = false -- EX_Tii (Moe): the car photo session is off (it was laggy). The garage shows the stock pictures.
+local PHOTOS_ON = true -- EX_Tii (Moe): real photos, taken silently (see takePhoto). false = stock pictures only.
 local function refreshPhoto(vehicleId, props, force)
     if not PHOTOS_ON then return end
     if type(vehicleId) ~= 'number' or vehicleId % 1 ~= 0 or type(props) ~= 'table' or type(props.model) ~= 'number' then return end

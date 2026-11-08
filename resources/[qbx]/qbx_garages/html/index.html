@@ -54,7 +54,9 @@
             <div class="toast" id="toast" role="status"></div>
         </section>
     </div>
-    <!-- photo session: shown while the game takes a photo of your car -->
+    <!-- EX_Tii: a plain black screen for a blink while the car's photo is taken out of sight -->
+    <div id="photo-blink" style="position:fixed;inset:0;background:#000;z-index:300;display:none;pointer-events:none"></div>
+    <!-- photo session (not used any more: the photo is taken silently) -->
     <div id="photo-overlay" class="photo-overlay" aria-hidden="true">
         <div class="po-bg"></div>
         <div class="po-shoot">
@@ -83,6 +85,6 @@
         <div class="po-shutter po-sh-bottom"></div>
         <div class="po-flash"></div>
     </div>
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=12"></script>
 </body>
 </html>
