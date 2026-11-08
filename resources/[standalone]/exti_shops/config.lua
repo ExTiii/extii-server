@@ -38,38 +38,10 @@ Config.types = {
         },
     },
 
-    -- the store at a gas station: 24/7 items. No map icon of its own:
-    -- the gas station icon (exti_fuel) shows the station and its store together.
-    -- EX_Tii: the jerry can is NOT sold here any more. It is bought at the pump (exti_fuel pump screen).
-    fuel = {
-        label = 'متجر المحطة',
-        icon = 'store',
-        greeting = 'أهلًا! عبّئ مركبتك وخذ ما تحتاجه للطريق.',
-        clerk = { model = 'mp_m_shopkeep_01' },
-        circleDistance = 1.45,
-        blip = false,
-        products = {
-            { name = 'burger', price = 10, category = 'food' },
-            { name = 'water', price = 10, category = 'food' },
-            { name = 'sprunk', price = 10, category = 'food' },
-            { name = 'redbull', price = 50, category = 'food', max = 3, daily = 3 },
-        },
-    },
-
-    liquor = {
-        label = 'متجر المشروبات',
-        icon = 'bottle',
-        greeting = 'مرحبًا! المشروبات باردة والأسعار حلوة.',
-        clerk = { model = 'mp_m_shopkeep_01' },
-        circleDistance = 1.45,
-        blip = { sprite = 93, colour = 3 },
-        products = {
-            { name = 'water', price = 10, category = 'food' },
-            { name = 'sprunk', price = 10, category = 'food' },
-            { name = 'redbull', price = 50, category = 'food', max = 3, daily = 3 },
-            { name = 'burger', price = 15, category = 'food' },
-        },
-    },
+    -- EX_Tii (Moe): every gas-station store and every liquor store IS a 24/7 now: the same goods, the same
+    -- prices, the same icon. (The keys 'fuel' and 'liquor' stay: the robbery script uses them for the layout.)
+    fuel = nil,     -- filled below (= general)
+    liquor = nil,   -- filled below (= general)
 
     tools = {
         label = 'متجر العدد',
@@ -120,6 +92,8 @@ Config.types = {
         },
     },
 }
+Config.types.fuel = Config.types.general
+Config.types.liquor = Config.types.general
 
 -- clothing, barber and tattoo shops: same shopkeeper + circle + E, then the appearance menu opens
 -- (illenium-appearance does the clothes, hair and tattoos and takes the money)

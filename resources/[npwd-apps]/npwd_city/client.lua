@@ -181,7 +181,7 @@ RegisterNetEvent('npwd_city:client:serviceAlert', function(alert)
     local blip = AddBlipForCoord(alert.x, alert.y, alert.z)
     SetBlipSprite(blip, alert.sprite or 280)
     SetBlipColour(blip, alert.color or 1)
-    SetBlipScale(blip, 0.75) -- EX_Tii: same size as every icon
+    SetBlipScale(blip, 0.675) -- EX_Tii: same size as every icon
     SetBlipAsShortRange(blip, false)
     SetBlipFlashes(blip, true)
     SetBlipFlashTimer(blip, 10000)

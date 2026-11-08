@@ -499,7 +499,7 @@ local function createBlip(garage, point)
     local blip = AddBlipForCoord(point.coords.x, point.coords.y, point.coords.z)
     SetBlipSprite(blip, b.sprite or 357)
     SetBlipDisplay(blip, 4)
-    SetBlipScale(blip, b.scale or 0.75)
+    SetBlipScale(blip, b.scale or 0.675)
     SetBlipColour(blip, b.color or 3)
     SetBlipAsShortRange(blip, true) -- always on the big map, on the small map only when close
     local category = b.category and BLIP_CATEGORIES[b.category]

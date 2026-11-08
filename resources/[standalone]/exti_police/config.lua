@@ -58,7 +58,7 @@ Config.doors = {
 }
 
 -- the station icon on the map (everyone sees it)
-Config.blip = { sprite = 60, color = 29, scale = 0.8 }
+Config.blip = { sprite = 60, color = 29, scale = 0.72 }
 
 -- your personal locker: only you can open it, the same one in every station
 Config.locker = { label = 'خزانتك الشخصية', slots = 10, weight = 60000 }

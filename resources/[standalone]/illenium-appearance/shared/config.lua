@@ -126,28 +126,28 @@ Config.Blips = {
         Show = false, -- EX_Tii: the icon comes from exti_shops now
         Sprite = 366,
         Color = 47,
-        Scale = 0.75, -- EX_Tii: same size as every icon
+        Scale = 0.675, -- EX_Tii: same size as every icon
         Name = "متجر الملابس",
     },
     ["barber"] = {
         Show = false, -- EX_Tii: the icon comes from exti_shops now
         Sprite = 71,
         Color = 0,
-        Scale = 0.75, -- EX_Tii: same size as every icon
+        Scale = 0.675, -- EX_Tii: same size as every icon
         Name = "الحلاق",
     },
     ["tattoo"] = {
         Show = false, -- EX_Tii: the icon comes from exti_shops now
         Sprite = 75,
         Color = 4,
-        Scale = 0.75, -- EX_Tii: same size as every icon
+        Scale = 0.675, -- EX_Tii: same size as every icon
         Name = "محل الوشم",
     },
     ["surgeon"] = {
         Show = false, -- EX_Tii: map cleanup
         Sprite = 102,
         Color = 4,
-        Scale = 0.75, -- EX_Tii: same size as every icon
+        Scale = 0.675, -- EX_Tii: same size as every icon
         Name = "عيادة التجميل",
     }
 }

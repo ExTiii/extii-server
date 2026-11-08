@@ -86,21 +86,21 @@ Config.schools = {
     {
         id = 'city', label = 'مدرسة تعليم القيادة', ped = 's_m_m_highsec_02',
         coords = vec4(-553.90, -214.30, 37.65, 210.0),            -- Rockford Plaza north parking
-        blip = { sprite = 225, colour = 5, scale = 0.75 },
+        blip = { sprite = 225, colour = 5, scale = 0.675 },
         offers = { 'car', 'truck' },
         spawns = { car = vec4(-559.60, -220.50, 37.60, 300.0), truck = vec4(-572.0, -230.0, 37.6, 300.0) },
     },
     {
         id = 'marina', label = 'مدرسة القوارب', ped = 's_m_y_baywatch_01',
         coords = vec4(-800.0, -1335.0, 5.0, 110.0),                -- Puerto del Sol marina, by the boat dock
-        blip = { sprite = 410, colour = 3, scale = 0.75 },
+        blip = { sprite = 410, colour = 3, scale = 0.675 },
         offers = { 'boat' },
         spawns = { boat = vec4(-737.0, -1334.0, 1.6, 160.0) },
     },
     {
         id = 'heli', label = 'مدرسة الطيران', ped = 's_m_m_pilot_01',
         coords = vec4(-726.0, -1443.0, 5.0, 140.0),                -- Vespucci helipad
-        blip = { sprite = 43, colour = 3, scale = 0.75 },
+        blip = { sprite = 43, colour = 3, scale = 0.675 },
         offers = { 'heli' },
         spawns = { heli = vec4(-745.3, -1468.6, 5.0, 240.0) },
     },

@@ -63,7 +63,7 @@ Config.electric = {
 }
 
 -- the map icon of every station (fuel + its store)
-Config.blip = { sprite = 361, colour = 47, scale = 0.75, label = 'محطة وقود ومتجر', labelNoStore = 'محطة وقود' }
+Config.blip = { sprite = 361, colour = 47, scale = 0.675, label = 'محطة وقود ومتجر', labelNoStore = 'محطة وقود' }
 
 -- pump models (to find the pump object for the hose)
 Config.pumpModels = {

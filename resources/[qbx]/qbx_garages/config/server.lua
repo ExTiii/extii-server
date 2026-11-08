@@ -11,8 +11,8 @@
 -----------------------------------------------------------------------
 -- Map icons: a garage with a car inside (gold) and a car lifted by a tow hook (red),
 -- grouped in their own sections of the map legend.
-local GARAGE_BLIP = { name = 'مرآب سيارات', sprite = 524, color = 46, scale = 0.75, category = 'garage' }
-local IMPOUND_BLIP = { name = 'ساحة حجز', sprite = 524, color = 1, scale = 0.75, category = 'impound' } -- EX_Tii: same icon as the garages, in red
+local GARAGE_BLIP = { name = 'مرآب سيارات', sprite = 524, color = 46, scale = 0.675, category = 'garage' }
+local IMPOUND_BLIP = { name = 'ساحة حجز', sprite = 524, color = 1, scale = 0.675, category = 'impound' } -- EX_Tii: same icon as the garages, in red
 
 -- The person waiting at each place (players talk to him in the gold circle in front of him)
 local VALET = { model = 's_m_y_valet_01', scenario = 'WORLD_HUMAN_CLIPBOARD', role = 'موظف المرآب' }

@@ -53,7 +53,7 @@ Config.stations = {
 Config.doors = {}
 
 -- the workshop icon on the map (everyone sees it)
-Config.blip = { sprite = 446, color = 5, scale = 0.8 }
+Config.blip = { sprite = 446, color = 5, scale = 0.72 }
 
 -- your personal locker: only you can open it, the same one in every workshop
 Config.locker = { label = 'خزانتك الشخصية', slots = 10, weight = 60000 }

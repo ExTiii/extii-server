@@ -775,7 +775,7 @@ CreateThread(function()
             local dealer = AddBlipForCoord(blip.coords.x, blip.coords.y, blip.coords.z)
             SetBlipSprite(dealer, blip.sprite)
             SetBlipDisplay(dealer, 4)
-            SetBlipScale(dealer, 0.75) -- EX_Tii: same size as every icon
+            SetBlipScale(dealer, 0.675) -- EX_Tii: same size as every icon
             SetBlipAsShortRange(dealer, true)
             SetBlipColour(dealer, blip.color)
             BeginTextCommandSetBlipName('STRING')

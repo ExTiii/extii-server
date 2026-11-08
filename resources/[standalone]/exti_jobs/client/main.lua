@@ -211,7 +211,7 @@ end
 -- EX_Tii map icon plan: yellow = where to go now (with the thin gold GPS line from exti_gps, seen
 -- from far away, flashes for 3 seconds when it appears). White = your job (your HQ, your work vehicle).
 -- Every icon is the same size (0.75), like every other icon on the map.
-local ICON_SIZE = 0.75
+local ICON_SIZE = 0.675
 local GO_COLOUR, JOB_COLOUR = 5, 0
 
 -- the thin gold line (exti_gps). Without it: GTA's own yellow line, like before.

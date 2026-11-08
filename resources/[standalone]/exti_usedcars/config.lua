@@ -12,7 +12,7 @@
 Config = {
     spot = vec4(1224.80, 2727.70, 38.00, 180.0),   -- Larry's RV Sales, Sandy Shores (move it with /usedcarspot)
     ped = 'a_m_m_salton_02',
-    blip = { sprite = 810, colour = 1, scale = 0.75, label = 'معرض السيارات المستعملة' },   -- the dealership icon, red
+    blip = { sprite = 810, colour = 1, scale = 0.675, label = 'معرض السيارات المستعملة' },   -- the dealership icon, red
     carReach = 15.0,      -- the seller's car must be parked this close to the manager
     minShare = 0.75,      -- the lowest price allowed: 75% of the dealership price
     maxShare = 1.25,      -- the highest: 125%

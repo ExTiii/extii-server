@@ -8,7 +8,7 @@ return {
                 shortRange = true,  -- EX_Tii: on the small map only when close (always on the big map)
                 sprite = 457,       -- briefcase
                 display = 4,
-                scale = 0.75,       -- EX_Tii: the same size as every other icon
+                scale = 0.675,      -- EX_Tii: the same size as every other icon
                 colour = 0,         -- EX_Tii map icon plan: work = white
                 fancy = false,      -- EX_Tii: just the briefcase (no ring or glow around it)
                 glowRadius = 28.0,
