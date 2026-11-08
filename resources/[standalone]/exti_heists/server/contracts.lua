@@ -40,7 +40,7 @@ local function mine(src, create)
         save(cid, v)
         local lines = {}
         for i, c in ipairs(v.list) do lines[#lines + 1] = ('%d) %s'):format(i, c.text) end
-        H.text(src, 'شغل اليوم:\n' .. table.concat(lines, '\n') .. '\nخلّصها وأدفع لك. اكتب "مهام" لترى أين وصلت.')
+        H.text(src, 'شغل اليوم:\n' .. table.concat(lines, '\n') .. '\nخلّصها وأدفع لك. اضغط "مهام اليوم" لترى أين وصلت.')
     end
     return v, cid
 end

@@ -59,7 +59,7 @@ function H.startTruck(src, kind, test)
     if def.needs.usb and (exports.ox_inventory:Search(src, 'count', def.needs.usb) or 0) < 1 then
         return false, ({ usb_blue = 'تحتاج فلاشة زرقاء لتعقّب القافلة', usb_gold = 'تحتاج فلاشة ذهبية لتعطيل GPS الشاحنة' })[def.needs.usb] or 'تحتاج فلاشة'
     end
-    if def.needs.prep and not H.hasPrep(src, def.needs.prep) then return false, ('ينقصك التحضير: %s. اكتب "تحضير قافلة"'):format(C.preps[def.needs.prep].label) end
+    if def.needs.prep and not H.hasPrep(src, def.needs.prep) then return false, ('ينقصك التحضير: %s. اضغط "تحضير قافلة"'):format(C.preps[def.needs.prep].label) end
     local p = H.player(src)
     if def.cost > 0 and (not p or (p.PlayerData.money.bank or 0) < def.cost) then return false, ('أحتاج %d$ من حسابك في البنك'):format(def.cost) end
     -- everything checked: take it all

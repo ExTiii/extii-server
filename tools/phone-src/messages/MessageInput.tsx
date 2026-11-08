@@ -59,22 +59,39 @@ const MessageInput = ({
 
   if (!messageConversation.id) return null;
 
-  // EX_Tii: the fence (المصرّف) answers fixed words: tap a line instead of typing it
-  const FENCE = '555-0187';
-  const isFence = String(messageConversation.participant || '').replace(/\s/g, '') === FENCE;
-  const QUICK: [string, string][] = [
-    ['وين مكانك اليوم؟', 'وين مكانك اليوم؟'],
-    ['عندك بيت؟', 'عندك شغل؟ بيت'],
-    ['مهام اليوم', 'شو مهام اليوم؟'],
-    ['بنك', 'عندك خبر عن بنك؟'],
-    ['شاحنة مصفّحة', 'أريد شاحنة مصفّحة'],
-    ['مزرعة الكارتيل', 'أريد المزرعة'],
-    ['القافلة', 'أريد القافلة'],
-    ['تحضير بنك', 'تحضير بنك'],
-    ['تحضير مزرعة', 'تحضير مزرعة'],
-    ['تحضير قافلة', 'تحضير قافلة'],
-    ['تحضير يخت', 'تحضير يخت'],
-  ];
+  // EX_Tii: the fence (المصرّف) and the broker (الوسيط) answer fixed words: tap a line instead of typing it
+  const QUICK_BY_NUMBER: Record<string, [string, string][]> = {
+    '555-0187': [
+      ['وين مكانك اليوم؟', 'وين مكانك اليوم؟'],
+      ['عندك بيت؟', 'عندك شغل؟ بيت'],
+      ['مهام اليوم', 'شو مهام اليوم؟'],
+      ['بنك', 'عندك خبر عن بنك؟'],
+      ['شاحنة مصفّحة', 'أريد شاحنة مصفّحة'],
+      ['مزرعة الكارتيل', 'أريد المزرعة'],
+      ['القافلة', 'أريد القافلة'],
+      ['تحضير بنك', 'تحضير بنك'],
+      ['تحضير مزرعة', 'تحضير مزرعة'],
+      ['تحضير قافلة', 'تحضير قافلة'],
+      ['تحضير يخت', 'تحضير يخت'],
+    ],
+    '555-0420': [
+      ['الفلاشات', 'عندك فلاشات؟'],
+      ['فلاشة خضراء', 'أريد فلاشة خضراء'],
+      ['فلاشة زرقاء', 'أريد فلاشة زرقاء'],
+      ['بنك اليوم', 'أي بنك اليوم؟'],
+      ['خزنة باسيفيك', 'شو في باسيفيك؟'],
+      ['اليخت', 'أريد اليخت'],
+      ['الكبيرة', 'شو أخبار الكبيرة؟'],
+      ['أطالب بها', 'أطالب بها'],
+      ['ابدأ', 'ابدأ'],
+    ],
+  };
+  // (the conversation list is "my number+his number"; participant is MY number)
+  const others = String(messageConversation.conversationList || activeMessageConversation?.conversationList || '')
+    .split('+')
+    .map((n) => n.replace(/\s/g, ''));
+  const QUICK = others.map((n) => QUICK_BY_NUMBER[n]).find(Boolean) || [];
+  const isFence = QUICK.length > 0;
   const quickSend = async (text: string) => {
     await sendMessage({
       conversationId: messageConversation.id,

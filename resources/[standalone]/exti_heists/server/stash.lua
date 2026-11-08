@@ -33,7 +33,7 @@ function H.startStash(src)
     local mode, need2 = H.modeFor(S.tier)
     if not mode then return false, ('أحتاج %d شرطة في الخدمة'):format(need2 or 0) end
     if (exports.ox_inventory:Search(src, 'count', S.needs.usb) or 0) < 1 then return false, 'تحتاج فلاشة زرقاء لكاميرا البوابة' end
-    if not H.hasPrep(src, S.needs.prep) then return false, ('ينقصك التحضير: %s. اكتب "تحضير مزرعة"'):format(C.preps[S.needs.prep].label) end
+    if not H.hasPrep(src, S.needs.prep) then return false, ('ينقصك التحضير: %s. اضغط "تحضير مزرعة"'):format(C.preps[S.needs.prep].label) end
     local p = H.player(src)
     if not p or (p.PlayerData.money.bank or 0) < S.cost then return false, ('أحتاج %d$ من حسابك في البنك'):format(S.cost) end
     p.Functions.RemoveMoney('bank', S.cost, 'heist-setup')

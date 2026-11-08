@@ -117,12 +117,12 @@ local function claimIt(src)
     if H.repLevel(src) < B.bigScore.rep then return text(src, 'لا.') end
     local v = claim()
     if v.by or v.done then return text(src, 'أخذها غيرك هذا الأسبوع.') end
-    for _, item in ipairs(B.bigScore.preps) do if not H.hasPrep(src, item) then return text(src, 'ينقصك تحضير. اكتب "الكبيرة".') end end
+    for _, item in ipairs(B.bigScore.preps) do if not H.hasPrep(src, item) then return text(src, 'ينقصك تحضير. اضغط "الكبيرة".') end end
     for _, item in ipairs(B.bigScore.preps) do H.takePrep(src, item) end
     v.by, v.at = cid, os.time()
     SetResourceKvp('bigscore_claim', json.encode(v))
     H.log(src, 'bigscore_claim', weekKey())
-    text(src, 'هي لك. حين يُفتح الموعد اكتب لي "ابدأ" وأنت قرب مستودع الاتحاد مع طاقمك. فلاشة ذهبية وثلاث C4.')
+    text(src, 'هي لك. حين يُفتح الموعد اضغط "ابدأ" وأنت قرب مستودع الاتحاد مع طاقمك. فلاشة ذهبية وثلاث C4.')
 end
 
 ---------------------------------------------------------------------------
@@ -136,7 +136,7 @@ local function onText(src, msg)
         if msg:find('زرق') then return sell(src, 'usb_blue') end
         local lines = {}
         for item, s in pairs(B.usbs) do lines[#lines + 1] = ('%s: %d$ (سمعة %d)'):format(item == 'usb_green' and 'خضراء' or 'زرقاء', s.price, s.rep) end
-        return text(src, 'عندي:\n' .. table.concat(lines, '\n') .. '\nاكتب "فلاشة خضراء" أو "فلاشة زرقاء". من البنك فقط.')
+        return text(src, 'عندي:\n' .. table.concat(lines, '\n') .. '\nاضغط "فلاشة خضراء" أو "فلاشة زرقاء". من البنك فقط.')
     elseif msg:find('باسيفيك') or msg:lower():find('pacific') then
         local sp = H.pacificSpecial()
         return text(src, ('هذا الأسبوع في خزنة باسيفيك: %s. إن وصلت إليها.'):format(sp.label))
@@ -158,7 +158,7 @@ local function onText(src, msg)
     elseif msg:find('الكبير') then
         return bigStatus(src)
     else
-        return text(src, 'اكتب ما تريد: "فلاشة"، "بنك"، "باسيفيك"، "الكبيرة". لا تتصل، لا تكتب أسماء.')
+        return text(src, 'اختر من الأزرار فوق خانة الكتابة. لا تتصل، لا تكتب أسماء.')
     end
 end
 
