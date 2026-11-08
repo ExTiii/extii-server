@@ -137,7 +137,8 @@ function photo(path, card, cls) {
     const img = new Image(); img.alt = ''; img.decoding = 'async'; img.loading = 'lazy';
     img.onload = () => { img.classList.add('ok'); card.classList.add('has-photo'); };
     img.onerror = () => img.remove();
-    img.src = path; if (cls) img.className = cls;
+    // the pictures live in their own resource (exti_appearance_img), so they are downloaded once and never again
+    img.src = path.startsWith('img/') ? 'nui://exti_appearance_img/' + path : path; if (cls) img.className = cls;
     card.prepend(img);
 }
 function viewPieces(b, cat) {

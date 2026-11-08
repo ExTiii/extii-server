@@ -1,8 +1,9 @@
 -- EX_Tii photo tool (server side): /extiphotos starts it for the admin who typed it, and the pictures it
--- sends back are saved into web/ex/img/ of this resource. See client/photo.lua.
+-- sends back are saved into the exti_appearance_img resource (img/). See client/photo.lua.
+-- (EX_Tii: the pictures are a resource of their own, so restarting this screen never makes anyone download them again)
 
-local RES = GetCurrentResourceName()
-local DIR = "web/ex/img/"
+local RES = "exti_appearance_img"
+local DIR = "img/"
 
 local function allowed(src)
     return IsPlayerAceAllowed(src, "command.extiphotos")

@@ -2,8 +2,8 @@
 -- An admin types /extiphotos (or /extiphotos m c11 to do only one part). The character is put in a
 -- private world in front of a green screen, every piece is put on one by one, photographed
 -- (screencapture), cut out in the screen page (web/ex/ex-photo.js) and saved on the server as
--- web/ex/img/<m|f>-<part>-<number>.webp. Pictures that already exist are skipped, so it can be stopped
--- (/extiphotos stop) and started again. When it is done: refresh, then restart illenium-appearance.
+-- exti_appearance_img/img/<m|f>-<part>-<number>.webp. Pictures that already exist are skipped, so it can be stopped
+-- (/extiphotos stop) and started again. When it is done: ensure exti_appearance_img (not this resource).
 
 local client = client
 local running, stopAsked = false, false
@@ -332,7 +332,7 @@ local function run(onlyG, onlyKey)
 
     restore(back, look)
     print(("[photo tool] done: %d new, %d already there, %d failed"):format(made, skipped, failed))
-    note(("انتهى: %d صورة جديدة، %d موجودة، %d فشلت. اكتب refresh ثم ensure illenium-appearance"):format(made, skipped, failed))
+    note(("انتهى: %d صورة جديدة، %d موجودة، %d فشلت. اكتب في الكونسول: ensure exti_appearance_img"):format(made, skipped, failed))
 end
 
 -- put the admin back as they were (also used when the tool stops on an error)

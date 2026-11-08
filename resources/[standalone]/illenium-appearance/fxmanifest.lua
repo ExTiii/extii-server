@@ -97,8 +97,8 @@ files {
   "web/ex/index.html",
   "web/ex/*.js",
   "web/ex/*.css",
-  "web/ex/fonts/*.woff2",
-  "web/ex/img/*.webp"
+  "web/ex/fonts/*.woff2"
+  -- (the pictures are in the exti_appearance_img resource)
 }
 
 -- EX_Tii: the new black & gold screen (web/ex). The old one is still in web/dist if ever needed.
