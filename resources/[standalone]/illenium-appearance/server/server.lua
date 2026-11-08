@@ -382,9 +382,15 @@ local function byId(list, key)
 end
 
 local FREE_OFF = { [1] = true, [5] = true, [7] = true, [9] = true, [10] = true } -- drawable 0 = nothing on
+-- the "nothing on" piece of the other sections (GTA's own bare pieces), per body; taking them off is free too
+local NONE_OF = {
+    mp_m_freemode_01 = { [3] = 15, [4] = 14, [6] = 34, [8] = 15, [11] = 15 },
+    mp_f_freemode_01 = { [3] = 15, [4] = 15, [6] = 35, [8] = 14, [11] = 15 },
+}
 
 local function cartTotal(old, new)
     local total = 0
+    local none = NONE_OF[new.model or old.model] or {}
     local oc, nc = byId(old.components, "component_id"), byId(new.components, "component_id")
     local function differs(id)
         local o, n = oc[id], nc[id]
@@ -392,11 +398,13 @@ local function cartTotal(old, new)
     end
     -- EX_Tii (Moe): a jacket brings its own arms (3) and undershirt (8) with it (the game's clothing data),
     -- so when the jacket changes those two come free (the screen prices them the same way)
-    local withJacket = differs(11)
+    -- (and the arms come with the undershirt too, when there is no jacket on)
+    local withJacket, withShirt = differs(11), differs(8)
     for id, n in pairs(nc) do
         local price = Config.ExtiPrices["c" .. id] or 0
         local o = oc[id]
-        local off = (tonumber(n.drawable) == 0 and FREE_OFF[id]) or (withJacket and (id == 3 or id == 8))
+        local off = (tonumber(n.drawable) == 0 and FREE_OFF[id]) or tonumber(n.drawable) == none[id]
+            or (withJacket and id == 8) or ((withJacket or withShirt) and id == 3)
         if price > 0 and not off and (not o or tonumber(o.drawable) ~= tonumber(n.drawable) or tonumber(o.texture) ~= tonumber(n.texture)) then
             total = total + price
         end

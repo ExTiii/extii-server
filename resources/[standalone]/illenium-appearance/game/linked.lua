@@ -63,3 +63,29 @@ local function applyLinked(ped, comp, drawable, texture)
     return list
 end
 client.applyLinked = applyLinked
+
+-- the "nothing on" jacket of each body (same table as the screen's NONE_OF)
+local NO_JACKET = { [`mp_m_freemode_01`] = 15, [`mp_f_freemode_01`] = 15 }
+local function jacketOff(ped)
+    local none = NO_JACKET[GetEntityModel(ped)]
+    return none ~= nil and GetPedDrawableVariation(ped, 11) == none
+end
+client.jacketOff = jacketOff
+
+---after a jacket or undershirt change: the arms (and undershirt) the game links to what is on top.
+---With a jacket on, the jacket decides; with no jacket, the undershirt decides (its own sleeves).
+---@return table[] the linked pieces applied
+local function applyLinkedTop(ped, comp, drawable, texture)
+    if comp == 11 then
+        local list = applyLinked(ped, 11, drawable, texture)
+        if jacketOff(ped) then
+            local more = applyLinked(ped, 8, GetPedDrawableVariation(ped, 8), GetPedTextureVariation(ped, 8))
+            for _, c in ipairs(more) do list[#list + 1] = c end
+        end
+        return list
+    elseif comp == 8 and jacketOff(ped) then
+        return applyLinked(ped, 8, drawable, texture)
+    end
+    return {}
+end
+client.applyLinkedTop = applyLinkedTop

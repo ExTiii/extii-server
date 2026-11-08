@@ -149,7 +149,9 @@ function viewPieces(b, cat) {
     if (!set || !cur) { b.appendChild(h('div', 'empty', 'هذا القسم غير متاح لهذه الشخصية.')); return; }
     const black = new Set((set.blacklist && set.blacklist.drawables) || []);
     const list = [];
-    for (let d = set.drawable.min; d <= set.drawable.max; d++) if (!black.has(d)) list.push(d);
+    const noneD = noneDrawable(cat);   // "بدون": the bare piece comes first, so a jacket or shirt can be taken off to try the rest
+    if (noneD != null && noneD >= set.drawable.min && noneD <= set.drawable.max) list.push(noneD);
+    for (let d = set.drawable.min; d <= set.drawable.max; d++) if (!black.has(d) && d !== noneD) list.push(d);
 
     const head = h('div', 'sec-head', `<h2>${catInfo(cat).label}<small>${list.length}</small></h2>`);
     const jump = h('label', 'jump', `${icon('search')}<input type="number" inputmode="numeric" placeholder="رقم القطعة" aria-label="اذهب إلى رقم القطعة">`);
@@ -182,7 +184,7 @@ function viewPieces(b, cat) {
         list.slice(0, shown).forEach((d) => {
             const card = h('button', 'pc' + (d === cur.drawable ? ' on' : '')); card.type = 'button';
             card.dataset.d = d;
-            const none = d === -1 || (!isProp && d === 0 && ['c1', 'c5', 'c7', 'c9', 'c10'].includes(cat));
+            const none = d === noneD;
             card.innerHTML = `<span class="ph">${none ? icon('none') : (d + 1)}</span><span class="no">${none ? 'بدون' : '#' + (d + 1)}</span>`;
             if (S.mode === 'clothing' && !none) card.insertAdjacentHTML('beforeend', `<span class="tag${price ? '' : ' free'}">${price ? money(price) : 'مجانًا'}</span>`);
             if (orig && d === orig.drawable) card.insertAdjacentHTML('beforeend', '<span class="worn">ترتديه</span>');
@@ -250,8 +252,9 @@ function cart() {
         if (!catEnabled(cat) || !changed(cat)) return;
         const isProp = cat[0] === 'p', id = +cat.slice(1);
         const a = isProp ? propOf(S.cur, id) : compOf(S.cur, id);
-        const removed = isProp ? a.drawable === -1 : (a.drawable === 0 && FREE_OFF.includes(cat));
-        const free = removed || ((cat === 'c3' || cat === 'c8') && changed('c11'));   // (arms/undershirt come free with a jacket; the server prices it the same way)
+        const removed = a.drawable === noneDrawable(cat);
+        // arms come with the jacket or the shirt, and the undershirt with the jacket: free (the server prices it the same way)
+        const free = removed || (cat === 'c8' && changed('c11')) || (cat === 'c3' && (changed('c11') || changed('c8')));
         lines.push({ cat, label: catInfo(cat).label, d: a.drawable, t: a.texture, price: free ? 0 : priceOf(cat), removed });
     });
     return lines;

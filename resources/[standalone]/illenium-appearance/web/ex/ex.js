@@ -45,6 +45,13 @@ const PROP = {
     7: { label: 'الأساور', icon: 'bracelet', group: 'acc', cfg: 'bracelets' },
 };
 const FREE_OFF = ['c1', 'c5', 'c7', 'c9', 'c10']; // drawable 0 = nothing on; taking these off is free
+// the "nothing on" piece of the other sections (GTA's own bare pieces), per body: taking these off is free too
+const NONE_OF = { m: { c3: 15, c4: 14, c6: 34, c8: 15, c11: 15 }, f: { c3: 15, c4: 15, c6: 35, c8: 14, c11: 15 } };
+function noneDrawable(cat) {
+    if (cat[0] === 'p') return -1;
+    if (FREE_OFF.includes(cat)) return 0;
+    const t = NONE_OF[gender()]; return t && t[cat] != null && isFreemode() ? t[cat] : null;
+}
 const ORDER = { top: ['c11', 'c8', 'c3', 'c7', 'c5', 'c10', 'c9'], bottom: ['c4', 'c6'], head: ['p0', 'p1', 'p2', 'c1'], acc: ['p6', 'p7'] };
 const GROUPS = [['top', 'الجزء العلوي'], ['bottom', 'الأسفل'], ['head', 'الرأس'], ['acc', 'الإكسسوار']];
 

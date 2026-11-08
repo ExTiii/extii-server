@@ -48,9 +48,10 @@ end)
 RegisterNUICallback("appearance_change_component", function(component, cb)
     client.setPedComponent(cache.ped, component)
     local settings = client.getComponentSettings(cache.ped, component.component_id)
-    -- EX_Tii (Moe): a jacket brings its own arms and undershirt with it (game/linked.lua)
-    if component.component_id == 11 then
-        settings.linked = client.applyLinked(cache.ped, 11, component.drawable, component.texture)
+    -- EX_Tii (Moe): a jacket brings its own arms and undershirt with it; with no jacket on, the undershirt
+    -- brings its own arms (game/linked.lua)
+    if component.component_id == 11 or component.component_id == 8 then
+        settings.linked = client.applyLinkedTop(cache.ped, component.component_id, component.drawable, component.texture)
     end
     cb(settings)
 end)
