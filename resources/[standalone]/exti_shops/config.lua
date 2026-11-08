@@ -176,11 +176,11 @@ Config.types.pharmacy = {
 -- every shop: type, area name, and where the shopkeeper stands (x, y, z, heading = the way he faces)
 Config.stores = {
     -- 24/7
-    { type = 'general', area = 'ستروبيري', clerk = vec4(24.47, -1346.62, 29.50, 271.66) },
-    { type = 'general', area = 'بانهام كانيون', clerk = vec4(-3039.54, 584.38, 7.91, 17.27) },
-    { type = 'general', area = 'تشوماش', clerk = vec4(-3242.97, 1000.01, 12.83, 357.57) },
-    { type = 'general', area = 'هارموني', clerk = vec4(549.13, 2670.85, 42.16, 99.39) },
-    { type = 'general', area = 'داون تاون فاينوود', clerk = vec4(372.66, 326.98, 103.57, 253.73) },
+    { type = 'general', area = 'ستروبيري', clerk = vec4(24.47, -1346.67, 29.50, 271.66) },
+    { type = 'general', area = 'بانهام كانيون', clerk = vec4(-3039.49, 584.39, 7.91, 17.27) },
+    { type = 'general', area = 'تشوماش', clerk = vec4(-3242.92, 1000.01, 12.83, 357.57) },
+    { type = 'general', area = 'هارموني', clerk = vec4(549.12, 2670.90, 42.16, 99.39) },
+    { type = 'general', area = 'داون تاون فاينوود', clerk = vec4(372.65, 326.93, 103.57, 253.73) },
     -- EX Mart (was Don's Country Store), Paleto: its inside comes from the map [assets]/patoche_paleto (GTA has it closed).
     -- The spot is worked out from that map: behind the counter, between the two tills, facing the door.
     { type = 'exmart', area = 'باليتو', clerk = vec4(161.11, 6642.40, 31.70, 225.0) },
@@ -193,23 +193,23 @@ Config.stores = {
     { type = 'pharmacy', area = 'باليتو', clerk = vec4(-256.93, 6331.97, 32.42, 315.0) }, -- same counter, the other end
 
     -- gas station stores (the station icon shows them)
-    { type = 'fuel', area = 'باليتو', clerk = vec4(1728.07, 6415.63, 35.04, 242.95) },
-    { type = 'fuel', area = 'غريبسيد', clerk = vec4(1697.87, 4922.96, 42.06, 324.71) },
-    { type = 'fuel', area = 'ساندي شورز', clerk = vec4(1959.82, 3740.48, 32.34, 301.57) },
-    { type = 'fuel', area = 'صحراء سينورا', clerk = vec4(2677.47, 3279.76, 55.24, 335.08) },
-    { type = 'fuel', area = 'تاتافيام', clerk = vec4(2556.66, 380.84, 108.62, 356.67) },
-    { type = 'fuel', area = 'غروف ستريت', clerk = vec4(-47.02, -1758.23, 29.42, 45.05) },
-    { type = 'fuel', area = 'ليتل سيول', clerk = vec4(-706.06, -913.97, 19.22, 88.04) },
-    { type = 'fuel', area = 'ريتشمان غلين', clerk = vec4(-1820.02, 794.03, 138.09, 135.45) },
-    { type = 'fuel', area = 'ميرور بارك', clerk = vec4(1164.71, -322.94, 69.21, 101.72) },
+    { type = 'fuel', area = 'باليتو', clerk = vec4(1728.05, 6415.59, 35.04, 242.95) },
+    { type = 'fuel', area = 'غريبسيد', clerk = vec4(1697.91, 4922.93, 42.06, 324.71) },
+    { type = 'fuel', area = 'ساندي شورز', clerk = vec4(1959.85, 3740.44, 32.34, 301.57) },
+    { type = 'fuel', area = 'صحراء سينورا', clerk = vec4(2677.52, 3279.74, 55.24, 335.08) },
+    { type = 'fuel', area = 'تاتافيام', clerk = vec4(2556.71, 380.84, 108.62, 356.67) },
+    { type = 'fuel', area = 'غروف ستريت', clerk = vec4(-46.98, -1758.19, 29.42, 45.05) },
+    { type = 'fuel', area = 'ليتل سيول', clerk = vec4(-706.06, -913.92, 19.22, 88.04) },
+    { type = 'fuel', area = 'ريتشمان غلين', clerk = vec4(-1820.06, 794.07, 138.09, 135.45) },
+    { type = 'fuel', area = 'ميرور بارك', clerk = vec4(1164.70, -322.89, 69.21, 101.72) },
 
     -- liquor stores
-    { type = 'liquor', area = 'إل رانشو', clerk = vec4(1134.35, -982.38, 46.41, 273.7) },
-    { type = 'liquor', area = 'فسبوتشي', clerk = vec4(-1222.01, -908.27, 12.33, 35.0) },
-    { type = 'liquor', area = 'مورنينغوود', clerk = vec4(-1486.23, -378.13, 40.16, 126.2) },
-    { type = 'liquor', area = 'بانهام كانيون', clerk = vec4(-2966.45, 390.90, 15.04, 89.5) },
-    { type = 'liquor', area = 'طريق 68', clerk = vec4(1165.92, 2710.75, 38.16, 183.3) },
-    { type = 'liquor', area = 'ساندي شورز', clerk = vec4(1392.81, 3606.47, 34.98, 200.0) },
+    { type = 'liquor', area = 'إل رانشو', clerk = vec4(1134.35, -982.43, 46.41, 273.70) },
+    { type = 'liquor', area = 'فسبوتشي', clerk = vec4(-1221.97, -908.24, 12.33, 35.00) },
+    { type = 'liquor', area = 'مورنينغوود', clerk = vec4(-1486.26, -378.09, 40.16, 126.20) },
+    { type = 'liquor', area = 'بانهام كانيون', clerk = vec4(-2966.45, 390.95, 15.04, 89.50) },
+    { type = 'liquor', area = 'طريق 68', clerk = vec4(1165.87, 2710.75, 38.16, 183.30) },
+    { type = 'liquor', area = 'ساندي شورز', clerk = vec4(1392.76, 3606.45, 34.98, 200.00) },
 
     -- tool shop
     { type = 'tools', area = 'صحراء سينورا', clerk = vec4(2746.25, 3473.19, 55.67, 263.8) },
