@@ -260,6 +260,8 @@ local function run(onlyG, onlyKey)
                                     -- a jacket: its own arms and undershirt from the game's data (game/linked.lua); the base ones otherwise
                                     SetPedComponentVariation(ped, 3, BASE[g][3], 0, 0)
                                     SetPedComponentVariation(ped, 8, part.under and part.under[g] or BASE[g][8], 0, 0)
+                                    SetPedComponentVariation(ped, 4, BASE[g][4], 0, 0)   -- (an outfit top pulls pants/shoes along: back to base)
+                                    SetPedComponentVariation(ped, 6, BASE[g][6], 0, 0)
                                     setPiece(ped, part, d)
                                     client.applyLinked(ped, 11, d, 0)
                                     Wait(150)
