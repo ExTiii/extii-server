@@ -34,13 +34,7 @@ CreateThread(function()
     SetMapZoomDataLevel(4, 22.3, 0.9, 0.08, 0.0, 0.0)
 end)
 
--- the minimap of this map is drawn from its pictures at this zoom (at GTA's own zoom it shows only a flat
--- colour), so the radar is held at it every frame, like the map's own release does
-CreateThread(function()
-    while true do
-        if IsMinimapRendering() then SetRadarZoom(1100); Wait(0) else Wait(500) end
-    end
-end)
+-- (the minimap stays GTA's own: roads and all. The numbers are on the big map and in the strip above the minimap)
 
 -- where I am
 CreateThread(function()
