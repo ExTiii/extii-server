@@ -38,6 +38,7 @@
     "no_keys": "لا تملك مفاتيح هذه المركبة",
     "not_near": "لا يوجد أحد قريب لتسليمه المفاتيح",
     "vehicle_not_near": "أنت بعيد عن المركبة",
+    "vehicle_is_locked": "المركبة مقفلة",
     "vehicle_locked": "تم قفل المركبة",
     "vehicle_lockedpick": "نجحت في فتح قفل الباب",
     "vehicle_unlocked": "تم فتح المركبة",

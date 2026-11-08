@@ -264,14 +264,29 @@ end
 
 local isLoggedIn = false
 
+-- EX_Tii (Moe): a locked car is locked. GTA's own move (smash the window, unlock, get in) is stopped the
+-- moment the ped reaches the door of a locked car: he tries the handle and that's it.
+local lastLockedMsg = 0
+local function stopBreakIn()
+    local ped = cache.ped
+    if not IsPedTryingToEnterALockedVehicle(ped) then return end
+    ClearPedTasks(ped)
+    local now = GetGameTimer()
+    if now - lastLockedMsg > 2000 then
+        lastLockedMsg = now
+        exports.qbx_core:Notify(locale('notify.vehicle_is_locked'), 'error')
+    end
+end
+
 local function playerEnterVehLoop()
     CreateThread(function()
         while isLoggedIn do
             local vehicle = GetVehiclePedIsTryingToEnter(cache.ped)
             if vehicle ~= 0 then
                 onVehicleAttemptToEnter(vehicle)
+                stopBreakIn()
             end
-            Wait(100)
+            Wait(vehicle ~= 0 and 0 or 100)   -- EX_Tii: every frame while walking up to a car (see stopBreakIn)
         end
     end)
 end
