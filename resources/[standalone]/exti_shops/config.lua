@@ -37,6 +37,7 @@ Config.types = {
             { name = 'thread_spool', price = 4, category = 'work', max = 22, desc = 'لوظيفة الأقمشة: كل بكرة = قطعة ملابس' },
             -- EX_Tii (Moe): repair kits in every store, anyone can fix his own car (dearer here than at the tool shop)
             { name = 'repairkit', price = 550, category = 'tools', max = 2, desc = 'يعيد المحرك للعمل (65%): استعملها بجانب سيارتك' },
+            { name = 'advancedrepairkit', price = 1500, category = 'tools', max = 1, desc = 'إصلاح كامل: المحرك والهيكل' },
         },
     },
 
@@ -68,6 +69,7 @@ Config.types = {
             { name = 'tow_chain', price = 650, category = 'tools', max = 1 },
             { name = 'stethoscope', price = 350, category = 'tools', max = 1, desc = 'لفتح خزنة المتجر: تسمع نقرات القرص' },
             { name = 'repairkit', price = 450, category = 'tools', max = 3, desc = 'يعيد المحرك للعمل (65%): استعملها بجانب سيارتك' },
+            { name = 'advancedrepairkit', price = 1200, category = 'tools', max = 2, desc = 'إصلاح كامل: المحرك والهيكل' },
             -- (zip ties and blindfolds: only the gangs make them, at their HQ)
         },
     },
