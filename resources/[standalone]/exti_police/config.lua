@@ -312,7 +312,8 @@ Config.prison = {
 -- 911: calls from the phone's services app and from /911 in the chat land on the officers' phones
 -- (blip + notification) and on the tablet map (البلاغات)
 Config.dispatch = {
-    expireMinutes = 20,      -- an untouched call disappears after this
+    expireMinutes = 15,      -- a call disappears after this (its card, its map icon and the officer's route to it) — Moe: 15 min
+    -- blipSeconds = 900,    -- (the map icon alone; unset = the same 15 minutes as the call)
     cooldown = 45,           -- seconds between two /911 of the same player
     textLength = 160,
     labels = { phone = 'بلاغ هاتفي', chat = 'بلاغ 911', alarm = 'إنذار' },
@@ -331,7 +332,7 @@ Config.dispatch = {
     },
     kindCodes = { phone = { code = '911', icon = 'phone' }, chat = { code = '911', icon = 'phone' }, alarm = { code = '10-90', icon = 'bell' } },
     cardSeconds = 12,        -- (not used now: a card stays on screen until a cop takes the call or it is closed)
-    blipSeconds = 180,
+    blipSeconds = 900,       -- the flashing map icon at the call lives 15 minutes (the call itself expires then too)
     -- what the reporter saw (server/witness.lua): the chance of each detail
     witness = {
         day    = { person = 0.85, car = 0.9, plate = 0.55, dir = 0.75 },

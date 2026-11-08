@@ -3,7 +3,7 @@
 -- officers on duty: code, title, street, details, how long ago, how far, who took it.
 --   G = take the call (again = let it go) + the gold route to it
 --   Arrow up / down = look through the last calls
--- A flashing icon marks the place on the map for a few minutes.
+-- A flashing icon marks the place on the map for the life of the call (15 min).
 -- =====================================================================
 local D = Config.dispatch
 local list = {}            -- the last calls, newest first: { id, code, icon, urgent, label, text, x, y, z, time, takenBy, mine, street, area, shownUntil, blip }
@@ -86,7 +86,9 @@ local function addBlip(c)
     EndTextCommandSetBlipName(b)
     c.blip = b
     local id = c.id
-    SetTimeout((D.blipSeconds or 180) * 1000, function()
+    -- EX_Tii (Moe): the map icon lives as long as the call does (15 min from the call, not from when you saw it)
+    local life = (D.blipSeconds or (D.expireMinutes or 15) * 60) * 1000 - math.max(0, now() - (c.at or now()))
+    SetTimeout(math.max(1000, life), function()
         local cc = find(id); if cc then removeBlip(cc) elseif DoesBlipExist(b) then RemoveBlip(b) end
     end)
 end
@@ -120,8 +122,16 @@ RegisterNetEvent('exti_police:client:dispatchTaken', function(id, name, by)
     tick()
 end)
 
+-- EX_Tii (Moe): the route to a call never outlives the call: closed or expired = the yellow pin and the line go
+local function clearRouteFor(c)
+    if not c or not c.mine then return end
+    pcall(function() exports.exti_gps:ClearRoute('exti_gps:goto') end)
+    if IsWaypointActive() then SetWaypointOff() end
+end
+
 RegisterNetEvent('exti_police:client:dispatchClosed', function(id)
     local c, i = find(id); if not c then return end
+    clearRouteFor(c)
     removeBlip(c); table.remove(list, i)
     if flip.index > #list then flip.index = math.max(1, #list) end
     tick()
@@ -148,7 +158,15 @@ RegisterCommand('+exti_dispatch_take', function()
     if type(res) ~= 'table' or not res.call then return end
     c.mine = res.call.mine == true
     c.takenBy = res.call.takenBy or false
-    if c.mine then route(c) end
+    if c.mine then
+        route(c)
+        -- the route to a call you took goes by itself after the call's lifetime (15 min), even if you never went
+        local id = c.id
+        SetTimeout((D.expireMinutes or 15) * 60000, function()
+            local cc = find(id)
+            if cc and cc.mine then clearRouteFor(cc) end
+        end)
+    end
     c.shownUntil = c.takenBy and (now() + TAKEN_MS) or (now() + CARD_MS)
     tick()
 end, false)
