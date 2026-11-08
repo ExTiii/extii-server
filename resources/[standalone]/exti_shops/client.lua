@@ -1,6 +1,7 @@
 -- EX_Tii shops (client): shopkeepers, gold circles, map icons, E to talk, the shop panel.
 
 local GOLD = { 232, 181, 71 }
+local GREEN = { 32, 201, 151 }   -- EX_Tii: the green of the success notification (ox_lib teal.5)
 local CLERK_IN, CLERK_OUT = 70.0, 90.0 -- shopkeepers appear / disappear at these distances
 local DRAW = 14.0                      -- circles show from this close
 local places = {}
@@ -468,6 +469,10 @@ CreateThread(function()
                     if Config.circles then
                         local fz = floorZ(c.x, c.y, c.z) + 0.03
                         GoldCircle.draw(c.x, c.y, fz, Config.circleRadius, here, GOLD)
+                    elseif place.kind.noPed then
+                        -- EX_Tii (Moe): no shopkeeper here: a small green mark on the floor shows the spot instead
+                        local fz = floorZ(c.x, c.y, c.z) + 0.03
+                        GoldCircle.draw(c.x, c.y, fz, 0.42, here, GREEN)
                     end
                     if here and (not target or d < targetDist) then target, targetDist = place, d end
                 end
