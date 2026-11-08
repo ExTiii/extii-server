@@ -799,7 +799,8 @@ end)
 
 CreateThread(function()
     while not GANG.ready do Wait(1000) end
-    local gone = MySQL.query.await('SELECT m.`citizenid` FROM `exti_gang_members` m LEFT JOIN `players` p ON p.`citizenid` = m.`citizenid` WHERE p.`citizenid` IS NULL') or {}
+    -- (the two tables use different collations on this database: compare with one collation, or MariaDB refuses the join)
+    local gone = MySQL.query.await('SELECT m.`citizenid` FROM `exti_gang_members` m LEFT JOIN `players` p ON p.`citizenid` COLLATE utf8mb4_unicode_ci = m.`citizenid` COLLATE utf8mb4_unicode_ci WHERE p.`citizenid` IS NULL') or {}
     for i = 1, #gone do dropDeleted(gone[i].citizenid) end
     if #gone > 0 then lib.print.info(('removed %d deleted characters from gangs'):format(#gone)) end
 end)
