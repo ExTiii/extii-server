@@ -259,7 +259,7 @@ Config.calls.jewelry = 'سطو على محل المجوهرات'
 Config.calls.jewelryQuiet = 'إنذار متأخر: محل المجوهرات'
 
 ---------------------------------------------------------------------------
--- ATM pull (Tier 2): a tow chain from a pickup truck to a wall ATM, floor it, drag it somewhere quiet, drill it
+-- ATM pull (Tier 2): a tow chain from a wall ATM to the back of any car, floor it, drag it somewhere quiet, drill it
 ---------------------------------------------------------------------------
 Config.atm = {
     tier = 2,
@@ -269,7 +269,8 @@ Config.atm = {
     perHour = 2,              -- ATM pulls in the whole city per hour
     cooldownHours = 6,        -- the same ATM
     hiddenMinutes = 30,       -- a pulled ATM is gone from the wall this long (then it's "replaced")
-    hookSeconds = 6,
+    hookSeconds = 5,          -- wrapping the chain round the ATM
+    carSeconds = 4,           -- tying the other end to the car's back
     quietDistance = 120.0,    -- drill it at least this far from where it was
     pay = { 3000, 5000 },     -- black_money
 }

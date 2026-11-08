@@ -1,5 +1,5 @@
 -- =====================================================================
--- EX_Tii heists: the ATM pull (Tier 2). A tow chain from a pickup truck to a wall ATM, floor it: the ATM
+-- EX_Tii heists: the ATM pull (Tier 2). A tow chain from a car to a wall ATM, floor it: the ATM
 -- rips out of the wall and drags behind the truck (the alarm goes off). Drag it somewhere quiet, unhook
 -- it, drill it open. At most 2 in the whole city per hour; the same ATM every 6 hours.
 -- =====================================================================
@@ -8,8 +8,6 @@ local AT = C.atm
 
 local atms = {}      -- [key] = { key, pos, model, by, veh (netId), phase = 'hooked'|'dragging'|'down'|'drilling', mode, obj (netId) }
 local recent = {}    -- os.time() of each rip in the last hour
-local TRUCK = {}
-for _, m in ipairs(AT.trucks) do TRUCK[joaat(m)] = true end
 local MODEL = {}
 for _, m in ipairs(AT.models) do MODEL[joaat(m)] = m end
 
@@ -39,12 +37,14 @@ end
 lib.callback.register('exti_heists:server:atmHook', function(src, pos, modelName, vehNet)
     if type(pos) ~= 'table' or not tonumber(pos.x) then return false end
     pos = vec3(pos.x + 0.0, pos.y + 0.0, pos.z + 0.0)
-    if H.isCopOnDuty(src) or not H.near(src, pos, 3.0) then return false end
+    -- (the chain is tied to the ATM first, then the player walks it to the car's back: he's at the car now)
+    if H.isCopOnDuty(src) or not H.near(src, pos, 18.0) then return false end
     local mh = joaat(tostring(modelName or ''))
     if not MODEL[mh] then return false end
     local veh = entityOf(vehNet)
-    if not veh or not TRUCK[GetEntityModel(veh)] then return false, 'تحتاج شاحنة بيك أب قريبة (Bison, Sadler, Rebel...)' end
-    if #(GetEntityCoords(veh) - pos) > 12.0 then return false, 'قرّب الشاحنة من الجهاز' end
+    if not veh or GetVehicleType(veh) ~= 'automobile' then return false, 'تحتاج سيارة (لا دراجة ولا قارب)' end
+    if not H.near(src, GetEntityCoords(veh), 6.0) then return false end
+    if #(GetEntityCoords(veh) - pos) > 14.0 then return false, 'قرّب السيارة من الجهاز' end
     if (exports.ox_inventory:Search(src, 'count', 'tow_chain') or 0) < 1 then return false, 'تحتاج سلسلة سحب (من متجر العدد)' end
     local key = keyOf(pos)
     if atms[key] then return false end

@@ -1276,7 +1276,7 @@ return {
     ['tow_chain'] = {
         label = 'سلسلة سحب (Tow Chain)',
         weight = 4000,
-        description = 'تُربط بين شاحنة بيك أب وجهاز صراف لاقتلاعه. من متجر الأدوات',
+        description = 'تُربط بين جهاز صراف ومؤخرة سيارة لاقتلاعه. من متجر الأدوات',
         client = { image = 'nui://exti_heists/html/items/tow_chain.png' },
     },
 
