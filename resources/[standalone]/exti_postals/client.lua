@@ -62,20 +62,20 @@ local LABEL = 'رمز المنطقة'
 local X, Y = 0.0155, 0.722          -- left edge of the minimap, a little above its top
 local NUM_S, LBL_S = 0.40, 0.33
 CreateThread(function()
-    local wFor, wNum, wLbl = nil, 0, 0
+    local W, H = 0.100, 0.032       -- one fixed strip: wide enough for "رمز المنطقة" and a 4-digit number
     while true do
         if current and loggedIn() and not IsRadarHidden() and not IsPauseMenuActive() and IsMinimapRendering() then
-            if wFor ~= current then wFor = current; wNum = textWidth(current, NUM_S); wLbl = textWidth(LABEL, LBL_S) end
-            local pad, gap = 0.005, 0.005
-            local w = pad + wNum + gap + wLbl + pad
-            DrawRect(X + w / 2, Y + 0.016, w, 0.030, 10, 10, 12, 170)
-            DrawRect(X + 0.0012, Y + 0.016, 0.0024, 0.030, 232, 181, 71, 230)
-            SetTextFont(4); SetTextScale(0.0, NUM_S); SetTextColour(232, 181, 71, 255); SetTextDropShadow()
-            BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(current)
-            EndTextCommandDisplayText(X + pad, Y + 0.0005)
-            SetTextFont(4); SetTextScale(0.0, LBL_S); SetTextColour(255, 255, 255, 215); SetTextDropShadow()
+            DrawRect(X + W / 2, Y + H / 2, W, H, 10, 10, 12, 190)
+            DrawRect(X + 0.0013, Y + H / 2, 0.0026, H, 232, 181, 71, 235)
+            -- the word on the left side of the strip
+            SetTextFont(4); SetTextScale(0.0, LBL_S); SetTextColour(255, 255, 255, 220); SetTextDropShadow()
             BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(LABEL)
-            EndTextCommandDisplayText(X + pad + wNum + gap, Y + 0.0045)
+            EndTextCommandDisplayText(X + 0.007, Y + 0.0045)
+            -- the number, held against the right edge of the strip
+            SetTextFont(4); SetTextScale(0.0, NUM_S); SetTextColour(232, 181, 71, 255); SetTextDropShadow()
+            SetTextJustification(2); SetTextWrap(X, X + W - 0.005)
+            BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(current)
+            EndTextCommandDisplayText(X, Y + 0.0005)
             Wait(0)
         else
             Wait(500)
