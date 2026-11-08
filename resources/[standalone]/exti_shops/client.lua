@@ -347,7 +347,7 @@ CreateThread(function()
             local c = place.store.clerk
             local dist = #(p - vec3(c.x, c.y, c.z))
             if dist < CLERK_IN then
-                if not place.ped then spawnClerk(place) end
+                if not place.ped and not place.kind.noPed then spawnClerk(place) end
             elseif dist > CLERK_OUT and place.ped then
                 removeClerk(place)
             end

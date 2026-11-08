@@ -106,7 +106,8 @@ Config.types.liquor = Config.types.general
 Config.types.clothing = {
     label = 'متجر الملابس',
     opens = 'clothing',
-    prompt = '[E] تحدّث مع البائعة',
+    prompt = '[E] الملابس',
+    noPed = true,   -- EX_Tii (Moe): no shopkeeper here (he stood in the camera while you shop); the spot stays
     clerk = { model = 's_f_m_shop_high' },
     circleDistance = 1.4,
     blip = { sprite = 73, colour = 8 }, -- EX_Tii map icon plan: your look = pink, t-shirt icon
@@ -114,7 +115,8 @@ Config.types.clothing = {
 Config.types.barber = {
     label = 'الحلاق',
     opens = 'barber',
-    prompt = '[E] تحدّث مع الحلاق',
+    prompt = '[E] الحلاق',
+    noPed = true,
     clerk = { model = 's_m_m_hairdress_01' },
     circleDistance = 1.3,
     blip = { sprite = 71, colour = 8 },
@@ -122,7 +124,8 @@ Config.types.barber = {
 Config.types.tattoo = {
     label = 'محل الوشم',
     opens = 'tattoo',
-    prompt = '[E] تحدّث مع فنان الوشم',
+    prompt = '[E] الوشم',
+    noPed = true,
     clerk = { model = 'u_m_y_tattoo_01' },
     circleDistance = 1.3,
     blip = { sprite = 75, colour = 8 },

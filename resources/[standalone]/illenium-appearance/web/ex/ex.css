@@ -19,11 +19,12 @@
     --gold-soft: rgba(232, 181, 71, 0.13);
     --gold-line: rgba(232, 181, 71, 0.34);
 
-    --panel: rgba(13, 14, 18, 0.965);
-    --sheet: #15171d;
-    --card: #191b22;
-    --card-2: #20232b;
-    --card-3: #2a2d37;
+    /* EX_Tii (Moe): see-through panel: you still see your character behind it */
+    --panel: rgba(13, 14, 18, 0.58);
+    --sheet: rgba(21, 23, 29, 0.82);
+    --card: rgba(25, 27, 34, 0.55);
+    --card-2: rgba(32, 35, 43, 0.65);
+    --card-3: rgba(42, 45, 55, 0.75);
     --line: rgba(255, 255, 255, 0.07);
     --line-2: rgba(255, 255, 255, 0.13);
 
@@ -57,6 +58,7 @@ body > svg { position: absolute; width: 0 !important; height: 0 !important; poin
     position: absolute; top: 22px; bottom: 22px; right: 22px; width: var(--pw);
     display: flex; flex-direction: column;
     background: var(--panel);
+    backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
     border: 1px solid var(--line);
     border-radius: 22px;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
