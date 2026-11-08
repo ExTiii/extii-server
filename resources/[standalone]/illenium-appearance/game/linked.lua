@@ -8,11 +8,20 @@ local found = {}   -- [model .. ':' .. nameHash] = { comp, drawable, texture } (
 
 -- the game's shop record of a named piece (what GTA Online's stores read): which slot, drawable and
 -- texture it is. The record is nine 8-byte-aligned ints written into a buffer; nil when it isn't for this slot
-local function shopRecord(nameHash, slot)
-    local buf = string.rep('\0', 80)
+-- (the buffer must be a string.blob: natives write into those, not into ordinary strings)
+local function readRecord(nameHash)
+    if not string.blob then return nil end
+    local buf = string.blob(8 * 10 + 64)
     local ok = pcall(Citizen.InvokeNative, 0x74C0E2A57EC66760, nameHash, buf)   -- GET_SHOP_PED_COMPONENT
     if not ok then return nil end
-    local drawable, texture, compType = string.unpack('<i4', buf, 25), string.unpack('<i4', buf, 33), string.unpack('<i4', buf, 49)
+    local v = {}
+    for k = 0, 8 do v[#v + 1] = string.unpack('<i4', buf, k * 8 + 1) end
+    return v   -- lockHash, nameHash, locate, drawable, texture, cost, compType, shopEnum, character
+end
+local function shopRecord(nameHash, slot)
+    local v = readRecord(nameHash)
+    if not v then return nil end
+    local drawable, texture, compType = v[4], v[5], v[7]
     if compType ~= slot or drawable < 0 or drawable > 1000 or texture < 0 or texture > 64 then return nil end
     return { comp = slot, drawable = drawable, texture = texture }
 end
@@ -147,9 +156,11 @@ RegisterCommand('extilinked', function()
             if nameHash ~= 0 and nameHash ~= nil then
                 piece = fromPack(ped, tonumber(slot) or 0, nameHash, tonumber(enumValue) or 0) or byName(ped, tonumber(slot) or 0, nameHash)
             end
-            print(('[extilinked]   forced %d: nameHash %s enumValue %s slot %s -> %s'):format(i, tostring(nameHash),
+            local rec = (nameHash ~= 0 and nameHash ~= nil) and readRecord(nameHash)
+            local raw = rec and (' record[' .. table.concat(rec, ' ') .. ']') or ''
+            print(('[extilinked]   forced %d: nameHash %s enumValue %s slot %s -> %s%s'):format(i, tostring(nameHash),
                 tostring(enumValue), tostring(slot), piece and ('drawable %d texture %d%s'):format(piece.drawable, piece.texture,
-                piece.pack and (' (pack ' .. piece.pack .. ')') or '') or (nameHash == 0 and 'by value' or 'NOT FOUND')))
+                piece.pack and (' (pack ' .. piece.pack .. ')') or '') or (nameHash == 0 and 'by value' or 'NOT FOUND'), raw))
         end
     end
     do
