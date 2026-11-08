@@ -100,6 +100,17 @@ local function byName(ped, comp, nameHash)
     return nil
 end
 
+-- a forced piece with no name (nameHash 0, or the hash of the text "0"): the value is a base-game piece
+-- number; 240 (15 x 16) is the game's "nothing on" for the undershirt
+local NO_NAME = GetHashKey('0')
+local BARE = { [`mp_m_freemode_01`] = { [3] = 15, [8] = 15, [11] = 15 }, [`mp_f_freemode_01`] = { [3] = 15, [8] = 14, [11] = 15 } }
+local function byValue(ped, slot, n)
+    if n >= 0 and n < baseCount(ped, slot) then return { comp = slot, drawable = n, texture = 0, pack = 'base' } end
+    local bare = BARE[GetEntityModel(ped)]
+    if n == 240 and bare and bare[slot] then return { comp = slot, drawable = bare[slot], texture = 0, pack = 'bare' } end
+    return nil
+end
+
 ---what the game says must change along with this piece
 ---@param ped number
 ---@param comp number component id (11 = jacket)
@@ -117,14 +128,11 @@ local function linkedComponents(ped, comp, drawable, texture)
         slot = tonumber(slot)
         if slot and slot ~= comp and slot >= 0 and slot <= 11 then
             local piece
-            if nameHash == 0 or nameHash == nil then
-                piece = { comp = slot, drawable = tonumber(enumValue) or 0, texture = 0 }
+            if nameHash == 0 or nameHash == nil or nameHash == NO_NAME then
+                piece = byValue(ped, slot, tonumber(enumValue) or 0)
             else
-                -- a shop item by name; else piece N of a pack (its own pack, or the one the top comes from);
-                -- else (a pack with no pieces of that slot, e.g. mp_m_luxe_01) piece N of the base game
-                local n = tonumber(enumValue) or 0
-                piece = byName(ped, slot, nameHash) or fromPack(ped, slot, nameHash, n, comp)
-                    or (n >= 0 and n < baseCount(ped, slot) and { comp = slot, drawable = n, texture = 0, pack = 'base' } or nil)
+                -- a shop item by name; else piece N of a pack (its own pack, or the one the top comes from)
+                piece = byName(ped, slot, nameHash) or fromPack(ped, slot, nameHash, tonumber(enumValue) or 0, comp)
             end
             if piece and piece.drawable >= 0 and piece.drawable < GetNumberOfPedDrawableVariations(ped, slot) then
                 out[#out + 1] = { component_id = slot, drawable = piece.drawable, texture = piece.texture or 0 }
@@ -188,8 +196,8 @@ RegisterCommand('extilinked', function()
             local piece
             if nameHash ~= 0 and nameHash ~= nil then
                 local sl, n = tonumber(slot) or 0, tonumber(enumValue) or 0
-                piece = byName(ped, sl, nameHash) or fromPack(ped, sl, nameHash, n, comp)
-                    or (n >= 0 and n < baseCount(ped, sl) and { comp = sl, drawable = n, texture = 0, pack = 'base' } or nil)
+                if nameHash == NO_NAME then piece = byValue(ped, sl, n)
+                else piece = byName(ped, sl, nameHash) or fromPack(ped, sl, nameHash, n, comp) end
             end
             local rec = (nameHash ~= 0 and nameHash ~= nil) and readRecord(nameHash)
             local raw = rec and (' record[' .. table.concat(rec, ' ') .. ']') or ''
