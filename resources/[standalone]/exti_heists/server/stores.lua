@@ -24,6 +24,8 @@ local function layoutOf(s)
     return '247'
 end
 
+local function storeKey(i, what) return ('store:%s:%d'):format(what, i) end
+
 local function publish()
     local phases = {}
     for i, st in pairs(state) do phases[i] = st.phase end
@@ -70,7 +72,6 @@ CreateThread(function()
     publish()
 end)
 
-local function storeKey(i, what) return ('store:%s:%d'):format(what, i) end
 
 -- the alarm: the police card always (cops below the minimum still hear it); no-police mode also sends the NPC security
 local function call(i, label, number, src, extra, mode)
