@@ -299,7 +299,7 @@ CreateThread(function()
                 end
                 local left = math.max(0, (mine.untilOpen - GetGameTimer()) / 1000)
                 if mine.lookAway > 0.2 and not mine.sent2 then
-                    text = ('⚠ أعد السلاح عليه! سيضغط زر الإنذار خلال %d'):format(math.max(1, math.ceil(R.lookAwaySeconds - mine.lookAway)))
+                    text = ('⚠ أعد السلاح عليه! سيختبئ خلف الطاولة خلال %d'):format(math.max(1, math.ceil(R.lookAwaySeconds - mine.lookAway)))
                 else
                     text = ('أبقِ السلاح عليه... يفتح الصندوق · %d'):format(math.ceil(left))
                 end
