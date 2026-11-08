@@ -166,10 +166,112 @@ function paintDot(v, cls = 'paint-dot') {
     const two = col2 && col2 !== col ? `background: linear-gradient(135deg, ${col} 50%, ${col2} 50%)` : `background:${col}`;
     return `<span class="${cls}" style="${two}" title="لون السيارة"></span>`;
 }
+// ---- the stock picture repainted in the owner's colour -------------------------------------------
+// The gallery picture comes through the server (so the page may read its pixels). The car body is found as
+// the picture's main colour, then every body pixel is repainted with the owner's paint, keeping the shading.
+const stockRaw = new Map();      // model -> Promise<HTMLImageElement|null>
+const repainted = new Map();     // model|paint -> data URL | null (null = couldn't)
+const rgb2hsl = (r, g, b) => {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+    if (mx === mn) return [0, 0, l];
+    const d = mx - mn, sat = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    let h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [h * 60, sat, l];
+};
+const hsl2rgb = (h, sat, l) => {
+    h = ((h % 360) + 360) % 360 / 360;
+    if (sat === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+    const q = l < 0.5 ? l * (1 + sat) : l + sat - l * sat, p = 2 * l - q;
+    const f = (t) => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 0.5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+    return [Math.round(f(h + 1 / 3) * 255), Math.round(f(h) * 255), Math.round(f(h - 1 / 3) * 255)];
+};
+function stockImage(model) {
+    if (stockRaw.has(model)) return stockRaw.get(model);
+    const pr = (async () => {
+        const r = await post('stockImage', { model });
+        if (!r || typeof r.data !== 'string') return null;
+        const img = new Image();
+        img.src = 'data:image/webp;base64,' + r.data;
+        try { await img.decode(); } catch (e) { return null; }
+        return img;
+    })();
+    stockRaw.set(model, pr);
+    return pr;
+}
+function repaint(img, target) {
+    const w = img.naturalWidth, h = img.naturalHeight;
+    if (!w || !h) return null;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+    const d = ctx.getImageData(0, 0, w, h), px = d.data;
+    // 1) the body colour: the most common hue among coloured pixels (or "grey" if the car is unpainted)
+    const hist = new Array(36).fill(0); let coloured = 0, opaque = 0;
+    const L = [];
+    for (let i = 0; i < px.length; i += 4) {
+        if (px[i + 3] < 200) continue;
+        opaque++;
+        const [hh, ss, ll] = rgb2hsl(px[i], px[i + 1], px[i + 2]);
+        if (ss > 0.28 && ll > 0.12 && ll < 0.9) { hist[Math.floor(hh / 10) % 36]++; coloured++; }
+    }
+    if (!opaque) return null;
+    const greyBody = coloured < opaque * 0.08;
+    let peak = 0; for (let i = 1; i < 36; i++) if (hist[i] > hist[peak]) peak = i;
+    const bodyHue = peak * 10 + 5;
+    const isBody = (hh, ss, ll) => greyBody
+        ? (ss < 0.24 && ll > 0.15 && ll < 0.985)
+        : (ss > 0.2 && ll > 0.08 && ll < 0.95 && Math.min(Math.abs(hh - bodyHue), 360 - Math.abs(hh - bodyHue)) < 24);
+    for (let i = 0; i < px.length; i += 4) {
+        if (px[i + 3] < 40) continue;
+        const [hh, ss, ll] = rgb2hsl(px[i], px[i + 1], px[i + 2]);
+        if (isBody(hh, ss, ll)) L.push(ll);
+    }
+    if (L.length < opaque * 0.05) return null;
+    L.sort((a, b) => a - b);
+    const median = L[Math.floor(L.length / 2)];
+    // 2) repaint: the owner's hue and saturation, the picture's own light and shade around the new colour
+    const [th, ts, tl] = rgb2hsl(target[0], target[1], target[2]);
+    const dark = tl < 0.18, light = tl > 0.85;
+    for (let i = 0; i < px.length; i += 4) {
+        if (px[i + 3] < 40) continue;
+        const [hh, ss, ll] = rgb2hsl(px[i], px[i + 1], px[i + 2]);
+        if (!isBody(hh, ss, ll)) continue;
+        let nl = tl + (ll - median) * (dark ? 0.55 : light ? 0.5 : 0.8);
+        if (dark && ll > median + 0.25) nl += (ll - median - 0.25) * 0.8;    // keep the highlights on a black car
+        nl = Math.max(0.02, Math.min(0.98, nl));
+        const ns = Math.max(0, Math.min(1, ts * (0.85 + ss * 0.3)));
+        const [r, g, b] = hsl2rgb(th, ns, nl);
+        px[i] = r; px[i + 1] = g; px[i + 2] = b;
+    }
+    ctx.putImageData(d, 0, 0);
+    return cv.toDataURL('image/webp', 0.9);
+}
+let repaintQueued = false;
+function repaintedSrc(v) {
+    const rgb = paintRGB(v.colour);
+    if (!rgb || !v.model) return null;
+    const key = `${v.model}|${rgb.join(',')}`;
+    if (repainted.has(key)) return repainted.get(key);
+    repainted.set(key, undefined);   // in progress
+    (async () => {
+        const img = await stockImage(v.model);
+        let out = null;
+        if (img) { try { out = repaint(img, rgb); } catch (e) { out = null; } }
+        repainted.set(key, out);
+        if (out && state.open && !repaintQueued) {
+            repaintQueued = true;
+            requestAnimationFrame(() => { repaintQueued = false; renderList(); if (state.selectedId != null && selected()) renderDetail(); });
+        }
+    })();
+    return undefined;
+}
 function carImage(v, size = 34) {
     const real = realPhoto(v);
     if (real) return `<img class="real" src="${real}" alt="" draggable="false" />`;
     if (!v.model || brokenImages.has(v.model)) return `<span class="car-fallback">${ICON.car(size)}</span>${paintDot(v)}`;
+    const painted = repaintedSrc(v);
+    if (painted) return `<img class="painted" src="${painted}" alt="" draggable="false" />${paintDot(v)}`;
     return `<img data-car="${esc(v.model)}" data-size="${size}" src="${IMAGE_URL(v.model)}" alt="" loading="lazy" draggable="false" />${paintDot(v)}`;
 }
 

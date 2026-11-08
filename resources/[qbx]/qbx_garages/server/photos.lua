@@ -129,3 +129,49 @@ lib.callback.register('qbx_garages:server:ownedVehicleId', function(source, netI
     if not ok or owner ~= citizenid then return false end
     return vehicleId
 end)
+
+---------------------------------------------------------------------------
+-- EX_Tii: the stock picture of a model, fetched once from FiveM's gallery and kept here (base64), so the
+-- garage screen can repaint the car body in the owner's colour (a picture from another site can't be
+-- touched by the screen's code; one that comes through us can).
+---------------------------------------------------------------------------
+local stockCache = {}      -- [model] = base64 string | false (not found)
+local stockWaiting = {}    -- [model] = { cb, cb, ... } while a fetch is running
+local B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+local function base64(data)
+    return ((data:gsub('.', function(x)
+        local r, b = '', x:byte()
+        for i = 8, 1, -1 do r = r .. (b % 2 ^ i - b % 2 ^ (i - 1) > 0 and '1' or '0') end
+        return r
+    end) .. '0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+        if #x < 6 then return '' end
+        local c = 0
+        for i = 1, 6 do c = c + (x:sub(i, i) == '1' and 2 ^ (6 - i) or 0) end
+        return B64:sub(c + 1, c + 1)
+    end) .. ({ '', '==', '=' })[#data % 3 + 1])
+end
+
+local function fetchStock(model, cb)
+    if stockCache[model] ~= nil then return cb(stockCache[model]) end
+    if stockWaiting[model] then stockWaiting[model][#stockWaiting[model] + 1] = cb return end
+    stockWaiting[model] = { cb }
+    PerformHttpRequest(('https://docs.fivem.net/vehicles/%s.webp'):format(model), function(code, body)
+        local result = false
+        if code == 200 and type(body) == 'string' and #body > 0 and #body < 600000 then result = base64(body) end
+        stockCache[model] = result
+        local list = stockWaiting[model]; stockWaiting[model] = nil
+        for _, f in ipairs(list) do f(result) end
+    end, 'GET', '', {})
+end
+
+local stockAsked = {}   -- [src] = count this minute
+lib.callback.register('qbx_garages:server:stockImage', function(source, model)
+    if type(model) ~= 'string' or not model:match('^[%w_]+$') or #model > 32 then return false end
+    model = model:lower()
+    stockAsked[source] = (stockAsked[source] or 0) + 1
+    if stockAsked[source] > 120 then return false end
+    local p = promise.new()
+    fetchStock(model, function(data) p:resolve(data) end)
+    return Citizen.Await(p)
+end)
+CreateThread(function() while true do Wait(60000); stockAsked = {} end end)

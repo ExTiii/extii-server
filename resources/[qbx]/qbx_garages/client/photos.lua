@@ -307,3 +307,11 @@ RegisterNUICallback('photos', function(data, cb)
     if #ids == 0 or not PHOTOS_ON then return cb({}) end
     cb(lib.callback.await('qbx_garages:server:getPhotos', false, ids) or {})
 end)
+
+-- the garage screen wants a model's stock picture it can repaint (comes through the server, see server/photos.lua)
+RegisterNUICallback('stockImage', function(data, cb)
+    local model = type(data) == 'table' and type(data.model) == 'string' and data.model or nil
+    if not model then return cb({}) end
+    local b64 = lib.callback.await('qbx_garages:server:stockImage', false, model)
+    cb({ data = b64 or false })
+end)
