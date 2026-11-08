@@ -287,9 +287,9 @@ CreateThread(function()
                 if clerk then ClearEntityLastDamageEntity(clerk) end
             end
 
-            -- 0.5) this store was robbed a little while ago: say so, and nothing starts until it opens again
+            -- 0.5) this store was robbed a little while ago: aiming at the clerk shows the time left, nothing starts
             local waitLeft = (not mine) and tillWaitLeft(near) or 0
-            if waitLeft > 0 and (not ph or ph == 'emptied') and #(here - clerkPos(s)) < 6.0 then
+            if waitLeft > 0 and (not ph or ph == 'emptied') and clerk and HC.aimingAt(clerk, 9.0) then
                 text = ('سُرق هذا المحل قبل قليل · يفتح بعد %d:%02d'):format(waitLeft // 60, waitLeft % 60)
             end
 

@@ -115,8 +115,8 @@ local function cowerTimeout(i)
 end
 
 local function finish(i)
-    -- the clerk is shaken for a while, then the shop opens again
-    SetTimeout(90 * 1000, function()
+    -- the clerk is shaken for a moment, then the shop sells again (Moe: 10 s; the till itself waits cooldownMinutes)
+    SetTimeout(10 * 1000, function()
         if state[i] and state[i].phase == 'emptied' then state[i] = nil; publish() end
     end)
 end
