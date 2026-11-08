@@ -2,9 +2,17 @@ local config = require 'config.client'
 local isSearchLocked = false
 local isSearchAllowed = false
 
+-- EX_Tii (Moe): one try per car. A failed hotwire burns that car for you (until the server restarts)
+local burnt = {}   -- [plate] = true
+local function plateOf(veh) return (GetVehicleNumberPlateText(veh) or ''):gsub('%s+', ''):upper() end
+
 local function setSearchLabelState(isAllowed)
     if isSearchLocked and isAllowed then return end
     if isAllowed and cache.vehicle and GetVehicleConfig(cache.vehicle).findKeysChance == 0.0 then
+        isSearchAllowed = false
+        return
+    end
+    if isAllowed and cache.vehicle and burnt[plateOf(cache.vehicle)] then
         isSearchAllowed = false
         return
     end
@@ -52,6 +60,7 @@ local function findKeys(vehicleModel, vehicleClass, vehicle)
         searchingForKeys = false
         local success = lib.callback.await('qbx_vehiclekeys:server:findKeys', false, VehToNet(vehicle))
         if not success then
+            burnt[plateOf(vehicle)] = true
             TriggerServerEvent('hud:server:GainStress', math.random(1, 4))
             exports.qbx_core:Notify(locale("notify.failed_keys"), 'error')
         end
