@@ -20,7 +20,8 @@ local BASE = {
 -- what to photograph and where the camera looks
 -- view: head / ear / chest / back / legs / feet / lwrist / rwrist
 local PARTS = {
-    { key = "c11", comp = 11, view = "chest" },
+    -- jackets are only the outer layer in GTA: photographed over a plain shirt (c8) so open jackets look like clothes
+    { key = "c11", comp = 11, view = "chest", under = { m = 1, f = 2 } },
     { key = "c8", comp = 8, view = "chest" },
     { key = "c3", comp = 3, view = "chest" },
     { key = "c7", comp = 7, view = "chest" },
@@ -245,6 +246,7 @@ local function run(onlyG, onlyKey)
                     local have = redoAll and {} or lib.callback.await("illenium-appearance:server:photoHave", false, g .. "-" .. part.key, count) or {}
                     note(("%s %s: %d قطعة"):format(g == "m" and "رجال" or "نساء", part.key, count))
                     dress(ped, g)
+                    if part.under then SetPedComponentVariation(ped, 8, part.under[g] or 0, 0, 0) end
                     aim(part.view)
                     Wait(300)
                     for d = 0, count - 1 do
