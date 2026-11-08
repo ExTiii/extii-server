@@ -43,22 +43,31 @@ CreateThread(function()
     end
 end)
 
--- the badge above the minimap
+-- the badge just above the minimap: a dark strip with the gold number and the word next to it
 local function loggedIn() return LocalPlayer.state.isLoggedIn ~= false end
+local function textWidth(str, scale)
+    SetTextFont(4); SetTextScale(0.0, scale)
+    BeginTextCommandGetWidth('STRING'); AddTextComponentSubstringPlayerName(str)
+    return EndTextCommandGetWidth(true)
+end
+local LABEL = 'رمز المنطقة'
+local X, Y = 0.0155, 0.722          -- left edge of the minimap, a little above its top
+local NUM_S, LBL_S = 0.40, 0.33
 CreateThread(function()
+    local wFor, wNum, wLbl = nil, 0, 0
     while true do
         if current and loggedIn() and not IsRadarHidden() and not IsPauseMenuActive() and IsMinimapRendering() then
-            -- (two pieces: the number, then the Arabic word next to it, so neither gets reordered)
-            SetTextFont(4); SetTextScale(0.0, 0.42); SetTextColour(232, 181, 71, 240)
-            SetTextDropShadow(); SetTextOutline()
-            BeginTextCommandDisplayText('STRING')
-            AddTextComponentSubstringPlayerName(current)
-            EndTextCommandDisplayText(0.0155, 0.756)
-            SetTextFont(4); SetTextScale(0.0, 0.34); SetTextColour(255, 255, 255, 210)
-            SetTextDropShadow(); SetTextOutline()
-            BeginTextCommandDisplayText('STRING')
-            AddTextComponentSubstringPlayerName('رمز المنطقة')
-            EndTextCommandDisplayText(0.0155 + 0.0075 * #current + 0.004, 0.760)
+            if wFor ~= current then wFor = current; wNum = textWidth(current, NUM_S); wLbl = textWidth(LABEL, LBL_S) end
+            local pad, gap = 0.005, 0.005
+            local w = pad + wNum + gap + wLbl + pad
+            DrawRect(X + w / 2, Y + 0.016, w, 0.030, 10, 10, 12, 170)
+            DrawRect(X + 0.0012, Y + 0.016, 0.0024, 0.030, 232, 181, 71, 230)
+            SetTextFont(4); SetTextScale(0.0, NUM_S); SetTextColour(232, 181, 71, 255); SetTextDropShadow()
+            BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(current)
+            EndTextCommandDisplayText(X + pad, Y + 0.0005)
+            SetTextFont(4); SetTextScale(0.0, LBL_S); SetTextColour(255, 255, 255, 215); SetTextDropShadow()
+            BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(LABEL)
+            EndTextCommandDisplayText(X + pad + wNum + gap, Y + 0.0045)
             Wait(0)
         else
             Wait(500)
