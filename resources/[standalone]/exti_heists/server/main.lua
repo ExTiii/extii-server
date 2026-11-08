@@ -430,6 +430,7 @@ exports('Admin', function(src, what, value)
     elseif what == 'cooldowns' then
         H.clearAllCooldowns()
         if H.resetStores then H.resetStores() end
+        if H.resetAtms then H.resetAtms() end
         if H.resetJewelry then H.resetJewelry() end
         if H.resetVaults then H.resetVaults() end
         if H.resetTrucks then H.resetTrucks() end

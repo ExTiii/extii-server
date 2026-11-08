@@ -207,3 +207,10 @@ H.registerHeist({ id = 'atm', label = 'جهاز صراف', tier = AT.tier, where
     end
     return 'ready', 0, ('%d من %d هذه الساعة'):format(n, AT.perHour)
 end })
+
+-- admins (F1 → reset robbery waits): the hourly ATM limit and the pulled-out walls come back
+function H.resetAtms()
+    recent = {}
+    H.atmHidden, H.atmHiddenPos = {}, {}
+    publish()
+end
