@@ -89,3 +89,23 @@ local function applyLinkedTop(ped, comp, drawable, texture)
     return {}
 end
 client.applyLinkedTop = applyLinkedTop
+
+-- /extilinked: what the game says about the jacket and undershirt you have on (F8 console; for fixing fits)
+RegisterCommand('extilinked', function()
+    local ped = PlayerPedId()
+    for _, comp in ipairs({ 11, 8 }) do
+        local d, t = GetPedDrawableVariation(ped, comp), GetPedTextureVariation(ped, comp)
+        local hash = GetHashNameForComponent(ped, comp, d, t)
+        local n = hash ~= 0 and GetShopPedApparelForcedComponentCount(hash) or 0
+        print(('[extilinked] comp %d: drawable %d texture %d hash %s forced %d'):format(comp, d, t, tostring(hash), n))
+        for i = 0, (n or 0) - 1 do
+            local nameHash, enumValue, slot = GetForcedComponent(hash, i)
+            local piece = (nameHash ~= 0 and nameHash ~= nil) and byName(ped, tonumber(slot) or 0, nameHash)
+            print(('[extilinked]   forced %d: nameHash %s enumValue %s slot %s -> %s'):format(i, tostring(nameHash),
+                tostring(enumValue), tostring(slot), piece and ('drawable %d texture %d'):format(piece.drawable, piece.texture) or 'by value'))
+        end
+    end
+    print(('[extilinked] arms now: drawable %d texture %d · undershirt: drawable %d texture %d'):format(
+        GetPedDrawableVariation(ped, 3), GetPedTextureVariation(ped, 3), GetPedDrawableVariation(ped, 8), GetPedTextureVariation(ped, 8)))
+    lib.notify({ description = 'كُتبت التفاصيل في نافذة F8', type = 'inform' })
+end, false)
