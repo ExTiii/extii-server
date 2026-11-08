@@ -43,10 +43,17 @@ local function packByHash(ped, hash)
     return nil
 end
 
----a forced piece given as pack + local number: the global drawable of that slot
-local function fromPack(ped, comp, packHash, localIndex)
+---a forced piece given as pack + local number: the global drawable of that slot. The pack is the one whose
+---name hashes to packHash, else (the usual case) the pack the piece on top comes from
+local function fromPack(ped, comp, packHash, localIndex, ownerComp)
     local pack = packByHash(ped, packHash)
+    if not pack and ownerComp then
+        local ok, name = pcall(GetPedDrawableVariationCollectionName, ped, ownerComp)
+        if ok and name and name ~= '' then pack = name end
+    end
     if not pack then return nil end
+    local okC, count = pcall(GetNumberOfPedCollectionDrawableVariations, ped, comp, pack)
+    if not okC or type(count) ~= 'number' or localIndex < 0 or localIndex >= count then return nil end
     local ok, global = pcall(GetPedDrawableGlobalIndexFromCollection, ped, comp, pack, localIndex)
     if not ok or type(global) ~= 'number' or global < 0 or global >= GetNumberOfPedDrawableVariations(ped, comp) then return nil end
     return { comp = comp, drawable = global, texture = 0, pack = pack }
@@ -94,7 +101,8 @@ local function linkedComponents(ped, comp, drawable, texture)
             if nameHash == 0 or nameHash == nil then
                 piece = { comp = slot, drawable = tonumber(enumValue) or 0, texture = 0 }
             else
-                piece = fromPack(ped, slot, nameHash, tonumber(enumValue) or 0) or byName(ped, slot, nameHash)
+                -- a shop item by name; else piece N of a pack (its own pack, or the one the top comes from)
+                piece = byName(ped, slot, nameHash) or fromPack(ped, slot, nameHash, tonumber(enumValue) or 0, comp)
             end
             if piece and piece.drawable >= 0 and piece.drawable < GetNumberOfPedDrawableVariations(ped, slot) then
                 out[#out + 1] = { component_id = slot, drawable = piece.drawable, texture = piece.texture or 0 }
@@ -157,7 +165,7 @@ RegisterCommand('extilinked', function()
             local nameHash, enumValue, slot = GetForcedComponent(hash, i)
             local piece
             if nameHash ~= 0 and nameHash ~= nil then
-                piece = fromPack(ped, tonumber(slot) or 0, nameHash, tonumber(enumValue) or 0) or byName(ped, tonumber(slot) or 0, nameHash)
+                piece = byName(ped, tonumber(slot) or 0, nameHash) or fromPack(ped, tonumber(slot) or 0, nameHash, tonumber(enumValue) or 0, comp)
             end
             local rec = (nameHash ~= 0 and nameHash ~= nil) and readRecord(nameHash)
             local raw = rec and (' record[' .. table.concat(rec, ' ') .. ']') or ''
