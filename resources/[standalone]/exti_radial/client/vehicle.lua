@@ -103,7 +103,9 @@ function RAD.vehicleMenu()
         if isDriver(veh) then
             local running = GetIsVehicleEngineRunning(veh)
             items[#items + 1] = { id = 'engine', label = running and 'إطفاء المحرك' or 'تشغيل المحرك', icon = 'power-off', action = 'engine' }
-            items[#items + 1] = { id = 'extras', label = 'الإضافات', icon = 'cubes', items = extraItems }
+            -- EX_Tii (Moe): the headlights, on or off, from the wheel (the extras menu is gone)
+            local lightsOff = Entity(veh).state.exti_lightsOff == true
+            items[#items + 1] = { id = 'lights', label = lightsOff and 'تشغيل الأنوار' or 'إطفاء الأنوار', icon = 'bolt', action = 'lights' }
         end
     else
         if IsEntityUpsidedown(veh) or GetEntityRoll(veh) > 75.0 or GetEntityRoll(veh) < -75.0 then
@@ -165,6 +167,29 @@ RAD.actions.engine = function()
     SetVehicleEngineOn(veh, not running, false, true)
     return 'stay'
 end
+
+RAD.actions.lights = function()
+    local veh = vehicle()
+    if not veh or not isDriver(veh) then return 'stay' end
+    local off = not (Entity(veh).state.exti_lightsOff == true)
+    Entity(veh).state:set('exti_lightsOff', off, true)
+    SetVehicleLights(veh, off and 1 or 0)   -- 1 = always off, 0 = the car decides (on at night / with the engine)
+    notify(off and 'أطفأت الأنوار' or 'شغّلت الأنوار', 'success')
+    return 'stay'
+end
+-- every car near you keeps the lights its driver chose (the state follows the car)
+CreateThread(function()
+    while true do
+        Wait(1000)
+        local here = GetEntityCoords(cache.ped)
+        for _, v in ipairs(GetGamePool('CVehicle')) do
+            if #(GetEntityCoords(v) - here) < 120.0 then
+                local st = Entity(v).state.exti_lightsOff
+                if st == true then SetVehicleLights(v, 1) elseif st == false then SetVehicleLights(v, 0); Entity(v).state.exti_lightsOff = nil end
+            end
+        end
+    end
+end)
 
 RAD.actions.extra = function(i)
     local veh = cache.vehicle

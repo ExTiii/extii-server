@@ -43,7 +43,6 @@ local function rootMenu()
             end
         end
     end
-    items[#items + 1] = { id = 'map', label = 'الخريطة', icon = 'map', items = RAD.blipMenu }
     local work = Config.work[playerJob()]
     if work then
         items[#items + 1] = { id = 'work', label = 'العمل', icon = 'briefcase', items = work }
