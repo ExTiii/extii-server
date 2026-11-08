@@ -40,7 +40,8 @@ local function mine(src, create)
         save(cid, v)
         local lines = {}
         for i, c in ipairs(v.list) do lines[#lines + 1] = ('%d) %s'):format(i, c.text) end
-        H.text(src, 'شغل اليوم:\n' .. table.concat(lines, '\n') .. '\nخلّصها وأدفع لك. اضغط "مهام اليوم" لترى أين وصلت.')
+        H.text(src, 'شغل اليوم:\n' .. table.concat(lines, '\n') .. '\nخلّصها وأدفع لك. اضغط "مهام اليوم" مرة ثانية لترى أين وصلت.')
+        return v, cid, true
     end
     return v, cid
 end
@@ -68,8 +69,8 @@ function H.contract(src, kind, data)
 end
 
 function H.contractStatus(src)
-    local v = mine(src, true)
-    if not v then return end
+    local v, _, fresh = mine(src, true)
+    if not v or fresh then return end
     local lines = {}
     for i, c in ipairs(v.list) do lines[#lines + 1] = ('%d) %s · %s'):format(i, c.text, c.done and 'تم' or ('%d/%d'):format(c.have, c.need)) end
     H.text(src, table.concat(lines, '\n'))
@@ -85,14 +86,6 @@ local function greet(src)
         mine(src, true)
     end)
 end
-RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function() greet(source) end)
-CreateThread(function()
-    local last = dayKey()
-    while true do
-        Wait(60000)
-        if dayKey() ~= last then
-            last = dayKey()
-            for _, s in ipairs(GetPlayers()) do greet(tonumber(s)) end
-        end
-    end
-end)
+-- EX_Tii (Moe): the fence never texts jobs on his own. Today's jobs come only when the player asks
+-- ("مهام اليوم" in his chat), so nothing is sent at log-in or at the start of a new day.
+local _ = greet

@@ -183,7 +183,8 @@ CreateThread(function()
             SetResourceKvp('bigscore_announced', wk)
             for _, s in ipairs(GetPlayers()) do
                 local src = tonumber(s)
-                if src and H.repLevel(src) >= B.bigScore.rep then text(src, 'الكبيرة متاحة هذا الأسبوع. أول من يحضر التحضيرات الثلاثة. اكتب "الكبيرة".') end
+                -- EX_Tii (Moe): no unasked texts. (players ask him "الكبيرة")
+                local _ = src
             end
         end
         Wait(600000)
