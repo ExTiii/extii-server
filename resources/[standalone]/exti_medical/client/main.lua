@@ -55,15 +55,26 @@ AddEventHandler('gameEventTriggered', function(name, args)
     local hit, bone = GetPedLastDamageBone(ped)
     ClearPedLastDamageBone(ped) -- so the next hit can't reuse this spot
 
-    -- EX_Tii gun rework: a bullet in the head does +50% (critical headshots are off: no instant one-tap).
-    -- The extra never takes him below 101 health, so a headshot alone doesn't skip the down / last stand
-    -- the game itself decides (that shot's own damage still can).
-    if hit and bone == 31086 and (kind == 'bullet' or kind == 'pellet') and damage > 0 and hp > 101 then
-        local extra = math.min(math.floor(damage * (Config.headshotBonus or 0.5) + 0.5), hp - 101)
-        if extra > 0 then
-            SetEntityHealth(ped, hp - extra)
-            damage = damage + extra
-            lastHp = hp - extra
+    -- EX_Tii gun rework (Moe, Nov 2026): a bullet in the head is one tap: he goes down at once (health 100 =
+    -- the down / last stand, not a permanent death: EMS can still bring him back). A helmet saves him from
+    -- the one tap: then it is +50% like before (Config.headshotBonus). Armour never covers the head.
+    if hit and bone == 31086 and (kind == 'bullet' or kind == 'pellet') and damage > 0 and hp > 100 then
+        if Config.headshotOneTap ~= false and not IsPedWearingHelmet(ped) then
+            -- straight into the last stand (qbx_medical's own flow: the same as the game killing him; EMS can
+            -- still revive). Done through its export so the down state is never skipped or half-set.
+            damage = damage + (hp - 100)
+            lastHp = nil
+            CreateThread(function()
+                local ok = pcall(function() exports.qbx_medical:StartLastStand(args[2], args[7]) end)
+                if not ok then SetEntityHealth(ped, 0) end   -- (fallback: let the game do the death itself)
+            end)
+        elseif hp > 101 then
+            local extra = math.min(math.floor(damage * (Config.headshotBonus or 0.5) + 0.5), hp - 101)
+            if extra > 0 then
+                SetEntityHealth(ped, hp - extra)
+                damage = damage + extra
+                lastHp = hp - extra
+            end
         end
     end
     pending[#pending + 1] = {
