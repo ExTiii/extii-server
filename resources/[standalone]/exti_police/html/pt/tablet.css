@@ -610,3 +610,20 @@ select.pt-in { padding: 0 10px; }
 
 /* the driving licences in a citizen record: tag + suspend button per licence */
 .pt-licrow { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0; }
+
+/* ======================= EX_Tii (Moe): see-through tablet =======================
+   Only the tablet on YOUR screen: the game shows through the device and its screen (frosted glass).
+   The copy painted on the tablet in the officer's hands (body.pt-mirror) stays solid. */
+body:not(.pt-mirror) .pt-shell { background: linear-gradient(150deg, rgba(52, 55, 60, 0.74) 0%, rgba(27, 29, 33, 0.7) 22%, rgba(18, 19, 22, 0.66) 60%, rgba(11, 12, 14, 0.7) 100%); }
+body:not(.pt-mirror) .pt-bezel { background: rgba(4, 4, 5, 0.5); }
+body:not(.pt-mirror) .pt-screen { background: rgba(8, 16, 28, 0.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
+body:not(.pt-mirror) .pt-os {
+    --bg: rgba(8, 16, 28, 0.5); --bg-2: rgba(11, 21, 36, 0.55); --panel: rgba(12, 20, 34, 0.6);
+    --card: rgba(15, 26, 43, 0.58); --card-2: rgba(20, 34, 56, 0.64); --card-3: rgba(27, 44, 70, 0.72);
+    --home: radial-gradient(900px 520px at 18% -8%, rgba(56, 120, 210, 0.3) 0%, transparent 62%), radial-gradient(700px 500px at 100% 100%, rgba(20, 60, 120, 0.28), transparent 70%), linear-gradient(180deg, rgba(16, 35, 63, 0.55) 0%, rgba(10, 22, 40, 0.5) 55%, rgba(6, 12, 23, 0.55) 100%);
+}
+body:not(.pt-mirror) .pt-os.light {
+    --bg: rgba(232, 237, 244, 0.6); --bg-2: rgba(243, 246, 250, 0.62); --panel: rgba(255, 255, 255, 0.7);
+    --card: rgba(255, 255, 255, 0.62); --card-2: rgba(241, 244, 249, 0.66); --card-3: rgba(227, 233, 242, 0.72);
+    --home: radial-gradient(900px 520px at 18% -8%, rgba(120, 170, 240, 0.4) 0%, transparent 62%), linear-gradient(180deg, rgba(223, 232, 245, 0.6) 0%, rgba(238, 243, 249, 0.6) 60%, rgba(246, 248, 251, 0.62) 100%);
+}

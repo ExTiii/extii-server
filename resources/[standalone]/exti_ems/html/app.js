@@ -624,7 +624,8 @@
     // ==================================================================
     // Medium size: on the right side, so your character holding the tablet stays visible in the middle
     function fit() {
-        const s = Math.min((window.innerHeight * 0.62) / 880, (window.innerWidth * 0.42) / 1320);
+        // EX_Tii (Moe): a bigger tablet (about a quarter larger than before)
+        const s = Math.min((window.innerHeight * 0.78) / 880, (window.innerWidth * 0.525) / 1320);
         device.style.setProperty('--fit', `scale(${s.toFixed(4)})`);
     }
     window.addEventListener('resize', fit);

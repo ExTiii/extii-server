@@ -340,3 +340,14 @@ kbd { font-family: inherit; font-size: 11px; font-weight: 700; padding: 1px 7px;
 .app-card p b { color: var(--text); font-weight: 600; }
 .app-warn { color: var(--bad, #ff6b6b) !important; }
 .app-acts { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ======================= EX_Tii (Moe): see-through tablet =======================
+   Only the tablet on YOUR screen (frosted glass); the copy painted on the tablet in the medic's hands
+   (body.mirror) stays solid. */
+body:not(.mirror) .shell { background: linear-gradient(150deg, rgba(52, 55, 60, 0.74) 0%, rgba(27, 29, 33, 0.7) 22%, rgba(18, 19, 22, 0.66) 60%, rgba(11, 12, 14, 0.7) 100%); }
+body:not(.mirror) .bezel { background: rgba(4, 4, 5, 0.5); }
+body:not(.mirror) .screen { background: rgba(13, 15, 20, 0.28); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
+body:not(.mirror) .os {
+    --sheet: rgba(21, 23, 29, 0.5); --panel: rgba(14, 15, 19, 0.6);
+    --card: rgba(23, 25, 31, 0.58); --card-2: rgba(30, 33, 40, 0.64); --card-3: rgba(39, 42, 51, 0.72);
+}
