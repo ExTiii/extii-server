@@ -114,11 +114,18 @@ end)
 local zonesInside = 0
 local showingSafeUI = false
 
+-- EX_Tii (Moe): the safe zone shows as a green half-circle light at the bottom of the screen (not a text line)
+local function safeLight(on)
+    if showingSafeUI == on then return end
+    showingSafeUI = on
+    SendNUIMessage({ action = 'safe', on = on, text = text.safeZoneEnter })
+end
+
 local nextLabelCheck = 0
 
 local function blockCombat()
     if exempt() then
-        if showingSafeUI then lib.hideTextUI() showingSafeUI = false end
+        safeLight(false)
         return
     end
 
@@ -126,10 +133,7 @@ local function blockCombat()
     -- closes, bring the safe-zone label back (and show it once the arrival movie is over)
     if GetGameTimer() > nextLabelCheck then
         nextLabelCheck = GetGameTimer() + 500
-        if canShowLabel() and not lib.isTextUIOpen() then
-            lib.showTextUI(text.safeZoneEnter, { position = 'top-center', icon = 'shield-halved' })
-            showingSafeUI = true
-        end
+        if canShowLabel() then safeLight(true) end
     end
 
     DisablePlayerFiring(cache.playerId, true)
@@ -148,18 +152,12 @@ end
 
 local function onEnterSafeZone()
     zonesInside = zonesInside + 1
-    if zonesInside == 1 and not exempt() and canShowLabel() then
-        lib.showTextUI(text.safeZoneEnter, { position = 'top-center', icon = 'shield-halved' })
-        showingSafeUI = true
-    end
+    if zonesInside == 1 and not exempt() and canShowLabel() then safeLight(true) end
 end
 
 local function onExitSafeZone()
     zonesInside = math.max(zonesInside - 1, 0)
-    if zonesInside == 0 and showingSafeUI then
-        lib.hideTextUI()
-        showingSafeUI = false
-    end
+    if zonesInside == 0 then safeLight(false) end
 end
 
 local function createSafeZones()

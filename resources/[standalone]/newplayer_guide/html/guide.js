@@ -113,4 +113,10 @@ window.addEventListener('message', (e) => {
     const m = e.data || {};
     if (m.action === 'open') open(m);
     else if (m.action === 'close') close();
+    else if (m.action === 'safe') {
+        const el = document.getElementById('safe');
+        if (!el) return;
+        if (m.text) document.getElementById('safe-text').textContent = m.text.split(' — ')[0];
+        el.classList.toggle('hidden', !m.on);
+    }
 });
