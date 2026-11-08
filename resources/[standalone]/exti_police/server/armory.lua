@@ -107,9 +107,8 @@ local function register()
         return true
     end, { typeFilter = { [SHOP] = true } })
 
-    -- police guns never leave the officer by his own hand (not given, not stored). EX_Tii (Moe): a criminal
-    -- who has an officer down or cuffed may take them (that is the robbery): the loot comes from another
-    -- player's bag whose "can be robbed" flag is on
+    -- police guns never leave the officer: not given, not stored, and not taken by a robber either (Moe)
+    -- (isRobbery is used below for the tools that stay on a robbed officer)
     local function isRobbery(payload)
         local src, from = tonumber(payload.source), tonumber(payload.fromInventory)
         if not src or not from or src == from or payload.fromType ~= 'player' then return false end
@@ -121,18 +120,17 @@ local function register()
     if next(guns) then
         hookIds[#hookIds + 1] = exports.ox_inventory:registerHook('swapItems', function(payload)
             if payload.fromInventory == payload.toInventory then return true end
-            if isRobbery(payload) then return true end
             local out = (payload.fromType == 'player' and isPoliceGun(payload.fromSlot))
                 or (payload.toType == 'player' and payload.action == 'swap' and isPoliceGun(payload.toSlot))
             if not out then return true end
             local src = tonumber(payload.source) or payload.source
-            if type(src) == 'number' then notify(src, 'error', 'سلاح الشرطة يبقى معك، لا يُعطى ولا يُخزّن') end
+            if type(src) == 'number' then notify(src, 'error', isRobbery(payload) and 'سلاح الشرطة لا يُؤخذ منه' or 'سلاح الشرطة يبقى معك، لا يُعطى ولا يُخزّن') end
             return false
         end, { itemFilter = guns })
     end
 
-    -- EX_Tii (Moe): robbing an officer: his tools stay on him (handcuffs, radio, evidence bags); everything
-    -- else (cash, guns, ammo, armour...) can be taken while he is down or cuffed
+    -- EX_Tii (Moe): robbing an officer: his tools stay on him (handcuffs, radio, evidence bags) and so do his
+    -- guns (above); everything else (cash, ammo, armour...) can be taken while he is down or cuffed
     local KEEP = { handcuffs = true, radio = true, evidence_bag = true, police_evidence = true }
     hookIds[#hookIds + 1] = exports.ox_inventory:registerHook('swapItems', function(payload)
         if not isRobbery(payload) then return true end
