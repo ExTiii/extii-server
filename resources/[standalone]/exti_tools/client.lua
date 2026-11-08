@@ -2,6 +2,25 @@
 -- repairkit         -> engine back to at least 65% so the car drives again (body stays damaged)
 -- advancedrepairkit -> full repair (engine + body)
 
+-- EX_Tii (Moe): someone hands you an item: a window asks you to accept or refuse (15 seconds, then it is a refusal)
+lib.callback.register('exti_tools:give:ask', function(data)
+    data = data or {}
+    local answered = false
+    CreateThread(function()
+        local t = GetGameTimer()
+        while not answered and GetGameTimer() - t < 15000 do Wait(100) end
+        if not answered then pcall(lib.closeAlertDialog) end
+    end)
+    local r = lib.alertDialog({
+        header = 'عرض غرض',
+        content = ('**%s** يعطيك **%d × %s**.\n\nتقبل؟'):format(data.from or 'شخص', tonumber(data.count) or 1, data.label or 'غرض'),
+        centered = true, cancel = true,
+        labels = { confirm = 'أقبل', cancel = 'أرفض' },
+    })
+    answered = true
+    return r == 'confirm'
+end)
+
 -- repair kits: the old mechanic job had these; while it is still on the server it keeps doing them
 if GetResourceState('qbx_mechanicjob'):find('start') then return end
 
