@@ -11,17 +11,18 @@ CreateThread(function()
         if on() then
             local res = who()
             local ok = pcall(function() exports.exti_interact:Show(res, text, options) end)
-            if ok then return end
+            -- (a line ox_lib drew by itself while exti_interact was down must not stay behind the new one)
+            if ok then origHide() return end
         end
         return origShow(text, options)
     end
     local function hide()
+        -- always: ox_lib's own box too (it may hold a line shown while exti_interact was restarting)
+        origHide()
         if on() then
             local res = who()
-            local ok = pcall(function() exports.exti_interact:Hide(res) end)
-            if ok then return end
+            pcall(function() exports.exti_interact:Hide(res) end)
         end
-        return origHide()
     end
     local function isOpen()
         if on() then

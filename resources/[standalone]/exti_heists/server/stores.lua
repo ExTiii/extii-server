@@ -338,9 +338,12 @@ lib.callback.register('exti_heists:server:safeBegin', function(src, i)
     local ok, need = H.canTier(src, S.tier, true)
     if not ok then return false, ('تحتاج سمعة %d لهذه الخزنة'):format(need) end
     local mode = H.modeFor(S.tier); if not mode then return false end
+    -- EX_Tii (Moe): the till first, then the safe (the till's waiting time says it was emptied a while ago)
+    if H.cooldownLeft(storeKey(i, 'till')) <= 0 then return false, 'أفرغ صندوق المحل أولًا، ثم الخزنة' end
     if S.needs and (exports.ox_inventory:Search(src, 'count', S.needs) or 0) < 1 then return false, 'تحتاج سماعة طبية لتسمع القرص (من متجر العدد)' end
     local lv = H.skillLevel(H.rec(src), 'breaching')
-    return true, H.gameBegin(src, 'safedial', { store = i, mode = mode }), { numbers = 3, seconds = S.dialSeconds or 70, time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
+    -- (Moe: one minute on the dial for everyone: no skill bonus here)
+    return true, H.gameBegin(src, 'safedial', { store = i, mode = mode }), { numbers = 3, seconds = S.dialSeconds or 60, time = 1.0, level = lv }
 end)
 
 lib.callback.register('exti_heists:server:safeEnd', function(src, token, passed)

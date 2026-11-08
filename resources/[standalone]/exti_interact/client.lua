@@ -157,11 +157,11 @@ end)
 
 ---------------------------------------------------------------------------
 -- watchdog: a prompt whose owner stopped talking is dropped. Every prompt belongs to a place (a till,
--- a pump, a door...): when you are far from where it appeared (20 m on foot, 80 m in a car) and the
+-- a pump, a door...): when you are far from where it appeared (12 m on foot, 80 m in a car) and the
 -- owning script hasn't shown it again for 3 s, the script is gone or broken: the line goes away.
 -- Scripts that keep a line while you move (a chop route, a test drive...) show it again every tick.
 ---------------------------------------------------------------------------
-local STALE_MS, FAR_FOOT, FAR_CAR = 3000, 20.0, 80.0
+local STALE_MS, FAR_FOOT, FAR_CAR = 3000, 12.0, 80.0
 CreateThread(function()
     while true do
         Wait(500)
@@ -190,5 +190,6 @@ AddEventHandler('playerSpawned', clearAll)
 RegisterCommand('fixui', function()
     clearAll()
     SendNUIMessage({ action = 'list', items = {}, many = false })
+    pcall(function() exports.ox_lib:hideTextUI() end)   -- (ox_lib's own text box too)
 end, false)
 TriggerEvent('chat:addSuggestion', '/fixui', 'أزل أي رسالة عالقة على الشاشة')

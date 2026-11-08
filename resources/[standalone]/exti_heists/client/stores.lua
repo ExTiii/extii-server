@@ -341,7 +341,9 @@ CreateThread(function()
                 if t then bellOn(pos) end
                 if #(here - pos) < 1.3 then
                     if not t then
-                        if HC.count('stethoscope') > 0 then
+                        if tillWaitLeft(near) <= 0 then
+                            text = 'خزنة المتجر: أفرغ صندوق المحل أولًا، ثم الخزنة'
+                        elseif HC.count('stethoscope') > 0 then
                             text, act = '[E] افتح الخزنة (قرص الأرقام · السماعة الطبية)', function() crackSafe(near, s, pos) end
                         else
                             text = 'خزنة المتجر: تحتاج سماعة طبية لتسمع القرص (متجر العدد)'
