@@ -384,6 +384,7 @@ local config
 function client.getConfig() return config end
 
 local isCameraInterpolating
+local hudWasHidden = false
 local currentCamera
 local cameraHandle
 local function setCamera(key)
@@ -559,6 +560,8 @@ function client.startPlayerCustomization(cb, conf)
 
     if Config.HideRadar then DisplayRadar(false) end
     -- EX_Tii (Moe): the panel is see-through, so the HUD (money, bars) hides while the screen is open
+    -- (the character creator already hides it: we give back whatever it was)
+    hudWasHidden = LocalPlayer.state.characterScreen == true
     LocalPlayer.state:set("characterScreen", true, false)
 
     SendNuiMessage(json.encode({
@@ -575,7 +578,7 @@ function client.exitPlayerCustomization(appearance)
     SetNuiFocus(false, false)
 
     if Config.HideRadar then DisplayRadar(true) end
-    LocalPlayer.state:set("characterScreen", false, false)
+    LocalPlayer.state:set("characterScreen", hudWasHidden == true, false)
 
     ClearPedTasksImmediately(cache.ped)
     SetEntityInvincible(cache.ped, false)
