@@ -461,3 +461,13 @@ svg { display: block; flex-shrink: 0; }
 @keyframes po-text { to { opacity: 1; transform: none; } }
 .po-text b { font-size: 2vh; font-weight: 700; }
 .po-text small { font-size: 1.5vh; color: var(--muted); direction: ltr; text-align: right; }
+
+/* EX_Tii: the owner's paint behind the stock picture, and a swatch in the corner */
+.thumb[style*="--paint"], .hero[style*="--paint"] {
+    background: radial-gradient(120% 90% at 50% 100%, var(--paint) 0%, var(--paint2) 60%, #14171d 100%);
+}
+.paint-dot {
+    position: absolute; right: 7px; bottom: 7px; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.85); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.hero .paint-dot { width: 20px; height: 20px; right: 12px; bottom: 12px; }

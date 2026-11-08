@@ -267,6 +267,8 @@ local function buildVehicle(v, ctx)
         sharedWith = isOwner and ctx.shares[v.id] or nil,
         finance = isOwner and ctx.finance[v.id] or nil,
         photo = ctx.photos[v.id], -- EX_Tii: version of the real photo of this car (nil = stock picture)
+        colour = props.color1,    -- EX_Tii: the car's paint (GTA colour index, or {r,g,b} for a custom colour): the screen tints the picture
+        colour2 = props.color2,
     }
     -- EX_Tii: a car parked in any garage comes out free at every garage
     entry.canTakeOut = (status == 'here' or (ctx.isPublic and status == 'other') or (ctx.isDepot and status == 'impounded')) and not onMap

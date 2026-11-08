@@ -137,11 +137,40 @@ const realPhoto = (v) => {
     return p && p.version === v.photo && /^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(p.data) ? p.data : null;
 };
 
+// EX_Tii: the car's own paint. GTA's 160 paint indexes as hex, or the custom {r,g,b} the owner picked.
+const GTA_PAINT = '0d1116 1c1d21 32383d 454b4f 999da0 c2c4c6 979a97 637380 63625c 3c3f47 444e54 1d2129 13181f 26282a 515554 151921 1e2429 333a3c 8c9095 39434d 506272 1e232f 363a3f a0a199 d3d3d3 b7bfca 778794 c00e1a da1918 b6111b a51e23 7b1a22 8e1b1f 6f1818 49111d b60f25 d44a17 c2944f f78616 cf1f21 732021 f27d20 ffc91f 9c1016 de0f18 8f1e17 a94744 b16c51 371c25 132428 122e2b 12383c 31423f 155c2d 1b6770 66b81f 22383e 1d5a3f 2d423f 45594b 65867f 222e46 233155 304c7e 47578f 637ba7 394762 d6e7f1 76afbe 345e72 0b9cf1 2f2d52 282c4d 2354a1 6ea3c6 112552 1b203e 275190 608592 2446a8 4271e1 3b39e0 1f2852 253aa7 1c3551 4c5f81 58688e 74b5d8 ffcf20 fbe212 916532 e0e13d 98d223 9b8c78 503218 473f2b 221b19 653f23 775c3e ac9975 6c6b4b 402e2b a4965f 46231a 752b19 bfae7b dfd5b2 f7edd5 3a2a1b 785f33 b5a079 fffff6 eaeaea b0ab94 453831 2a282b 726c57 6a747c 354158 9ba0a8 5870a1 eae6de dfddd0 f2ad2e f9a458 83c566 f1cc40 4cc3da 4e6443 bcac8f f8b658 fcf9f1 fffffb 81844c ffffff f21f99 fdd6cd df5891 f6ae20 b0ee6e 08e9fa 0a0c17 0c0d18 0e0d14 9f9e8a 621276 0b1421 11141a 6b1f7b 1e1d22 bc1917 2d362a 696748 7a6c55 c3b492 5a6352 81827f afd6e4 7a6440 7f6a48'.split(' ');
+function carColour(c) {
+    if (Array.isArray(c) && c.length >= 3) return `rgb(${c[0] | 0}, ${c[1] | 0}, ${c[2] | 0})`;
+    if (c && typeof c === 'object' && c[1] != null) return `rgb(${c[1] | 0}, ${c[2] | 0}, ${c[3] | 0})`;   // Lua table {1,2,3} as an object
+    if (typeof c === 'number' && GTA_PAINT[c]) return '#' + GTA_PAINT[c];
+    return null;
+}
+// the thumbnail: the stock picture of the model, with the owner's paint behind it and as a swatch in the corner,
+// so a black and a red Zentorno don't look the same in the list (the picture itself can't be recoloured)
+function paintRGB(c) {
+    if (Array.isArray(c) && c.length >= 3) return [c[0] | 0, c[1] | 0, c[2] | 0];
+    if (c && typeof c === 'object' && c[1] != null) return [c[1] | 0, c[2] | 0, c[3] | 0];
+    if (typeof c === 'number' && GTA_PAINT[c]) { const h = GTA_PAINT[c]; return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+    return null;
+}
+const mix = (a, b, t) => `rgb(${Math.round(a[0] * t + b[0] * (1 - t))}, ${Math.round(a[1] * t + b[1] * (1 - t))}, ${Math.round(a[2] * t + b[2] * (1 - t))})`;
+function paintStyle(v) {
+    const rgb = paintRGB(v.colour);
+    if (!rgb) return '';
+    return ` style="--paint:${mix(rgb, [26, 30, 38], 0.55)};--paint2:${mix(rgb, [20, 23, 29], 0.28)}"`;
+}
+function paintDot(v, cls = 'paint-dot') {
+    const col = carColour(v.colour);
+    if (!col) return '';
+    const col2 = carColour(v.colour2);
+    const two = col2 && col2 !== col ? `background: linear-gradient(135deg, ${col} 50%, ${col2} 50%)` : `background:${col}`;
+    return `<span class="${cls}" style="${two}" title="لون السيارة"></span>`;
+}
 function carImage(v, size = 34) {
     const real = realPhoto(v);
     if (real) return `<img class="real" src="${real}" alt="" draggable="false" />`;
-    if (!v.model || brokenImages.has(v.model)) return `<span class="car-fallback">${ICON.car(size)}</span>`;
-    return `<img data-car="${esc(v.model)}" data-size="${size}" src="${IMAGE_URL(v.model)}" alt="" loading="lazy" draggable="false" />`;
+    if (!v.model || brokenImages.has(v.model)) return `<span class="car-fallback">${ICON.car(size)}</span>${paintDot(v)}`;
+    return `<img data-car="${esc(v.model)}" data-size="${size}" src="${IMAGE_URL(v.model)}" alt="" loading="lazy" draggable="false" />${paintDot(v)}`;
 }
 
 document.addEventListener('error', (e) => {
@@ -210,7 +239,7 @@ function rowHtml(v) {
     const sharedTag = !v.owner ? `<span class="tag">مشتركة</span>` : '';
     return `
     <div class="row" role="button" tabindex="0" data-open="${v.id}">
-        <div class="thumb">${carImage(v, 30)}</div>
+        <div class="thumb"${paintStyle(v)}>${carImage(v, 30)}</div>
         <div class="row-main">
             <span class="row-title">${esc(displayName(v))}</span>
             ${sub}
@@ -231,7 +260,7 @@ function cardHtml(v) {
     const st = statusInfo(v);
     return `
     <div class="card" role="button" tabindex="0" data-open="${v.id}">
-        <div class="thumb">${carImage(v, 40)}</div>
+        <div class="thumb"${paintStyle(v)}>${carImage(v, 40)}</div>
         <span class="status ${st.cls}">${esc(st.text)}</span>
         <button class="star ${v.favourite ? 'on' : ''}" data-fav="${v.id}" aria-label="مفضلة">${ICON.star(16, v.favourite)}</button>
         <div class="card-body">
@@ -370,7 +399,7 @@ function renderDetail() {
             </div>
         </div>
         <div class="d-scroll">
-            <div class="hero">${carImage(v, 56)}</div>
+            <div class="hero"${paintStyle(v)}>${carImage(v, 56)}</div>
             <div class="d-name">
                 <h2>${esc(displayName(v))}</h2>
                 ${v.owner ? `<button class="edit" data-act="rename" aria-label="تغيير الاسم">${ICON.pencil(15)}</button>` : ''}

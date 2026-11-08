@@ -396,13 +396,20 @@ RegisterNUICallback('buy', function(data, cb)
     if not panel.open or type(data) ~= 'table' or type(data.model) ~= 'string' then return cb({ ok = false, error = 'failed' }) end
     local account = data.account == 'bank' and 'bank' or 'cash'
     local colour = math.tointeger(tonumber(data.colour)) or 0
-    local ok, err, vehicleId = lib.callback.await('exti_vshop:server:buy', false, data.model, colour, account)
+    -- EX_Tii: "factory colour" = exactly the paint the showroom car has right now (not a new random one)
+    local factory
+    if colour == 0 and panel.preview and DoesEntityExist(panel.preview) then
+        local c1, c2 = GetVehicleColours(panel.preview)
+        local pearl, wheel = GetVehicleExtraColours(panel.preview)
+        factory = { c1, c2, pearl, wheel }
+    end
+    local ok, err, vehicleId = lib.callback.await('exti_vshop:server:buy', false, data.model, colour, account, factory)
     cb({ ok = ok == true, error = err })
     if not ok then return end
     closePanel()
 
     -- EX_Tii: the garage keeps a real photo of the new car in the colour that was picked
-    if vehicleId and GetResourceState('qbx_garages') == 'started' then
+    if vehicleId then
         CreateThread(function()
             local waitUntil = GetGameTimer() + 8000
             while not cache.vehicle and GetGameTimer() < waitUntil do Wait(100) end
@@ -410,7 +417,11 @@ RegisterNUICallback('buy', function(data, cb)
             Wait(1500) -- let the paint settle on the new car
             local veh = cache.vehicle
             if not veh or not DoesEntityExist(veh) then return end
-            pcall(exports.qbx_garages.RefreshVehiclePhoto, exports.qbx_garages, vehicleId, lib.getVehicleProperties(veh))
+            local props = lib.getVehicleProperties(veh)
+            -- EX_Tii: the full look of the car (every colour, wheels...) is saved now, so the garage and the
+            -- impound give it back exactly like this even if it is never parked first
+            lib.callback.await('exti_vshop:server:saveLook', false, vehicleId, NetworkGetNetworkIdFromEntity(veh), props)
+            pcall(exports.qbx_garages.RefreshVehiclePhoto, exports.qbx_garages, vehicleId, props)
         end)
     end
 end)

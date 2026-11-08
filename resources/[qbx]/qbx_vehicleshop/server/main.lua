@@ -25,8 +25,18 @@ local FALLBACK_GARAGE = { pdm = 'ls_legion', boats = 'lsymc', air = 'intairport'
 
 ---@param colour any index sent by the panel (0 = factory colour)
 ---@return table? props, boolean valid
-local function colourProps(colour)
-    if colour == nil or colour == 0 then return nil, true end
+local function colourProps(colour, factory)
+    if colour == nil or colour == 0 then
+        -- the showroom car's own paint, so the delivered car looks like the one on the floor
+        if type(factory) == 'table' then
+            local c1, c2, pearl, wheel = math.tointeger(factory[1]), math.tointeger(factory[2]), math.tointeger(factory[3]), math.tointeger(factory[4])
+            local function okIdx(v) return v ~= nil and v >= 0 and v <= 255 end
+            if okIdx(c1) and okIdx(c2) then
+                return { color1 = c1, color2 = c2, pearlescentColor = okIdx(pearl) and pearl or nil, wheelColor = okIdx(wheel) and wheel or nil }, true
+            end
+        end
+        return nil, true
+    end
     if math.type(colour) ~= 'integer' then return nil, false end
     local entry = catalog.colours[colour]
     if not entry then return nil, false end
@@ -61,7 +71,7 @@ end
 ---@param colour integer
 ---@param account 'cash'|'bank'
 ---@return boolean ok, string? errorCode, integer? vehicleId
-lib.callback.register('exti_vshop:server:buy', function(source, model, colour, account)
+lib.callback.register('exti_vshop:server:buy', function(source, model, colour, account, factory)
     local src = source
     if not sharedConfig.enableFreeUseBuy then return false, 'failed' end
     if busy[src] then return false, 'busy' end
@@ -71,7 +81,7 @@ lib.callback.register('exti_vshop:server:buy', function(source, model, colour, a
     local vehicle, _, shop, err = checkRequest(src, model)
     if not vehicle then return false, err end
 
-    local props, colourOk = colourProps(colour)
+    local props, colourOk = colourProps(colour, factory)
     if not colourOk then return false, 'failed' end
 
     local player = exports.qbx_core:GetPlayer(src)
@@ -374,3 +384,22 @@ if TRANSFER_ON then lib.addCommand('transfervehicle', {
         end
     end, GetEntityModel(vehicle), sellAmount)
 end) end
+
+
+-- EX_Tii: right after a purchase the buyer's game sends the car's full look; it is saved on the car so the
+-- garage / impound hand it back exactly the same (checked: his car, his purchase, same plate)
+lib.callback.register('exti_vshop:server:saveLook', function(source, vehicleId, netId, props)
+    local src = source
+    vehicleId = math.tointeger(vehicleId)
+    if not vehicleId or type(props) ~= 'table' or type(props.plate) ~= 'string' then return false end
+    local player = exports.qbx_core:GetPlayer(src); if not player then return false end
+    local owned = exports.qbx_vehicles:GetPlayerVehicle(vehicleId, { citizenid = player.PlayerData.citizenid })
+    if not owned then return false end
+    local veh = netId and NetworkGetEntityFromNetworkId(netId)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return false end
+    if Entity(veh).state.vehicleid ~= vehicleId then return false end
+    local plate = (GetVehicleNumberPlateText(veh) or ''):gsub('%s+', ''):upper()
+    if plate ~= (props.plate:gsub('%s+', ''):upper()) then return false end
+    local ok = pcall(exports.qbx_vehicles.SaveVehicle, exports.qbx_vehicles, veh, { props = props })
+    return ok
+end)
