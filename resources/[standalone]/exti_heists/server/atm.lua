@@ -11,7 +11,8 @@ local recent = {}    -- os.time() of each rip in the last hour
 local MODEL = {}
 for _, m in ipairs(AT.models) do MODEL[joaat(m)] = m end
 
-local function keyOf(p) return ('atm:%d:%d'):format(math.floor(p.x / 3), math.floor(p.y / 3)) end
+-- (half-metre grid: two ATMs side by side are two different ATMs)
+local function keyOf(p) return ('atm2:%d:%d'):format(math.floor(p.x * 2 + 0.5), math.floor(p.y * 2 + 0.5)) end
 
 local function publish()
     local out = {}
@@ -34,6 +35,23 @@ local function entityOf(netId)
 end
 
 -- hook the chain: the ATM (where the game found it) and the truck
+-- before the chain goes on: can this ATM be pulled right now? (so nobody does both steps for nothing)
+local function hoursMins(s) s = math.max(0, math.floor(s)); local h = s // 3600; return h > 0 and ('%d س %d د'):format(h, (s % 3600) // 60) or H.mmss(s) end
+lib.callback.register('exti_heists:server:atmCheck', function(src, pos)
+    if type(pos) ~= 'table' or not tonumber(pos.x) then return false end
+    pos = vec3(pos.x + 0.0, pos.y + 0.0, pos.z + 0.0)
+    if H.isCopOnDuty(src) then return false, 'أنت شرطي في الخدمة' end
+    local key = keyOf(pos)
+    if atms[key] then return false, 'هذا الجهاز مربوط أو مقتلع الآن' end
+    local left = math.max(H.cooldownLeft(key), (H.atmHidden[key] or 0) - H.now())
+    if left > 0 then return false, ('هذا الجهاز سُرق قبل قليل: الصندوق فارغ · بعد %s'):format(hoursMins(left)) end
+    if lastHour() >= AT.perHour then return false, 'الشرطة متيقّظة الآن: لا أجهزة صراف هذه الساعة' end
+    local ok, need = H.canTier(src, AT.tier, true)
+    if not ok then return false, ('تحتاج سمعة مستوى %d لسرقة أجهزة الصراف (تطبيق الطاقم ← أنا)'):format(need) end
+    if not H.modeFor(AT.tier) then return false, 'لا يمكن الآن' end
+    return true
+end)
+
 lib.callback.register('exti_heists:server:atmHook', function(src, pos, modelName, vehNet)
     if type(pos) ~= 'table' or not tonumber(pos.x) then return false end
     pos = vec3(pos.x + 0.0, pos.y + 0.0, pos.z + 0.0)

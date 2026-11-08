@@ -45,6 +45,9 @@ local chain = nil   -- { obj, model, pos, untilAt }: the chain is on the ATM, I'
 
 local function chainAtm(obj, model)
     HC.prompt(nil)
+    local op = GetEntityCoords(obj)
+    local can, why = lib.callback.await('exti_heists:server:atmCheck', false, { x = op.x, y = op.y, z = op.z })
+    if not can then HC.notify(why or 'لا يمكن الآن', 'error', 7000) return end
     TaskTurnPedToFaceEntity(cache.ped, obj, 800); Wait(800)
     local done = lib.progressBar({
         duration = AT.hookSeconds * 1000, label = 'تلفّ سلسلة السحب حول الجهاز...', canCancel = true,
