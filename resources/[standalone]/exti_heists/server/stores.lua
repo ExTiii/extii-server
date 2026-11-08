@@ -338,15 +338,23 @@ lib.callback.register('exti_heists:server:safeBegin', function(src, i)
     local ok, need = H.canTier(src, S.tier, true)
     if not ok then return false, ('تحتاج سمعة %d لهذه الخزنة'):format(need) end
     local mode = H.modeFor(S.tier); if not mode then return false end
+    if S.needs and (exports.ox_inventory:Search(src, 'count', S.needs) or 0) < 1 then return false, 'تحتاج سماعة طبية لتسمع القرص (من متجر العدد)' end
     local lv = H.skillLevel(H.rec(src), 'breaching')
-    return true, H.gameBegin(src, 'safedial', { store = i, mode = mode }), { numbers = 3, time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
+    return true, H.gameBegin(src, 'safedial', { store = i, mode = mode }), { numbers = 3, seconds = S.dialSeconds or 70, time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
 end)
 
 lib.callback.register('exti_heists:server:safeEnd', function(src, token, passed)
     local ctx = H.gameEnd(src, 'safedial', token, passed == true)
     local i = ctx and ctx.store
     if not i or safes[i] or H.cooldownLeft(storeKey(i, 'safe')) > 0 then return false end
-    if not passed then return false, 'failed' end
+    if not passed then
+        -- the stethoscope sometimes breaks when you get it wrong
+        if S.needs and S.breakChance and math.random() < S.breakChance and exports.ox_inventory:RemoveItem(src, S.needs, 1) then
+            H.log(src, 'store_safe_fail', stores[i].area .. ' · stethoscope broke')
+            return false, 'broke'
+        end
+        return false, 'failed'
+    end
     if not H.near(src, safeSpot(i), 2.6) then return false end
     H.touch(src, safeSpot(i))
     safes[i] = { phase = 'timelock', by = src, mode = ctx.mode, readyAt = H.now() + S.timelockSeconds }

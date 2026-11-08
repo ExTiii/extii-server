@@ -238,7 +238,7 @@
         const dirOf = (i) => (i % 2 === 0 ? 1 : -1);             // 1 = right (clockwise), -1 = left
         const showDir = () => { dirEl.textContent = dirOf(k) > 0 ? 'أدر يمينًا ⟳' : 'أدر يسارًا ⟲'; };
         showDir();
-        const time = c.timer(Math.round(70 * (p.time || 1)), () => { c.flash('bad'); sfx('dial_wrong', 0.8); finish(false); });
+        const time = c.timer(Math.round((p.seconds || 70) * (p.time || 1)), () => { c.flash('bad'); sfx('dial_wrong', 0.8); finish(false); });
 
         const turn = (deg) => {
             if (done || !deg) return;

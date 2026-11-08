@@ -241,6 +241,7 @@ local function crackSafe(i, s, pos)
     ClearPedTasks(cache.ped)
     local res, secs = lib.callback.await('exti_heists:server:safeEnd', false, token, passed)
     if res then HC.notify(('فُتح القفل: قفل الوقت يعمل · %s · الإنذار يرن'):format(('%d:%02d'):format(secs // 60, secs % 60)), 'warning', 8000)
+    elseif secs == 'broke' then HC.notify('أفلت الرقم… وانكسرت السماعة الطبية', 'error', 7000)
     elseif passed == false then HC.notify('أفلت الرقم: حاول مرة أخرى', 'error') end
 end
 RegisterNetEvent('exti_heists:client:safeReady', function() HC.notify('انتهى قفل الوقت: افتح الخزنة', 'success', 7000) end)
@@ -340,7 +341,11 @@ CreateThread(function()
                 if t then bellOn(pos) end
                 if #(here - pos) < 1.3 then
                     if not t then
-                        text, act = '[E] افتح الخزنة (قرص الأرقام)', function() crackSafe(near, s, pos) end
+                        if HC.count('stethoscope') > 0 then
+                            text, act = '[E] افتح الخزنة (قرص الأرقام · السماعة الطبية)', function() crackSafe(near, s, pos) end
+                        else
+                            text = 'خزنة المتجر: تحتاج سماعة طبية لتسمع القرص (متجر العدد)'
+                        end
                     elseif t.phase == 'timelock' then
                         local left = math.max(0, (t.readyAt or 0) - GetCloudTimeAsInt())
                         text = ('قفل الوقت: %d:%02d · الإنذار يرن'):format(left // 60, left % 60)

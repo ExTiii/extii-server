@@ -1231,6 +1231,13 @@ return {
     },
 
     -- EX_Tii heists (robberies): hacking USBs, tools, loot
+    ['stethoscope'] = {
+        label = 'سماعة طبية (Stethoscope)',
+        weight = 300,
+        description = 'تسمع بها نقرات قرص الخزنة: لازمة لفتح خزنة المتجر. قد تنكسر عند الفشل',
+        client = { image = 'nui://exti_heists/html/items/stethoscope.png' },
+    },
+
     ['usb_green'] = {
         label = 'فلاشة اختراق خضراء (Green USB)',
         weight = 50,

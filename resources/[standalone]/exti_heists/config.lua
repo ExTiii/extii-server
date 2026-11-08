@@ -124,6 +124,9 @@ Config.storeSafeSpots = {
 }
 Config.storeSafe = {
     tier = 2,
+    dialSeconds = 60,         -- EX_Tii (Moe): one minute on the dial
+    needs = 'stethoscope',    -- EX_Tii (Moe): you need a stethoscope to hear the clicks (tool shop)
+    breakChance = 0.25,       -- it breaks this often when you fail the dial
     timelockSeconds = 120,    -- after the dial: wait it out while the alarm rings
     pay = { 2500, 4500 },
     usb = { item = 'usb_green', chance = 0.05 },

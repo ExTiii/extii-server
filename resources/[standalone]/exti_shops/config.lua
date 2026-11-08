@@ -64,6 +64,7 @@ Config.types = {
             { name = 'drill', price = 1800, category = 'tools', max = 1 },
             { name = 'drill_bit', price = 120, category = 'tools', max = 5 },
             { name = 'tow_chain', price = 650, category = 'tools', max = 1 },
+            { name = 'stethoscope', price = 350, category = 'tools', max = 1, desc = 'لفتح خزنة المتجر: تسمع نقرات القرص' },
             -- (zip ties and blindfolds: only the gangs make them, at their HQ)
         },
     },
