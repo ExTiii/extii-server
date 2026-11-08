@@ -319,7 +319,7 @@ end
 -- * cars are parked by driving into the big gold circle and pressing E
 -- * own map icons (garage = gold garage with a car, impound = red car on a tow hook)
 ---------------------------------------------------------------------------
-local GOLD = { 232, 181, 71 }
+local GOLD = { 32, 201, 151 }
 local NPC_IN, NPC_OUT = 110.0, 140.0 -- attendants appear / disappear at these distances
 local DRAW_FOOT, DRAW_CAR = 30.0, 45.0
 local BLIP_CATEGORIES = {

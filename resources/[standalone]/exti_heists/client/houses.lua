@@ -477,7 +477,7 @@ CreateThread(function()
                     if not inHouse.searched[k] then
                         local d = #(here - p)
                         if d < 1.4 and (not bd or d < bd) then best, bd = k, d end
-                        if d < 8.0 then DrawMarker(2, p.x, p.y, p.z + 0.35, 0, 0, 0, 0, 180.0, 0, 0.12, 0.12, 0.12, 232, 181, 71, 140, false, true, 2, false, nil, nil, false) end
+                        if d < 8.0 then DrawMarker(2, p.x, p.y, p.z + 0.35, 0, 0, 0, 0, 180.0, 0, 0.12, 0.12, 0.12, 32, 201, 151, 140, false, true, 2, false, nil, nil, false) end
                     end
                 end
                 if best then text, act = '[E] فتّش', function() search(best) end end

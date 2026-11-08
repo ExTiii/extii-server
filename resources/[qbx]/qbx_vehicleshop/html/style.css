@@ -43,7 +43,7 @@ svg { display: block; flex-shrink: 0; }
 .brand-icon {
     width: 44px; height: 44px; border-radius: 14px;
     display: grid; place-items: center;
-    background: linear-gradient(145deg, rgba(232, 181, 71, 0.26), rgba(232, 181, 71, 0.06));
+    background: linear-gradient(145deg, rgba(32, 201, 151, 0.26), rgba(32, 201, 151, 0.06));
     color: var(--accent);
     border: 1px solid var(--accent-line);
 }
@@ -194,7 +194,7 @@ svg { display: block; flex-shrink: 0; }
     height: 190px; border-radius: 22px; margin-top: 6px;
     display: grid; place-items: center;
     background:
-        radial-gradient(70% 60% at 50% 100%, rgba(232, 181, 71, 0.12) 0%, transparent 70%),
+        radial-gradient(70% 60% at 50% 100%, rgba(32, 201, 151, 0.12) 0%, transparent 70%),
         radial-gradient(120% 100% at 50% 100%, #252b37 0%, #171b22 55%, #12151b 100%);
     border: 1px solid var(--line);
     position: relative; overflow: hidden;
@@ -247,7 +247,7 @@ svg { display: block; flex-shrink: 0; }
     flex: 1;
 }
 .btn:hover { background: var(--card-3); }
-.btn.primary { background: linear-gradient(180deg, var(--accent-hi), var(--accent)); color: var(--accent-ink); border-color: transparent; box-shadow: 0 6px 18px rgba(232, 181, 71, 0.18); }
+.btn.primary { background: linear-gradient(180deg, var(--accent-hi), var(--accent)); color: var(--accent-ink); border-color: transparent; box-shadow: 0 6px 18px rgba(32, 201, 151, 0.18); }
 .btn.primary:hover { filter: brightness(1.06); }
 .btn.danger { background: rgba(255, 95, 95, 0.12); color: var(--red); border-color: rgba(255, 95, 95, 0.25); }
 .btn.small { height: 38px; font-size: 13px; border-radius: 12px; }
@@ -327,7 +327,7 @@ svg { display: block; flex-shrink: 0; }
 .card .vbrand, .row .vbrand { font-size: 11.5px; color: var(--faint); margin-top: -5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: ltr; text-align: right; }
 .card .row-title { direction: ltr; text-align: right; }
 .row .row-title { direction: ltr; text-align: right; }
-.row.selected { background: rgba(232, 181, 71, 0.07); }
+.row.selected { background: rgba(32, 201, 151, 0.07); }
 .card .cat-tag { position: absolute; top: 8px; right: 8px; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: rgba(10, 12, 16, 0.6); color: var(--muted); }
 
 /* details */
@@ -356,8 +356,8 @@ svg { display: block; flex-shrink: 0; }
     transition: transform 0.12s, border-color 0.12s;
 }
 .swatch:hover { transform: scale(1.08); }
-.swatch.on { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232, 181, 71, 0.28), inset 0 -3px 6px rgba(0, 0, 0, 0.35); }
-.swatch.factory { background: conic-gradient(#e8b547, #62b3ff, #ff5f5f, #3ddc97, #e8b547); position: relative; }
+.swatch.on { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.28), inset 0 -3px 6px rgba(0, 0, 0, 0.35); }
+.swatch.factory { background: conic-gradient(#20c997, #62b3ff, #ff5f5f, #3ddc97, #20c997); position: relative; }
 .colour-name { font-size: 12.5px; color: var(--text); font-weight: 600; }
 
 /* buy sheet */

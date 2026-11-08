@@ -7,7 +7,7 @@ Config.enabled = true
 
 -- The line: our server gold, and how wide it is (smaller = thinner).
 -- /gpsline 2-16 changes the width live and saves it for everyone.
-Config.colour = { 232, 181, 71 }
+Config.colour = { 32, 201, 151 }
 Config.width = 8
 Config.minWidth, Config.maxWidth = 2, 16
 

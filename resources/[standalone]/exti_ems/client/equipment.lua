@@ -197,7 +197,7 @@ local function openAmbulanceMenu(veh)
     local options = {}
     -- one of the team's vehicles: its own trunk (what you left in it last shift is still there)
     if Entity(veh).state.exti_ems_fleet and EMS.openFleetTrunk then
-        options[#options + 1] = { title = 'صندوق المركبة', icon = 'box-open', iconColor = '#e8b547', description = 'المستلزمات المحفوظة في هذه السيارة',
+        options[#options + 1] = { title = 'صندوق المركبة', icon = 'box-open', iconColor = '#20c997', description = 'المستلزمات المحفوظة في هذه السيارة',
             onSelect = function() EMS.openFleetTrunk(veh) end }
     end
     if loadedStretcher(veh) then

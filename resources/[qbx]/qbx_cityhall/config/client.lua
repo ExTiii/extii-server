@@ -21,7 +21,7 @@ return {
                 distance = 1.15,     -- how far in front of the employee (meters)
                 radius = 0.8,        -- size of the circle (meters, only when show = true)
                 drawDistance = 90.0, -- you see it from this far away
-                colour = { 232, 181, 71 },
+                colour = { 32, 201, 151 },
             },
         },
     },

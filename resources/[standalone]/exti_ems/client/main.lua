@@ -300,7 +300,7 @@ function openPatient(target)
     local options = {
         { title = ('الحالة: %s'):format(stateText), icon = 'heart-pulse', readOnly = true,
           progress = info.state == 'down' and 0 or info.health, colorScheme = info.state == 'down' and 'red' or (info.health < 60 and 'orange' or 'green') },
-        { title = 'فحص بالتابلت', icon = 'stethoscope', iconColor = '#e8b547',
+        { title = 'فحص بالتابلت', icon = 'stethoscope', iconColor = '#20c997',
           description = 'افحص كل جزء من الجسم وقِس النبض والضغط والأكسجين',
           onSelect = function() EMS.openExam(target) end },
     }
@@ -363,7 +363,7 @@ CreateThread(function()
                     text = '[E] المريض (تجريبي)'
                     action = function()
                         lib.registerContext({ id = 'exti_ems_fake', title = 'مريض تجريبي', options = {
-                            { title = 'فحص بالتابلت', icon = 'stethoscope', iconColor = '#e8b547',
+                            { title = 'فحص بالتابلت', icon = 'stethoscope', iconColor = '#20c997',
                               description = 'افحص كل جزء من الجسم وقِس النبض والضغط والأكسجين',
                               onSelect = function() EMS.openExam(fakeId) end },
                             { title = 'علاج المريض', icon = 'kit-medical', iconColor = '#ff6b6b',

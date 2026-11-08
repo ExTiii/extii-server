@@ -10,7 +10,7 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
     height: min(660px, 90vh);
     display: flex; flex-direction: column;
     background:
-        radial-gradient(900px 300px at 85% -10%, rgba(232, 181, 71, 0.10), transparent 70%),
+        radial-gradient(900px 300px at 85% -10%, rgba(32, 201, 151, 0.10), transparent 70%),
         var(--panel);
     animation: shop-in 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.15);
 }
@@ -41,7 +41,7 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
     margin: 0 24px 14px;
     padding: 10px 14px;
     border-radius: 14px;
-    background: linear-gradient(90deg, rgba(232, 181, 71, 0.10), rgba(232, 181, 71, 0.02));
+    background: linear-gradient(90deg, rgba(32, 201, 151, 0.10), rgba(32, 201, 151, 0.02));
     border: 1px solid var(--accent-line);
     display: flex; align-items: center; gap: 8px;
     font-size: 13.5px; color: var(--text);
@@ -85,7 +85,7 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
     height: 96px;
     display: grid; place-items: center;
     background:
-        radial-gradient(120px 90px at 50% 60%, rgba(232, 181, 71, 0.16), transparent 70%),
+        radial-gradient(120px 90px at 50% 60%, rgba(32, 201, 151, 0.16), transparent 70%),
         linear-gradient(180deg, var(--card-2), var(--card));
 }
 .card-art img { width: 68px; height: 68px; object-fit: contain; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45)); transition: transform 0.25s ease; }
@@ -171,7 +171,7 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 .stepper button[disabled] { opacity: 0.35; cursor: default; background: none; }
 .stepper span { min-width: 26px; text-align: center; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-.cart-foot { padding: 14px 16px 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; background: linear-gradient(180deg, transparent, rgba(232, 181, 71, 0.04)); }
+.cart-foot { padding: 14px 16px 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; background: linear-gradient(180deg, transparent, rgba(32, 201, 151, 0.04)); }
 .total-row { display: flex; align-items: baseline; justify-content: space-between; }
 .total-row span { color: var(--muted); font-size: 13.5px; }
 .total-row b { font-size: 26px; font-weight: 700; direction: ltr; font-variant-numeric: tabular-nums; transition: color 0.2s; }

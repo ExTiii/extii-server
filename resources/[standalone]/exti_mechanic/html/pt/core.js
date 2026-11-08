@@ -149,7 +149,7 @@ window.PT = (() => {
             me: null,
             settings: { mode: 'dark', wallpaper: '' },
             badges: { chat: 0, forms: 0 },
-            cfg: { colors: ['#f2c230'], bonusMax: 50000, salaryMax: 1000, maxText: 500, stations: [] },
+            cfg: { colors: ['#20c997'], bonusMax: 50000, salaryMax: 1000, maxText: 500, stations: [] },
             clock: '',
             skew: 0,
             app: null,        // null = the home screen

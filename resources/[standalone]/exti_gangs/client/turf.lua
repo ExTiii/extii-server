@@ -23,7 +23,7 @@ local function texOf(tag, color)
     local t = textures[key]
     if t then return t.ready and t.name or nil end
     local name = 'tag_' .. key:gsub('[^%w]', '')
-    local url = ('nui://%s/html/tag.html?t=%s&c=%s'):format(RES, tag or 'GANG', (color or '#e8b547'):gsub('#', '%%23'))
+    local url = ('nui://%s/html/tag.html?t=%s&c=%s'):format(RES, tag or 'GANG', (color or '#20c997'):gsub('#', '%%23'))
     local dui = CreateDui(url, 512, 256)
     t = { name = name, dui = dui, ready = false }
     textures[key] = t

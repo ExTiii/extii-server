@@ -10,7 +10,7 @@ return {
     licenses = {
         ['id_card'] = {
             header = 'بطاقة الهوية',
-            accent = '#e8b547',
+            accent = '#20c997',
             prop = 'prop_franklin_dl'
         },
         ['driver_license'] = {

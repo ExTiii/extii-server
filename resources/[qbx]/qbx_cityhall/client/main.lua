@@ -156,7 +156,7 @@ local function createBlip(cityhall)
     -- EX_Tii: gold ring around the icon, always on top, and a soft gold glow on the map
     if data.fancy then
         SetBlipPriority(blip, 12)
-        SetBlipSecondaryColour(blip, 232, 181, 71)
+        SetBlipSecondaryColour(blip, 32, 201, 151)
         ShowOutlineIndicatorOnBlip(blip, true)
         local glow = AddBlipForRadius(c.x, c.y, c.z, data.glowRadius or 28.0)
         SetBlipColour(glow, data.colour or 5)

@@ -260,7 +260,7 @@ function MEC.openService(veh)
         options[#options + 1] = {
             title = ('طلب تعديل #%d · بقي %d من %d'):format(tune.id, left, #tune.lines),
             description = tune.free and 'لم يستلمه أحد بعد: أول تركيب يجعله طلبك' or tune.mine and 'هذا طلبك' or ('مع %s'):format(tune.mname or '؟'),
-            icon = 'screwdriver-wrench', iconColor = '#f2c230', readOnly = true,
+            icon = 'screwdriver-wrench', iconColor = '#20c997', readOnly = true,
         }
         local blocked = not tune.free and not tune.mine and not tune.boss
         for _, l in ipairs(tune.lines) do
@@ -270,7 +270,7 @@ function MEC.openService(veh)
                 description = l.done and 'تم التركيب' or l.count == 0 and 'لا يحتاج قطعًا'
                     or enough and ('تحتاج %d× %s (معك %d)'):format(l.count, l.itemLabel or l.item, l.have)
                     or ('تحتاج %d× %s · معك %d، اطلبها من متجر القطع'):format(l.count, l.itemLabel or l.item, l.have),
-                icon = l.done and 'circle-check' or 'gears', iconColor = l.done and '#3ddc97' or '#f2c230',
+                icon = l.done and 'circle-check' or 'gears', iconColor = l.done and '#3ddc97' or '#20c997',
                 disabled = l.done or not enough or blocked,
                 onSelect = function() installTune(veh, tune.id, l) end,
             }
@@ -302,7 +302,7 @@ function MEC.openService(veh)
                 or ('تحتاج %d× %s · معك %d، اطلبها من متجر القطع'):format(p.count, p.partLabel, p.have),
             progress = p.pct, colorScheme = colorOf(p.pct),
             icon = p.pct < (S.warnAt or 15) and 'triangle-exclamation' or 'wrench',
-            iconColor = p.pct < (S.warnAt or 15) and '#ff6b6b' or '#f2c230',
+            iconColor = p.pct < (S.warnAt or 15) and '#ff6b6b' or '#20c997',
             disabled = not enough or p.pct >= 100,
             onSelect = function() repair(veh, p.id, p.label) end,
         }
@@ -313,7 +313,7 @@ function MEC.openService(veh)
     }
     options[#options + 1] = {
         title = 'تلميع بالواكس', description = info.waxItems > 0 and ('يحمي السيارة من الأوساخ %d ساعات (معك %d)'):format(S.waxHours or 6, info.waxItems) or 'تحتاج علبة واكس',
-        icon = 'star', iconColor = '#ffd659', disabled = info.waxItems < 1, onSelect = function() clean(veh, 'wax') end,
+        icon = 'star', iconColor = '#4ad9ad', disabled = info.waxItems < 1, onSelect = function() clean(veh, 'wax') end,
     }
     lib.registerContext({ id = 'exti_mechanic_service', title = 'صيانة المركبة', options = options })
     lib.showContext('exti_mechanic_service')

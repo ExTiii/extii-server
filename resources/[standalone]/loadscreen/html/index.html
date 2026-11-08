@@ -7,7 +7,7 @@
 <style>
 /* EX_Tii loading screen: a cinema frame. The film plays letterboxed, the UI lives in the black bars. */
 :root {
-    --gold: #e8b547; --gold-hi: #f3cd73; --ink: #16130b;
+    --gold: #20c997; --gold-hi: #f3cd73; --ink: #16130b;
     --text: #f4f1ea; --muted: #a8a39a; --faint: #6f6b64;
     --bar: 13vh;            /* the letterbox bars */
 }
@@ -31,12 +31,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #050505; col
 .bar.top { top: 0; justify-content: space-between; }
 .bar.bottom { bottom: 0; gap: 3.2vw; align-items: center; }
 .bar.top::after, .bar.bottom::before { content: ''; position: absolute; left: 4.2vw; right: 4.2vw; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(232,181,71,.35), transparent); }
+    background: linear-gradient(90deg, transparent, rgba(32, 201, 151,.35), transparent); }
 .bar.top::after { bottom: 0; } .bar.bottom::before { top: 0; }
 
 /* brand (top, the start side) */
 .brand { display: flex; align-items: center; gap: 14px; }
-.brand img { width: 6.6vh; height: 6.6vh; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px rgba(232,181,71,.45), 0 0 24px rgba(232,181,71,.18); }
+.brand img { width: 6.6vh; height: 6.6vh; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px rgba(32, 201, 151,.45), 0 0 24px rgba(32, 201, 151,.18); }
 .brand .name { display: block; font-size: 2.3vh; font-weight: 700; letter-spacing: .2px; direction: ltr; text-align: right; }
 .brand .name span { color: var(--gold); }
 .brand small { display: block; margin-top: 2px; font-size: 1.45vh; color: var(--muted); }
@@ -47,7 +47,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #050505; col
 .top-end { display: flex; align-items: center; gap: 2vw; }
 .sound { display: flex; align-items: center; gap: 9px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03);
     color: var(--muted); font: inherit; font-size: 1.4vh; cursor: pointer; }
-.sound:hover { color: var(--text); border-color: rgba(232,181,71,.4); }
+.sound:hover { color: var(--text); border-color: rgba(32, 201, 151,.4); }
 .eq { display: flex; align-items: flex-end; gap: 2px; height: 1.6vh; }
 .eq i { width: 3px; background: var(--gold); border-radius: 1px; animation: eq 1s ease-in-out infinite; }
 .eq i:nth-child(2) { animation-delay: .2s; } .eq i:nth-child(3) { animation-delay: .4s; } .eq i:nth-child(4) { animation-delay: .1s; }
@@ -69,7 +69,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #050505; col
 .load .what { font-size: 1.45vh; color: var(--muted); }
 .load .pct { font-size: 3.2vh; font-weight: 700; color: var(--gold-hi); font-variant-numeric: tabular-nums; direction: ltr; }
 .track { position: relative; height: 3px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
-.track i { position: absolute; top: 0; bottom: 0; right: 0; width: 0; background: linear-gradient(270deg, var(--gold-hi), var(--gold)); box-shadow: 0 0 12px rgba(232,181,71,.6); transition: width .5s ease; }
+.track i { position: absolute; top: 0; bottom: 0; right: 0; width: 0; background: linear-gradient(270deg, var(--gold-hi), var(--gold)); box-shadow: 0 0 12px rgba(32, 201, 151,.6); transition: width .5s ease; }
 
 /* the keys strip (over the film, low) */
 .keys { position: fixed; bottom: calc(var(--bar) + 2.4vh); right: 4.2vw; display: flex; gap: 1.8vw; z-index: 4; opacity: .92; }

@@ -20,7 +20,7 @@ const useStyles = createStyles((theme) => ({
     height: 'fit-content',
     backgroundColor: 'rgba(14, 15, 20, 0.94)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderInlineStart: '3px solid var(--ntf-accent, #e8b547)',
+    borderInlineStart: '3px solid var(--ntf-accent, #20c997)',
     color: theme.colors.dark[0],
     padding: '10px 14px',
     borderRadius: 14,
@@ -115,12 +115,12 @@ const ProgressBar: React.FC<{ p: NonNullable<NotificationProps['progress']> }> =
     raf.current = requestAnimationFrame(step);
     return () => { clearTimeout(t); clearTimeout(t2); if (raf.current) cancelAnimationFrame(raf.current); };
   }, [p.from, p.to, p.cur, p.prev]);
-  const color = p.color || '#e8b547';
+  const color = p.color || '#20c997';
   return (
     <Box sx={{ marginTop: 7, width: '100%' }}>
       <Box sx={{ position: 'relative', height: 8, borderRadius: 5, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
         <Box sx={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: `${width}%`, borderRadius: 5,
-          background: `linear-gradient(270deg, ${color}, #ffd659)`, transition: 'width 0.9s cubic-bezier(0.3, 0.8, 0.3, 1)' }} />
+          background: `linear-gradient(270deg, ${color}, #4ad9ad)`, transition: 'width 0.9s cubic-bezier(0.3, 0.8, 0.3, 1)' }} />
         {to > from && (
           <Box sx={{ position: 'absolute', top: 0, bottom: 0, borderRadius: 5, right: `${Math.max(0, Math.min(from, 100 - Math.max(to - from, 2.5)))}%`,
             width: `${piece}%`, background: 'linear-gradient(270deg, #fff2b8, #ffffff)', boxShadow: '0 0 8px 2px rgba(255, 236, 150, 0.85)',
@@ -130,7 +130,7 @@ const ProgressBar: React.FC<{ p: NonNullable<NotificationProps['progress']> }> =
       {p.need !== undefined && (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 11.5, color: '#a19f99' }}>
           <span dir="ltr" style={{ color: '#e6e2d6' }}>{fmt(cur)} / {fmt(p.need)} XP</span>
-          <span dir="ltr" style={{ color: '#ffd659' }}>{to.toFixed(1)}%</span>
+          <span dir="ltr" style={{ color: '#4ad9ad' }}>{to.toFixed(1)}%</span>
         </Box>
       )}
     </Box>
@@ -208,7 +208,7 @@ const Notifications: React.FC = () => {
     } else {
       iconColor = tinycolor(data.iconColor).toRgbString();
     }
-    const accent = { 'red.5': '#ff5f5f', 'teal.5': '#3ddc97', 'orange.5': '#f6a94a', 'gold.5': '#e8b547' }[iconColor] || iconColor;
+    const accent = { 'red.5': '#ff5f5f', 'teal.5': '#3ddc97', 'orange.5': '#f6a94a', 'gold.5': '#20c997' }[iconColor] || iconColor;
 
     toast.custom(
       (t) => (

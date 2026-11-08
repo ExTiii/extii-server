@@ -234,7 +234,7 @@ end
 ---------------------------------------------------------------------------
 -- the circles and the E texts (the main loop in client/main.lua asks for them)
 ---------------------------------------------------------------------------
-local GOLD = { 232, 181, 71 }
+local GOLD = { 32, 201, 151 }
 local WHITE = { 255, 255, 255 }
 local DRAW = 25.0
 

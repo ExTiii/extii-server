@@ -48,7 +48,7 @@
         pulse: '<svg viewBox="0 0 48 48" fill="none" stroke="#3ddc97" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 26h8l4-10 6 20 5-14 3 4h10"/></svg>',
         bp: '<svg viewBox="0 0 48 48" fill="none" stroke-width="2.4" stroke-linecap="round"><circle cx="24" cy="25" r="15" stroke="#d9dde3"/><path d="M24 25l7-7" stroke="#ff6b6b"/><path d="M14 33h20" stroke="#8a9099"/></svg>',
         spo2: '<svg viewBox="0 0 48 48" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="10" width="24" height="30" rx="8" stroke="#d9dde3"/><path d="M18 22h4l2-4 3 8 2-4h3" stroke="#46d6ff"/></svg>',
-        ask: '<svg viewBox="0 0 48 48" fill="none" stroke="#d9dde3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12h28v18H22l-8 7v-7h-4z"/><path d="M20 19a4 4 0 1 1 5 4v2" stroke="#e8b547"/></svg>',
+        ask: '<svg viewBox="0 0 48 48" fill="none" stroke="#d9dde3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12h28v18H22l-8 7v-7h-4z"/><path d="M20 19a4 4 0 1 1 5 4v2" stroke="#20c997"/></svg>',
         cpr: '<svg viewBox="0 0 48 48" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 38s-13-8-13-18a7 7 0 0 1 13-4 7 7 0 0 1 13 4c0 10-13 18-13 18z" stroke="#ff6b6b"/><path d="M14 24h6l3-5 3 9 2-4h6" stroke="#f2f2f2"/></svg>',
     };
 
@@ -476,10 +476,10 @@
                 <defs><filter id="tgl"><feGaussianBlur stdDeviation="4"/></filter>
                 <linearGradient id="tcv" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2a0f12"/><stop offset="1" stop-color="#140809"/></linearGradient></defs>
                 <rect x="40" y="0" width="120" height="${H + 40}" rx="60" fill="url(#tcv)" stroke="rgba(255,255,255,.1)"/>
-                <g id="trl"><line x1="${100 - gap}" y1="30" x2="${100 - gap}" y2="${H}" stroke="#e8b547" stroke-width="6" filter="url(#tgl)"/><line x1="${100 + gap}" y1="30" x2="${100 + gap}" y2="${H}" stroke="#e8b547" stroke-width="6" filter="url(#tgl)"/>
+                <g id="trl"><line x1="${100 - gap}" y1="30" x2="${100 - gap}" y2="${H}" stroke="#20c997" stroke-width="6" filter="url(#tgl)"/><line x1="${100 + gap}" y1="30" x2="${100 + gap}" y2="${H}" stroke="#20c997" stroke-width="6" filter="url(#tgl)"/>
                 <line x1="${100 - gap}" y1="30" x2="${100 - gap}" y2="${H}" stroke="#ffe3a3" stroke-width="2"/><line x1="${100 + gap}" y1="30" x2="${100 + gap}" y2="${H}" stroke="#ffe3a3" stroke-width="2"/></g>
                 <g id="tbl" style="cursor:grab">${probes
-                    ? '<rect x="-4" y="-16" width="8" height="30" rx="3" fill="#c9cdd2"/><path d="M-6 -16 l6 -10 l6 10z" fill="#e8b547"/>'
+                    ? '<rect x="-4" y="-16" width="8" height="30" rx="3" fill="#c9cdd2"/><path d="M-6 -16 l6 -10 l6 10z" fill="#20c997"/>'
                     : '<rect x="-9" y="-6" width="18" height="26" rx="2" fill="#b98a2f"/><path d="M-9 -4 Q0 -24 9 -4z" fill="#d9a945"/><rect x="-9" y="14" width="18" height="6" fill="#7d5b1e"/>'}</g>
             </svg><div class="tr-prog"><i id="tbp"></i></div><div class="tr-pv" id="tbt">0%</div>`;
         const svg = el.querySelector('svg');
@@ -542,9 +542,9 @@
                 <path d="M${cx - 44} ${limbTop} C ${cx - 46} 120 ${cx - 48} 240 ${cx - 44} ${limbBot - 40} C ${cx - 42} ${limbBot} ${cx + 42} ${limbBot} ${cx + 44} ${limbBot - 40} C ${cx + 48} 240 ${cx + 46} 120 ${cx + 44} ${limbTop} Z" fill="url(#tsk)"/>
                 <path d="M${cx - 30} ${H / 2 + 6} C ${cx - 10} ${H / 2 + 2} ${cx + 12} ${H / 2 + 2} ${cx + 30} ${H / 2 + 6}" stroke="#7a1f22" stroke-width="6" stroke-linecap="round"/>
                 <g id="twr"></g>
-                <ellipse id="twg" cx="${cx}" rx="${rx}" ry="${ry}" fill="none" stroke="#e8b547" stroke-width="3" stroke-dasharray="7 7"/>
+                <ellipse id="twg" cx="${cx}" rx="${rx}" ry="${ry}" fill="none" stroke="#20c997" stroke-width="3" stroke-dasharray="7 7"/>
                 <path id="twa" fill="none" stroke="#f1efe9" stroke-width="12" stroke-linecap="round"/>
-                <circle id="twd" r="11" fill="#1a1c22" stroke="#e8b547" stroke-width="3" style="cursor:grab"/>
+                <circle id="twd" r="11" fill="#1a1c22" stroke="#20c997" stroke-width="3" style="cursor:grab"/>
             </svg>`;
         const svg = el.querySelector('svg');
         const startY = H / 2 - (turns - 1) * 22 / 2 - 10;
@@ -615,7 +615,7 @@
             <path d="M152 186 q18 8 36 0" stroke="#5b2f24" stroke-width="5" stroke-linecap="round" fill="none"/>
             <path id="tbp2" d="M380 50 C 330 64 270 120 196 184" stroke="rgba(255,255,255,.28)" stroke-width="5" stroke-linecap="round" fill="none" stroke-dasharray="6 7"/>
             <path id="tbd" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/>
-            <g id="tbm" style="cursor:grab"><ellipse rx="22" ry="16" fill="rgba(70,214,255,.25)" stroke="#46d6ff" stroke-width="2"/><circle r="9" fill="#1a1c22" stroke="#e8b547" stroke-width="3"/></g>
+            <g id="tbm" style="cursor:grab"><ellipse rx="22" ry="16" fill="rgba(70,214,255,.25)" stroke="#46d6ff" stroke-width="2"/><circle r="9" fill="#1a1c22" stroke="#20c997" stroke-width="3"/></g>
         </svg>`;
         const svg = container.querySelector('svg');
         const path = container.querySelector('#tbp2');

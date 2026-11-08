@@ -16,7 +16,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 @media (prefers-reduced-motion: reduce) { .guide.enter { animation: none; } }
 
 /* the side: brand + pages */
-.side { background: linear-gradient(180deg, rgba(232, 181, 71, 0.07), rgba(232, 181, 71, 0) 40%), #101116; border-inline-end: 1px solid var(--line); padding: 24px 18px 18px; display: flex; flex-direction: column; }
+.side { background: linear-gradient(180deg, rgba(32, 201, 151, 0.07), rgba(32, 201, 151, 0) 40%), #101116; border-inline-end: 1px solid var(--line); padding: 24px 18px 18px; display: flex; flex-direction: column; }
 .brand { display: flex; align-items: center; gap: 12px; padding: 0 6px 22px; }
 .logo { width: 46px; height: 46px; object-fit: contain; }
 .brand h1 { margin: 0; font-size: 19px; font-weight: 700; }
@@ -45,7 +45,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 
 .welcome {
     margin: 0 30px 6px; padding: 16px 18px; border-radius: 16px;
-    background: linear-gradient(90deg, rgba(232, 181, 71, 0.16), rgba(232, 181, 71, 0.04));
+    background: linear-gradient(90deg, rgba(32, 201, 151, 0.16), rgba(32, 201, 151, 0.04));
     border: 1px solid var(--accent-line);
 }
 .welcome b { display: block; font-size: 17px; color: var(--accent-hi); }

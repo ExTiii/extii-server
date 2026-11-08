@@ -43,7 +43,7 @@ svg { display: block; flex-shrink: 0; }
 .brand-icon {
     width: 44px; height: 44px; border-radius: 14px;
     display: grid; place-items: center;
-    background: linear-gradient(145deg, rgba(232, 181, 71, 0.26), rgba(232, 181, 71, 0.06));
+    background: linear-gradient(145deg, rgba(32, 201, 151, 0.26), rgba(32, 201, 151, 0.06));
     color: var(--accent);
     border: 1px solid var(--accent-line);
 }
@@ -194,7 +194,7 @@ svg { display: block; flex-shrink: 0; }
     height: 190px; border-radius: 22px; margin-top: 6px;
     display: grid; place-items: center;
     background:
-        radial-gradient(70% 60% at 50% 100%, rgba(232, 181, 71, 0.12) 0%, transparent 70%),
+        radial-gradient(70% 60% at 50% 100%, rgba(32, 201, 151, 0.12) 0%, transparent 70%),
         radial-gradient(120% 100% at 50% 100%, #252b37 0%, #171b22 55%, #12151b 100%);
     border: 1px solid var(--line);
     position: relative; overflow: hidden;
@@ -249,7 +249,7 @@ svg { display: block; flex-shrink: 0; }
     flex: 1;
 }
 .btn:hover { background: var(--card-3); }
-.btn.primary { background: linear-gradient(180deg, var(--accent-hi), var(--accent)); color: var(--accent-ink); border-color: transparent; box-shadow: 0 6px 18px rgba(232, 181, 71, 0.18); }
+.btn.primary { background: linear-gradient(180deg, var(--accent-hi), var(--accent)); color: var(--accent-ink); border-color: transparent; box-shadow: 0 6px 18px rgba(32, 201, 151, 0.18); }
 .btn.primary:hover { filter: brightness(1.06); }
 .btn.danger { background: rgba(255, 95, 95, 0.12); color: var(--red); border-color: rgba(255, 95, 95, 0.25); }
 .btn.small { height: 38px; font-size: 13px; border-radius: 12px; }
@@ -335,7 +335,7 @@ svg { display: block; flex-shrink: 0; }
 .po-bg {
     position: absolute; inset: 0;
     background:
-        radial-gradient(60% 50% at 50% 45%, rgba(232, 181, 71, 0.10) 0%, transparent 70%),
+        radial-gradient(60% 50% at 50% 45%, rgba(32, 201, 151, 0.10) 0%, transparent 70%),
         radial-gradient(120% 100% at 50% 40%, #1b1e26 0%, #0b0c10 60%, #050608 100%);
     transition: opacity 0.6s ease;
 }
@@ -357,7 +357,7 @@ svg { display: block; flex-shrink: 0; }
 .photo-overlay.shooting .po-frame { animation: po-focus-in 0.6s cubic-bezier(.2, .9, .2, 1) both; }
 @keyframes po-focus-in { from { transform: scale(1.28); opacity: 0; filter: blur(8px); } to { transform: none; opacity: 1; filter: none; } }
 
-.po-c { position: absolute; width: 4.2vh; height: 4.2vh; border: 0.32vh solid var(--accent); filter: drop-shadow(0 0 0.8vh rgba(232, 181, 71, 0.55)); }
+.po-c { position: absolute; width: 4.2vh; height: 4.2vh; border: 0.32vh solid var(--accent); filter: drop-shadow(0 0 0.8vh rgba(32, 201, 151, 0.55)); }
 .po-c.tl { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 1vh; }
 .po-c.tr { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 1vh; }
 .po-c.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 1vh; }
@@ -380,7 +380,7 @@ svg { display: block; flex-shrink: 0; }
 @keyframes po-scan { 0% { top: 4%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { top: 96%; opacity: 0; } }
 
 .po-iris { position: absolute; left: 50%; top: 50%; width: 13vh; height: 13vh; margin: -6.5vh 0 0 -6.5vh; overflow: visible; }
-.po-iris circle { fill: none; stroke: rgba(232, 181, 71, 0.55); stroke-width: 1.6; }
+.po-iris circle { fill: none; stroke: rgba(32, 201, 151, 0.55); stroke-width: 1.6; }
 .po-iris line { stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; }
 .photo-overlay.shooting .po-iris { animation: po-iris 2.4s linear infinite; }
 @keyframes po-iris { to { transform: rotate(360deg); } }
@@ -418,7 +418,7 @@ svg { display: block; flex-shrink: 0; }
 .po-card {
     position: relative; width: 58vh;
     background: var(--panel); border: 1px solid var(--accent-line); border-radius: 2.6vh;
-    box-shadow: 0 3vh 8vh rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 0 6vh rgba(232, 181, 71, 0.12);
+    box-shadow: 0 3vh 8vh rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 0 6vh rgba(32, 201, 151, 0.12);
     padding: 1.4vh; overflow: hidden;
     transform: translateY(4vh) scale(0.86) rotate(-3deg); opacity: 0;
 }
@@ -428,7 +428,7 @@ svg { display: block; flex-shrink: 0; }
     position: relative; height: 30vh; border-radius: 1.8vh; overflow: hidden;
     display: grid; place-items: center;
     background:
-        radial-gradient(70% 60% at 50% 100%, rgba(232, 181, 71, 0.14) 0%, transparent 70%),
+        radial-gradient(70% 60% at 50% 100%, rgba(32, 201, 151, 0.14) 0%, transparent 70%),
         radial-gradient(120% 100% at 50% 100%, #252b37 0%, #171b22 55%, #12151b 100%);
     border: 1px solid var(--line);
 }

@@ -547,7 +547,7 @@ local function createShop(shopShape, name)
 end
 
 -- EX_Tii: the salesperson and the gold circle in front of him ------------------------------
-local GOLD = { 232, 181, 71 }
+local GOLD = { 32, 201, 151 }
 local RING_RADIUS = 0.65
 local sellers = {} -- [shopId] = { coords, ring, ped, spawning }
 

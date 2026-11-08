@@ -109,7 +109,7 @@ function sendData(src, item, metadata, slot)
                     title = 'عرض البطاقة',
                     desc = ('عرضتَ %s على الشخص القريب منك'):format(sharedConfig.licenses[item].header),
                     icon = 'id-card',
-                    iconColor = '#e8b547'
+                    iconColor = '#20c997'
                 })
             else
                 target = src

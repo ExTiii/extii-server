@@ -21,7 +21,7 @@ local function notify(card, title, text, fromPct, prevCur, icon, up)
     local ms = math.floor((Config.cardSeconds + (up and 2 or 0)) * 1000)
     lib.notify({
         id = NOTIFY_ID, title = title, description = text, duration = ms,
-        icon = icon, iconColor = '#e8b547',
+        icon = icon, iconColor = '#20c997',
         progress = card.max and { from = 100, to = 100 } or {
             from = fromPct, to = card.pct, prev = prevCur, cur = card.cur, need = card.need,
         },

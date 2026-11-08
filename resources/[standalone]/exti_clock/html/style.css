@@ -8,7 +8,7 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
     padding: 6px 16px 6px 6px;
     border-radius: 18px;
     background: linear-gradient(135deg, rgba(24, 25, 31, 0.86), rgba(12, 13, 17, 0.8));
-    border: 1px solid rgba(232, 181, 71, 0.28);
+    border: 1px solid rgba(32, 201, 151, 0.28);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     direction: ltr;
     transition: opacity 0.35s ease, transform 0.35s ease, border-color 1.2s ease;
@@ -23,14 +23,14 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 .ring-track { stroke: rgba(255, 255, 255, 0.08); }
 .ring-fill {
     stroke: var(--accent); stroke-linecap: round;
-    filter: drop-shadow(0 0 3px rgba(232, 181, 71, 0.55));
+    filter: drop-shadow(0 0 3px rgba(32, 201, 151, 0.55));
     transition: stroke-dasharray 1s linear, stroke 1.2s ease;
 }
 .clock.night .ring-fill { stroke: #a9c1f2; filter: drop-shadow(0 0 3px rgba(169, 193, 242, 0.5)); }
 .sky {
     position: absolute; inset: 6px; border-radius: 50%;
     display: grid; place-items: center;
-    background: radial-gradient(circle at 50% 35%, rgba(232, 181, 71, 0.28), rgba(232, 181, 71, 0.05) 70%);
+    background: radial-gradient(circle at 50% 35%, rgba(32, 201, 151, 0.28), rgba(32, 201, 151, 0.05) 70%);
     color: var(--accent);
     transition: background 1.2s ease, color 1.2s ease;
 }

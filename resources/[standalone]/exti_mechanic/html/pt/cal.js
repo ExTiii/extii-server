@@ -57,7 +57,7 @@
     function addModal() {
         const m = K().modal;
         if (!m) return '';
-        const colors = S.cfg.colors && S.cfg.colors.length ? S.cfg.colors : ['#f2c230'];
+        const colors = S.cfg.colors && S.cfg.colors.length ? S.cfg.colors : ['#20c997'];
         const d = m.date ? new Date(`${m.date}T00:00`) : new Date();
         return `<div class="pt-layer"><div class="pt-backdrop" data-act="calClose"></div>
             <div class="pt-modal">
@@ -111,7 +111,7 @@
     }
 
     function newEntry(date) {
-        const colors = S.cfg.colors && S.cfg.colors.length ? S.cfg.colors : ['#f2c230'];
+        const colors = S.cfg.colors && S.cfg.colors.length ? S.cfg.colors : ['#20c997'];
         K().modal = { title: '', date: date || isoDate(PT.dateOf(PT.now())), time: '20:00', color: colors[0] };
         render();
     }

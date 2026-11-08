@@ -10,9 +10,9 @@
 .hh .tx span { font-size: 12px; color: #a19f99; }
 .hh .t { font: 700 20px/1 'Kit Plex', monospace; direction: ltr; font-variant-numeric: tabular-nums; }
 .hh .prog { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.07); }
-.hh .prog i { position: absolute; top: 0; bottom: 0; right: 0; background: #e8b547; transition: width .5s linear; }
+.hh .prog i { position: absolute; top: 0; bottom: 0; right: 0; background: #20c997; transition: width .5s linear; }
 /* coming: amber */
-.hh.coming .ic { color: #e8b547; } .hh.coming .t { color: #e8b547; }
+.hh.coming .ic { color: #20c997; } .hh.coming .t { color: #20c997; }
 .hh.arriving .ic { color: #ff6b6f; background: rgba(229,72,77,.16); } .hh.arriving .prog i { background: #e5484d; }
 /* seen: red and blue light bar along the top edge, like a patrol car */
 .hh.seen { border-color: rgba(229,72,77,.5); }
@@ -26,7 +26,7 @@
 /* hiding: they lost sight of you, the clock runs */
 .hh.hiding .ic { color: #8ab8ff; } .hh.hiding .t { color: #8ab8ff; } .hh.hiding .prog i { background: #3d8bfd; }
 /* lock: a bank's time lock / fuse: a C4 counting down */
-.hh.lock .ic { color: #e8b547; } .hh.lock .t { color: #e8b547; }
+.hh.lock .ic { color: #20c997; } .hh.lock .t { color: #20c997; }
 .hh.fuse { border-color: rgba(229,72,77,.5); } .hh.fuse .ic { color: #ff6b6f; } .hh.fuse .t { color: #ff6b6f; } .hh.fuse .prog i { background: #e5484d; }
 /* hold: NPC security holds its fire (hostages / a deal) */
 .hh.hold { border-color: rgba(255,255,255,.18); }
@@ -40,33 +40,33 @@
 #hnoise .lb { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12.5px; color: #e9e6df; text-shadow: 0 1px 2px rgba(0,0,0,.9); }
 #hnoise .lb b { font-weight: 700; }
 #hnoise .tr { position: relative; height: 7px; border-radius: 4px; background: rgba(10,11,14,.82); box-shadow: 0 0 0 1px rgba(255,255,255,.08); overflow: hidden; }
-#hnoise .tr i { position: absolute; top: 0; bottom: 0; right: 0; border-radius: 4px; background: linear-gradient(270deg, #3ddc97, #e8b547 60%, #e5484d); background-size: 260px 100%; background-position: right; transition: width .25s linear; }
+#hnoise .tr i { position: absolute; top: 0; bottom: 0; right: 0; border-radius: 4px; background: linear-gradient(270deg, #3ddc97, #20c997 60%, #e5484d); background-size: 260px 100%; background-position: right; transition: width .25s linear; }
 #hnoise.hot .lb b { color: #ff8b8e; }
 #hnoise.alarm .tr i { width: 100% !important; animation: hnalarm .6s steps(2) infinite; }
 @keyframes hnalarm { 50% { opacity: .35; } }
 /* the negotiator's phone call: right side, black & gold */
 #hcall { position: fixed; right: 28px; top: 14%; max-height: 80vh; overflow: hidden; width: 372px; pointer-events: none; font-family: 'Kit Plex', sans-serif; direction: rtl; color: #f4f3ef;
-         background: linear-gradient(180deg, rgba(20,21,26,.96), rgba(11,12,15,.96)); border: 1px solid rgba(232,181,71,.28); border-radius: 18px;
+         background: linear-gradient(180deg, rgba(20,21,26,.96), rgba(11,12,15,.96)); border: 1px solid rgba(32, 201, 151,.28); border-radius: 18px;
          box-shadow: 0 18px 48px rgba(0,0,0,.55); padding: 14px 14px 12px; animation: hcin .28s cubic-bezier(.2,.8,.2,1); }
 #hcall.off { display: none; }
 @keyframes hcin { from { opacity: 0; transform: translateX(18px); } }
 #hcall .ch { display: flex; align-items: center; gap: 11px; }
-#hcall .av { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #16130b; background: linear-gradient(180deg, #f3cd73, #e8b547); flex: none; }
+#hcall .av { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #16130b; background: linear-gradient(180deg, #f3cd73, #20c997); flex: none; }
 #hcall.ring .av { animation: hcring 1s ease-in-out infinite; }
-@keyframes hcring { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,181,71,.55); } 50% { box-shadow: 0 0 0 9px rgba(232,181,71,0); } }
+@keyframes hcring { 0%, 100% { box-shadow: 0 0 0 0 rgba(32, 201, 151,.55); } 50% { box-shadow: 0 0 0 9px rgba(32, 201, 151,0); } }
 #hcall .who { flex: 1; display: flex; flex-direction: column; gap: 1px; }
 #hcall .who b { font-size: 15px; font-weight: 700; }
 #hcall .who span { font-size: 12px; color: #3ddc97; }
-#hcall.ring .who span { color: #e8b547; }
+#hcall.ring .who span { color: #20c997; }
 #hcall .tm { font: 600 13px/1 'Kit Plex', monospace; direction: ltr; color: #a19f99; font-variant-numeric: tabular-nums; }
 #hcall .tr { display: flex; align-items: center; gap: 8px; margin: 11px 2px 4px; font-size: 11.5px; color: #a19f99; }
 #hcall .tb { flex: 1; height: 4px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; position: relative; }
-#hcall .tb i { position: absolute; top: 0; bottom: 0; right: 0; width: 40%; background: #e8b547; transition: width .6s ease, background .3s; }
+#hcall .tb i { position: absolute; top: 0; bottom: 0; right: 0; width: 40%; background: #20c997; transition: width .6s ease, background .3s; }
 #hcall .tb i.lo { background: #e5484d; } #hcall .tb i.hi { background: #3ddc97; }
 #hcall .msgs { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
 #hcall .m { max-width: 88%; padding: 9px 12px; border-radius: 14px; font-size: 13.5px; line-height: 1.6; }
 #hcall .m.n { align-self: flex-start; background: rgba(255,255,255,.07); border-top-right-radius: 4px; }
-#hcall .m.me { align-self: flex-end; background: rgba(232,181,71,.16); border: 1px solid rgba(232,181,71,.3); color: #f6dc9d; border-top-left-radius: 4px; }
+#hcall .m.me { align-self: flex-end; background: rgba(32, 201, 151,.16); border: 1px solid rgba(32, 201, 151,.3); color: #f6dc9d; border-top-left-radius: 4px; }
 #hcall .m.dots { display: flex; gap: 4px; padding: 12px 14px; }
 #hcall .m.dots i { width: 6px; height: 6px; border-radius: 50%; background: #a19f99; animation: hcdot 1s infinite; }
 #hcall .m.dots i:nth-child(2) { animation-delay: .15s; } #hcall .m.dots i:nth-child(3) { animation-delay: .3s; }
@@ -74,6 +74,6 @@
 #hcall .opts { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 11px; border-top: 1px solid rgba(255,255,255,.07); }
 #hcall .opts.none { display: none; }
 #hcall .o { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border-radius: 11px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); }
-#hcall .o .k { flex: none; min-width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; font-size: 13px; font-weight: 700; color: #16130b; background: #e8b547; }
+#hcall .o .k { flex: none; min-width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; font-size: 13px; font-weight: 700; color: #16130b; background: #20c997; }
 #hcall .o .t { font-size: 13.5px; line-height: 1.55; padding-top: 1px; }
 @media (prefers-reduced-motion: reduce) { #hcall, #hcall .av, #hcall .m.dots i { animation: none !important; } }

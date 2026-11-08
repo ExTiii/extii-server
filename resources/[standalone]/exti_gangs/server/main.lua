@@ -212,7 +212,7 @@ MySQL.ready(function()
         `leader` VARCHAR(60) NULL,
         `bank` INT NOT NULL DEFAULT 0,
         `settings` TEXT NULL,
-        `color` VARCHAR(9) NOT NULL DEFAULT '#e8b547',
+        `color` VARCHAR(9) NOT NULL DEFAULT '#20c997',
         `tag` VARCHAR(6) NULL,
         `rep_xp` INT NOT NULL DEFAULT 0,
         `rent_due` INT NOT NULL DEFAULT 0,

@@ -222,7 +222,7 @@ html, body {
 
 /* EX_Tii: the owner's level (exti_level) */
 .idc-level { display: none; flex-direction: column; align-items: center; justify-content: center; min-width: 5.2vh; height: 5.2vh; padding: 0 0.6vh;
-    border-radius: 1.2vh; background: linear-gradient(160deg, #ffd659, #c9970f); color: #2a1c00; margin-inline-start: auto; margin-inline-end: 0.8vh; }
+    border-radius: 1.2vh; background: linear-gradient(160deg, #4ad9ad, #c9970f); color: #03261c; margin-inline-start: auto; margin-inline-end: 0.8vh; }
 .idc-level.on { display: flex; }
 .idc-level span { font-size: 0.9vh; font-weight: 600; line-height: 1.1; }
 .idc-level b { font-size: 2vh; font-weight: 700; line-height: 1.1; direction: ltr; }

@@ -77,11 +77,11 @@ CreateThread(function()
             DrawRect(fx + fw - BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)      -- right
             -- the strip
             DrawRect(X + W / 2, Y + H / 2, W, H, 10, 10, 12, 190)
-            DrawRect(X + 0.0013, Y + H / 2, 0.0026, H, 232, 181, 71, 235)
+            DrawRect(X + 0.0013, Y + H / 2, 0.0026, H, 32, 201, 151, 235)
             SetTextFont(4); SetTextScale(0.0, LBL_S); SetTextColour(255, 255, 255, 220); SetTextDropShadow()
             BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(LABEL)
             EndTextCommandDisplayText(X + 0.007, Y + 0.0045)
-            SetTextFont(4); SetTextScale(0.0, NUM_S); SetTextColour(232, 181, 71, 255); SetTextDropShadow()
+            SetTextFont(4); SetTextScale(0.0, NUM_S); SetTextColour(32, 201, 151, 255); SetTextDropShadow()
             SetTextJustification(2); SetTextWrap(X, X + W - 0.005)
             BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(current)
             EndTextCommandDisplayText(X, Y + 0.0005)

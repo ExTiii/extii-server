@@ -52,7 +52,7 @@ local function goTo(veh, pos, label)
     while true do
         if not DoesEntityExist(veh) then return false end
         local d = #(GetEntityCoords(PlayerPedId()) - pos)
-        DrawMarker(0, pos.x, pos.y, pos.z + 0.55, 0, 0, 0, 0, 0, 0, 0.22, 0.22, 0.22, 232, 181, 71, 190, true, true, 2, false, nil, nil, false)
+        DrawMarker(0, pos.x, pos.y, pos.z + 0.55, 0, 0, 0, 0, 0, 0, 0.22, 0.22, 0.22, 32, 201, 151, 190, true, true, 2, false, nil, nil, false)
         if d < 1.4 then
             lib.showTextUI(('[E] %s   ·   [G] إيقاف'):format(label), { position = 'left-center' })
             if (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then lib.hideTextUI(); return true end
@@ -222,7 +222,7 @@ CreateThread(function()
             local ped = PlayerPedId()
             if #(GetEntityCoords(ped) - center) < C.chop.garageRadius + 4.0 then
                 sleep = 0
-                DrawMarker(1, center.x, center.y, center.z - 1.0, 0, 0, 0, 0, 0, 0, C.chop.garageRadius * 2, C.chop.garageRadius * 2, 0.4, 232, 181, 71, 35, false, false, 2, false, nil, nil, false)
+                DrawMarker(1, center.x, center.y, center.z - 1.0, 0, 0, 0, 0, 0, 0, C.chop.garageRadius * 2, C.chop.garageRadius * 2, 0.4, 32, 201, 151, 35, false, false, 2, false, nil, nil, false)
                 if not IsPedInAnyVehicle(ped, false) then
                     local veh = nearestCar(center, C.chop.garageRadius)
                     if veh then

@@ -103,7 +103,7 @@ const MG = (() => {
         card('wrench', label, `${bolts} ${bolts === 1 ? 'برغي' : 'براغي'}`,
             `<div class="mg-dial"><svg viewBox="0 0 190 190"><path d="${arc(0, 270, R)}" stroke="rgba(255,255,255,.1)" stroke-width="14" fill="none" stroke-linecap="round"/>
              <path class="z" stroke="#34d58f" stroke-width="14" fill="none" stroke-linecap="round"/>
-             <line class="n" x1="95" y1="95" stroke="#f2c230" stroke-width="4" stroke-linecap="round"/><circle cx="95" cy="95" r="9" fill="#f2c230"/></svg></div>
+             <line class="n" x1="95" y1="95" stroke="#20c997" stroke-width="4" stroke-linecap="round"/><circle cx="95" cy="95" r="9" fill="#20c997"/></svg></div>
              <div class="mg-bolts">${Array.from({ length: bolts }, (_, i) => `<i class="${i === 0 ? 'now' : ''}"></i>`).join('')}</div>`,
             '<kbd>SPACE</kbd> عندما يكون المؤشر داخل المنطقة الخضراء');
         const z = root.querySelector('.z'), needle = root.querySelector('.n');

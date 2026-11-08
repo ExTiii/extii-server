@@ -463,7 +463,7 @@ CreateThread(function()
                 if d < 12.0 then sleep = 0 end
                 if d < (pt.reach or (pt.kind == 'crate' and 1.8 or 1.5)) and d < bestD then best, bestD = pt, d end
                 if d < 12.0 and pt.kind ~= 'crate' and pt.kind ~= 'fence' and pt.kind ~= 'rdoor' and pt.kind ~= 'tag' and pt.kind ~= 'pot' and pt.kind ~= 'blackmarket' then
-                    DrawMarker(20, pt.pos.x, pt.pos.y, pt.pos.z - 0.55, 0, 0, 0, 0, 180.0, 0, 0.32, 0.32, 0.22, 232, 181, 71, 140, true, true, 2, false, nil, nil, false)
+                    DrawMarker(20, pt.pos.x, pt.pos.y, pt.pos.z - 0.55, 0, 0, 0, 0, 180.0, 0, 0.32, 0.32, 0.22, 32, 201, 151, 140, true, true, 2, false, nil, nil, false)
                 end
             end
         end

@@ -331,7 +331,7 @@
     let prTimer = null;
     function prompt(p) {
         clearTimeout(prTimer);
-        pr.style.setProperty('--gc', p.color || '#e8b547');
+        pr.style.setProperty('--gc', p.color || '#20c997');
         pr.innerHTML = `<div class="tagbadge">${esc(p.tag || '!')}</div><div><h3>${esc(p.title)}</h3><p>${esc(p.text)}</p></div>
             <div class="row"><span class="btn gc">[Y] ${esc(p.yes)}</span><span class="btn">[U] ${esc(p.no)}</span></div><div class="timer"><i style="width:100%"></i></div>`;
         pr.classList.remove('hidden');

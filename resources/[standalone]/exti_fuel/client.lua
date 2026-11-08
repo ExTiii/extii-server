@@ -1,7 +1,7 @@
 -- EX_Tii Fuel (client): station icons, gold circles at the pumps, E to open the pump, the nozzle and hose,
 -- the live pump screen, the jerry can, and how fast vehicles use fuel / battery while driving.
 
-local GOLD = { 232, 181, 71 }
+local GOLD = { 32, 201, 151 }
 local DRAW = 16.0            -- pump circles show from this close
 local STATION_NEAR = 80.0    -- pumps of a station are checked from this close
 local CAN = `WEAPON_PETROLCAN`

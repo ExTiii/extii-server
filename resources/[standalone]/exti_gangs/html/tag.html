@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- EX_Tii gangs: one gang tag, drawn as spray paint (used as a texture on the wall). tag.html?t=TAG&c=%23e8b547 -->
+<!-- EX_Tii gangs: one gang tag, drawn as spray paint (used as a texture on the wall). tag.html?t=TAG&c=%2320c997 -->
 <html><head><meta charset="utf-8">
 <style>
 @font-face { font-family: 'Spray'; src: url('fonts/spray.woff2') format('woff2'); }
@@ -11,7 +11,7 @@ canvas { display: block; }
 (async () => {
     const q = new URLSearchParams(location.search);
     const tag = (q.get('t') || 'GANG').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'GANG';
-    const col = /^#[0-9a-fA-F]{6}$/.test(q.get('c') || '') ? q.get('c') : '#e8b547';
+    const col = /^#[0-9a-fA-F]{6}$/.test(q.get('c') || '') ? q.get('c') : '#20c997';
     let seed = 0; for (const ch of tag + col) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
     const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
     try { await document.fonts.load('200px Spray'); } catch (e) {}

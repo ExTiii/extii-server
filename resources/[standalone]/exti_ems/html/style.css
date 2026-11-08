@@ -54,7 +54,7 @@ body.mirror .os { position: fixed; top: 0; left: 0; }
 
 /* ======================= the screen (1220 x 776) ======================= */
 .os { position: relative; width: 1220px; height: 776px; display: flex; flex-direction: column; overflow: hidden;
-    background: radial-gradient(800px 500px at 85% -10%, rgba(232, 181, 71, 0.07), transparent 60%), radial-gradient(600px 300px at 0% 110%, rgba(255, 95, 95, 0.06), transparent 70%), var(--sheet); }
+    background: radial-gradient(800px 500px at 85% -10%, rgba(32, 201, 151, 0.07), transparent 60%), radial-gradient(600px 300px at 0% 110%, rgba(255, 95, 95, 0.06), transparent 70%), var(--sheet); }
 .status { height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; font-size: 12px; color: var(--muted); direction: ltr; }
 .status .mid { font-weight: 600; color: var(--text); }
 .status .icons { display: flex; gap: 8px; align-items: center; }
@@ -95,7 +95,7 @@ body.mirror .os { position: fixed; top: 0; left: 0; }
 /* ---------- calls ---------- */
 .calls { display: flex; flex-direction: column; gap: 10px; }
 .call { display: grid; grid-template-columns: 48px 1fr auto; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
-.call.mine { border-color: var(--accent-line); background: linear-gradient(90deg, rgba(232, 181, 71, 0.07), transparent 60%), var(--card); }
+.call.mine { border-color: var(--accent-line); background: linear-gradient(90deg, rgba(32, 201, 151, 0.07), transparent 60%), var(--card); }
 .call-icon { width: 48px; height: 48px; border-radius: 15px; display: grid; place-items: center; }
 .call-icon.down { background: rgba(255, 95, 95, 0.14); color: #ff6b6b; }
 .call-icon.reception { background: var(--accent-soft); color: var(--accent); }
@@ -128,7 +128,7 @@ body.mirror .os { position: fixed; top: 0; left: 0; }
 
 /* ---------- me ---------- */
 .me-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 12px; }
-.rank-card { padding: 18px; border-radius: 20px; background: linear-gradient(145deg, rgba(232, 181, 71, 0.16), rgba(232, 181, 71, 0.03)), var(--card); border: 1px solid var(--accent-line); }
+.rank-card { padding: 18px; border-radius: 20px; background: linear-gradient(145deg, rgba(32, 201, 151, 0.16), rgba(32, 201, 151, 0.03)), var(--card); border: 1px solid var(--accent-line); }
 .rank-card small { color: var(--muted); font-size: 12px; }
 .rank-card h2 { margin: 4px 0 2px; font-size: 24px; color: var(--accent); }
 .rank-card p { margin: 0; font-size: 12.5px; color: var(--muted); }
@@ -219,7 +219,7 @@ body.mirror .os { position: fixed; top: 0; left: 0; }
 .z-l2 { fill: rgba(246, 169, 74, 0.22); stroke: rgba(246, 169, 74, 0.95); }
 .z-l3 { fill: rgba(255, 95, 95, 0.26); stroke: #ff5f5f; }
 .zone.hover, .zone:hover { stroke: var(--accent) !important; stroke-width: 2.4; stroke-dasharray: none; }
-.zone.z-un.hover, .zone.z-un:hover { fill: rgba(232, 181, 71, 0.12); }
+.zone.z-un.hover, .zone.z-un:hover { fill: rgba(32, 201, 151, 0.12); }
 .zone.doing { stroke: var(--accent) !important; stroke-width: 2.6; stroke-dasharray: 6 4; animation: march 0.6s linear infinite; }
 @keyframes march { to { stroke-dashoffset: -20; } }
 .legend { margin-top: auto; padding: 6px 0 10px; display: flex; justify-content: center; gap: 12px; font-size: 10.5px; color: var(--muted); }
@@ -252,7 +252,7 @@ body.mirror .os { position: fixed; top: 0; left: 0; }
 .tool b { font-size: 11.5px; font-weight: 600; } .tool small { font-size: 10px; color: var(--faint); }
 .tool.done .ti { background: rgba(61, 220, 151, 0.12); color: var(--ok); }
 .tool.done::after { content: '✓'; position: absolute; top: 5px; inset-inline-end: 8px; font-size: 10px; color: var(--ok); font-weight: 700; }
-.tool.on { border-color: var(--accent-line); background: linear-gradient(180deg, rgba(232, 181, 71, 0.08), var(--card)); }
+.tool.on { border-color: var(--accent-line); background: linear-gradient(180deg, rgba(32, 201, 151, 0.08), var(--card)); }
 .tool.on .ti { background: var(--accent-soft); color: var(--accent); }
 .listen { display: flex; gap: 6px; }
 .listen span { flex: 1; height: 32px; border-radius: 10px; display: grid; place-items: center; font-size: 11.5px; font-weight: 600; background: var(--card-2); border: 1px solid var(--accent-line); color: var(--accent); cursor: pointer; }
@@ -305,7 +305,7 @@ body.mirror .os { position: fixed; top: 0; left: 0; }
 .step { display: flex; gap: 10px; align-items: flex-start; padding: 10px 11px; border-radius: 15px; background: var(--card); border: 1px solid var(--line); }
 .step .n { width: 25px; height: 25px; border-radius: 9px; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--card-3); color: var(--muted); flex-shrink: 0; }
 .step.done .n { background: rgba(61, 220, 151, 0.14); color: var(--ok); }
-.step.now { border-color: var(--accent-line); background: linear-gradient(180deg, rgba(232, 181, 71, 0.08), var(--card)); }
+.step.now { border-color: var(--accent-line); background: linear-gradient(180deg, rgba(32, 201, 151, 0.08), var(--card)); }
 .step.now .n { background: var(--accent); color: var(--accent-ink); }
 .step b { font-size: 13px; font-weight: 600; display: block; }
 .step span { font-size: 11.5px; color: var(--muted); line-height: 1.6; display: block; margin-top: 2px; }
@@ -333,7 +333,7 @@ kbd { font-family: inherit; font-size: 11px; font-weight: 700; padding: 1px 7px;
 
 /* job applications (EMS chief) */
 .apps { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-.app-card { padding: 12px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--accent-line, rgba(232, 181, 71, 0.32)); }
+.app-card { padding: 12px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--accent-line, rgba(32, 201, 151, 0.32)); }
 .app-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
 .app-head small { color: var(--muted); font-size: 11.5px; }
 .app-card p { margin: 4px 0; font-size: 12.5px; line-height: 1.7; color: var(--muted); }

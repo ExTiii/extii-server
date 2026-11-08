@@ -14,7 +14,7 @@ const Garage = (() => {
     const money = (n) => `<bdi dir="ltr">$${Math.round(n || 0).toLocaleString('en-US')}</bdi>`;
 
     const ICON = {
-        box: '<svg viewBox="0 0 24 24" fill="none" stroke="#f2c230" stroke-width="2" stroke-linejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>',
+        box: '<svg viewBox="0 0 24 24" fill="none" stroke="#20c997" stroke-width="2" stroke-linejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>',
         seat: '<svg viewBox="0 0 24 24" fill="none" stroke="#ff8a8f" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="6" r="3"/><path d="M6 21v-3a6 6 0 0 1 12 0v3"/></svg>',
         speed: '<svg viewBox="0 0 24 24" fill="none" stroke="#c88cff" stroke-width="2" stroke-linecap="round"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/></svg>',
         fuel: '<svg viewBox="0 0 24 24" fill="none" stroke="#8fd0ff" stroke-width="2" stroke-linejoin="round"><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16H5zM8 8h4"/><path d="M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0v-7l-3-3"/></svg>',

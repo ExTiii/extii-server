@@ -16,7 +16,7 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
     position: relative;
     width: min(760px, 94vw);
     background:
-        radial-gradient(700px 260px at 85% -10%, rgba(232, 181, 71, 0.10), transparent 70%),
+        radial-gradient(700px 260px at 85% -10%, rgba(32, 201, 151, 0.10), transparent 70%),
         radial-gradient(520px 220px at 5% 110%, rgba(255, 95, 95, 0.06), transparent 70%),
         var(--panel);
     animation: pop-in 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.15);
@@ -27,7 +27,7 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
     margin: 0 22px 14px;
     padding: 10px 14px;
     border-radius: 14px;
-    background: linear-gradient(90deg, rgba(232, 181, 71, 0.10), rgba(232, 181, 71, 0.02));
+    background: linear-gradient(90deg, rgba(32, 201, 151, 0.10), rgba(32, 201, 151, 0.02));
     border: 1px solid var(--accent-line);
     display: flex; align-items: center; gap: 8px;
     font-size: 13.5px;
@@ -60,7 +60,7 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
     background: var(--card-2); color: var(--accent);
     border: 1px solid var(--line);
 }
-#optTreat .option-icon { background: linear-gradient(145deg, rgba(232, 181, 71, 0.24), rgba(232, 181, 71, 0.05)); border-color: var(--accent-line); }
+#optTreat .option-icon { background: linear-gradient(145deg, rgba(32, 201, 151, 0.24), rgba(32, 201, 151, 0.05)); border-color: var(--accent-line); }
 .option-title { font-size: 15.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 .option-text p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
 .option .kit-btn { min-width: 128px; }

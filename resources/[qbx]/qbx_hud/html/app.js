@@ -738,7 +738,7 @@ const playerHud = {
     // Server design kit colours: grey when quiet, gold when talking, red on the radio
     voiceColor() {
       if (this.talking && this.radio) return "#ff5f5f";
-      if (this.talking) return "#e8b547";
+      if (this.talking) return "#20c997";
       return "#f4f3ef";
     },
     // Rows that only show sometimes. They sit ABOVE the fixed rows,
@@ -747,7 +747,7 @@ const playerHud = {
       const pct = (v) => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
       const list = [];
       for (const ind of this.visibleCustomIndicators) {
-        const c = ind.color || "#e8b547";
+        const c = ind.color || "#20c997";
         list.push({ key: "custom-" + ind.id, icon: ind.icon, value: pct(ind.value), color: c, iconColor: c, track: "rgba(255,255,255,0.15)" });
       }
       if (this.underwater) list.push(this.bar("oxygen", "fas fa-lungs", this.oxygen, "#bdbdbd", "#f4f4f4", "rgba(189,189,189,0.3)"));

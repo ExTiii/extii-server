@@ -86,7 +86,7 @@ end
 -- a member inside: someone knocks
 RegisterNetEvent('exti_gangs:client:knock', function(id, label)
     PlaySoundFrontend(-1, 'DOOR_BUZZ', 'MP_PLAYER_APARTMENT', false)
-    GC.prompt({ title = 'أحدهم يطرق الباب', text = ('أحد عند باب مقر %s. تفتح له؟'):format(label), color = '#e8b547', tag = '?',
+    GC.prompt({ title = 'أحدهم يطرق الباب', text = ('أحد عند باب مقر %s. تفتح له؟'):format(label), color = '#20c997', tag = '?',
                 yes = 'افتح', no = 'تجاهل', timeout = 20 },
         function(yes) if yes == true then TriggerServerEvent('exti_gangs:server:knockAnswer', id, true) end end)
 end)

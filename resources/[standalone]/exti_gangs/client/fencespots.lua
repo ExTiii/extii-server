@@ -40,7 +40,7 @@ RegisterNetEvent('exti_gangs:client:fenceSpots', function(list, todayOverride)
             title = ('%d) %s%s'):format(i, name, p.today and '  ← اليوم' or ''),
             description = ('%.0f, %.0f'):format(p.x, p.y),
             icon = p.today and 'location-dot' or 'map-pin',
-            iconColor = p.today and '#e8b547' or nil,
+            iconColor = p.today and '#20c997' or nil,
             arrow = true,
             onSelect = function()
                 lib.registerContext({ id = 'exti_fence_spot', title = ('%d) %s'):format(i, name), menu = 'exti_fence_spots', options = {

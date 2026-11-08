@@ -85,7 +85,7 @@ C.rep = {
 }
 
 -- gang identity: the colours a leader can pick (the laptop and the member list use it)
-C.colors = { '#e8b547', '#e5484d', '#3e9bff', '#2fbf71', '#a970ff', '#ff7a1a', '#14c4c4', '#f1f1f1' }
+C.colors = { '#20c997', '#e5484d', '#3e9bff', '#2fbf71', '#a970ff', '#ff7a1a', '#14c4c4', '#f1f1f1' }
 
 -- ------------------------------------------------------------------ Chop Shop
 C.chop = {

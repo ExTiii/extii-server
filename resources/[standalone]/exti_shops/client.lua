@@ -1,6 +1,6 @@
 -- EX_Tii shops (client): shopkeepers, gold circles, map icons, E to talk, the shop panel.
 
-local GOLD = { 232, 181, 71 }
+local GOLD = { 32, 201, 151 }
 local GREEN = { 32, 201, 151 }   -- EX_Tii: the green of the success notification (ox_lib teal.5)
 local CLERK_IN, CLERK_OUT = 70.0, 90.0 -- shopkeepers appear / disappear at these distances
 local DRAW = 14.0                      -- circles show from this close

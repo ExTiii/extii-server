@@ -261,7 +261,7 @@ local function openOrder(netId, o)
     }
     for _, l in ipairs(o.lines) do
         options[#options + 1] = { title = (l.done and '✓ ' or '') .. l.label, description = l.done and 'تم التركيب' or 'بانتظار التركيب',
-            icon = l.done and 'circle-check' or 'hourglass-half', iconColor = l.done and '#3ddc97' or '#f2c230', readOnly = true }
+            icon = l.done and 'circle-check' or 'hourglass-half', iconColor = l.done and '#3ddc97' or '#20c997', readOnly = true }
     end
     if not o.started then
         options[#options + 1] = { title = 'إلغاء الطلب واسترجاع المبلغ', icon = 'xmark', iconColor = '#ff6b6b',

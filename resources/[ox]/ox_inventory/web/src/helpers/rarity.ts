@@ -8,7 +8,7 @@ export const RARITY_COLOR: Record<Rarity, string> = {
   ammo: '#d9a441',
   medical: '#ff6b6b',
   food: '#3ddc97',
-  job: '#e8b547',
+  job: '#20c997',
   document: '#a78bfa',
   money: '#2ec4a6',
   tool: '#5aa9ff',
