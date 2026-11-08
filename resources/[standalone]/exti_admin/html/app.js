@@ -225,6 +225,7 @@
           ${has('job') ? `<div class="card"><h3>الوظيفة</h3><div class="row"><select class="in grow" id="job">${jobs}</select><select class="in w160" id="grade"></select><button class="btn acc" data-a="job">غيّر</button></div></div>` : ''}
           ${has('gang') ? `<div class="card"><h3>العصابة</h3><div class="row"><select class="in grow" id="gsel"></select><select class="in w120" id="grank"><option value="0">عدّاء</option><option value="1">طاقم</option><option value="2">نائب</option><option value="3">الزعيم</option></select>
             <button class="btn acc" data-a="setgang">ضعه</button></div><div class="mute" style="margin-top:6px">بدون انتظار 48 ساعة. «زعيم» يجعله الزعيم ويُنزل القديم.</div></div>` : ''}
+          ${has('gang') ? `<div class="card"><h3>سمعة السطو</h3><div class="row"><select class="in grow" id="replv">${[1,2,3,4,5,6,7,8,9,10].map((n) => `<option value="${n}">مستوى ${n}</option>`).join('')}</select><button class="btn acc" data-a="setrep">ضع السمعة</button></div><div class="mute" style="margin-top:6px">مستوى 2 للصرّافات، 3 للمجوهرات... يراها في تطبيق الطاقم ← أنا.</div></div>` : ''}
           ${has('givecar') ? `<div class="card"><h3>أعطه سيارة (تذهب لمرآبه)</h3><div class="row"><select class="in grow" id="gcar">${arr(S.catalog).map((c) => `<option value="${esc(c.model)}">${esc(c.label)}</option>`).join('')}</select><button class="btn acc" data-a="givecar">أعطِ</button></div></div>` : ''}
           ${has('licence') ? `<div class="card"><h3>الرخص</h3><div class="row">${[['car', 'سيارة'], ['truck', 'شاحنة'], ['boat', 'قارب'], ['heli', 'طيران'], ['weapon', 'سلاح']].map(([k, l]) => `<span class="lic"><b>${l}</b><button class="chip" data-lic="${k}" data-on="1">أعطِ</button><button class="chip" data-lic="${k}" data-on="0">اسحب</button></span>`).join('')}</div></div>` : ''}
           ${has('kick') || has('warn') ? `<div class="card"><h3>إنذار / طرد / حظر</h3><div class="row"><input class="in grow" id="reason" placeholder="السبب (يراه اللاعب)"></div>
@@ -272,6 +273,7 @@
             if (a === 'clearinv') return act('clearinv', { id }, `تفريغ كل حقيبة ${p.char || p.name}؟ لا رجعة.`);
             if (a === 'job') return act('job', { id, job: val('job'), grade: val('grade') });
             if (a === 'setgang') return act('setgang', { id, gang: val('gsel'), rank: val('grank') });
+            if (a === 'setrep') return act('setrep', { id, level: val('replv') });
             if (a === 'kick') return act('kick', { id, reason: val('reason') }, `طرد ${p.name}؟`);
             if (a === 'warn') { const r = await act('warn', { id, reason: val('reason') }); if (r && r.ok) rDetail(); return; }
             if (a === 'givecar') return act('givecar', { id, model: val('gcar') }, `إعطاء ${p.char || p.name} هذه السيارة في مرآبه؟`);

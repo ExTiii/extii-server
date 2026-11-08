@@ -310,7 +310,7 @@ A.spectate = { 'spectate', function(src, d)
     local t = target(d); if not t or t == src then return false, 'اختر لاعبًا آخر' end
     local c = GetEntityCoords(GetPlayerPed(t))
     log(src, 'spectate', GetPlayerName(t))
-    return true, nil, { id = t, x = c.x, y = c.y, z = c.z }
+    return true, nil, { id = t, x = c.x, y = c.y, z = c.z, name = GetPlayerName(t) }
 end }
 A.spectateFollow = { 'spectate', function(src, d)
     local t = target(d); if not t then return false end
@@ -439,6 +439,16 @@ A.setgang = { 'gang', function(src, d)
     local ok, why = exports.exti_gangs:AdminSetMember(t, tostring(d.gang or ''), d.rank, GetPlayerName(src))
     if ok then log(src, 'set_gang', GetPlayerName(t), ('%s رتبة %s'):format(d.gang, tostring(d.rank))) end
     return ok, ok and 'وضعته في العصابة' or ('لم ينجح: ' .. tostring(why))
+end }
+-- robbery Rep (exti_heists) for any player: level 1-10
+A.setrep = { 'gang', function(src, d)
+    local t = target(d); if not t then return false, 'اللاعب غير موجود' end
+    if GetResourceState('exti_heists') ~= 'started' then return false, 'سكربت السطو لا يعمل' end
+    local lv = math.max(1, math.min(10, math.floor(tonumber(d.level) or 1)))
+    local ok, res = pcall(function() return exports.exti_heists:Admin(t, 'level', lv) end)
+    if not ok or not res then return false, 'لم ينجح (هل شخصيته محمّلة؟)' end
+    log(src, 'set_rep', GetPlayerName(t), ('مستوى %d'):format(lv))
+    return true, ('سمعة السطو لـ %s الآن مستوى %d'):format(GetPlayerName(t) or t, lv)
 end }
 A.kickgang = { 'gangs', function(src, d)
     local ok, why = exports.exti_gangs:AdminRemoveMember(tostring(d.cid or ''), GetPlayerName(src))

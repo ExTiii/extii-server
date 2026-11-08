@@ -211,41 +211,77 @@ RegisterNUICallback('self', function(req, cb)
 end)
 
 ---------------------------------------------------------------------------
--- spectate: I go (invisible, frozen) close to him and watch through his camera
+-- spectate: my body waits hidden under him; my own camera orbits him (mouse = look around,
+-- wheel = closer / further), the world loads around HIM. BACKSPACE = back where I was.
 ---------------------------------------------------------------------------
 function startSpectate(t)
     local ped = PlayerPedId()
     local back = GetEntityCoords(ped)
+    local backH = GetEntityHeading(ped)
     SetEntityVisible(ped, false, false); SetEntityCollision(ped, false, false); FreezeEntityPosition(ped, true); SetEntityInvincible(ped, true)
-    SetEntityCoords(ped, t.x, t.y, t.z - 15.0, false, false, false, false)
+    SetEntityCoords(ped, t.x, t.y, t.z - 12.0, false, false, false, false)
     local stop = false
     CreateThread(function()
-        local tp = 0
-        local t0 = GetGameTimer()
-        local lastPed = 0
+        local cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+        SetCamFov(cam, 55.0)
+        local yaw, pitch, dist = GetGameplayCamRot(2).z, -12.0, 4.5
+        local t0, lastAsk, tped = GetGameTimer(), 0, 0
+        local name = t.name or ('#' .. t.id)
+        local lastPos = vec3(t.x, t.y, t.z)
         while not stop do
             local pl = GetPlayerFromServerId(t.id)
-            local tped = pl ~= -1 and GetPlayerPed(pl) or 0
+            tped = pl ~= -1 and GetPlayerPed(pl) or 0
+            local focus
             if tped ~= 0 and DoesEntityExist(tped) then
-                if tped ~= lastPed or not NetworkIsInSpectatorMode() then NetworkSetInActiveSpectatorMode(true, tped); lastPed = tped end
-                local c = GetEntityCoords(tped)
-                if #(GetEntityCoords(ped) - c) > 40.0 then SetEntityCoords(ped, c.x, c.y, c.z - 15.0, false, false, false, false) end
-            elseif GetGameTimer() - tp > 1500 then
-                tp = GetGameTimer()
-                local ok, _, c = lib.callback.await('exti_admin:do', false, 'spectateFollow', { id = t.id })
-                if ok and c then SetEntityCoords(ped, c.x, c.y, c.z - 15.0, false, false, false, false)
-                elseif GetGameTimer() - t0 > 3000 then break end
+                focus = GetEntityCoords(tped) + vec3(0.0, 0.0, 0.6)
+                lastPos = focus
+            else
+                -- he's too far for my game to have him: ask where he is and move there
+                focus = lastPos
+                if GetGameTimer() - lastAsk > 1500 then
+                    lastAsk = GetGameTimer()
+                    CreateThread(function()
+                        local ok, _, c = lib.callback.await('exti_admin:do', false, 'spectateFollow', { id = t.id })
+                        if ok and c then lastPos = vec3(c.x, c.y, c.z + 0.6)
+                        elseif not ok and GetGameTimer() - t0 > 3000 then stop = true end
+                    end)
+                end
             end
+            -- keep my hidden body under him (so his surroundings exist in my game) and load the world there
+            if #(GetEntityCoords(ped) - focus) > 30.0 then SetEntityCoords(ped, focus.x, focus.y, focus.z - 12.0, false, false, false, false) end
+            SetFocusPosAndVel(focus.x, focus.y, focus.z, 0.0, 0.0, 0.0)
+            -- mouse look and zoom
+            DisableAllControlActions(0)
+            EnableControlAction(0, 249, true); EnableControlAction(0, 245, true)   -- push-to-talk, chat
+            yaw = yaw - GetDisabledControlNormal(0, 1) * 6.0
+            pitch = math.max(-70.0, math.min(30.0, pitch - GetDisabledControlNormal(0, 2) * 6.0))
+            if IsDisabledControlJustPressed(0, 241) then dist = math.max(1.5, dist - 0.75) end
+            if IsDisabledControlJustPressed(0, 242) then dist = math.min(25.0, dist + 0.75) end
+            local ry, rp = math.rad(yaw), math.rad(pitch)
+            local off = vec3(math.sin(ry) * math.cos(rp), -math.cos(ry) * math.cos(rp), -math.sin(rp)) * dist
+            -- (don't go through walls: stop the camera where something solid is)
+            local want = focus + off
+            local ray = StartShapeTestRay(focus.x, focus.y, focus.z, want.x, want.y, want.z, 1 | 16, tped ~= 0 and tped or ped, 7)
+            local _, hit, hitPos = GetShapeTestResult(ray)
+            local camPos = (hit == 1 or hit == true) and (focus + (hitPos - focus) * 0.9) or want
+            SetCamCoord(cam, camPos.x, camPos.y, camPos.z)
+            PointCamAtCoord(cam, focus.x, focus.y, focus.z)
+            if not IsCamRendering(cam) then RenderScriptCams(true, false, 0, true, true) end
             SetTextFont(4); SetTextScale(0.36, 0.36); SetTextColour(255, 255, 255, 220); SetTextOutline()
-            BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(('مراقبة #%d  ·  اضغط BACKSPACE للخروج'):format(t.id)); EndTextCommandDisplayText(0.42, 0.95)
-            if IsControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 177) then break end
+            BeginTextCommandDisplayText('STRING')
+            AddTextComponentSubstringPlayerName(('مراقبة %s  ·  الفأرة للنظر · العجلة للتقريب · BACKSPACE للخروج'):format(name))
+            EndTextCommandDisplayText(0.30, 0.95)
+            if IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 194) then break end
             Wait(0)
         end
-        NetworkSetInActiveSpectatorMode(false, ped)
+        RenderScriptCams(false, false, 0, true, true)
+        DestroyCam(cam, false)
+        ClearFocus()
         SetEntityCoords(ped, back.x, back.y, back.z, false, false, false, false)
+        SetEntityHeading(ped, backH)
         RequestCollisionAtCoord(back.x, back.y, back.z)
         local tw = GetGameTimer()
-        while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() - tw < 2000 do Wait(0) end
+        while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() - tw < 2500 do Wait(0) end
         FreezeEntityPosition(ped, false); SetEntityCollision(ped, true, true)
         if not state.invisible then SetEntityVisible(ped, true, false) end
         if not state.god then SetEntityInvincible(ped, false) end
