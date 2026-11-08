@@ -405,7 +405,8 @@ local function closestObject(p, models, range)
     local best, bestDist
     for i = 1, #models do
         local obj = GetClosestObjectOfType(p.x, p.y, p.z, range, models[i], false, false, false)
-        if obj and obj ~= 0 then
+        -- (map objects only: a pulled-out ATM lying on the ground is a script object, not a working ATM)
+        if obj and obj ~= 0 and not NetworkGetEntityIsNetworked(obj) then
             local d = #(p - GetEntityCoords(obj))
             if not bestDist or d < bestDist then best, bestDist = obj, d end
         end
@@ -429,6 +430,13 @@ CreateThread(function()
             end
 
             local atm, atmDist = closestObject(p, Config.atmModels, 1.6)
+            -- an ATM that was pulled out of this wall (EX_Tii heists) is gone: no banking there
+            if atm then
+                local ap = GetEntityCoords(atm)
+                for _, a in pairs(GlobalState['exti_heists:atms'] or {}) do
+                    if a.x and #(ap - vec3(a.x + 0.0, a.y + 0.0, a.z + 0.0)) < 0.6 then atm = nil break end
+                end
+            end
             if atm and atmDist <= 1.4 and (not bestDist or atmDist < bestDist) then
                 found, bestDist = { prompt = '[E] الصراف الآلي', run = ACTIONS.atm }, atmDist
             end

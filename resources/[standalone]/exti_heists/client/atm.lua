@@ -20,7 +20,8 @@ local function closestAtm(here)
     local best, bd, bm
     for _, m in ipairs(MODELS) do
         local o = GetClosestObjectOfType(here.x, here.y, here.z, 1.8, m.hash, false, false, false)
-        if o ~= 0 then
+        -- only the wall ATMs of the map (a pulled-out ATM lying on the ground is a script object)
+        if o ~= 0 and not NetworkGetEntityIsNetworked(o) and not IsEntityAMissionEntity(o) then
             local d = #(GetEntityCoords(o) - here)
             if not bd or d < bd then best, bd, bm = o, d, m.name end
         end
@@ -96,10 +97,14 @@ RegisterNetEvent('exti_heists:client:atmDetach', function(key)
     if not obj then return end
     NetworkRequestControlOfEntity(obj)
     DetachEntity(obj, true, true)
-    local p = GetEntityCoords(obj)
-    SetEntityCoords(obj, p.x, p.y, p.z + 0.4, false, false, false, false)
-    SetEntityRotation(obj, -90.0, 0.0, GetEntityHeading(obj), 2, true)
-    PlaceObjectOnGroundProperly(obj)
+    -- lying on its back on the ground (a wrecked box, not a working ATM)
+    local p, h = GetEntityCoords(obj), GetEntityHeading(obj)
+    local found, gz = GetGroundZFor_3dCoord(p.x, p.y, p.z + 1.0, false)
+    local mn, mx = GetModelDimensions(GetEntityModel(obj))
+    local depth = math.max(0.25, (mx.y - mn.y) / 2)
+    SetEntityRotation(obj, -90.0, 0.0, h, 2, true)
+    SetEntityCoords(obj, p.x, p.y, (found and gz or p.z) + depth, false, false, false, false)
+    SetEntityRotation(obj, -90.0, 0.0, h, 2, true)
     FreezeEntityPosition(obj, true)
 end)
 
@@ -135,11 +140,11 @@ CreateThread(function()
         -- keep the pulled ATMs off the wall in my game
         for key, a in pairs(atms) do
             if a.phase ~= 'hooked' and not hidden[key] and a.model then
-                CreateModelHideExcludingScriptObjects(a.x, a.y, a.z, 1.5, joaat(a.model), true); hidden[key] = { x = a.x, y = a.y, z = a.z, model = a.model }
+                CreateModelHideExcludingScriptObjects(a.x, a.y, a.z, 0.45, joaat(a.model), true); hidden[key] = { x = a.x, y = a.y, z = a.z, model = a.model }
             end
         end
         for key, h in pairs(hidden) do
-            if not atms[key] then RemoveModelHide(h.x, h.y, h.z, 1.5, joaat(h.model), false); hidden[key] = nil end
+            if not atms[key] then RemoveModelHide(h.x, h.y, h.z, 0.45, joaat(h.model), false); hidden[key] = nil end
         end
 
         for key in pairs(ripSent) do if not atms[key] or atms[key].phase ~= 'hooked' then ripSent[key] = nil end end
@@ -203,8 +208,8 @@ CreateThread(function()
             if obj then
                 -- (an ATM already pulled out is hidden: no prompt for it)
                 local op = GetEntityCoords(obj)
-                for _, h in pairs(hidden) do if #(op - v3(h)) < 2.0 then obj = nil break end end
-                for _, a in pairs(atms) do if #(op - v3(a)) < 2.0 then obj = nil break end end
+                for _, h in pairs(hidden) do if #(op - v3(h)) < 0.6 then obj = nil break end end
+                for _, a in pairs(atms) do if #(op - v3(a)) < 0.6 then obj = nil break end end
             end
             if obj then
                 sleep = 0
@@ -219,5 +224,5 @@ end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    for _, h in pairs(hidden) do RemoveModelHide(h.x, h.y, h.z, 1.5, joaat(h.model), false) end
+    for _, h in pairs(hidden) do RemoveModelHide(h.x, h.y, h.z, 0.45, joaat(h.model), false) end
 end)

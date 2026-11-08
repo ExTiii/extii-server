@@ -48,6 +48,11 @@ lib.callback.register('exti_heists:server:atmHook', function(src, pos, modelName
     if (exports.ox_inventory:Search(src, 'count', 'tow_chain') or 0) < 1 then return false, 'تحتاج سلسلة سحب (من متجر العدد)' end
     local key = keyOf(pos)
     if atms[key] then return false end
+    -- a pulled-out ATM lying somewhere can't be pulled again
+    for _, o in pairs(atms) do
+        local e = o.obj and entityOf(o.obj)
+        if e and #(GetEntityCoords(e) - pos) < 3.0 then return false, 'هذا الجهاز مقتلع أصلًا: اثقبه' end
+    end
     if H.cooldownLeft(key) > 0 or (H.atmHidden[key] or 0) > H.now() then return false, 'هذا الجهاز سُرق قبل قليل' end
     if lastHour() >= AT.perHour then return false, 'الشرطة متيقّظة الآن: لا أجهزة صراف هذه الساعة' end
     local ok, need = H.canTier(src, AT.tier, true)
