@@ -61,28 +61,28 @@ end
 local LABEL = 'رمز المنطقة'
 local X, Y = 0.0155, 0.722          -- left edge of the minimap, a little above its top
 local NUM_S, LBL_S = 0.40, 0.33
-local MAP_H = 0.241                  -- the minimap's height under the bar
-local BX, BY = 0.0028, 0.005         -- frame thickness (sides, bottom)
+local MAP_W, MAP_H = 0.162, 0.183   -- the minimap under the strip (width, height)
+local BX, BY = 0.0022, 0.004         -- frame thickness (sides, top/bottom)
 CreateThread(function()
-    local W, H = 0.216, 0.032       -- as wide as the minimap: a header bar over its top edge
+    local W, H = 0.100, 0.032       -- the strip: wide enough for "رمز المنطقة" and a 4-digit number
     while true do
         if current and loggedIn() and not IsRadarHidden() and not IsPauseMenuActive() and IsMinimapRendering() then
-            local mid = X + W / 2
-            DrawRect(mid, Y + H / 2, W, H, 10, 10, 12, 195)
-            -- the same dark colour as a frame round the minimap (the bar is its top side)
+            -- the frame round the minimap, same dark colour (16:9 screens; measured from Moe's 1440p screenshot)
             local top, bot = Y + H, Y + H + MAP_H
+            DrawRect(X + MAP_W / 2, top + BY / 2, MAP_W, BY, 10, 10, 12, 195)                -- top
+            DrawRect(X + MAP_W / 2, bot - BY / 2, MAP_W, BY, 10, 10, 12, 195)                -- bottom
             DrawRect(X + BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)            -- left
-            DrawRect(X + W - BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)        -- right
-            DrawRect(mid, bot - BY / 2, W, BY, 10, 10, 12, 195)                                -- bottom
+            DrawRect(X + MAP_W - BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)    -- right
+            -- the strip
+            DrawRect(X + W / 2, Y + H / 2, W, H, 10, 10, 12, 190)
             DrawRect(X + 0.0013, Y + H / 2, 0.0026, H, 232, 181, 71, 235)
-            -- in the middle: the gold number, then the word
-            SetTextFont(4); SetTextScale(0.0, NUM_S); SetTextColour(232, 181, 71, 255); SetTextDropShadow()
-            SetTextJustification(2); SetTextWrap(X, mid - 0.004)
-            BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(current)
-            EndTextCommandDisplayText(X, Y + 0.0005)
             SetTextFont(4); SetTextScale(0.0, LBL_S); SetTextColour(255, 255, 255, 220); SetTextDropShadow()
             BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(LABEL)
-            EndTextCommandDisplayText(mid + 0.004, Y + 0.0045)
+            EndTextCommandDisplayText(X + 0.007, Y + 0.0045)
+            SetTextFont(4); SetTextScale(0.0, NUM_S); SetTextColour(232, 181, 71, 255); SetTextDropShadow()
+            SetTextJustification(2); SetTextWrap(X, X + W - 0.005)
+            BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(current)
+            EndTextCommandDisplayText(X, Y + 0.0005)
             Wait(0)
         else
             Wait(500)
