@@ -107,12 +107,21 @@ local function register()
         return true
     end, { typeFilter = { [SHOP] = true } })
 
-    -- police guns never leave the officer (both ways of a swap are checked)
+    -- police guns never leave the officer by his own hand (not given, not stored). EX_Tii (Moe): a criminal
+    -- who has an officer down or cuffed may take them (that is the robbery): the loot comes from another
+    -- player's bag whose "can be robbed" flag is on
+    local function isRobbery(payload)
+        local src, from = tonumber(payload.source), tonumber(payload.fromInventory)
+        if not src or not from or src == from or payload.fromType ~= 'player' then return false end
+        local ok, canSteal = pcall(function() return Player(from).state.canSteal end)
+        return ok and canSteal == true
+    end
     local guns = {}
     for name in pairs(serialGuns) do guns[name] = true end
     if next(guns) then
         hookIds[#hookIds + 1] = exports.ox_inventory:registerHook('swapItems', function(payload)
             if payload.fromInventory == payload.toInventory then return true end
+            if isRobbery(payload) then return true end
             local out = (payload.fromType == 'player' and isPoliceGun(payload.fromSlot))
                 or (payload.toType == 'player' and payload.action == 'swap' and isPoliceGun(payload.toSlot))
             if not out then return true end
@@ -121,6 +130,18 @@ local function register()
             return false
         end, { itemFilter = guns })
     end
+
+    -- EX_Tii (Moe): robbing an officer: his tools stay on him (handcuffs, radio, evidence bags); everything
+    -- else (cash, guns, ammo, armour...) can be taken while he is down or cuffed
+    local KEEP = { handcuffs = true, radio = true, evidence_bag = true, police_evidence = true }
+    hookIds[#hookIds + 1] = exports.ox_inventory:registerHook('swapItems', function(payload)
+        if not isRobbery(payload) then return true end
+        local victim = getPlayer(tonumber(payload.fromInventory))
+        if not victim or not isCop(victim) then return true end
+        local src = tonumber(payload.source)
+        if src then notify(src, 'error', 'أدوات الشرطي (الأصفاد، اللاسلكي، أكياس الأدلة) لا تُؤخذ') end
+        return false
+    end, { itemFilter = KEEP })
 end
 
 -- the hooks are removed by ox_inventory itself when it restarts (and when we stop): register again
