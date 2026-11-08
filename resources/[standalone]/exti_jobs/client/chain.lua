@@ -315,7 +315,7 @@ local function runStages(stages)
             dropTool()
         end
         local done = lib.progressCircle({
-            duration = sg.ms, label = sg.label, position = 'bottom', useWhileDead = false, canCancel = true,
+            duration = math.floor(sg.ms * (C.batchScale or 1.0)), label = sg.label, position = 'bottom', useWhileDead = false, canCancel = true,
             disable = { move = true, car = true, combat = true, sprint = true },
         })
         if not done then return nil end
@@ -331,13 +331,28 @@ local function runStages(stages)
     return true
 end
 
+-- EX_Tii (Moe): the work car. The nearest car you have the keys of, parked within 12 m of the station: the
+-- station works on your bag and its trunk together (the server checks the keys and the distance again)
+local function helperCar()
+    local here = GetEntityCoords(cache.ped)
+    local best, bd
+    for _, veh in ipairs(lib.getNearbyVehicles(here, 12.0, false)) do
+        local d = #(here - veh.coords)
+        if (not bd or d < bd) and GetVehicleDoorLockStatus(veh.vehicle) ~= 7 then
+            local okK, keys = pcall(function() return exports.qbx_vehiclekeys:HasKeys(veh.vehicle) end)
+            if okK and keys then best, bd = veh.vehicle, d end
+        end
+    end
+    return best and NetworkGetNetworkIdFromEntity(best) or nil
+end
+
 local function actBatch(index, spot)
     local step = C.job.chain[index]
     C.busy = true
     EXJ.clearPrompt('chain')
     TaskTurnPedToFaceCoord(cache.ped, spot.x, spot.y, spot.z, 600)
     Wait(400)
-    local ok, info, item = lib.callback.await('exti_jobs:server:batchBegin', false, index)
+    local ok, info, item = lib.callback.await('exti_jobs:server:batchBegin', false, index, helperCar())
     if not ok then
         if info == 'missing' then
             EXJ.notify(('تحتاج %s'):format(itemLabel(item)), 'error')
@@ -356,8 +371,12 @@ local function actBatch(index, spot)
         })
         if not done then C.busy = false return end
     else
+        if info.trunk then EXJ.notify(('تعمل على %d قطعة: حقيبتك وصندوق سيارتك معًا'):format(info.count), 'inform', 4000) end
         FreezeEntityPosition(cache.ped, true)
+        -- more pieces take longer: 20 = the normal time, 40 (a full bag and a 40 kg trunk) = 1.5x, a big truck up to 3x
+        C.batchScale = math.max(0.75, math.min(3.0, 0.5 + (tonumber(info.count) or 20) / 40))
         local result = step.stages and runStages(step.stages) or true
+        C.batchScale = nil
         FreezeEntityPosition(cache.ped, false)
         dropTool()
         ClearPedTasks(cache.ped)

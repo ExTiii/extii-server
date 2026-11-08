@@ -964,126 +964,126 @@ return {
     -- EX_Tii level jobs (exti_jobs): baker, fisher, metals, fabrics
     ['yeast_pack'] = {
         label = 'كيس خميرة (Yeast)',
-        weight = 3300,
+        weight = 2000,
         description = 'لوظيفة الخبّاز: كل كيس يصبح رغيفًا واحدًا',
         client = { image = 'nui://exti_jobs/html/items/yeast_pack.png' },
     },
 
     ['wheat_bundle'] = {
         label = 'حزمة قمح (Wheat)',
-        weight = 3000,
+        weight = 2000,
         description = 'تُحصد في حقول غريبسيد وتُطحن في المطحنة (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/wheat_bundle.png' },
     },
 
     ['flour_bag'] = {
         label = 'كيس دقيق (Flour)',
-        weight = 2800,
+        weight = 2000,
         description = 'يُخبز في الفرن (لا يُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/flour_bag.png' },
     },
 
     ['bread_loaf'] = {
         label = 'رغيف خبز (Bread Loaf)',
-        weight = 2500,
+        weight = 2000,
         description = 'يُباع لتاجر الخبز (لا يُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/bread_loaf.png' },
     },
 
     ['fish_bait'] = {
         label = 'علبة طُعم (Fish Bait)',
-        weight = 3400,
+        weight = 2000,
         description = 'لوظيفة الصيد: كل علبة تصبح سمكة واحدة',
         client = { image = 'nui://exti_jobs/html/items/fish_bait.png' },
     },
 
     ['raw_fish'] = {
         label = 'سمكة طازجة (Fresh Fish)',
-        weight = 3000,
+        weight = 2000,
         description = 'تُنظّف على طاولة التنظيف (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/raw_fish.png' },
     },
 
     ['fish_fillet'] = {
         label = 'سمك منظّف (Fish Fillet)',
-        weight = 2500,
+        weight = 2000,
         description = 'يُعبّأ على الثلج (لا يُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/fish_fillet.png' },
     },
 
     ['fish_pack'] = {
         label = 'علبة سمك مثلّج (Iced Fish)',
-        weight = 2400,
+        weight = 2000,
         description = 'تُباع في سوق السمك (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/fish_pack.png' },
     },
 
     ['headlamp_battery'] = {
         label = 'بطارية مصباح الرأس (Headlamp Battery)',
-        weight = 4000,
+        weight = 2000,
         description = 'لوظيفة المعادن: كل بطارية تصبح صخرة واحدة',
         client = { image = 'nui://exti_jobs/html/items/headlamp_battery.png' },
     },
 
     ['ore_rock'] = {
         label = 'صخرة خام (Ore Rock)',
-        weight = 4000,
+        weight = 2000,
         description = 'تُفرز عند حزام الفرز (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/ore_rock.png' },
     },
 
     ['washed_ore'] = {
         label = 'خام مفروز (Sorted Ore)',
-        weight = 3500,
+        weight = 2000,
         description = 'يُصهر في المسبك (لا يُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/washed_ore.png' },
     },
 
     ['copper_bar'] = {
         label = 'سبيكة نحاس (Copper Bar)',
-        weight = 3000,
+        weight = 2000,
         description = 'تُباع في مكتب المسبك (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/copper_bar.png' },
     },
 
     ['iron_bar'] = {
         label = 'سبيكة حديد (Iron Bar)',
-        weight = 3000,
+        weight = 2000,
         description = 'تُباع في مكتب المسبك (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/iron_bar.png' },
     },
 
     ['gold_bar'] = {
         label = 'سبيكة ذهب (Gold Bar)',
-        weight = 3000,
+        weight = 2000,
         description = 'نادرة وغالية، تُباع في مكتب المسبك (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/gold_bar.png' },
     },
 
     ['thread_spool'] = {
         label = 'بكرة خيط (Thread Spool)',
-        weight = 3500,
+        weight = 2000,
         description = 'لوظيفة الأقمشة: كل بكرة تصبح قطعة ملابس',
         client = { image = 'nui://exti_jobs/html/items/thread_spool.png' },
     },
 
     ['raw_wool'] = {
         label = 'صوف خام (Raw Wool)',
-        weight = 3000,
+        weight = 2000,
         description = 'يُنسج على النول (لا يُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/raw_wool.png' },
     },
 
     ['fabric_roll'] = {
         label = 'لفة قماش (Fabric Roll)',
-        weight = 2800,
+        weight = 2000,
         description = 'تُخاط على ماكينة الخياطة (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/fabric_roll.png' },
     },
 
     ['sewn_clothes'] = {
         label = 'ملابس مخيطة (Clothes)',
-        weight = 2500,
+        weight = 2000,
         description = 'تُباع لمتجر بينكو (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/sewn_clothes.png' },
     },
@@ -1091,14 +1091,14 @@ return {
     -- EX_Tii level jobs (exti_jobs): chicken, raisins
     ['live_chicken'] = {
         label = 'دجاجة حية (Live Chicken)',
-        weight = 3000,
+        weight = 2000,
         description = 'من عُدد الدواجن في الحظيرة، تُذبح عند طاولة الذبح. لا تُخزّن، تُحمل فقط',
         client = { image = 'nui://exti_jobs/html/items/live_chicken.png' },
     },
 
     ['slaughtered_chicken'] = {
         label = 'دجاجة مذبوحة (Slaughtered Chicken)',
-        weight = 2500,
+        weight = 2000,
         description = 'تُعبّأ عند خط التعبئة. لا تُخزّن، تُحمل فقط',
         client = { image = 'nui://exti_jobs/html/items/slaughtered_chicken.png' },
     },
@@ -1119,21 +1119,21 @@ return {
 
     ['poultry_kit'] = {
         label = 'عدة دواجن (Poultry Kit)',
-        weight = 3500,
+        weight = 2000,
         description = 'لوظيفة الدواجن: كل عدة تصبح دجاجة واحدة في الحظيرة',
         client = { image = 'nui://exti_jobs/html/items/poultry_kit.png' },
     },
 
     ['grape_kit'] = {
         label = 'عدة قطف عنب (Grape Kit)',
-        weight = 2800,
+        weight = 2000,
         description = 'لوظيفة الزبيب: كل عدة تصبح عنقودًا واحدًا في الكروم',
         client = { image = 'nui://exti_jobs/html/items/grape_kit.png' },
     },
 
     ['grape_bunch'] = {
         label = 'عنقود عنب (Grape Bunch)',
-        weight = 2500,
+        weight = 2000,
         description = 'تقطفه من كروم مارلو ويجفّف عند المناشر (لا يُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/grape_bunch.png' },
     },
@@ -1147,7 +1147,7 @@ return {
 
     ['raisin_box'] = {
         label = 'كرتونة زبيب (Raisin Box)',
-        weight = 1800,
+        weight = 2000,
         description = 'تُباع لتاجر الزبيب (لا تُخزّن)',
         client = { image = 'nui://exti_jobs/html/items/raisin_box.png' },
     },

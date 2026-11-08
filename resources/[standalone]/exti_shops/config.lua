@@ -29,12 +29,12 @@ Config.types = {
             { name = 'redbull', price = 50, category = 'food', max = 3, daily = 3 }, -- 1 minute of sprinting without getting tired (3 a day per person, every shop together)
             -- EX_Tii: no bandage here any more: medicine is sold at the two hospital pharmacies
             -- EX_Tii level jobs (exti_jobs): the supplies used up every run
-            { name = 'poultry_kit', price = 3, category = 'work', max = 25, desc = 'لوظيفة الدواجن: كل عدة = دجاجة واحدة' },
-            { name = 'grape_kit', price = 3, category = 'work', max = 30, desc = 'لوظيفة الزبيب: كل عدة = عنقود واحد' },
-            { name = 'yeast_pack', price = 3, category = 'work', max = 25, desc = 'لوظيفة الخبّاز: كل كيس = رغيف واحد' },
-            { name = 'fish_bait', price = 3, category = 'work', max = 24, desc = 'لوظيفة الصيد: كل علبة = سمكة واحدة' },
-            { name = 'headlamp_battery', price = 4, category = 'work', max = 20, desc = 'لوظيفة المعادن: كل بطارية = صخرة واحدة' },
-            { name = 'thread_spool', price = 4, category = 'work', max = 22, desc = 'لوظيفة الأقمشة: كل بكرة = قطعة ملابس' },
+            { name = 'poultry_kit', price = 3, category = 'work', max = 40, desc = 'لوظيفة الدواجن: كل عدة = دجاجة واحدة' },
+            { name = 'grape_kit', price = 3, category = 'work', max = 40, desc = 'لوظيفة الزبيب: كل عدة = عنقود واحد' },
+            { name = 'yeast_pack', price = 3, category = 'work', max = 40, desc = 'لوظيفة الخبّاز: كل كيس = رغيف واحد' },
+            { name = 'fish_bait', price = 3, category = 'work', max = 40, desc = 'لوظيفة الصيد: كل علبة = سمكة واحدة' },
+            { name = 'headlamp_battery', price = 3, category = 'work', max = 40, desc = 'لوظيفة المعادن: كل بطارية = صخرة واحدة' },
+            { name = 'thread_spool', price = 3, category = 'work', max = 40, desc = 'لوظيفة الأقمشة: كل بكرة = قطعة ملابس' },
             -- EX_Tii (Moe): repair kits in every store, anyone can fix his own car (dearer here than at the tool shop)
             { name = 'repairkit', price = 550, category = 'tools', max = 2, desc = 'يعيد المحرك للعمل (65%): استعملها بجانب سيارتك' },
             { name = 'advancedrepairkit', price = 1500, category = 'tools', max = 1, desc = 'إصلاح كامل: المحرك والهيكل' },

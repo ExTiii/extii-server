@@ -117,15 +117,18 @@ local function addTask(player, job)
 end
 
 -- pay a task: level bonus included, into the bank, counted in the shift
-local function payTask(src, shift, base, reason, counts)
+local function payTask(src, shift, base, reason, counts, items)
     local player = getPlayer(src)
     if not player then return 0 end
     local info = levelInfo(shift.job, tasksDone(player, shift.job))
     local amount = round(base * (1.0 + info.bonus))
     player.Functions.AddMoney('bank', amount, reason)
-    -- the player level (exti_level): XP for the work itself (the base pay, not the rank bonus)
+    -- the player level (exti_level): XP for the work itself. The level jobs give a fixed XP per piece sold
+    -- (job.xpPerItem: Moe's ladder, see config); the starter jobs a share of the base pay (job.xpRate)
     local job = config.jobs[shift.job]
-    local xp = round(base * (job.xpRate or 0.375))   -- (about 600 XP an hour in every job)
+    local xp
+    if job.xpPerItem and items then xp = round(items * job.xpPerItem)
+    else xp = round(base * (job.xpRate or 0.094)) end
     if xp > 0 and GetResourceState('exti_level') == 'started' then
         pcall(function() exports.exti_level:AddXP(src, xp, job.xpText or job.label) end)
     end
@@ -1217,7 +1220,85 @@ end)
 --   batchFinish: the game is over (at least `seconds` later) -> the score decides how many survive
 --   sellall: a progress bar of `seconds`, then everything is sold at once
 ---------------------------------------------------------------------------
-local MAX_BATCH = 40
+local MAX_BATCH = 200   -- bag + the biggest trunk (180 kg) at 2 kg a piece, with room
+
+-- EX_Tii (Moe): the work car. A station works on your bag AND the trunk of your own car parked next to it
+-- (within 15 m, you must have its keys). The trunk inventory is loaded through ox_inventory with the car's net id.
+local HELPER_RANGE = 15.0
+local function helperTrunk(source, netId)
+    netId = tonumber(netId)
+    if not netId or netId <= 0 then return nil end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if not veh or veh == 0 or not DoesEntityExist(veh) or GetEntityType(veh) ~= 2 then return nil end
+    local here = pedCoords(source)
+    if not here or #(here - GetEntityCoords(veh)) > HELPER_RANGE then return nil end
+    local okK, keys = pcall(function() return exports.qbx_vehiclekeys:HasKeys(source, veh) end)
+    if not okK or not keys then return nil end
+    local plate = GetVehicleNumberPlateText(veh)
+    if not plate or plate == '' then return nil end
+    local okI, inv = pcall(function() return ox:GetInventory({ id = 'trunk' .. plate, type = 'trunk', netid = netId }) end)
+    if not okI or type(inv) ~= 'table' or not inv.id then return nil end
+    return inv.id
+end
+
+-- how many of an item in the bag and in the helper trunk
+local function countBoth(source, trunk, item)
+    local n = tonumber(ox:Search(source, 'count', item)) or 0
+    if trunk then n = n + (tonumber(ox:Search(trunk, 'count', item)) or 0) end
+    return n
+end
+
+-- take `count` of an item from the bag first, then the trunk. Returns the list of what was taken (to undo), or nil
+local function takeBoth(source, trunk, item, count)
+    local taken = {}
+    local function take(from, n)
+        if n <= 0 then return true end
+        if ox:RemoveItem(from, item, n) then taken[#taken + 1] = { from, n } return true end
+        return false
+    end
+    local inBag = math.min(count, tonumber(ox:Search(source, 'count', item)) or 0)
+    if not take(source, inBag) then return nil end
+    local left = count - inBag
+    if left > 0 then
+        if not trunk or not take(trunk, left) then
+            for _, t in ipairs(taken) do ox:AddItem(t[1], item, t[2]) end
+            return nil
+        end
+    end
+    return taken
+end
+local function undoTake(item, taken) for _, t in ipairs(taken or {}) do ox:AddItem(t[1], item, t[2]) end end
+
+-- give `count` of an item: the trunk first (so the bag stays free to work), the rest to the bag. Returns list or nil
+local function giveBoth(source, trunk, item, count)
+    local given = {}
+    local function give(to, n)
+        if n <= 0 then return true end
+        if ox:AddItem(to, item, n) then given[#given + 1] = { to, n } return true end
+        return false
+    end
+    local toTrunk = 0
+    if trunk then
+        local w = weightOf(item)
+        local okW, can = pcall(function() return ox:CanCarryWeight(trunk, w * count) end)
+        if okW and can then toTrunk = count
+        else
+            -- as many as fit
+            local okI, inv = pcall(function() return ox:GetInventory(trunk) end)
+            if okI and type(inv) == 'table' and inv.maxWeight and inv.weight and w > 0 then
+                toTrunk = math.max(0, math.min(count, math.floor((inv.maxWeight - inv.weight) / w)))
+            end
+        end
+        if toTrunk > 0 and not give(trunk, toTrunk) then toTrunk = 0 end
+    end
+    local toBag = count - toTrunk
+    if toBag > 0 and not give(source, toBag) then
+        for _, g in ipairs(given) do ox:RemoveItem(g[1], item, g[2]) end
+        return nil
+    end
+    return given
+end
+local function undoGive(item, given) for _, g in ipairs(given or {}) do ox:RemoveItem(g[1], item, g[2]) end end
 
 local function batchStep(source, stepIndex)
     local shift = shifts[source]
@@ -1235,15 +1316,16 @@ local function batchStep(source, stepIndex)
     return shift, step, job
 end
 
-lib.callback.register('exti_jobs:server:batchBegin', function(source, stepIndex)
+lib.callback.register('exti_jobs:server:batchBegin', function(source, stepIndex, helperNetId)
     if busy[source] then return false, 'fast' end
     local shift, step = batchStep(source, stepIndex)
     if not shift then return false, step end
-    local have = countOf(source, step.take)
-    for item in pairs(step.takeAlso or {}) do have = have + countOf(source, item) end   -- (metals: every kind of bar)
+    local trunk = helperTrunk(source, helperNetId)
+    local have = countBoth(source, trunk, step.take)
+    for item in pairs(step.takeAlso or {}) do have = have + countBoth(source, trunk, item) end   -- (metals: every kind of bar)
     if have < 1 then return false, 'missing', step.take end
-    shift.pending = { step = stepIndex, count = math.min(have, MAX_BATCH), at = GetGameTimer(), token = math.random(100000, 999999) }
-    return true, { token = shift.pending.token, count = shift.pending.count, seconds = step.seconds }
+    shift.pending = { step = stepIndex, count = math.min(have, MAX_BATCH), at = GetGameTimer(), token = math.random(100000, 999999), trunk = trunk }
+    return true, { token = shift.pending.token, count = shift.pending.count, seconds = step.seconds, trunk = trunk ~= nil }
 end)
 
 local function batchFinish(source, token, score)
@@ -1259,33 +1341,36 @@ local function batchFinish(source, token, score)
         local total, money, list = 0, 0, { { step.take, step.price } }
         for item, price in pairs(step.takeAlso) do list[#list + 1] = { item, price } end
         local left = pending.count
+        local trunk = pending.trunk
         local takenAll = {}
         for _, it in ipairs(list) do
-            local n = math.min(left, countOf(source, it[1]))
+            local n = math.min(left, countBoth(source, trunk, it[1]))
             if n > 0 then
-                if not ox:RemoveItem(source, it[1], n) then
-                    for _, t in ipairs(takenAll) do ox:AddItem(source, t[1], t[2]) end   -- nothing is lost
+                local taken = takeBoth(source, trunk, it[1], n)
+                if not taken then
+                    for _, t in ipairs(takenAll) do undoTake(t[1], t[2]) end   -- nothing is lost
                     return false, 'missing', it[1]
                 end
-                takenAll[#takenAll + 1] = { it[1], n }
+                takenAll[#takenAll + 1] = { it[1], taken }
                 total, money, left = total + n, money + n * it[2], left - n
             end
         end
         if total < 1 then return false, 'missing', step.take end
         local run = total >= math.ceil((job.perRound or 2) / 2)
-        local paid = payTask(source, shift, money, 'job-' .. shift.job, run)
+        local paid = payTask(source, shift, money, 'job-' .. shift.job, run, total)
         if run then shift.rounds = shift.rounds + 1 end
         lib.logger(source, 'jobs', ('sold %d bars for %d$'):format(total, paid))
         return true, { sold = total, paid = paid, run = run }
     end
 
-    local count = math.min(pending.count, countOf(source, step.take))
+    local trunk = pending.trunk
+    local count = math.min(pending.count, countBoth(source, trunk, step.take))
     if count < 1 then return false, 'missing', step.take end
 
     if step.kind == 'sellall' then
-        if not ox:RemoveItem(source, step.take, count) then return false, 'missing', step.take end
+        if not takeBoth(source, trunk, step.take, count) then return false, 'missing', step.take end
         local run = count >= math.ceil((job.perRound or 2) / 2)
-        local paid = payTask(source, shift, count * step.price, 'job-' .. shift.job, run)
+        local paid = payTask(source, shift, count * step.price, 'job-' .. shift.job, run, count)
         if run then shift.rounds = shift.rounds + 1 end
         lib.logger(source, 'jobs', ('sold %d %s for %d$'):format(count, step.take, paid))
         return true, { sold = count, paid = paid, run = run }
@@ -1309,19 +1394,19 @@ local function batchFinish(source, token, score)
             end
         end
     end
-    local net = -weightOf(step.take) * count
-    for item, n in pairs(out) do net = net + weightOf(item) * n end
-    if net > 0 and not ox:CanCarryWeight(source, net) then return false, 'full' end
-    if not ox:RemoveItem(source, step.take, count) then return false, 'missing', step.take end
+    -- (the pieces all weigh the same, so what comes out fits where what went in was; the trunk is filled first)
+    local taken = takeBoth(source, trunk, step.take, count)
+    if not taken then return false, 'missing', step.take end
     local added = {}
     for item, n in pairs(out) do
         if n > 0 then
-            if not ox:AddItem(source, item, n) then
-                for _, a in ipairs(added) do ox:RemoveItem(source, a[1], a[2]) end
-                ox:AddItem(source, step.take, count) -- nothing is lost
+            local given = giveBoth(source, trunk, item, n)
+            if not given then
+                for _, a in ipairs(added) do undoGive(a[1], a[2]) end
+                undoTake(step.take, taken) -- nothing is lost
                 return false, 'full'
             end
-            added[#added + 1] = { item, n }
+            added[#added + 1] = { item, given }
         end
     end
     local mix
@@ -1341,8 +1426,8 @@ lib.callback.register('exti_jobs:server:batchFinish', function(source, token, sc
     return a, b, c
 end)
 
--- the goods of these jobs can't be kept in a trunk, glovebox, stash or on the ground (only carried or given):
--- the weight of what you carry is what limits a batch
+-- the goods of these jobs can't be kept in a stash or dropped on the ground (only carried, in your car, or given):
+-- the weight of your bag plus your car's trunk is what limits a batch
 CreateThread(function()
     Wait(2000)
     local goods = {}
@@ -1352,8 +1437,11 @@ CreateThread(function()
     if not next(goods) then return end
     local ok, err = pcall(function()
         ox:registerHook('swapItems', function(payload)
-            if payload.toType ~= 'player' and payload.fromType == 'player' then
-                notify(payload.source, 'لا يمكن تخزين هذه البضاعة، تُحمل باليد فقط أو تُسلّم لشخص', 'error', 5000)
+            -- EX_Tii (Moe): your car is your work partner: the trunk and the glove box are allowed; stashes, the
+            -- ground and containers are not (only carried, in a car, or given to a person)
+            local to = payload.toType
+            if payload.fromType == 'player' and to ~= 'player' and to ~= 'trunk' and to ~= 'glovebox' then
+                notify(payload.source, 'لا يمكن تخزين هذه البضاعة إلا في سيارتك (الصندوق أو الدرج)', 'error', 5000)
                 return false
             end
             return true

@@ -1,9 +1,12 @@
 -- =====================================================================
 -- EX_Tii jobs: settings shared by the game and the server
 -- Three jobs to start with: tow, garbage, delivery.
--- Money (Moe's hard grind, rank 1): starter jobs ~$1,600 an hour, poultry $2,100, raisins $2,600, bread $3,200,
--- fishing $3,900, metals $4,700, fabrics $5,600. Every rank in a job adds 10% (up to +40%).
--- XP: every job gives about 600 XP an hour (exti_level: level 40 after about 60 hours).
+-- Money (Moe's grind, Nov 2026, rank 1, with a 40 kg storage car = 40 pieces a run, ~4 runs an hour):
+-- starter jobs ~$1,600 an hour, poultry $2,400, raisins $3,100, bread $3,800, fishing $4,600, metals $5,800,
+-- fabrics $7,200. On foot (bag only, 20 pieces) it is half. Every rank in a job adds 10% (up to +40%).
+-- XP: a fixed XP per piece sold (xpPerItem): starter jobs 150 an hour, chicken 200, raisins 250, bread 300,
+-- fishing 350, metals 400, fabrics 450 (exti_level: level 3 after 4 h, 8 after 12 h, 15 after 30 h, 40 after 160 h).
+-- Every kit and every product weighs 2 kg: an empty 40 kg bag = 20 kits, the 40 kg car another 20.
 -- =====================================================================
 -- EX_Tii (Moe): the level jobs have no mini games any more. Every station = an animation with a progress
 -- circle, then a short skill check ([E] when the marker is in the zone). Fail = nothing is lost, you just
@@ -116,6 +119,7 @@ local CONFIG = {
             extra = 'المركبات التي تُترك دون سائق أكثر من 10 دقائق يمكنك سحبها إلى ساحة الحجز، ويدفع صاحبها رسوم الاستلام.',
             payText = 'حوالي 80$ لكل مركبة',
             hourText = '1,600$',
+            xpRate = 0.094,          -- 150 XP an hour (Moe's ladder)
             taskWord = { 'مركبة', 'مركبات' },
             levelSteps = { 0, 25, 70, 140, 240 },
             pay = { base = 74, perMeter = 0.013, maxDistance = 45 }, -- cars are 300-950 m away: about 78-86$ each
@@ -159,6 +163,7 @@ local CONFIG = {
             },
             payText = '17$ لكل كيس (حوالي 42$ لكل حاوية)',
             hourText = '1,600$',
+            xpRate = 0.094,          -- 150 XP an hour (Moe's ladder)
             taskWord = { 'حاوية', 'حاويات' },
             levelSteps = { 0, 45, 120, 240, 420 },
             pay = { perBag = 17 },
@@ -195,6 +200,7 @@ local CONFIG = {
             },
             payText = 'حوالي 45$ لكل طرد (أكثر للمسافات الأبعد)',
             hourText = '1,600$',
+            xpRate = 0.094,          -- 150 XP an hour (Moe's ladder)
             taskWord = { 'طرد', 'طرود' },
             levelSteps = { 0, 45, 120, 240, 420 },
             pay = { base = 38, perMeter = 0.015, maxDistance = 40 },
@@ -229,7 +235,7 @@ local CONFIG = {
             icon = 'chicken',
             minLevel = 3,
             -- EX_Tii (Moe's design): clock in with the supervisor = the uniform, no vehicle, no deposit.
-            -- 1 poultry kit (24/7) = 1 chicken. The kit is heavy (3.5 kg): pockets (85 kg) carry about 20 = one batch.
+            -- 1 poultry kit (24/7) = 1 chicken. Everything weighs 2 kg: the bag (40 kg) carries 20, the work car's trunk more.
             -- Every step does ALL you carry at once with its own mini game (28 s); the score decides how many survive.
             -- The chickens can't be put in a trunk, glovebox, stash or on the ground (only given to a player).
             noVehicle = true,
@@ -237,19 +243,19 @@ local CONFIG = {
             short = 'اشترِ عُدد الدواجن من بقالة 24/7، حوّلها إلى دجاج حي في الحظيرة، اذبحه وعبّئه ثم بِعه للتاجر.',
             steps = {
                 'تحدّث مع المشرف لتسجّل دخولك، فتلبس زي العمل تلقائيًا.',
-                'اشترِ عُدد الدواجن من بقالة 24/7: كل عدة = دجاجة واحدة (العدة ثقيلة، تحمل حوالي 20).',
+                'اشترِ عُدد الدواجن من بقالة 24/7: كل عدة = دجاجة واحدة (حقيبتك تحمل 20، وصندوق سيارتك 20 أخرى أو أكثر).',
                 'في الحظيرة تمسك الدجاج وتضعه في الأقفاص: كل العُدد التي معك تصير دجاجًا حيًا.',
                 'عند طاولة الذبح تذبح كل الدجاج مرة واحدة، ثم تعبّئه في الصواني عند خط التعبئة.',
-                'بِع كل الدجاج المعبأ لتاجر الدواجن: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
+                'بِع كل الدجاج المعبأ لتاجر الدواجن: البيعة الكاملة (20 قطعة على الأقل) = جولة.',
             },
-            extra = 'في كل محطة اضغط E وانتظر: حركة العمل وشريط التقدّم ينجزان كل ما تحمله. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
-            payText = '33$ لكل دجاجة معبأة',
-            hourText = '2,100$',
+            extra = 'أوقف سيارتك قرب كل محطة: المحطة تعمل على حقيبتك وصندوق السيارة معًا (اضغط E وانتظر). البيعة الصغيرة (أقل من 20) لا تُحسب جولة.',
+            payText = '17$ لكل دجاجة معبأة',
+            hourText = '2,400$ مع سيارة 40 كغ',
             taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 }, -- (counted in runs: a sale of at least half a load)
-            perRound = 20,
-            roundMinutes = 17,
-            xpRate = 0.286,
+            perRound = 40,
+            roundMinutes = 14,
+            xpPerItem = 1.2,
             supplies = { 'poultry_kit' },
             hq = {
                 label = 'مزرعة الدواجن',
@@ -277,7 +283,7 @@ local CONFIG = {
                   done = 'عبّأت %d دجاجة', lost = 'سقط منك %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع الدجاج', place = 'تاجر الدواجن', blip = 431,
                   spot = vec3(-596.16, -889.32, 25.51),
-                  take = 'packed_chicken', price = 33, seconds = 12,
+                  take = 'packed_chicken', price = 17, seconds = 12,
                   anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'تسلّم الدجاج للتاجر وتعدّ الصناديق...', sold = 'بعت %d دجاجة' },
             },
@@ -290,26 +296,26 @@ local CONFIG = {
             icon = 'grapes',
             minLevel = 8,
             -- EX_Tii (Moe's design, like chicken): clock in = the uniform, no vehicle. 1 grape kit (24/7) = 1 grape.
-            -- The kit weighs 2.8 kg: pockets (85 kg) carry about 30 = one batch. Every step does ALL you carry at
+            -- Everything weighs 2 kg: the bag carries 20, the work car's trunk more. Every step does ALL you carry at
             -- once with its own mini game (28 s); the score decides how many survive. The grapes can't be stored.
             noVehicle = true,
             noStore = { 'grape_bunch', 'raisins', 'raisin_box' },
             short = 'اشترِ عُدد العنب من بقالة 24/7، اقطف العنب من كروم مارلو، جفّفه وعبّئ الزبيب في كراتين ثم بِعه للتاجر.',
             steps = {
                 'تحدّث مع المشرف في مزارع مارلو لتسجّل دخولك، فتلبس زي العمل تلقائيًا.',
-                'اشترِ عُدد العنب من بقالة 24/7: كل عدة = عنقود واحد (تحمل حوالي 30).',
+                'اشترِ عُدد العنب من بقالة 24/7: كل عدة = عنقود واحد (حقيبتك تحمل 20، وصندوق سيارتك 20 أخرى أو أكثر).',
                 'عند الكروم تقطف كل العناقيد مرة واحدة وتجمعها في السلال.',
                 'عند مناشر التجفيف تفرش العنب وتقلّبه حتى يصير زبيبًا، ثم تعبّئه في الكراتين عند طاولة التعبئة.',
-                'بِع الكراتين لتاجر الزبيب: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
+                'بِع الكراتين لتاجر الزبيب: البيعة الكاملة (20 قطعة على الأقل) = جولة.',
             },
-            extra = 'في كل محطة اضغط E وانتظر: حركة العمل وشريط التقدّم ينجزان كل ما تحمله. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
-            payText = '22$ لكل كرتونة زبيب',
-            hourText = '2,600$',
+            extra = 'أوقف سيارتك قرب كل محطة: المحطة تعمل على حقيبتك وصندوق السيارة معًا (اضغط E وانتظر). البيعة الصغيرة (أقل من 20) لا تُحسب جولة.',
+            payText = '21$ لكل كرتونة زبيب',
+            hourText = '3,100$ مع سيارة 40 كغ',
             taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 }, -- (counted in runs)
-            perRound = 30,
-            roundMinutes = 13,
-            xpRate = 0.23,
+            perRound = 40,
+            roundMinutes = 14,
+            xpPerItem = 1.5,
             supplies = { 'grape_kit' },
             hq = {
                 label = 'مزارع مارلو للعنب',
@@ -337,7 +343,7 @@ local CONFIG = {
                   done = 'عبّأت %d كرتونة', lost = 'رميت %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع الزبيب', place = 'تاجر الزبيب', blip = 431,
                   spot = vec3(-596.16, -889.32, 25.51),
-                  pedModel = 'a_m_m_farmer_01', take = 'raisin_box', price = 22, seconds = 12,
+                  pedModel = 'a_m_m_farmer_01', take = 'raisin_box', price = 21, seconds = 12,
                   anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'تسلّم الكراتين للتاجر...', sold = 'بعت %d كرتونة زبيب' },
             },
@@ -356,19 +362,19 @@ local CONFIG = {
             short = 'اشترِ الخميرة من بقالة 24/7، احصد القمح في حقول غريبسيد، اطحنه في المطحنة واخبز الخبز ثم بِعه.',
             steps = {
                 'تحدّث مع المشرف في مزرعة غريبسيد لتسجّل دخولك، فتلبس زي العمل تلقائيًا.',
-                'اشترِ أكياس الخميرة من بقالة 24/7: كل كيس = رغيف واحد (تحمل حوالي 25).',
+                'اشترِ أكياس الخميرة من بقالة 24/7: كل كيس = رغيف واحد (حقيبتك تحمل 20، وصندوق سيارتك 20 أخرى أو أكثر).',
                 'في الحقل تحصد القمح بالمنجل وتربطه حزمًا.',
                 'في المطحنة تطحن القمح وتعبّئ الدقيق، ثم تعجن وتخبز الأرغفة في الفرن.',
-                'بِع الخبز لتاجر الخبز: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
+                'بِع الخبز لتاجر الخبز: البيعة الكاملة (20 قطعة على الأقل) = جولة.',
             },
-            extra = 'في كل محطة اضغط E وانتظر: حركة العمل وشريط التقدّم ينجزان كل ما تحمله. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
-            payText = '33$ لكل رغيف',
-            hourText = '3,200$',
+            extra = 'أوقف سيارتك قرب كل محطة: المحطة تعمل على حقيبتك وصندوق السيارة معًا (اضغط E وانتظر). البيعة الصغيرة (أقل من 20) لا تُحسب جولة.',
+            payText = '25$ لكل رغيف',
+            hourText = '3,800$ مع سيارة 40 كغ',
             taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 },
-            perRound = 25,
+            perRound = 40,
             roundMinutes = 14,
-            xpRate = 0.19,
+            xpPerItem = 1.8,
             supplies = { 'yeast_pack' },
             hq = {
                 label = 'مزرعة القمح', place = 'غريبسيد',
@@ -387,7 +393,7 @@ local CONFIG = {
                   take = 'flour_bag', give = 'bread_loaf', game = 'bake', stages = S.bake, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'خبزت %d رغيفًا', lost = 'احترق %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع الخبز', place = 'تاجر الخبز', blip = 431, spot = vec3(-593.00, -893.00, 25.50),
-                  pedModel = 's_m_y_chef_01', take = 'bread_loaf', price = 33, seconds = 12, anim = { dict = 'mp_common', clip = 'givetake1_a' },
+                  pedModel = 's_m_y_chef_01', take = 'bread_loaf', price = 25, seconds = 12, anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'تسلّم الخبز للتاجر...', sold = 'بعت %d رغيفًا' },
             },
         },
@@ -402,19 +408,19 @@ local CONFIG = {
             short = 'اشترِ الطُعم من بقالة 24/7، اصطد السمك بالصنارة من رصيف ديل بيرو، نظّفه وعبّئه على الثلج ثم بِعه في سوق السمك.',
             steps = {
                 'تحدّث مع المشرف عند رصيف ديل بيرو لتسجّل دخولك.',
-                'اشترِ علب الطُعم من بقالة 24/7: كل علبة = سمكة واحدة (تحمل حوالي 24).',
+                'اشترِ علب الطُعم من بقالة 24/7: كل علبة = سمكة واحدة (حقيبتك تحمل 20، وصندوق سيارتك 20 أخرى أو أكثر).',
                 'في آخر الرصيف ترمي الصنارة وتخرج السمك.',
                 'على طاولة التنظيف تنظّف السمك وتقطّعه شرائح، ثم ترصّه على الثلج وتختم العلب.',
-                'بِع العلب في سوق السمك: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
+                'بِع العلب في سوق السمك: البيعة الكاملة (20 قطعة على الأقل) = جولة.',
             },
-            extra = 'في كل محطة اضغط E وانتظر: حركة العمل وشريط التقدّم ينجزان كل ما تحمله. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
-            payText = '41$ لكل علبة سمك',
-            hourText = '3,900$',
+            extra = 'أوقف سيارتك قرب كل محطة: المحطة تعمل على حقيبتك وصندوق السيارة معًا (اضغط E وانتظر). البيعة الصغيرة (أقل من 20) لا تُحسب جولة.',
+            payText = '30$ لكل علبة سمك',
+            hourText = '4,600$ مع سيارة 40 كغ',
             taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 },
-            perRound = 24,
+            perRound = 40,
             roundMinutes = 14,
-            xpRate = 0.154,
+            xpPerItem = 2.0,
             supplies = { 'fish_bait' },
             hq = {
                 label = 'رصيف الصيد', place = 'ديل بيرو',
@@ -433,7 +439,7 @@ local CONFIG = {
                   take = 'fish_fillet', give = 'fish_pack', game = 'icepack', stages = S.icepack, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'عبّأت %d علبة', lost = 'فسد %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع السمك', place = 'سوق السمك', blip = 431, spot = vec3(-1038.90, -1396.70, 5.55),
-                  pedModel = 's_m_y_dockwork_01', take = 'fish_pack', price = 41, seconds = 12, anim = { dict = 'mp_common', clip = 'givetake1_a' },
+                  pedModel = 's_m_y_dockwork_01', take = 'fish_pack', price = 30, seconds = 12, anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'تسلّم علب السمك...', sold = 'بعت %d علبة سمك' },
             },
         },
@@ -448,19 +454,19 @@ local CONFIG = {
             short = 'اشترِ بطاريات مصباح الرأس من بقالة 24/7، احفر الصخور في منجم ديفيس كوارتز، افرز الخام واصهره في المسبك ثم بِع النحاس والحديد والذهب.',
             steps = {
                 'تحدّث مع المشرف في منجم ديفيس كوارتز لتسجّل دخولك.',
-                'اشترِ بطاريات مصباح الرأس من بقالة 24/7: كل بطارية = صخرة واحدة (الصخور ثقيلة، تحمل حوالي 20).',
+                'اشترِ بطاريات مصباح الرأس من بقالة 24/7: كل بطارية = صخرة واحدة (حقيبتك تحمل 20، وصندوق سيارتك 20 أخرى أو أكثر).',
                 'عند جدار المنجم تحفر الصخور بالفأس.',
                 'عند حزام الفرز تفرز الخام وتغسله، ثم تصهره وتصبّه في القوالب في المسبك.',
                 'بِع السبائك في مكتب المسبك (نحاس وحديد، وأحيانًا ذهب): البيعة الكاملة = جولة.',
             },
-            extra = 'في كل محطة اضغط E وانتظر: حركة العمل وشريط التقدّم ينجزان كل ما تحمله. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
-            payText = 'نحاس 54$ · حديد 48$ · ذهب 280$',
-            hourText = '4,700$',
+            extra = 'أوقف سيارتك قرب كل محطة: المحطة تعمل على حقيبتك وصندوق السيارة معًا (اضغط E وانتظر). البيعة الصغيرة (أقل من 20) لا تُحسب جولة.',
+            payText = 'نحاس 37$ · حديد 34$ · ذهب 150$',
+            hourText = '5,800$ مع سيارة 40 كغ',
             taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 },
-            perRound = 20,
-            roundMinutes = 15,
-            xpRate = 0.128,
+            perRound = 40,
+            roundMinutes = 14,
+            xpPerItem = 2.4,
             supplies = { 'headlamp_battery' },
             hq = {
                 label = 'منجم ديفيس كوارتز', place = 'سان شيانسكي',
@@ -480,7 +486,7 @@ local CONFIG = {
                   giveMix = { { 'copper_bar', 60 }, { 'iron_bar', 35 }, { 'gold_bar', 5 } },
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'صببت %d سبيكة', lost = 'فسد %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع السبائك', place = 'مكتب المسبك', blip = 431, spot = vec3(1090.00, -1993.00, 30.90),
-                  pedModel = 's_m_y_construct_02', take = 'copper_bar', price = 54, takeAlso = { iron_bar = 48, gold_bar = 280 }, seconds = 12,
+                  pedModel = 's_m_y_construct_02', take = 'copper_bar', price = 37, takeAlso = { iron_bar = 34, gold_bar = 150 }, seconds = 12,
                   anim = { dict = 'mp_common', clip = 'givetake1_a' }, progress = 'يزن التاجر السبائك...', sold = 'بعت %d سبيكة' },
             },
         },
@@ -495,19 +501,19 @@ local CONFIG = {
             short = 'اشترِ بكرات الخيط من بقالة 24/7، اجمع الصوف من مزرعة غريبسيد، انسج القماش وخِط الملابس في المصنع ثم بِعها.',
             steps = {
                 'تحدّث مع المشرف في مصنع النسيج في لا ميسا لتسجّل دخولك.',
-                'اشترِ بكرات الخيط من بقالة 24/7: كل بكرة = قطعة ملابس واحدة (تحمل حوالي 24).',
+                'اشترِ بكرات الخيط من بقالة 24/7: كل بكرة = قطعة ملابس واحدة (حقيبتك تحمل 20، وصندوق سيارتك 20 أخرى أو أكثر).',
                 'في مزرعة غريبسيد تثبّت الخراف وتجزّ صوفها.',
                 'في المصنع تنسج القماش على النول، ثم تقصّه وتخيط الملابس على الماكينة.',
-                'بِع الملابس لمتجر بينكو: البيعة الكاملة (نصف حمولة على الأقل) = جولة.',
+                'بِع الملابس لمتجر بينكو: البيعة الكاملة (20 قطعة على الأقل) = جولة.',
             },
-            extra = 'في كل محطة اضغط E وانتظر: حركة العمل وشريط التقدّم ينجزان كل ما تحمله. البيعة الصغيرة (أقل من نصف حمولة) لا تُحسب جولة.',
-            payText = '63$ لكل قطعة',
-            hourText = '5,600$',
+            extra = 'أوقف سيارتك قرب كل محطة: المحطة تعمل على حقيبتك وصندوق السيارة معًا (اضغط E وانتظر). البيعة الصغيرة (أقل من 20) لا تُحسب جولة.',
+            payText = '45$ لكل قطعة',
+            hourText = '7,200$ مع سيارة 40 كغ',
             taskWord = { 'جولة', 'جولات' },
             levelSteps = { 0, 15, 40, 80, 140 },
-            perRound = 22,
+            perRound = 40,
             roundMinutes = 14,
-            xpRate = 0.107,
+            xpPerItem = 2.6,
             supplies = { 'thread_spool' },
             hq = {
                 label = 'مصنع النسيج', place = 'لا ميسا',
@@ -526,7 +532,7 @@ local CONFIG = {
                   take = 'fabric_roll', give = 'sewn_clothes', game = 'sew', stages = S.sew, seconds = 0,
                   anim = { dict = 'mini@repair', clip = 'fixing_a_ped' }, done = 'خِطت %d قطعة', lost = 'أفسدت %d' },
                 { id = 'sell', kind = 'sellall', label = 'بِع الملابس', place = 'متجر بينكو', blip = 431, spot = vec3(425.60, -806.30, 29.50),
-                  pedModel = 's_f_y_shop_low', take = 'sewn_clothes', price = 63, seconds = 12, anim = { dict = 'mp_common', clip = 'givetake1_a' },
+                  pedModel = 's_f_y_shop_low', take = 'sewn_clothes', price = 45, seconds = 12, anim = { dict = 'mp_common', clip = 'givetake1_a' },
                   progress = 'يعدّ المتجر القطع...', sold = 'بعت %d قطعة' },
             },
         },
