@@ -227,6 +227,13 @@ lib.callback.register('exti_police:server:chargeIssue', function(source, targetI
         end
     end
     if #picked ~= #order then return false, 'pick' end -- one of them is not in the list any more
+    -- EX_Tii (Moe): away from the prison gate an officer may only write offences that carry no jail time.
+    -- An offence with jail time is written at the gate, with the person cuffed (so nobody "fines away" a jail charge)
+    if not wantJail then
+        for _, o in ipairs(picked) do
+            if (tonumber(o.jail) or 0) > 0 then return false, 'jail_here' end
+        end
+    end
     local withBill = mode == 'fine' or mode == 'jail'
     if withBill and fine < 1 and not wantJail then return false, 'no_fine' end
     if withBill and fine < 1 then withBill = false end -- jail with free offences: no bill

@@ -94,11 +94,13 @@ const Charge = (() => {
         list.forEach((o) => {
             if (cat === 'all' && o.category !== last) { html += `<div class="ch-group">${esc(o.category)}</div>`; last = o.category; }
             const on = picked.includes(o.id);
-            html += `<div class="ch-row ${on ? 'on' : ''}" data-pick="${o.id}">
+            // away from the prison gate only offences without jail time can be written
+            const locked = !data.atPrison && o.jail > 0;
+            html += `<div class="ch-row ${on ? 'on' : ''} ${locked ? 'locked' : ''}" ${locked ? 'title="عند بوابة السجن فقط"' : `data-pick="${o.id}"`}>
                 <span class="ch-box">${CHECK}</span>
                 <span class="ch-label">${esc(o.label)}</span>
                 <span class="ch-fine">${money(o.fine)}</span>
-                <span class="ch-jail ${o.jail > 0 ? '' : 'none'}">${o.jail > 0 ? `سجن ${o.jail} د` : 'بلا سجن'}</span>
+                <span class="ch-jail ${o.jail > 0 ? '' : 'none'}">${o.jail > 0 ? `سجن ${o.jail} د${locked ? ' · عند البوابة' : ''}` : 'بلا سجن'}</span>
             </div>`;
         });
         el.innerHTML = html;
@@ -116,7 +118,7 @@ const Charge = (() => {
             <div class="ch-total jail"><small>السجن${data.atPrison ? '' : ' <em>· عند بوابة السجن</em>'}</small><b>${minutes(t.jail)}</b></div>`;
         const actions = root.querySelector('#chActions');
         const foot = root.querySelector('#chFoot');
-        const canFine = !busy && picked.length > 0 && t.fine >= 1 && data.bank !== false;
+        const canFine = !busy && picked.length > 0 && t.fine >= 1 && data.bank !== false && t.jail < 1;   // (an offence with jail time is never "fine only")
         const canJail = !busy && picked.length > 0 && t.jail >= 1 && data.atPrison && data.target && data.target.cuffed;
         if (actions) {
             if (data.atPrison) {
@@ -133,7 +135,7 @@ const Charge = (() => {
             if (data.bank === false) foot.textContent = 'البنك لا يعمل الآن: لا يمكن تحرير غرامة';
             else if (data.atPrison && !(data.target && data.target.cuffed)) foot.textContent = 'للسجن: قيّده أولًا (Z → الشرطة → تقييد)';
             else if (data.atPrison) foot.textContent = '"سجن فقط" إذا حرّرت الغرامة في الشارع من قبل. الغرامة تصل إلى حساب المواطن في البنك';
-            else foot.textContent = 'الغرامة تصل إلى حساب المواطن في البنك، يدفعها من الفرع أو الصراف. السجن: خذه إلى بوابة بولينغبروك';
+            else foot.textContent = 'هنا تُحرَّر الغرامات التي بلا سجن فقط. المخالفات التي عليها سجن: قيّده وخذه إلى بوابة بولينغبروك';
         }
         const errEl = root.querySelector('#chErr');
         if (errEl) errEl.textContent = err;

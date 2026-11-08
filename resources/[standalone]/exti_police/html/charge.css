@@ -87,3 +87,5 @@
 .ch-done-check { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); }
 .ch-done-card b { font-size: 17px; }
 .ch-done-card span { font-size: 13px; color: var(--muted); }
+.ch-row.locked { opacity: 0.45; cursor: not-allowed; }
+.ch-row.locked:hover { border-color: transparent; }

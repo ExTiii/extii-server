@@ -10,6 +10,7 @@ local P = Config.prison
 local PRISON_ERRORS = {
     not_at_prison = 'السجن يكون عند بوابة بولينغبروك فقط: خذه إلى هناك',
     no_jail = 'هذه المخالفات بلا سجن',
+    jail_here = 'مخالفة عليها سجن تُحرَّر عند بوابة بولينغبروك فقط (والشخص مقيّد)',
     not_inmate = 'أنت لست سجينًا',
 }
 for k, v in pairs(PRISON_ERRORS) do POL.ERRORS[k] = v end
