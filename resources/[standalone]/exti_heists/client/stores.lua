@@ -15,15 +15,22 @@ CreateThread(function()
     end
 end)
 
-local phases, safeTimers, spots, downs = {}, {}, {}, {}
+local phases, safeTimers, spots, downs, tillWait = {}, {}, {}, {}, {}
 local function readState()
     phases = GlobalState['exti_heists:stores'] or {}
+    tillWait = GlobalState['exti_heists:tillWait'] or {}
     safeTimers = GlobalState['exti_heists:safes'] or {}
     spots = GlobalState['exti_heists:spots'] or {}
     downs = GlobalState['exti_heists:clerkDown'] or {}
 end
 readState()
 AddStateBagChangeHandler('exti_heists:stores', 'global', function(_, _, v) phases = v or {} end)
+AddStateBagChangeHandler('exti_heists:tillWait', 'global', function(_, _, v) tillWait = v or {} end)
+-- seconds until this store's till can be robbed again (0 = now)
+local function tillWaitLeft(i)
+    local untilAt = tillWait[i] or tillWait[tostring(i)]
+    return untilAt and math.max(0, untilAt - GetCloudTimeAsInt()) or 0
+end
 AddStateBagChangeHandler('exti_heists:clerkDown', 'global', function(_, _, v) downs = v or {} end)
 AddStateBagChangeHandler('exti_heists:safes', 'global', function(_, _, v) safeTimers = v or {} end)
 AddStateBagChangeHandler('exti_heists:spots', 'global', function(_, _, v) spots = v or {} end)
@@ -280,8 +287,14 @@ CreateThread(function()
                 if clerk then ClearEntityLastDamageEntity(clerk) end
             end
 
+            -- 0.5) this store was robbed a little while ago: say so, and nothing starts until it opens again
+            local waitLeft = (not mine) and tillWaitLeft(near) or 0
+            if waitLeft > 0 and (not ph or ph == 'emptied') and #(here - clerkPos(s)) < 6.0 then
+                text = ('سُرق هذا المحل قبل قليل · يفتح بعد %d:%02d'):format(waitLeft // 60, waitLeft % 60)
+            end
+
             -- 1) a gun on the clerk starts it
-            if not ph and not mine and clerk and not downs[near] and HC.aimingAt(clerk, 9.0) and GetGameTimer() - lastTry > 4000 then
+            if not ph and not mine and waitLeft == 0 and clerk and not downs[near] and HC.aimingAt(clerk, 9.0) and GetGameTimer() - lastTry > 4000 then
                 lastTry = GetGameTimer()
                 TriggerServerEvent('exti_heists:server:holdUp', near)
             end
@@ -312,7 +325,7 @@ CreateThread(function()
             if atTill(here, s) and not tillDone(near) and ph ~= 'emptied' then
                 if ph == 'open' and mine and mine.i == near then
                     text, act = '[E] أفرغ الصندوق', function() grabTill(near, s) end
-                elseif (ph == 'cower' and mine and mine.i == near) or (not ph and not mine and HC.count('lockpick') > 0 and not IsPedArmed(cache.ped, 4)) then
+                elseif (ph == 'cower' and mine and mine.i == near) or (not ph and not mine and waitLeft == 0 and HC.count('lockpick') > 0 and not IsPedArmed(cache.ped, 4)) then
                     text, act = '[E] اكسر قفل الصندوق', function() pickTill(near, s) end
                 end
             end

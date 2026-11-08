@@ -35,6 +35,13 @@ local function publish()
     local d = {}
     for i in pairs(down) do d[i] = true end
     GlobalState['exti_heists:clerkDown'] = d
+    -- the tills' waiting times (when each store opens again, in epoch seconds): the client shows them at the store
+    local cd = {}
+    for i in pairs(stores) do
+        local left = H.cooldownLeft(storeKey(i, 'till'))
+        if left > 0 then cd[i] = H.now() + math.floor(left) end
+    end
+    GlobalState['exti_heists:tillWait'] = cd
 end
 
 CreateThread(function()
@@ -133,7 +140,7 @@ RegisterNetEvent('exti_heists:server:holdUp', function(i)
     if H.isCopOnDuty(src) then return no('police on duty', 'أنت شرطي في الخدمة: اخرج من الخدمة لتسرق') end
     if not isFirearm(src) then return no('no firearm', 'تحتاج سلاحًا ناريًا (مسدس أو رشاش) لتهدّده') end
     local left = H.cooldownLeft(storeKey(i, 'till'))
-    if left > 0 then return H.notify(src, ('أُفرغ الصندوق قبل قليل · %s'):format(H.mmss(left)), 'error') end
+    if left > 0 then return no('till on cooldown', ('سُرق هذا المحل قبل قليل · يفتح بعد %s'):format(H.mmss(left))) end
     local mode = H.modeFor(R.tier)
     if not mode then return no('no mode') end
     print(('[exti_heists] hold-up started: %s (#%s) store %d %s'):format(GetPlayerName(src) or '?', src, i, st.area or ''))
@@ -243,7 +250,7 @@ lib.callback.register('exti_heists:server:grabTill', function(src, i)
     H.touch(src, clerkPos(stores[i]))
     local pay = H.payOf(R.pay, st.mode)
     H.giveLoot(src, 'black_money', pay)
-    H.setCooldown(storeKey(i, 'till'), R.cooldownMinutes * 60)
+    H.setCooldown(storeKey(i, 'till'), R.cooldownMinutes * 60); publish()
     H.repFor(src, R.tier, st.mode)
     H.log(src, 'store_till', ('%s · $%d · %s'):format(stores[i].area, pay, H.modeText(st.mode)))
     if H.contract then H.contract(src, 'store') end
@@ -301,7 +308,7 @@ lib.callback.register('exti_heists:server:tillPickEnd', function(src, token, pas
     H.touch(src, clerkPos(stores[i]))
     local pay = H.payOf(R.pay, st.mode)
     H.giveLoot(src, 'black_money', pay)
-    H.setCooldown(storeKey(i, 'till'), R.cooldownMinutes * 60)
+    H.setCooldown(storeKey(i, 'till'), R.cooldownMinutes * 60); publish()
     H.addSkill(src, 'lockpick')
     H.repFor(src, R.tier, st.mode)
     H.log(src, 'store_till', ('%s · $%d (lockpick) · %s'):format(stores[i].area, pay, H.modeText(st.mode)))

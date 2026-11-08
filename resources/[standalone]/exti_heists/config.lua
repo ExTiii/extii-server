@@ -110,7 +110,7 @@ Config.register = {
     shotResetMinutes = 5,     -- shot: he stays down this long, then the shop opens again
     grabSeconds = 7,          -- emptying the till
     pay = { 600, 1200 },      -- black_money
-    cooldownMinutes = 0,      -- per store (Moe: no waiting time on the tills; only the 90 s while the clerk is shaken)
+    cooldownMinutes = 20,     -- per store: the SAME store waits this long after its till is emptied (no limit per player)
     reportDelay = 40,         -- no alarm pressed: the clerk calls the police this long after you leave the till
 }
 -- where each store's back-room safe is (GTA's own store rooms). A store takes the one within 14 m of its clerk.
