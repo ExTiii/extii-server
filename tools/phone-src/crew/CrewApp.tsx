@@ -17,6 +17,7 @@ import {
   Users,
 } from 'lucide-react';
 import { AppWrapper } from '@ui/components';
+import { toggleKeys } from '@ui/components/Input';
 import { cn } from '@utils/css';
 import { CityToast } from '../CityUI';
 import { CrewData, CrewHeist, fetchCity, MOCK_CREW } from '../cityNui';
@@ -257,6 +258,9 @@ export const CrewApp: React.FC = () => {
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    onFocus={() => toggleKeys(false)}
+                    onMouseUp={() => toggleKeys(false)}
+                    onBlur={() => toggleKeys(true)}
                     maxLength={24}
                     placeholder="اسم الطاقم"
                     className="mt-3 w-full rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2.5 text-[15px] text-[#f1efe9] outline-none placeholder:text-[#6d6a64] focus:border-[#e8b547]/60"
@@ -313,6 +317,9 @@ export const CrewApp: React.FC = () => {
                         <input
                           value={phone}
                           onChange={(e) => setPhone(e.target.value.replace(/[^\d-]/g, ''))}
+                          onFocus={() => toggleKeys(false)}
+                          onMouseUp={() => toggleKeys(false)}
+                          onBlur={() => toggleKeys(true)}
                           inputMode="numeric"
                           placeholder="555-1234"
                           dir="ltr"
