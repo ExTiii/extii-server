@@ -91,21 +91,21 @@ local function noclipLoop()
         local right = vec3(math.cos(rz), math.sin(rz), 0.0)
         if IsDisabledControlJustPressed(0, 241) then speed = math.min(12.0, speed * 1.5) end      -- wheel up
         if IsDisabledControlJustPressed(0, 242) then speed = math.max(0.1, speed / 1.5) end      -- wheel down
-        local mult = (IsDisabledControlPressed(0, 21) and 4.0) or (IsDisabledControlPressed(0, 36) and 0.25) or 1.0   -- shift fast, ctrl slow
+        local mult = (IsDisabledControlPressed(0, 21) and 4.0) or (IsDisabledControlPressed(0, 19) and 0.25) or 1.0   -- shift fast, alt slow
         local p = GetEntityCoords(ent)
         local move = vec3(0, 0, 0)
         if IsDisabledControlPressed(0, 32) then move = move + fwd end        -- W
         if IsDisabledControlPressed(0, 33) then move = move - fwd end        -- S
         if IsDisabledControlPressed(0, 34) then move = move - right end      -- A
         if IsDisabledControlPressed(0, 35) then move = move + right end      -- D
-        if IsDisabledControlPressed(0, 44) then move = move + vec3(0, 0, 1) end   -- Q up
-        if IsDisabledControlPressed(0, 38) then move = move - vec3(0, 0, 1) end   -- E down
+        if IsDisabledControlPressed(0, 22) then move = move + vec3(0, 0, 1) end   -- Space up
+        if IsDisabledControlPressed(0, 36) then move = move - vec3(0, 0, 1) end   -- Ctrl down
         p = p + move * speed * mult
         SetEntityCoordsNoOffset(ent, p.x, p.y, p.z, true, true, true)
         SetEntityHeading(ent, cam.z)
         -- the help line, GTA style
         SetTextFont(4); SetTextScale(0.36, 0.36); SetTextColour(255, 255, 255, 220); SetTextOutline()
-        BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(('NOCLIP  W A S D  ·  Q / E  ·  Shift / Ctrl  ·  عجلة الفأرة: %.1f'):format(speed)); EndTextCommandDisplayText(0.4, 0.95)
+        BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(('NOCLIP  W A S D  ·  Space / Ctrl  ·  Shift سريع · Alt بطيء  ·  عجلة الفأرة: %.1f'):format(speed)); EndTextCommandDisplayText(0.4, 0.95)
     end
     SetEntityCollision(ent, true, true); FreezeEntityPosition(ent, false)
     if not state.god then SetEntityInvincible(ent, false) end
@@ -132,6 +132,17 @@ lib.onCache('ped', function(ped)
     if state.god then SetEntityInvincible(ped, true) end
     if state.invisible then SetEntityVisible(ped, false, false) end
 end)
+
+-- EX_Tii (Moe): noclip on its own key (the server checks the power, same as from the panel)
+RegisterCommand('extinoclip', function()
+    if open then return end
+    if state.spec then return end                  -- not while spectating
+    local on = not state.noclip
+    if setSelf('noclip', on) then
+        lib.notify({ description = on and 'Noclip: تشغيل' or 'Noclip: إيقاف', type = 'inform' })
+    end
+end, false)
+RegisterKeyMapping('extinoclip', 'Noclip (EX_Tii)', 'keyboard', Config.noclipKey)
 
 RegisterNUICallback('self', function(req, cb)
     local what, on = req.what, req.on == true

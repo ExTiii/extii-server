@@ -5,6 +5,8 @@ Config = {}
 
 -- the key (players can change it in GTA Settings > Key Bindings > FiveM)
 Config.key = 'F1'
+-- noclip on/off with one key (staff with the noclip power only; same key-bindings page to change it)
+Config.noclipKey = 'F9'
 
 -- EX_Tii (Moe): 5 staff ranks. Each rank can do everything the rank below it can, plus its own list.
 -- "owner" = anyone with group.admin in server.cfg (you), or a staff member you made owner in the panel.
