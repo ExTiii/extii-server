@@ -143,6 +143,14 @@ RegisterNetEvent('exti_heists:server:holdUp', function(i)
     TriggerClientEvent('exti_heists:client:holdUp', src, i, R.aimSeconds, H.modeText(mode))
     H.log(src, 'store_holdup', ('%s #%d · %s'):format(st.area, i, H.modeText(mode)))
     local started = state[i]
+    -- EX_Tii (Moe): a gun was pointed in a store: the police hear about it after reportSeconds, whatever happens next
+    SetTimeout((R.reportSeconds or 10) * 1000, function()
+        if not started.alarm then
+            started.alarm = true
+            call(i, C.calls.register, 'شاهد في المتجر', src, nil, started.mode)
+            H.log(src, 'store_reported', st.area)
+        end
+    end)
     SetTimeout(R.aimSeconds * 1000, function()
         if state[i] == started and started.phase == 'held' then
             started.phase = 'open'; started.openAt = H.now(); publish()

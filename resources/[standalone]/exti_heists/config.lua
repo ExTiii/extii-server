@@ -103,7 +103,8 @@ Config.storeLayouts = {
 }
 Config.register = {
     tier = 1,
-    aimSeconds = 6,           -- keep the gun on him while he opens the till
+    aimSeconds = 13,          -- keep the gun on him while he opens the till (Moe: 13)
+    reportSeconds = 10,       -- EX_Tii (Moe): the police are told 10 s after the gun is pointed, whatever happens next
     lookAwaySeconds = 2,      -- look away this long: he ALWAYS presses the silent alarm (you get a warning first)
     cowerSeconds = 6,         -- look away this long: he drops behind the counter, lockpick the till
     shotResetMinutes = 5,     -- shot: he stays down this long, then the shop opens again
