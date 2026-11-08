@@ -9,9 +9,8 @@ local found = {}   -- [model .. ':' .. nameHash] = { comp, drawable, texture } (
 -- the game's shop record of a named piece (what GTA Online's stores read): which slot, drawable and
 -- texture it is. The record is nine 8-byte-aligned ints written into a buffer; nil when it isn't for this slot
 -- (the buffer must be a string.blob: natives write into those, not into ordinary strings)
-local function readRecord(nameHash)
-    if not string.blob then return nil end
-    local buf = string.blob(8 * 10 + 64)
+local function readRecord(nameHash, plain)
+    local buf = (plain or not string.blob) and string.rep('\0', 8 * 25) or string.blob(8 * 25)
     local ok = pcall(Citizen.InvokeNative, 0x74C0E2A57EC66760, nameHash, buf)   -- GET_SHOP_PED_COMPONENT
     if not ok then return nil end
     local v = {}
@@ -150,6 +149,10 @@ RegisterCommand('extilinked', function()
         local hash = GetHashNameForComponent(ped, comp, d, t)
         local n = hash ~= 0 and GetShopPedApparelForcedComponentCount(hash) or 0
         print(('[extilinked] comp %d: drawable %d texture %d hash %s forced %d'):format(comp, d, t, tostring(hash), n))
+        if hash ~= 0 then
+            local a, b = readRecord(hash), readRecord(hash, true)
+            print(('[extilinked]   its own record (blob) [%s]  (plain) [%s]'):format(a and table.concat(a, ' ') or '-', b and table.concat(b, ' ') or '-'))
+        end
         for i = 0, (n or 0) - 1 do
             local nameHash, enumValue, slot = GetForcedComponent(hash, i)
             local piece
