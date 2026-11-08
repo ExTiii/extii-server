@@ -217,7 +217,7 @@
     // listen for the contact click, stop on it and press SPACE. Wrong = the wheels reset.
     function safedial(c, p) {
         const m = META.safe_bg;
-        c.bg('safe_bg.webp');
+        c.bg('safe_bg.webp?v=2');   // (v=2: thin red mark)
         const n = Math.max(2, Math.min(4, p.numbers || 3));
         const combo = [];
         while (combo.length < n) {
@@ -291,7 +291,9 @@
             const speed = keys.ShiftLeft || keys.ShiftRight ? 26 : 140;   // degrees a second
             if (keys.KeyD) turn(Math.min(3.6, speed * dt));
             if (keys.KeyA) turn(-Math.min(3.6, speed * dt));
-            put(dial, cx, cy, da.ax, da.ay, angle * Math.PI / 180);
+            // EX_Tii (Moe): the dial always sits on a whole number, exactly under the red mark (never between two)
+            const snapped = Math.round(angle / 3.6) * 3.6;
+            put(dial, cx, cy, da.ax, da.ay, snapped * Math.PI / 180);
             read.textContent = String(valueOf(angle)).padStart(2, '0');
             // the contact amplifier: louder when you are close, the right way
             const v = valueOf(angle);
