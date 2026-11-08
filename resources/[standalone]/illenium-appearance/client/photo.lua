@@ -7,6 +7,7 @@
 
 local client = client
 local running, stopAsked = false, false
+local redoAll = false   -- /extiphotos ... redo: photograph pieces that already have a picture too
 local pending, nextId = {}, 0
 
 local GENDERS = { m = "mp_m_freemode_01", f = "mp_f_freemode_01" }
@@ -344,7 +345,6 @@ restore = function(back, look)
     Framework.CachePed()
 end
 
-local redoAll = false
 RegisterNetEvent("illenium-appearance:client:photoTool", function(g, key, redo)
     redoAll = redo == true
     if g == "stop" then
