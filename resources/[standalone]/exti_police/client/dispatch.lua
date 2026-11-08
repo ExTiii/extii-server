@@ -22,6 +22,11 @@ local function placeOf(x, y, z)
     local zone = GetNameOfZone(x, y, z)
     local area = zone and GetLabelText(zone) or ''
     if area == 'NULL' then area = '' end
+    -- the postal code (exti_postals): "رمز 123"
+    if GetResourceState('exti_postals') == 'started' then
+        local ok, code = pcall(function() return exports.exti_postals:Get(x, y) end)
+        if ok and code then area = (area ~= '' and (area .. ' · ') or '') .. 'رمز ' .. code end
+    end
     return street, area
 end
 
