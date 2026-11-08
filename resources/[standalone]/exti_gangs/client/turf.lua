@@ -297,6 +297,7 @@ local function drawZone(id, oldName)
     lib.showTextUI('[E] نقطة هنا · [X] احذف الأخيرة · [G] احفظ · [H] إلغاء', { position = 'top-center' })
     while drawing do
         local here = GetEntityCoords(PlayerPedId())
+        lib.showTextUI('[E] نقطة هنا · [X] احذف الأخيرة · [G] احفظ · [H] إلغاء', { position = 'top-center' })   -- (renewed: you walk far while drawing)
         for _, p in ipairs(points) do DrawMarker(1, p.x, p.y, p.z - 1.0, 0, 0, 0, 0, 0, 0, 0.6, 0.6, 2.0, 229, 72, 77, 160, false, false, 2, false, nil, nil, false) end
         if #points >= 2 then
             local open = {}

@@ -56,13 +56,13 @@ end
 ---------------------------------------------------------------------------
 -- "[E] ..." line
 ---------------------------------------------------------------------------
-local shownText
+local shownText, shownAt = nil, 0
 function POL.prompt(text)
-    -- another script may have hidden it: show it again
+    -- another script may have hidden it: show it again (and every second: exti_interact drops a line its owner stopped renewing)
     local open, cur = lib.isTextUIOpen()
-    if shownText == text and (not text or (open and cur == text)) then return end
+    if shownText == text and (not text or (open and cur == text and GetGameTimer() - shownAt < 1000)) then return end
     local mine = shownText
-    shownText = text
+    shownText, shownAt = text, GetGameTimer()
     if text then lib.showTextUI(text)
     elseif mine and open and cur == mine then lib.hideTextUI() end   -- (never someone else's text)
 end

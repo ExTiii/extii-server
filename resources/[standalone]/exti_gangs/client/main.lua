@@ -439,12 +439,13 @@ local function points()
     return list
 end
 
-local shown = nil
+local shown, shownAt = nil, 0
 local function showPrompt(text)
     local open, cur = lib.isTextUIOpen()
-    if shown == text and (not text or (open and cur == text)) then return end
+    -- (sent again every second: exti_interact drops a line its owner stopped renewing)
+    if shown == text and (not text or (open and cur == text and GetGameTimer() - shownAt < 1000)) then return end
     local mine = shown
-    shown = text
+    shown, shownAt = text, GetGameTimer()
     if text then lib.showTextUI(text, { position = 'left-center' })
     elseif mine and open and cur == mine then lib.hideTextUI() end   -- (never someone else's text)
 end

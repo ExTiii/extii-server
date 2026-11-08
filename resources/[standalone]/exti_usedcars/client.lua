@@ -11,9 +11,11 @@ local function list() return GlobalState['exti_usedcars:list'] or {} end
 local function money(n) return lib.math.groupdigits(n) end
 local function notify(kind, text, ms) lib.notify({ type = kind, description = text, duration = ms }) end
 
+local promptAt = 0
 local function showPrompt(text)
-    if prompt == text then return end
-    prompt = text
+    -- (sent again every second: exti_interact drops a line its owner stopped renewing)
+    if prompt == text and GetGameTimer() - promptAt < 1000 then return end
+    prompt, promptAt = text, GetGameTimer()
     lib.showTextUI(text)
     LocalPlayer.state:set('extiJobPrompt', true, false)
 end

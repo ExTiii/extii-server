@@ -435,10 +435,11 @@ local function drawCircle(x, y, z, radius, here, arrow)
 end
 
 -- one "[E] ..." line at a time
-local shownText
+local shownText, shownAt = nil, 0
 local function showPrompt(text)
-    if shownText == text then return end
-    shownText = text
+    -- (sent again every second: exti_interact drops a line its owner stopped renewing)
+    if shownText == text and GetGameTimer() - shownAt < 1000 then return end
+    shownText, shownAt = text, GetGameTimer()
     lib.showTextUI(text)
 end
 local function hidePrompt()

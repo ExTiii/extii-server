@@ -55,9 +55,15 @@ local function show(res, text, options)
     res = res or 'unknown'
     local key, label = parse(text)
     local e = entries[res]
-    if e and e.text == text then return end
+    local now, here = GetGameTimer(), GetEntityCoords(PlayerPedId())
+    if e and e.text == text then
+        -- the same line again = the owner still wants it: renew its lease (see the watchdog below)
+        e.at, e.anchor, e.inCar = now, here, IsPedInAnyVehicle(PlayerPedId(), false)
+        return
+    end
     if not e then order[#order + 1] = res end
-    entries[res] = { text = text, key = key, label = label, selectable = key ~= nil and key:upper() == 'E' }
+    entries[res] = { text = text, key = key, label = label, selectable = key ~= nil and key:upper() == 'E',
+        at = now, anchor = here, inCar = IsPedInAnyVehicle(PlayerPedId(), false) }
     fixSelection()
     dirty = true
 end
@@ -146,6 +152,33 @@ CreateThread(function()
             if (not inCar and moved > 25.0) or moved > 120.0 or (dead and not wasDead) then clearAll() end
         end
         last, wasDead = here, dead
+    end
+end)
+
+---------------------------------------------------------------------------
+-- watchdog: a prompt whose owner stopped talking is dropped. Every prompt belongs to a place (a till,
+-- a pump, a door...): when you are far from where it appeared (20 m on foot, 80 m in a car) and the
+-- owning script hasn't shown it again for 3 s, the script is gone or broken: the line goes away.
+-- Scripts that keep a line while you move (a chop route, a test drive...) show it again every tick.
+---------------------------------------------------------------------------
+local STALE_MS, FAR_FOOT, FAR_CAR = 3000, 20.0, 80.0
+CreateThread(function()
+    while true do
+        Wait(500)
+        if #order > 0 then
+            local ped = PlayerPedId()
+            local here = GetEntityCoords(ped)
+            local inCar = IsPedInAnyVehicle(ped, false)
+            local now = GetGameTimer()
+            local drop
+            for res, e in pairs(entries) do
+                if e.anchor and now - (e.at or 0) > STALE_MS then
+                    local far = (inCar or e.inCar) and FAR_CAR or FAR_FOOT
+                    if #(here - e.anchor) > far then drop = drop or {}; drop[#drop + 1] = res end
+                end
+            end
+            if drop then for _, res in ipairs(drop) do hide(res) end end
+        end
     end
 end)
 

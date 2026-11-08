@@ -32,7 +32,7 @@ function HC.busy() return playing ~= nil end
 ---------------------------------------------------------------------------
 -- several loops (stores, houses, ATMs, the jewelry store) each own a prompt; the first one that has
 -- something to say is shown. HC.prompt(nil) with no owner (an action starting) clears them all.
-local shown = nil
+local shown, shownAt = nil, 0
 local owners, ORDER = {}, { 'vault', 'bigbank', 'truck', 'stash', 'yacht', 'prep', 'jewel', 'atm', 'houses', 'stores', 'jobs', 'hostage' }
 function HC.prompt(text, owner)
     if owner then owners[owner] = text else owners = {} end
@@ -44,8 +44,9 @@ function HC.prompt(text, owner)
     -- (tell the shopkeeper script a robbery/heist prompt is up: it stays quiet and ignores E)
     if (want ~= nil) ~= (LocalPlayer.state.extiPrompt == true) then LocalPlayer.state:set('extiPrompt', want ~= nil, false) end
     if want then
-        if want == shown and open and cur == want then return end
-        shown = want
+        -- (shown again every second: exti_interact drops a line its owner stopped renewing)
+        if want == shown and open and cur == want and GetGameTimer() - shownAt < 1000 then return end
+        shown, shownAt = want, GetGameTimer()
         lib.showTextUI(want, { position = 'left-center' })
     else
         if shown and open and cur == shown then lib.hideTextUI() end

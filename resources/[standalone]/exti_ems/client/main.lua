@@ -76,11 +76,11 @@ end
 ---------------------------------------------------------------------------
 -- "[E] ..." line
 ---------------------------------------------------------------------------
-local shownText
+local shownText, shownAt = nil, 0
 function EMS.prompt(text)
-    -- another script (e.g. the hospital beds) may have hidden it: show it again
-    if shownText == text and (not text or lib.isTextUIOpen()) then return end
-    shownText = text
+    -- another script may have hidden it: show it again (and every second: exti_interact drops a line its owner stopped renewing)
+    if shownText == text and (not text or (lib.isTextUIOpen() and GetGameTimer() - shownAt < 1000)) then return end
+    shownText, shownAt = text, GetGameTimer()
     if text then lib.showTextUI(text) else lib.hideTextUI() end
 end
 

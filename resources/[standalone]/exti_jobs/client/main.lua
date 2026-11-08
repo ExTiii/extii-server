@@ -81,12 +81,12 @@ function EXJ.pressedE()
     return (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and not isDown()
 end
 
-local promptOwner, promptText = nil, nil
+local promptOwner, promptText, promptAt = nil, nil, 0
 function EXJ.prompt(owner, text)
     if isDown() then return EXJ.clearPrompt() end
-    -- (shown again if another script hid the text box meanwhile)
-    if promptOwner == owner and promptText == text and lib.isTextUIOpen() then return end
-    promptOwner, promptText = owner, text
+    -- (shown again if another script hid the text box meanwhile, and every second: exti_interact drops a line its owner stopped renewing)
+    if promptOwner == owner and promptText == text and lib.isTextUIOpen() and GetGameTimer() - promptAt < 1000 then return end
+    promptOwner, promptText, promptAt = owner, text, GetGameTimer()
     lib.showTextUI(text)
     -- (shops and other E prompts on the same spot stay quiet while a job prompt is up)
     if LocalPlayer.state.extiJobPrompt ~= true then LocalPlayer.state:set('extiJobPrompt', true, false) end
