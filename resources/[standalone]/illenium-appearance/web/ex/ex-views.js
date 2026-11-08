@@ -222,6 +222,13 @@ async function pick(cat, drawable, texture) {
         const key = isProp ? 'prop_id' : 'component_id';
         const i = list.findIndex((x) => x[key] === id); if (i >= 0) list[i] = res;
     }
+    // a jacket brings its own arms and undershirt (the game's own data): they change with it
+    if (!isProp && res && Array.isArray(res.linked)) {
+        res.linked.forEach((l) => {
+            const c = compOf(S.cur, l.component_id); if (!c) return;
+            c.drawable = l.drawable; c.texture = l.texture;
+        });
+    }
     // un-strip that part of the body: you picked something to wear on it
     S.stripped = {};
     S.keepScroll = true;
@@ -244,7 +251,8 @@ function cart() {
         const isProp = cat[0] === 'p', id = +cat.slice(1);
         const a = isProp ? propOf(S.cur, id) : compOf(S.cur, id);
         const removed = isProp ? a.drawable === -1 : (a.drawable === 0 && FREE_OFF.includes(cat));
-        lines.push({ cat, label: catInfo(cat).label, d: a.drawable, t: a.texture, price: removed ? 0 : priceOf(cat), removed });
+        const free = removed || ((cat === 'c3' || cat === 'c8') && changed('c11'));   // (arms/undershirt come free with a jacket; the server prices it the same way)
+        lines.push({ cat, label: catInfo(cat).label, d: a.drawable, t: a.texture, price: free ? 0 : priceOf(cat), removed });
     });
     return lines;
 }

@@ -12,6 +12,7 @@ client_scripts {
   "@support-arabic/escaping.lua",
   "game/constants.lua",
   "game/util.lua",
+  "game/linked.lua",
   "game/customization.lua",
   "game/nui.lua",
   "client/outfits.lua",

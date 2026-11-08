@@ -386,10 +386,17 @@ local FREE_OFF = { [1] = true, [5] = true, [7] = true, [9] = true, [10] = true }
 local function cartTotal(old, new)
     local total = 0
     local oc, nc = byId(old.components, "component_id"), byId(new.components, "component_id")
+    local function differs(id)
+        local o, n = oc[id], nc[id]
+        return n ~= nil and (not o or tonumber(o.drawable) ~= tonumber(n.drawable) or tonumber(o.texture) ~= tonumber(n.texture))
+    end
+    -- EX_Tii (Moe): a jacket brings its own arms (3) and undershirt (8) with it (the game's clothing data),
+    -- so when the jacket changes those two come free (the screen prices them the same way)
+    local withJacket = differs(11)
     for id, n in pairs(nc) do
         local price = Config.ExtiPrices["c" .. id] or 0
         local o = oc[id]
-        local off = tonumber(n.drawable) == 0 and FREE_OFF[id]
+        local off = (tonumber(n.drawable) == 0 and FREE_OFF[id]) or (withJacket and (id == 3 or id == 8))
         if price > 0 and not off and (not o or tonumber(o.drawable) ~= tonumber(n.drawable) or tonumber(o.texture) ~= tonumber(n.texture)) then
             total = total + price
         end

@@ -255,7 +255,19 @@ local function run(onlyG, onlyKey)
                         if have[d + 1] then
                             skipped = skipped + 1
                         else
-                            local okP, data = pcall(function() setPiece(ped, part, d); return shoot() end)
+                            local okP, data = pcall(function()
+                                if part.comp == 11 then
+                                    -- a jacket: its own arms and undershirt from the game's data (game/linked.lua); the base ones otherwise
+                                    SetPedComponentVariation(ped, 3, BASE[g][3], 0, 0)
+                                    SetPedComponentVariation(ped, 8, part.under and part.under[g] or BASE[g][8], 0, 0)
+                                    setPiece(ped, part, d)
+                                    client.applyLinked(ped, 11, d, 0)
+                                    Wait(150)
+                                else
+                                    setPiece(ped, part, d)
+                                end
+                                return shoot()
+                            end)
                             if okP and save(("%s-%s-%d"):format(g, part.key, d), data) then made = made + 1
                             else failed = failed + 1; print(("[photo tool] no picture for %s-%s-%d%s"):format(g, part.key, d, okP and "" or (": " .. tostring(data)))) end
                             if (d + 1) % 25 == 0 then print(("[photo tool] %s %s: %d / %d"):format(g, part.key, d + 1, count)) end
