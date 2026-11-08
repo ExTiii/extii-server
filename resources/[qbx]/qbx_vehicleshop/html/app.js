@@ -40,6 +40,9 @@ const ICON = {
     rotate: (s) => svg('<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4.5h-4.5"/>', s),
     seat: (s) => svg('<path d="M7 4h5l1 9h5l1 5H8z"/><path d="M8 18v2.5M18 18v2.5"/>', s),
     info: (s) => svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>', s),
+    flag: (s) => svg('<path d="M5 21V4"/><path d="M5 4h13l-2.5 4 2.5 4H5"/><path d="M8 4v8M11 4v8M14 4v8"/>', s),
+    bolt: (s) => svg('<path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/>', s),
+    muscle: (s) => svg('<path d="M3 13.5h3l2-4h8l2 4h3v3h-2.2a2.3 2.3 0 0 1-4.6 0H9.8a2.3 2.3 0 0 1-4.6 0H3z"/><path d="M9 9.5l1-3h4l1 3"/>', s),
     paint: (s) => svg('<path d="M4 14.5c3-.5 4.5 1 4.5 3.5 0 1.5-1 2.5-2.5 2.5H4z"/><path d="M8.5 16L19 5.5a1.6 1.6 0 0 1 2.3 2.3L10.8 18.3"/>', s),
 };
 const catIcon = (name, s) => (ICON[name] || ICON.car)(s);
