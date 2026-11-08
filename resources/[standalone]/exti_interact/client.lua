@@ -118,3 +118,44 @@ CreateThread(function()
         end
     end
 end)
+
+---------------------------------------------------------------------------
+-- never stuck: a teleport (prison release, hospital, respawn, admin) or a death clears every line.
+-- Scripts that still want their prompt put it back by themselves on their next check.
+---------------------------------------------------------------------------
+local function clearAll()
+    if #order == 0 then return end
+    entries, order = {}, {}
+    fixSelection()
+    dirty = true
+end
+exports('ClearAll', clearAll)
+
+CreateThread(function()
+    local last, wasDead = nil, false
+    while true do
+        Wait(250)
+        local ped = PlayerPedId()
+        local here = GetEntityCoords(ped)
+        local dead = IsEntityDead(ped)
+        if last and #order > 0 then
+            local moved = #(here - last)
+            local inCar = IsPedInAnyVehicle(ped, false)
+            -- on foot nobody covers 25 m in a quarter second; in a car 120 m is far beyond any top speed.
+            -- dying clears once (the moment it happens), so a death-screen prompt can still show after.
+            if (not inCar and moved > 25.0) or moved > 120.0 or (dead and not wasDead) then clearAll() end
+        end
+        last, wasDead = here, dead
+    end
+end)
+
+AddEventHandler('QBCore:Client:OnPlayerUnload', clearAll)
+AddEventHandler('QBCore:Client:OnPlayerLoaded', clearAll)
+AddEventHandler('playerSpawned', clearAll)
+
+-- the player's own way out: /fixui clears every prompt on the screen
+RegisterCommand('fixui', function()
+    clearAll()
+    SendNUIMessage({ action = 'list', items = {}, many = false })
+end, false)
+TriggerEvent('chat:addSuggestion', '/fixui', 'أزل أي رسالة عالقة على الشاشة')

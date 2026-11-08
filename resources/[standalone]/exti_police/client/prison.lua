@@ -174,6 +174,8 @@ end)
 RegisterNetEvent('exti_police:client:released', function(why)
     if not jailed then return end
     jailed = nil
+    workBusy = false
+    if POL.prompt then POL.prompt(nil) end
     hud(false)
     local out = prison and prison.release or P.release
     teleport(out, out.w)
@@ -220,7 +222,7 @@ local function doWork(w, index)
         local res, err = lib.callback.await('exti_police:server:prisonWork', false, w.id, index)
         if not res then
             POL.error(err)
-        elseif not res.released then
+        elseif not res.released and jailed then
             jailed.remaining, jailed.since = res.remaining, GetGameTimer()
             POL.notify('success', ('-%d دقيقة · باقي %d دقيقة'):format(w.minutes, math.ceil(res.remaining / 60)))
             hud(true)
