@@ -6,11 +6,27 @@
 -- without that data are simply left as they are.
 local found = {}   -- [model .. ':' .. nameHash] = { comp, drawable, texture } (a named piece, once looked up)
 
--- a forced piece given by name: find which drawable/texture of that slot carries this name
+-- the game's shop record of a named piece (what GTA Online's stores read): which slot, drawable and
+-- texture it is. The record is nine 8-byte-aligned ints written into a buffer; nil when it isn't for this slot
+local function shopRecord(nameHash, slot)
+    local buf = string.rep('\0', 80)
+    local ok = pcall(Citizen.InvokeNative, 0x74C0E2A57EC66760, nameHash, buf)   -- GET_SHOP_PED_COMPONENT
+    if not ok then return nil end
+    local drawable, texture, compType = string.unpack('<i4', buf, 25), string.unpack('<i4', buf, 33), string.unpack('<i4', buf, 49)
+    if compType ~= slot or drawable < 0 or drawable > 1000 or texture < 0 or texture > 64 then return nil end
+    return { comp = slot, drawable = drawable, texture = texture }
+end
+
+-- a forced piece given by name: its shop record first, else which drawable/texture of that slot carries this name
 local function byName(ped, comp, nameHash)
     local key = GetEntityModel(ped) .. ':' .. nameHash
     local hit = found[key]
     if hit ~= nil then return hit or nil end
+    local rec = shopRecord(nameHash, comp)
+    if rec and rec.drawable < GetNumberOfPedDrawableVariations(ped, comp) then
+        found[key] = rec
+        return rec
+    end
     for d = 0, GetNumberOfPedDrawableVariations(ped, comp) - 1 do
         for t = 0, math.max(GetNumberOfPedTextureVariations(ped, comp, d), 1) - 1 do
             if GetHashNameForComponent(ped, comp, d, t) == nameHash then
@@ -101,8 +117,16 @@ RegisterCommand('extilinked', function()
         for i = 0, (n or 0) - 1 do
             local nameHash, enumValue, slot = GetForcedComponent(hash, i)
             local piece = (nameHash ~= 0 and nameHash ~= nil) and byName(ped, tonumber(slot) or 0, nameHash)
-            print(('[extilinked]   forced %d: nameHash %s enumValue %s slot %s -> %s'):format(i, tostring(nameHash),
-                tostring(enumValue), tostring(slot), piece and ('drawable %d texture %d'):format(piece.drawable, piece.texture) or 'by value'))
+            local raw = ''
+            if nameHash ~= 0 and nameHash ~= nil then
+                local buf = string.rep('\0', 80)
+                pcall(Citizen.InvokeNative, 0x74C0E2A57EC66760, nameHash, buf)
+                local v = {}
+                for k = 0, 8 do v[#v + 1] = tostring(string.unpack('<i4', buf, k * 8 + 1)) end
+                raw = ' record[' .. table.concat(v, ' ') .. ']'
+            end
+            print(('[extilinked]   forced %d: nameHash %s enumValue %s slot %s -> %s%s'):format(i, tostring(nameHash),
+                tostring(enumValue), tostring(slot), piece and ('drawable %d texture %d'):format(piece.drawable, piece.texture) or 'NOT FOUND', raw))
         end
     end
     print(('[extilinked] arms now: drawable %d texture %d · undershirt: drawable %d texture %d'):format(
