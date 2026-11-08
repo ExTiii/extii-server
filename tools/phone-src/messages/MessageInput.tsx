@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Paper, Box, Button, ButtonGroup } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
@@ -29,6 +29,9 @@ const MessageInput = ({
 }: IProps) => {
   const [t] = useTranslation();
   const [message, setMessage] = useState('');
+  const quickRow = useRef<HTMLDivElement>(null);
+  // (the mouse wheel and the arrows move the button row sideways)
+  const slide = (dir: number) => quickRow.current?.scrollBy({ left: dir * 160, behavior: 'smooth' });
   const { sendMessage } = useMessageAPI();
   const { activeMessageConversation } = useMessages();
   const { clean } = useWordFilter();
@@ -104,7 +107,20 @@ const MessageInput = ({
   return (
     <div className="px-2">
       {isFence && (
-        <div dir="rtl" className="mb-2 flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        <div className="mb-2 flex items-center gap-1">
+        <button
+          onClick={() => slide(-1)}
+          className="shrink-0 rounded-full bg-[#e8b547]/20 px-2 py-1 text-[14px] font-bold text-[#e8b547] hover:bg-[#e8b547]/40"
+        >
+          ‹
+        </button>
+        <div
+          ref={quickRow}
+          dir="rtl"
+          onWheel={(e) => { if (quickRow.current) quickRow.current.scrollLeft -= (e.deltaY || e.deltaX); }}
+          className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto py-0.5"
+          style={{ scrollbarWidth: 'none' }}
+        >
           {QUICK.map(([label, text]) => (
             <button
               key={label}
@@ -114,6 +130,13 @@ const MessageInput = ({
               {label}
             </button>
           ))}
+        </div>
+        <button
+          onClick={() => slide(1)}
+          className="shrink-0 rounded-full bg-[#e8b547]/20 px-2 py-1 text-[14px] font-bold text-[#e8b547] hover:bg-[#e8b547]/40"
+        >
+          ›
+        </button>
         </div>
       )}
       <div className="flex items-center space-x-2 rounded-md px-2 dark:bg-neutral-800">
