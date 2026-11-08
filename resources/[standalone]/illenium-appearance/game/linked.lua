@@ -177,7 +177,18 @@ RegisterCommand('extilinked', function()
     do
         local okN, n = pcall(GetPedCollectionsCount, ped)
         local okP, jp = pcall(GetPedDrawableVariationCollectionName, ped, 11)
-        print(('[extilinked] packs on this body: %s · the jacket is from pack: %s'):format(okN and tostring(n) or 'n/a', okP and tostring(jp) or 'n/a'))
+        local okL, jl = pcall(GetPedDrawableVariationCollectionLocalIndex, ped, 11)
+        print(('[extilinked] packs on this body: %s · the jacket is from pack: %s (local #%s)'):format(okN and tostring(n) or 'n/a', okP and tostring(jp) or 'n/a', okL and tostring(jl) or 'n/a'))
+        local parts = {}
+        for i = 0, (okN and n or 0) - 1 do
+            local okName, name = pcall(GetPedCollectionName, ped, i)
+            if okName and name and name ~= '' then
+                local okC, c = pcall(GetNumberOfPedCollectionDrawableVariations, ped, 3, name)
+                local okG, g = pcall(GetPedDrawableGlobalIndexFromCollection, ped, 3, name, 0)
+                parts[#parts + 1] = ('%s=%s arms:%s from:%s'):format(name, tostring(GetHashKey(name)), okC and tostring(c) or '?', okG and tostring(g) or '?')
+            end
+        end
+        for i = 1, #parts, 4 do print('[extilinked]   packs: ' .. table.concat(parts, ' | ', i, math.min(i + 3, #parts))) end
     end
     print(('[extilinked] arms now: drawable %d texture %d · undershirt: drawable %d texture %d'):format(
         GetPedDrawableVariation(ped, 3), GetPedTextureVariation(ped, 3), GetPedDrawableVariation(ped, 8), GetPedTextureVariation(ped, 8)))
