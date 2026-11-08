@@ -31,6 +31,8 @@ for i = 1, #catalog.vehicles do
             price = price,
             name = entry.name,
             brand = entry.brand,
+            level = math.tointeger(entry.level) or 1,     -- EX_Tii level needed
+            storage = math.tointeger(entry.storage) or 20, -- trunk kg
         }
         vehicles[count] = item
         byModel[entry.model] = item

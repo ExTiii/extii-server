@@ -41,10 +41,16 @@ GlobalState:set('exti_usedcars:spot', loadSpot(), true)
 GlobalState:set('exti_usedcars:slots', slots, true)
 
 -- what every game needs to show the cars (no seller details except his citizen id, to know "it's mine")
+-- EX_Tii (Moe): the dealership's level for this model applies here too (no way round the grind)
+local function levelOf(model)
+    local item = model and catalog[joaat(model)]
+    return item and tonumber(item.level) or 1
+end
+
 local function publish()
     local list = {}
     for id, l in pairs(listings) do
-        list[#list + 1] = { id = id, slot = l.slot, price = l.price, label = l.label, props = l.props, seller = l.seller_cid }
+        list[#list + 1] = { id = id, slot = l.slot, price = l.price, label = l.label, props = l.props, seller = l.seller_cid, level = levelOf(l.model) }
     end
     GlobalState:set('exti_usedcars:list', list, true)
 end
@@ -250,6 +256,13 @@ lib.callback.register('exti_usedcars:server:buy', function(source, id)
     if not player then return false, 'failed' end
     local cid = player.PlayerData.citizenid
     if l.seller_cid == cid then return false, 'own' end
+    do
+        local need = levelOf(l.model)
+        if need > 1 then
+            local okL, have = pcall(function() return exports.exti_level:GetLevel(source) end)
+            if not okL or (tonumber(have) or 1) < need then return false, 'level' end
+        end
+    end
     local s = slots[l.slot]
     if not s or #(GetEntityCoords(GetPlayerPed(source)) - s.xyz) > 6.0 then return false, 'far' end
     local m = player.PlayerData.money or {}

@@ -56,6 +56,13 @@ local function checkRequest(src, model)
     if not shop or shop.type ~= 'free-use' then return nil, nil, nil, 'not_here' end
     if vehicle.shopType ~= shopId then return nil, nil, nil, 'not_sold' end
 
+    -- EX_Tii (Moe): every vehicle has a level; below it there is no buying and no test drive
+    local need = tonumber(vehicle.level) or 1
+    if need > 1 then
+        local okL, have = pcall(function() return exports.exti_level:GetLevel(src) end)
+        if not okL or (tonumber(have) or 1) < need then return nil, nil, nil, 'level' end
+    end
+
     return vehicle, shopId, shop
 end
 

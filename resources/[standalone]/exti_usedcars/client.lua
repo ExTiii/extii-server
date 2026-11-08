@@ -180,6 +180,7 @@ local ERR = {
     far = 'اقترب أكثر', inside = 'انزل من المركبة أولًا',
     nocar = 'أوقف سيارتك قرب مدير المعرض أولًا (آخر سيارة قدتها)', people = 'أنزل الركاب من السيارة أولًا',
     notyours = 'هذه السيارة ليست ملكك', financed = 'لا يمكن بيع سيارة عليها أقساط',
+    level = 'مستواك لا يكفي لهذه السيارة بعد',
     unknown = 'المعرض لا يقبل هذا النوع من المركبات', many = ('لك %d سيارات في المعرض، وهذا الحد'):format(Config.perSeller),
     full = 'المعرض ممتلئ الآن، عد لاحقًا', noslots = 'المعرض لم يُجهَّز بعد: لا توجد أماكن للسيارات (الإدارة: /usedcarslot)', price = 'السعر خارج الحد المسموح', money = 'ليس معك مال كافٍ (في البنك أو نقدًا)',
     own = 'هذه سيارتك: اسحبها من مدير المعرض', gone = 'بيعت هذه السيارة للتو', wait = 'لحظة...', failed = 'حدث خطأ، حاول مرة أخرى',
@@ -237,7 +238,8 @@ end
 local function buy(l)
     local sure = lib.alertDialog({
         header = 'شراء السيارة',
-        content = ('تشتري **%s** بـ **%s$**؟\n\nيُدفع من حسابك البنكي (أو نقدًا إن لم يكفِ البنك)، وتستلم السيارة ومفتاحها هنا.'):format(l.label or '', money(l.price)),
+        content = ('تشتري **%s** بـ **%s$**؟%s\n\nيُدفع من حسابك البنكي (أو نقدًا إن لم يكفِ البنك)، وتستلم السيارة ومفتاحها هنا.'):format(l.label or '', money(l.price),
+            (tonumber(l.level) or 1) > 1 and ('\n\nتحتاج **المستوى %d** لشرائها.'):format(l.level) or ''),
         centered = true, cancel = true, labels = { confirm = 'اشترِها', cancel = 'لا' },
     })
     if sure ~= 'confirm' then return end
@@ -274,7 +276,8 @@ CreateThread(function()
                     local dc = #(me - c)
                     if dc < 12.0 then
                         sleep = 0
-                        text3d(c.x, c.y, c.z + 1.2, ('%s~n~~g~$%s'):format(l.label or '', money(l.price)))
+                        text3d(c.x, c.y, c.z + 1.2, ('%s~n~~g~$%s%s'):format(l.label or '', money(l.price),
+                            (tonumber(l.level) or 1) > 1 and ('~n~~s~المستوى %d'):format(l.level) or ''))
                     end
                     if onFoot and not want and dc < 3.2 then
                         if l.seller == cid then

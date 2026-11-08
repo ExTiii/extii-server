@@ -46,6 +46,8 @@ local function shopCatalog(shopId)
                 brand = entry.brand or '',
                 price = entry.price,
                 category = entry.category,
+                level = entry.level or 1,          -- EX_Tii level needed to buy / test drive
+                storage = entry.storage or 20,     -- trunk in kg (the glove box is 4 kg everywhere)
             }
         end
     end
@@ -61,6 +63,7 @@ local ERRORS = {
     in_test = 'أنت في تجربة قيادة الآن',
     busy = 'انتظر قليلًا ثم حاول مرة أخرى',
     failed = 'حدث خطأ، حاول مرة أخرى',
+    level = 'مستواك لا يكفي لهذه المركبة بعد',
 }
 
 local function notifyError(code)
@@ -341,9 +344,16 @@ local function openPanel()
     setDisplayCarsHidden(shopId, true)
 
     local money = QBX.PlayerData and QBX.PlayerData.money or {}
+    -- EX_Tii: the player's level (locks the cars above it)
+    local myLevel = 1
+    do
+        local okL, info = pcall(lib.callback.await, 'exti_level:server:info', false)
+        if okL and type(info) == 'table' and tonumber(info.level) then myLevel = tonumber(info.level) end
+    end
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'open',
+        level = myLevel,
         shop = { id = shopId, label = shop.blip.label, spin = shop.preview.spin ~= false },
         categories = categories,
         vehicles = vehicles,

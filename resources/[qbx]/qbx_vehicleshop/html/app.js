@@ -35,6 +35,8 @@ const ICON = {
     heli: (s) => svg('<path d="M3 5h14M10 5v3"/><path d="M6 13a4 4 0 0 1 4-5h3.5a4.5 4.5 0 0 1 0 9H10a4 4 0 0 1-4-4z"/><path d="M18 12h3M8 20h8M10 17v3M14 17v3"/>', s),
     wheel: (s) => svg('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2"/><path d="M12 3.5V10M4.2 15.5L10.2 13M19.8 15.5L13.8 13"/>', s),
     bag: (s) => svg('<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>', s),
+    lock: (s) => svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', s),
+    box: (s) => svg('<path d="M3 8l9-4 9 4-9 4z"/><path d="M3 8v8l9 4 9-4V8"/><path d="M12 12v8"/>', s),
     cash: (s) => svg('<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v5M17.5 9.5v5"/>', s),
     bank: (s) => svg('<path d="M3.5 9.5L12 4.5l8.5 5"/><path d="M5.5 10v7M10 10v7M14 10v7M18.5 10v7M3.5 19.5h17"/>', s),
     rotate: (s) => svg('<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4.5h-4.5"/>', s),
@@ -119,6 +121,12 @@ const brokenImages = new Set();
 const selectToken = { n: 0 };
 
 const vehicles = () => (state.data && Array.isArray(state.data.vehicles) ? state.data.vehicles : []);
+// EX_Tii: levels. Every vehicle has one; the player's own level comes with the open message.
+const myLevel = () => Number(state.data && state.data.level) || 1;
+const needLevel = (v) => Number(v && v.level) || 1;
+const locked = (v) => needLevel(v) > myLevel();
+const levelBadge = (v) => `<span class="lvl ${locked(v) ? 'lock' : ''}" title="المستوى المطلوب">${locked(v) ? ICON.lock(11) : ''}المستوى ${needLevel(v)}</span>`;
+const kg = (n) => `${Number(n) || 0}<small> كغ</small>`;
 const categories = () => (state.data && Array.isArray(state.data.categories) ? state.data.categories : []);
 const colours = () => (state.data && Array.isArray(state.data.colours) ? state.data.colours : []);
 const byModel = (model) => vehicles().find((v) => v.model === model) || null;
@@ -153,7 +161,7 @@ function filtered() {
         if (!q) return true;
         const cat = category(v.category);
         return [v.name, v.brand, v.model, cat && cat.label, cat && cat.en].some((s) => String(s || '').toLowerCase().includes(q));
-    });
+    }).sort((a, b) => (needLevel(a) - needLevel(b)) || (a.price - b.price));   // lowest level first, then price
 }
 
 function renderHeader() {
@@ -164,7 +172,7 @@ function renderHeader() {
     $('#shop-title').textContent = (d.shop && d.shop.label) || 'المعرض';
     const prices = all.map((v) => v.price);
     const range = prices.length ? ` · من ${money(Math.min(...prices))} إلى ${money(Math.max(...prices))}` : '';
-    $('#shop-subtitle').innerHTML = esc(vehiclesWord(all.length)) + range;
+    $('#shop-subtitle').innerHTML = esc(vehiclesWord(all.length)) + range + ` · <b class="me-lvl">مستواك ${myLevel()}</b>`;
     document.querySelector('.search-icon').innerHTML = ICON.search(17);
     document.querySelector('[data-action="close"]').innerHTML = ICON.close(18);
 }
@@ -189,12 +197,12 @@ function renderChips() {
 function rowHtml(v) {
     const cat = category(v.category);
     return `
-    <div class="row ${v.model === state.selected ? 'selected' : ''}" role="button" tabindex="0" data-open="${esc(v.model)}">
+    <div class="row ${v.model === state.selected ? 'selected' : ''} ${locked(v) ? 'is-locked' : ''}" role="button" tabindex="0" data-open="${esc(v.model)}">
         <div class="thumb">${carImage(v, 30)}</div>
         <div class="row-main">
             <span class="row-title">${esc(v.name)}</span>
             ${v.brand ? `<span class="vbrand">${esc(v.brand)}</span>` : ''}
-            <div class="row-meta"><span class="price">${money(v.price)}</span>${cat ? `<span class="tag">${esc(cat.label)}</span>` : ''}</div>
+            <div class="row-meta"><span class="price">${money(v.price)}</span>${levelBadge(v)}${cat ? `<span class="tag">${esc(cat.label)}</span>` : ''}${v.category === 'storage' ? `<span class="tag store">${ICON.box(11)} ${kg(v.storage)}</span>` : ''}</div>
         </div>
         <div class="row-end">${ICON.forward(18)}</div>
     </div>`;
@@ -202,12 +210,12 @@ function rowHtml(v) {
 
 function cardHtml(v) {
     return `
-    <div class="card ${v.model === state.selected ? 'selected' : ''}" role="button" tabindex="0" data-open="${esc(v.model)}">
-        <div class="thumb">${carImage(v, 40)}</div>
+    <div class="card ${v.model === state.selected ? 'selected' : ''} ${locked(v) ? 'is-locked' : ''}" role="button" tabindex="0" data-open="${esc(v.model)}">
+        <div class="thumb">${carImage(v, 40)}${levelBadge(v)}</div>
         <div class="card-body">
             <span class="row-title">${esc(v.name)}</span>
             ${v.brand ? `<span class="vbrand">${esc(v.brand)}</span>` : ''}
-            <span class="price">${money(v.price)}</span>
+            <span class="price">${money(v.price)}${v.category === 'storage' ? ` <span class="tag store">${ICON.box(11)} ${kg(v.storage)}</span>` : ''}</span>
         </div>
     </div>`;
 }
@@ -258,7 +266,8 @@ function statsHtml(v) {
         ${landOnly ? statBar('التسارع', s.accel, 0.45) : ''}
         ${landOnly ? statBar('الفرامل', s.brake, 1.6) : ''}
         ${landOnly ? statBar('الثبات', s.grip, 3.2) : ''}
-        <div class="seats">${ICON.seat(15)} <b>${esc(seatsWord(s.seats))}</b></div>`;
+        <div class="seats">${ICON.seat(15)} <b>${esc(seatsWord(s.seats))}</b></div>
+        ${landOnly ? `<div class="storage-line"><span>${ICON.box(15)} التخزين</span><b>الصندوق ${kg(v.storage)} · الدرج ${kg(4)}</b></div>` : ''}`;
 }
 
 function swatchesHtml() {
@@ -276,10 +285,13 @@ function renderDetail() {
     if (!v) { el.innerHTML = ''; return; }
     const d = state.data || {};
     const cat = category(v.category);
-    const test = d.testDrive
+    const isLocked = locked(v);
+    const test = d.testDrive && !isLocked
         ? `<button class="btn" data-act="test" ${state.busy ? 'disabled' : ''}>${ICON.wheel(18)} تجربة القيادة · ${esc(minutesWord(d.testDrive))}</button>`
         : '';
-    const buy = d.canBuy !== false
+    const buy = isLocked
+        ? `<button class="btn locked" disabled>${ICON.lock(18)} يفتح في المستوى ${needLevel(v)} · مستواك ${myLevel()}</button>`
+        : d.canBuy !== false
         ? `<button class="btn primary" data-act="buy" ${state.busy ? 'disabled' : ''}>${ICON.bag(18)} شراء · ${money(v.price)}</button>`
         : '';
 
@@ -293,7 +305,7 @@ function renderDetail() {
                 ${v.brand ? `<div class="d-brand">${esc(v.brand)}</div>` : ''}
                 <h2 class="d-title">${esc(v.name)}</h2>
                 <div class="d-row">
-                    ${cat ? `<span class="tag">${esc(cat.label)} <span dir="ltr">(${esc(cat.en)})</span></span>` : '<span></span>'}
+                    <span>${cat ? `<span class="tag">${esc(cat.label)} <span dir="ltr">(${esc(cat.en)})</span></span>` : ''} ${levelBadge(v)}</span>
                     <span class="d-price">${money(v.price)}</span>
                 </div>
             </div>

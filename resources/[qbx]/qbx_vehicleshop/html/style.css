@@ -410,3 +410,16 @@ svg { display: block; flex-shrink: 0; }
 .thumb img, .hero img { position: absolute; top: 3%; left: 3%; width: 94%; height: 94%; max-width: none; object-fit: contain; object-position: center; }
 .card .thumb img { top: 6px; left: 8px; width: calc(100% - 16px); height: calc(100% - 10px); }
 .hero img { top: 4%; left: 4%; width: 92%; height: 92%; }
+
+/* EX_Tii: levels and storage */
+.lvl { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.lvl.lock { background: rgba(255, 255, 255, 0.08); color: var(--faint); }
+.card .thumb .lvl { position: absolute; top: 8px; left: 8px; }
+.row.is-locked .thumb img, .card.is-locked .thumb img, .row.is-locked .thumb .car-fallback, .card.is-locked .thumb .car-fallback { opacity: 0.4; filter: grayscale(0.7); }
+.row.is-locked .row-title, .card.is-locked .row-title { color: var(--faint); }
+.tag.store { display: inline-flex; align-items: center; gap: 4px; background: rgba(32, 201, 151, 0.14); }
+.tag.store small, .storage-line small { font-size: 10px; font-weight: 500; }
+.storage-line { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; }
+.storage-line span { display: inline-flex; align-items: center; gap: 6px; color: var(--faint); }
+.me-lvl { color: var(--accent); font-weight: 700; }
+.btn.locked { background: rgba(255, 255, 255, 0.06); color: var(--faint); cursor: not-allowed; border: 1px dashed var(--line); }
