@@ -68,11 +68,13 @@ CreateThread(function()
     while true do
         if current and loggedIn() and not IsRadarHidden() and not IsPauseMenuActive() and IsMinimapRendering() then
             -- the frame round the minimap, same dark colour (16:9 screens; measured from Moe's 1440p screenshot)
-            local top, bot = Y + H, Y + H + MAP_H
-            DrawRect(X + MAP_W / 2, top + BY / 2, MAP_W, BY, 10, 10, 12, 195)                -- top
-            DrawRect(X + MAP_W / 2, bot - BY / 2, MAP_W, BY, 10, 10, 12, 195)                -- bottom
-            DrawRect(X + BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)            -- left
-            DrawRect(X + MAP_W - BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)    -- right
+            -- (the frame sits on the map's own edges: a hair left of X, a hair under MAP_H, measured on Moe's screenshot)
+            local fx, fw = X - 0.0008, MAP_W + 0.0008
+            local top, bot = Y + H, Y + H + MAP_H + 0.0021
+            DrawRect(fx + fw / 2, top + BY / 2, fw, BY, 10, 10, 12, 195)                     -- top
+            DrawRect(fx + fw / 2, bot - BY / 2, fw, BY, 10, 10, 12, 195)                     -- bottom
+            DrawRect(fx + BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)           -- left
+            DrawRect(fx + fw - BX / 2, (top + bot) / 2, BX, bot - top, 10, 10, 12, 195)      -- right
             -- the strip
             DrawRect(X + W / 2, Y + H / 2, W, H, 10, 10, 12, 190)
             DrawRect(X + 0.0013, Y + H / 2, 0.0026, H, 232, 181, 71, 235)
