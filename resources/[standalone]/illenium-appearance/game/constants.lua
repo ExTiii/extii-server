@@ -356,6 +356,19 @@ constants.CAMERAS = {
         vec3(0, 0.98, -0.7),
         vec3(0, 0, -0.9),
     },
+    -- EX_Tii: one camera per kind of piece (the screen picks it from the category you are in)
+    legs = {            -- trousers: hips to ankles
+        vec3(0, 1.9, -0.25),
+        vec3(0, 0, -0.5),
+    },
+    feet = {            -- shoes
+        vec3(0, 1.05, -0.55),
+        vec3(0, 0, -0.92),
+    },
+    hands = {           -- watches and bracelets
+        vec3(0, 1.15, -0.05),
+        vec3(0, 0, -0.15),
+    },
 }
 
 constants.OFFSETS = {
@@ -363,4 +376,7 @@ constants.OFFSETS = {
     head = vec2(0.7, -0.45),
     body = vec2(1.2, -0.45),
     bottom = vec2(0.7, -0.45),
+    legs = vec2(1.2, -0.6),
+    feet = vec2(0.7, -0.45),
+    hands = vec2(1.0, -0.45),
 }

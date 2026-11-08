@@ -4,12 +4,18 @@
 'use strict';
 
 /* ---------------- the camera for what you're looking at ---------------- */
-const CAM_OF = { head: 'head', top: 'body', bottom: 'bottom', acc: 'body' };
+const CAM_OF = { head: 'head', top: 'body', bottom: 'legs', acc: 'body' };
+// EX_Tii: the camera goes to the piece you are shopping for: trousers = legs, shoes = feet, hats / masks /
+// glasses / ears / hair = head, watches and bracelets = hands, everything else = the body
+const CAM_OF_CAT = { c4: 'legs', c6: 'feet', c1: 'head', c2: 'head', p0: 'head', p1: 'head', p2: 'head', p6: 'hands', p7: 'hands' };
 function camFor() {
     let v = 'default';
-    if (S.mode === 'clothing' || S.mode === 'uniform' || (S.mode === 'creator' && S.cat === 'clothes')) v = CAM_OF[S.group] || 'body';
+    if (S.mode === 'clothing' || S.mode === 'uniform' || (S.mode === 'creator' && S.cat === 'clothes')) {
+        const cat = S.mode === 'creator' ? S.ccat : S.cat;
+        v = CAM_OF_CAT[cat] || CAM_OF[S.group] || 'body';
+    }
     else if (['barber', 'surgeon'].includes(S.mode) || (S.mode === 'creator' && ['origin', 'face', 'hair', 'skin'].includes(S.cat))) v = 'head';
-    else if (S.mode === 'tattoo') v = S.cat === 'ZONE_HEAD' ? 'head' : (S.cat.includes('LEG') ? 'bottom' : 'body');
+    else if (S.mode === 'tattoo') v = S.cat === 'ZONE_HEAD' ? 'head' : (S.cat.includes('LEG') ? 'legs' : 'body');
     setView(v);
 }
 let view = 'default';

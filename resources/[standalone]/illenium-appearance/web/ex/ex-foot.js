@@ -169,7 +169,8 @@ const VIEWS = [['default', 'كامل'], ['head', 'الوجه'], ['body', 'الج
 function renderDock() {
     const v = $('#views'); v.innerHTML = '';
     VIEWS.forEach(([id, label]) => {
-        const b = h('button', 'view' + (view === id ? ' on' : ''), label); b.type = 'button';
+        const on = view === id || (id === 'bottom' && (view === 'legs' || view === 'feet')) || (id === 'body' && view === 'hands');
+        const b = h('button', 'view' + (on ? ' on' : ''), label); b.type = 'button';
         b.onclick = () => { view = id; post('appearance_set_camera', id); renderDock(); };
         v.appendChild(b);
     });

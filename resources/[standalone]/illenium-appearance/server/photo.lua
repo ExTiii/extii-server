@@ -64,8 +64,9 @@ lib.addCommand("extiphotos", {
     params = {
         { name = "gender", type = "string", help = "m أو f أو stop (اختياري)", optional = true },
         { name = "part", type = "string", help = "مثل c11 أو beard أو parents (اختياري)", optional = true },
+        { name = "redo", type = "string", help = "redo = أعد تصوير الموجود أيضًا (اختياري)", optional = true },
     },
     restricted = "group.admin",
 }, function(source, args)
-    TriggerClientEvent("illenium-appearance:client:photoTool", source, args.gender, args.part)
+    TriggerClientEvent("illenium-appearance:client:photoTool", source, args.gender, args.part, args.redo == "redo")
 end)

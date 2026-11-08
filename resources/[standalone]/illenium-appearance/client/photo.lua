@@ -47,7 +47,9 @@ local OVERLAYS = {
     { key = "bodyBlemishes", i = 11, view = "chest" },
 }
 
-local BONE = { head = 31086, chest = 24817, pelvis = 11816, lfoot = 14201, rfoot = 52301, lhand = 18905, rhand = 57005 }
+-- (chest = SKEL_Spine3, the breastbone: the old mid-spine bone put the camera on the hips and the jacket
+-- pictures came out as legs and underwear)
+local BONE = { head = 31086, chest = 24818, pelvis = 11816, lfoot = 14201, rfoot = 52301, lhand = 18905, rhand = 57005 }
 
 RegisterNUICallback("exti_photo_done", function(data, cb)
     cb(1)
@@ -99,11 +101,13 @@ local function aim(view)
     elseif view == "ear" then
         target = bone("head"); pos = target + fwd * 0.3 - right * 0.62; fov = 28.0
     elseif view == "chest" then
-        target = bone("chest") - up * 0.05; pos = target + fwd * 1.55; fov = 36.0
+        -- shoulders to the waist
+        target = bone("chest") - up * 0.02; pos = target + fwd * 1.35; fov = 34.0
     elseif view == "back" then
-        target = bone("chest") - up * 0.05; pos = target - fwd * 1.6; fov = 36.0
+        target = bone("chest") - up * 0.02; pos = target - fwd * 1.4; fov = 34.0
     elseif view == "legs" then
-        target = bone("pelvis") - up * 0.38; pos = target + fwd * 1.75; fov = 38.0
+        -- hips to the ankles
+        target = bone("pelvis") - up * 0.48; pos = target + fwd * 1.8; fov = 36.0
     elseif view == "feet" then
         target = (bone("lfoot") + bone("rfoot")) / 2 + up * 0.06; pos = target + fwd * 0.95 + up * 0.35; fov = 34.0
     elseif view == "lwrist" then
@@ -223,7 +227,7 @@ local function run(onlyG, onlyKey)
     SetWeatherTypeNowPersist("EXTRASUNNY")
     DoScreenFadeIn(300)
 
-    local made, skipped = 0, 0
+    local made, skipped, failed = 0, 0, 0
     for _, g in ipairs({ "m", "f" }) do
         if stopAsked then break end
         if not onlyG or onlyG == g then
@@ -237,7 +241,7 @@ local function run(onlyG, onlyKey)
                 if not onlyKey or onlyKey == part.key then
                     local count = part.prop and GetNumberOfPedPropDrawableVariations(ped, part.prop)
                         or GetNumberOfPedDrawableVariations(ped, part.comp)
-                    local have = lib.callback.await("illenium-appearance:server:photoHave", false, g .. "-" .. part.key, count) or {}
+                    local have = redoAll and {} or lib.callback.await("illenium-appearance:server:photoHave", false, g .. "-" .. part.key, count) or {}
                     note(("%s %s: %d قطعة"):format(g == "m" and "رجال" or "نساء", part.key, count))
                     dress(ped, g)
                     aim(part.view)
@@ -247,8 +251,10 @@ local function run(onlyG, onlyKey)
                         if have[d + 1] then
                             skipped = skipped + 1
                         else
-                            setPiece(ped, part, d)
-                            if save(("%s-%s-%d"):format(g, part.key, d), shoot()) then made = made + 1 end
+                            local okP, data = pcall(function() setPiece(ped, part, d); return shoot() end)
+                            if okP and save(("%s-%s-%d"):format(g, part.key, d), data) then made = made + 1
+                            else failed = failed + 1; print(("[photo tool] no picture for %s-%s-%d%s"):format(g, part.key, d, okP and "" or (": " .. tostring(data)))) end
+                            if (d + 1) % 25 == 0 then print(("[photo tool] %s %s: %d / %d"):format(g, part.key, d + 1, count)) end
                         end
                     end
                     dress(ped, g)
@@ -260,7 +266,7 @@ local function run(onlyG, onlyKey)
                 if stopAsked then break end
                 if not onlyKey or onlyKey == ov.key then
                     local count = GetPedHeadOverlayNum(ov.i)
-                    local have = lib.callback.await("illenium-appearance:server:photoHave", false, g .. "-" .. ov.key, count) or {}
+                    local have = redoAll and {} or lib.callback.await("illenium-appearance:server:photoHave", false, g .. "-" .. ov.key, count) or {}
                     dress(ped, g)
                     SetPedHeadOverlay(ped, 2, 255, 0.0)
                     aim(ov.view or "head")
@@ -273,7 +279,8 @@ local function run(onlyG, onlyKey)
                             SetPedHeadOverlay(ped, ov.i, s, 1.0)
                             if ov.ctype then SetPedHeadOverlayColor(ped, ov.i, ov.ctype, ov.ctype == 2 and 6 or 0, 0) end
                             Wait(120)
-                            if save(("%s-%s-%d"):format(g, ov.key, s), shoot()) then made = made + 1 end
+                            local okP, data = pcall(shoot)
+                            if okP and save(("%s-%s-%d"):format(g, ov.key, s), data) then made = made + 1 else failed = failed + 1 end
                         end
                     end
                     SetPedHeadOverlay(ped, ov.i, 255, 0.0)
@@ -284,7 +291,7 @@ local function run(onlyG, onlyKey)
 
     -- the 46 parents (faces for the character creator and the clinic)
     if not stopAsked and (not onlyKey or onlyKey == "parents") then
-        local have = lib.callback.await("illenium-appearance:server:photoHave", false, "p", 46) or {}
+        local have = redoAll and {} or lib.callback.await("illenium-appearance:server:photoHave", false, "p", 46) or {}
         local current
         for i = 0, 45 do
             if stopAsked then break end
@@ -306,7 +313,8 @@ local function run(onlyG, onlyKey)
     end
 
     restore(back, look)
-    note(("انتهى: %d صورة جديدة، %d موجودة. اكتب refresh ثم restart illenium-appearance"):format(made, skipped))
+    print(("[photo tool] done: %d new, %d already there, %d failed"):format(made, skipped, failed))
+    note(("انتهى: %d صورة جديدة، %d موجودة، %d فشلت. اكتب refresh ثم ensure illenium-appearance"):format(made, skipped, failed))
 end
 
 -- put the admin back as they were (also used when the tool stops on an error)
@@ -332,7 +340,9 @@ restore = function(back, look)
     Framework.CachePed()
 end
 
-RegisterNetEvent("illenium-appearance:client:photoTool", function(g, key)
+local redoAll = false
+RegisterNetEvent("illenium-appearance:client:photoTool", function(g, key, redo)
+    redoAll = redo == true
     if g == "stop" then
         if running then stopAsked = true; note("سيتوقف بعد الصورة الحالية") end
         return
