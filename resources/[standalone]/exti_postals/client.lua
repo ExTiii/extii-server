@@ -62,20 +62,20 @@ local LABEL = 'رمز المنطقة'
 local X, Y = 0.0155, 0.722          -- left edge of the minimap, a little above its top
 local NUM_S, LBL_S = 0.40, 0.33
 CreateThread(function()
-    local W, H = 0.100, 0.032       -- one fixed strip: wide enough for "رمز المنطقة" and a 4-digit number
+    local W, H = 0.216, 0.032       -- as wide as the minimap: a header bar over its top edge
     while true do
         if current and loggedIn() and not IsRadarHidden() and not IsPauseMenuActive() and IsMinimapRendering() then
-            DrawRect(X + W / 2, Y + H / 2, W, H, 10, 10, 12, 190)
+            local mid = X + W / 2
+            DrawRect(mid, Y + H / 2, W, H, 10, 10, 12, 195)
             DrawRect(X + 0.0013, Y + H / 2, 0.0026, H, 232, 181, 71, 235)
-            -- the word on the left side of the strip
-            SetTextFont(4); SetTextScale(0.0, LBL_S); SetTextColour(255, 255, 255, 220); SetTextDropShadow()
-            BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(LABEL)
-            EndTextCommandDisplayText(X + 0.007, Y + 0.0045)
-            -- the number, held against the right edge of the strip
+            -- in the middle: the gold number, then the word
             SetTextFont(4); SetTextScale(0.0, NUM_S); SetTextColour(232, 181, 71, 255); SetTextDropShadow()
-            SetTextJustification(2); SetTextWrap(X, X + W - 0.005)
+            SetTextJustification(2); SetTextWrap(X, mid - 0.004)
             BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(current)
             EndTextCommandDisplayText(X, Y + 0.0005)
+            SetTextFont(4); SetTextScale(0.0, LBL_S); SetTextColour(255, 255, 255, 220); SetTextDropShadow()
+            BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(LABEL)
+            EndTextCommandDisplayText(mid + 0.004, Y + 0.0045)
             Wait(0)
         else
             Wait(500)
