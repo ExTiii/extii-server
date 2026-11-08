@@ -64,7 +64,7 @@ function POL.prompt(text)
     local mine = shownText
     shownText, shownAt = text, GetGameTimer()
     if text then lib.showTextUI(text)
-    elseif mine and open and cur == mine then lib.hideTextUI() end   -- (never someone else's text)
+    elseif mine or open then lib.hideTextUI() end   -- (exti_interact keeps one line per script: only ours goes)
 end
 
 ---------------------------------------------------------------------------

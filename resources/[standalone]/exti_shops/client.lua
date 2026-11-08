@@ -116,12 +116,8 @@ local function showPrompt(text)
 end
 local function hidePrompt()
     if not shownText then return end
-    local mine = shownText
     shownText = nil
-    -- (only our own text: a robbery prompt at the till may be up right next to the shopkeeper)
-    local open, text = lib.isTextUIOpen()
-    if open and type(text) == 'string' and text ~= mine then return end
-    lib.hideTextUI()
+    lib.hideTextUI()   -- (exti_interact keeps one line per script: this only takes down ours)
 end
 
 ---------------------------------------------------------------------------

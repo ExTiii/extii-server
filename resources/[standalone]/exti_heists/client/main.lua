@@ -38,18 +38,18 @@ function HC.prompt(text, owner)
     if owner then owners[owner] = text else owners = {} end
     local want
     for _, o in ipairs(ORDER) do if owners[o] then want = owners[o] break end end
-    -- the [E] line is shared with other scripts (the shop, the fuel pump...): if one of them hid it or put its
-    -- own text up, ours comes back; and we never hide a text that isn't ours
-    local open, cur = lib.isTextUIOpen()
+    -- exti_interact keeps one line per script, so this line is always ours: shown again if it went missing,
+    -- hidden the moment we have nothing to say (no text comparing: a changing countdown never leaves a stuck line)
+    local open = lib.isTextUIOpen()
     -- (tell the shopkeeper script a robbery/heist prompt is up: it stays quiet and ignores E)
     if (want ~= nil) ~= (LocalPlayer.state.extiPrompt == true) then LocalPlayer.state:set('extiPrompt', want ~= nil, false) end
     if want then
         -- (shown again every second: exti_interact drops a line its owner stopped renewing)
-        if want == shown and open and cur == want and GetGameTimer() - shownAt < 1000 then return end
+        if want == shown and open and GetGameTimer() - shownAt < 1000 then return end
         shown, shownAt = want, GetGameTimer()
         lib.showTextUI(want, { position = 'left-center' })
     else
-        if shown and open and cur == shown then lib.hideTextUI() end
+        if shown or open then lib.hideTextUI() end
         shown = nil
     end
 end
