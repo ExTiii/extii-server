@@ -148,7 +148,7 @@ Config.fence = {
     leadMinutes = 60,             -- a house lead stays good this long
     hintNumber = 'رقم مجهول',     -- after a first robbery, a stranger texts where to look for him (until you meet him)
     hintRadius = 160.0,           -- the circle on the map (he is somewhere inside, not in the middle)
-    hintMinutes = 60,             -- how long the circle stays
+    hintMinutes = 0,              -- EX_Tii (Moe): 0 = the circle stays until you meet him
     leadCooldownMinutes = 20,     -- one lead per character this often
     -- what he buys (dirty money each), and how many of each he takes per day from the whole city
     goods = {

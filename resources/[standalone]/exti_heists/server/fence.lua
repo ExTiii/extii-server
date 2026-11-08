@@ -154,7 +154,7 @@ local function onText(src, msg)
         local f = H.fenceSpot()
         if f then H.text(src, 'هنا اليوم. تعال وحدك.', f) else H.text(src, 'لست في المدينة اليوم.') end
     else
-        H.text(src, 'اكتب "شغل" لبيت، "مهام" لشغل اليوم، "مكان" لتعرف أين أنا. للكبار: "بنك"، "شاحنة"، "مزرعة"، "قافلة"، "تحضير ...". لا تتصل.')
+        H.text(src, 'اختر من الأزرار فوق خانة الكتابة: بيت، مهام اليوم، مكاني... لا تتصل.')
     end
 end
 local function hook()
@@ -178,7 +178,7 @@ lib.callback.register('exti_heists:server:fenceHello', function(src)
     if not atFence(src) then return false end
     local cid = H.cid(src); if cid then SetResourceKvpInt('fencemet:' .. cid, 1) end
     TriggerClientEvent('exti_heists:client:fenceArea', src, nil)
-    H.text(src, 'هذا رقمي. احفظه. اكتب "شغل" حين تريد بيتًا، و"مكان" لتعرف أين أجدك.')
+    H.text(src, 'هذا رقمي. احفظه. اضغط الأزرار فوق خانة الكتابة: "عندك بيت؟" حين تريد شغلًا، و"وين مكانك اليوم؟" لتعرف أين أجدك.')
     return F.number
 end)
 
@@ -189,6 +189,27 @@ local AREAS = {
     { vec3(1380.0, -2055.0, 52.0), 'حقول النفط في إل بورو' }, { vec3(1993.0, 3050.0, 47.2), 'ساندي شورز، خلف اليلو جاك' },
     { vec3(2416.0, 4993.0, 46.2), 'المزرعة في غريبسيد' }, { vec3(-569.0, 5326.0, 70.2), 'منشرة الخشب في باليتو' },
 }
+-- the circle stays on his map until he has met the fence (every day around where the fence is that day)
+local function circleFor(src, cid)
+    local f = H.fenceSpot(); if not f then return nil end
+    local day = os.date('%Y-%m-%d')
+    local ok, c = pcall(json.decode, GetResourceKvpString('fencecircle:' .. cid) or '')
+    if not (ok and type(c) == 'table' and c.day == day and c.fx and math.abs(c.fx - f.x) < 1 and math.abs(c.fy - f.y) < 1) then
+        local a, r = math.random() * math.pi * 2, math.random(40, 110)
+        c = { day = day, fx = f.x, fy = f.y, x = f.x + math.cos(a) * r, y = f.y + math.sin(a) * r, z = f.z }
+        SetResourceKvp('fencecircle:' .. cid, json.encode(c))
+    end
+    return c
+end
+local function sendCircle(src, loud)
+    local cid = H.cid(src); if not cid then return end
+    if GetResourceKvpInt('fencemet:' .. cid) == 1 then return end
+    if GetResourceKvpInt('fencehinted:' .. cid) ~= 1 and not GetResourceKvpString('fencehint:' .. cid) then return end
+    local c = circleFor(src, cid); if not c then return end
+    TriggerClientEvent('exti_heists:client:fenceArea', src, { x = c.x, y = c.y, z = c.z }, F.hintRadius, 0, loud)
+    return c
+end
+
 function H.fenceHint(src)
     local cid = H.cid(src); if not cid or H.isCopOnDuty(src) then return end
     if GetResourceKvpInt('fencemet:' .. cid) == 1 then return end
@@ -198,15 +219,35 @@ function H.fenceHint(src)
     local name, bd = nil, nil
     for _, a in ipairs(AREAS) do local d = #(a[1] - f); if not bd or d < bd then name, bd = a[2], d end end
     SetResourceKvp('fencehint:' .. cid, day)
+    SetResourceKvpInt('fencehinted:' .. cid, 1)
     local to = H.phoneOf(src)
     if to and GetResourceState('npwd') == 'started' then
         pcall(function() exports.npwd:emitMessage({ senderNumber = F.hintNumber, targetNumber = to,
-            message = ('سمعت أن معك أشياء تريد بيعها. هناك رجل يشتري كل شيء ولا يسأل. اليوم تجده في مكان ما قرب %s. وضعت لك علامة على الخريطة. ابحث عن رجل يدخن وحده.'):format(bd and bd < 300 and name or 'المكان الذي على خريطتك') }) end)
+            message = ('سمعت أن معك أشياء تريد بيعها. هناك رجل يشتري كل شيء ولا يسأل. اليوم تجده في مكان ما قرب %s. وضعت لك علامة على الخريطة، تبقى حتى تجده. ابحث عن رجل يدخن وحده.'):format(bd and bd < 300 and name or 'المكان الذي على خريطتك') }) end)
     end
-    -- a wide circle on the map, the fence somewhere inside it (not in the middle)
-    local a, r = math.random() * math.pi * 2, math.random(40, 110)
-    TriggerClientEvent('exti_heists:client:fenceArea', src, { x = f.x + math.cos(a) * r, y = f.y + math.sin(a) * r, z = f.z }, F.hintRadius, F.hintMinutes)
+    sendCircle(src, true)
     H.log(src, 'fence_hint', name or '?')
 end
+
+-- back in the city (log in, script restart) or a new day (the fence moved): the circle again
+AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
+    local src = source
+    SetTimeout(5000, function() if GetPlayerName(src) then sendCircle(src, false) end end)
+end)
+CreateThread(function()
+    Wait(8000)
+    local sent = {}   -- [src] = the fence spot his circle is around
+    while true do
+        for _, id in ipairs(GetPlayers()) do
+            local src = tonumber(id)
+            local f = H.fenceSpot()
+            local key = f and ('%.0f,%.0f'):format(f.x, f.y) or nil
+            if key and sent[src] ~= key then
+                if sendCircle(src, false) then sent[src] = key end
+            end
+        end
+        Wait(5 * 60000)
+    end
+end)
 
 exports('FenceNumber', function() return F.number end)

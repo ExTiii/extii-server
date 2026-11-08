@@ -40,7 +40,7 @@ RegisterNetEvent('exti_heists:client:waypoint', function(p) if p and p.x then Se
 
 -- the stranger's tip: a wide circle where the fence is today
 local fenceArea, fenceMark
-RegisterNetEvent('exti_heists:client:fenceArea', function(p, radius, minutes)
+RegisterNetEvent('exti_heists:client:fenceArea', function(p, radius, minutes, loud)
     if fenceArea and DoesBlipExist(fenceArea) then RemoveBlip(fenceArea) end
     if fenceMark and DoesBlipExist(fenceMark) then RemoveBlip(fenceMark) end
     fenceArea, fenceMark = nil, nil
@@ -52,7 +52,8 @@ RegisterNetEvent('exti_heists:client:fenceArea', function(p, radius, minutes)
     SetBlipSprite(fenceMark, 66); SetBlipColour(fenceMark, 5); SetBlipScale(fenceMark, 0.8); SetBlipAsShortRange(fenceMark, false)
     SetBlipFlashes(fenceMark, true); SetBlipFlashTimer(fenceMark, 6000)
     BeginTextCommandSetBlipName('STRING'); AddTextComponentSubstringPlayerName('المصرّف في مكان ما هنا'); EndTextCommandSetBlipName(fenceMark)
-    HC.notify('وصلتك رسالة: علامة صفراء على خريطتك، المصرّف في مكان ما داخل الدائرة', 'inform', 8000)
+    if loud ~= false then HC.notify('وصلتك رسالة: علامة صفراء على خريطتك، المصرّف في مكان ما داخل الدائرة', 'inform', 8000) end
+    if minutes == 0 then return end   -- (stays until you meet him)
     local a1, a2 = fenceArea, fenceMark
     SetTimeout((minutes or 30) * 60000, function()
         if DoesBlipExist(a1) then RemoveBlip(a1) end
