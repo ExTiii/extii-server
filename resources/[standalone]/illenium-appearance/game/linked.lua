@@ -135,7 +135,7 @@ local function linkedComponents(ped, comp, drawable, texture)
                 piece = byName(ped, slot, nameHash) or fromPack(ped, slot, nameHash, tonumber(enumValue) or 0, comp)
             end
             if piece and piece.drawable >= 0 and piece.drawable < GetNumberOfPedDrawableVariations(ped, slot) then
-                out[#out + 1] = { component_id = slot, drawable = piece.drawable, texture = piece.texture or 0 }
+                out[#out + 1] = { component_id = slot, drawable = piece.drawable, texture = piece.texture or 0, bare = piece.pack == 'bare' or nil }
             end
         end
     end
@@ -216,3 +216,13 @@ RegisterCommand('extilinked', function()
         GetPedDrawableVariation(ped, 3), GetPedTextureVariation(ped, 3), GetPedDrawableVariation(ped, 8), GetPedTextureVariation(ped, 8)))
     lib.notify({ description = 'كُتبت التفاصيل في نافذة F8', type = 'inform' })
 end, false)
+
+---does the top on now leave no room for an undershirt (the game forces "nothing" there)?
+local function noUndershirt(ped)
+    local d, t = GetPedDrawableVariation(ped, 11), GetPedTextureVariation(ped, 11)
+    for _, c in ipairs(linkedComponents(ped, 11, d, t)) do
+        if c.component_id == 8 and c.bare then return true end
+    end
+    return false
+end
+client.noUndershirt = noUndershirt

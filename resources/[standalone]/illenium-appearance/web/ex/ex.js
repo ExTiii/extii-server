@@ -119,8 +119,9 @@ window.addEventListener('resize', fit);
 
 async function open() {
     fit();
-    const [st, dt, shop] = await Promise.all([post('appearance_get_settings'), post('appearance_get_data'), post('exti_get_shop')]);
+    const [st, dt, shop, nu] = await Promise.all([post('appearance_get_settings'), post('appearance_get_data'), post('exti_get_shop'), post('exti_no_undershirt')]);
     if (!st || !dt) return;
+    S.noUnder = !!(nu && nu.noUnder);
     S.settings = st.appearanceSettings;
     S.config = dt.config || {};
     S.cur = dt.appearanceData;

@@ -45,6 +45,11 @@ RegisterNUICallback("appearance_change_model", function(model, cb)
     })
 end)
 
+-- EX_Tii (Moe): is there room for an undershirt under the top on right now? (the screen hides that section if not)
+RegisterNUICallback("exti_no_undershirt", function(_, cb)
+    cb({ noUnder = client.noUndershirt(cache.ped) })
+end)
+
 RegisterNUICallback("appearance_change_component", function(component, cb)
     client.setPedComponent(cache.ped, component)
     local settings = client.getComponentSettings(cache.ped, component.component_id)

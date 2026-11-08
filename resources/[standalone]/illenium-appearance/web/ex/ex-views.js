@@ -142,6 +142,10 @@ function photo(path, card, cls) {
 }
 function viewPieces(b, cat) {
     if (!cat || !catEnabled(cat)) { b.appendChild(h('div', 'empty', 'لا يوجد شيء في هذا القسم.')); return; }
+    if (cat === 'c8' && S.noUnder) {
+        b.appendChild(h('div', 'empty', 'هذه القطعة العلوية مغلقة ولا يُلبس تحتها شيء. اختر قطعة علوية أخرى لتظهر الخيارات هنا.'));
+        return;
+    }
     const isProp = cat[0] === 'p', id = +cat.slice(1);
     const set = isProp ? propSet(id) : compSet(id);
     const cur = isProp ? propOf(S.cur, id) : compOf(S.cur, id);
@@ -224,12 +228,13 @@ async function pick(cat, drawable, texture) {
         const key = isProp ? 'prop_id' : 'component_id';
         const i = list.findIndex((x) => x[key] === id); if (i >= 0) list[i] = res;
     }
-    // a jacket brings its own arms and undershirt (the game's own data): they change with it
+    // a top brings its own arms and undershirt (the game's own data): they change with it
     if (!isProp && res && Array.isArray(res.linked)) {
         res.linked.forEach((l) => {
             const c = compOf(S.cur, l.component_id); if (!c) return;
             c.drawable = l.drawable; c.texture = l.texture;
         });
+        if (id === 11) S.noUnder = res.linked.some((l) => l.component_id === 8 && l.bare);
     }
     // un-strip that part of the body: you picked something to wear on it
     S.stripped = {};
