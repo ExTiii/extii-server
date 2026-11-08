@@ -253,6 +253,14 @@ local function applyAutomaticFade(ped, style)
     end
 end
 
+-- EX_Tii: a tattoo at full opacity is painted ONCE. Painting it 10 times (the old opacity trick) filled GTA's
+-- decoration limit, so a newly bought tattoo (added last) silently vanished while its preview (added first) showed.
+local function paintCount(opacity)
+    opacity = tonumber(opacity) or 1
+    if opacity >= 0.95 then return 1 end
+    return math.max(1, math.floor(opacity * 10 + 0.5))
+end
+
 local function setTattoos(ped, tattoos, style)
     local isMale = client.getPedDecorationType() == "male"
     ClearPedDecorations(ped)
@@ -265,7 +273,7 @@ local function setTattoos(ped, tattoos, style)
         for i = 1, #tattoos[k] do
             local tattoo = tattoos[k][i]
             local tattooGender = isMale and tattoo.hashMale or tattoo.hashFemale
-            for _ = 1, (tattoo.opacity or 0.1) * 10 do
+            for _ = 1, paintCount(tattoo.opacity) do
                 AddPedDecorationFromHashes(ped, joaat(tattoo.collection), joaat(tattooGender))
             end
         end
@@ -349,15 +357,15 @@ local function setPreviewTattoo(ped, tattoos, tattoo)
     local tattooGender = isMale and tattoo.hashMale or tattoo.hashFemale
 
     ClearPedDecorations(ped)
-    for _ = 1, (tattoo.opacity or 0.1) * 10 do
-        AddPedDecorationFromHashes(ped, joaat(tattoo.collection), tattooGender)
+    for _ = 1, paintCount(tattoo.opacity) do
+        AddPedDecorationFromHashes(ped, joaat(tattoo.collection), joaat(tattooGender))
     end
     for k in pairs(tattoos) do
         for i = 1, #tattoos[k] do
             local aTattoo = tattoos[k][i]
             if aTattoo.name ~= tattoo.name then
                 local aTattooGender = isMale and aTattoo.hashMale or aTattoo.hashFemale
-                for _ = 1, (aTattoo.opacity or 0.1) * 10 do
+                for _ = 1, paintCount(aTattoo.opacity) do
                     AddPedDecorationFromHashes(ped, joaat(aTattoo.collection), joaat(aTattooGender))
                 end
             end
