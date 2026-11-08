@@ -44,6 +44,8 @@ CreateThread(function()
     loadDrops()
 end)
 
+local lastSel, selSince = false, 0   -- which prompt line is picked, and since when (see the E check below)
+
 local function promptText(summary)
     if not summary then return '[E] التقاط الأغراض' end
     local text = ('[E] التقاط %s (%d)'):format(summary.label, summary.count)
@@ -132,9 +134,13 @@ CreateThread(function()
                 if bestId ~= nearest or GetGameTimer() - shownAt > 1000 then showPrompt(bestId) end
                 sleep = 0
                 -- EX_Tii: E only when OUR line is the picked one in the prompt list (a safe, a till or a shop
-                -- right next to the bag must not fire together with it)
+                -- right next to the bag must not fire together with it). On the press, not the release: the
+                -- other script acts on the press and its line goes away, which would make ours the picked one
+                -- by the time the key comes up. And the pick must have been ours for a moment already.
                 local sel = LocalPlayer.state.interactSel
-                if IsControlJustReleased(0, Config.Key) and (sel == nil or sel == GetCurrentResourceName()) then
+                if sel ~= lastSel then lastSel, selSince = sel, GetGameTimer() end
+                local mine = (sel == nil or sel == GetCurrentResourceName()) and GetGameTimer() - selSince > 300
+                if mine and IsControlJustPressed(0, Config.Key) then
                     pickUp(bestId)
                 end
             else

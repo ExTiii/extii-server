@@ -133,11 +133,13 @@ local function register()
     -- guns (above); everything else (cash, ammo, armour...) can be taken while he is down or cuffed
     local KEEP = { handcuffs = true, radio = true, evidence_bag = true, police_evidence = true }
     hookIds[#hookIds + 1] = exports.ox_inventory:registerHook('swapItems', function(payload)
-        if not isRobbery(payload) then return true end
-        local victim = getPlayer(tonumber(payload.fromInventory))
+        -- anything leaving another player's bag through my hands (robbery): the victim's gear
+        local src, from = tonumber(payload.source), tonumber(payload.fromInventory)
+        if not src or not from or src == from or payload.fromType ~= 'player' then return true end
+        local victim = getPlayer(from)
         if not victim or not isCop(victim) then return true end
-        local src = tonumber(payload.source)
-        if src then notify(src, 'error', 'أدوات الشرطي (الأصفاد، اللاسلكي، أكياس الأدلة) لا تُؤخذ') end
+        notify(src, 'error', 'أدوات الشرطي (الأصفاد، اللاسلكي، أكياس الأدلة) لا تُؤخذ')
+        lib.logger(src, 'police', ('tried to take %s from officer %d'):format(payload.fromSlot and payload.fromSlot.name or '?', from))
         return false
     end, { itemFilter = KEEP })
 end
