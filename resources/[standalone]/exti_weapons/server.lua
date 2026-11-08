@@ -73,3 +73,29 @@ end)
 lib.addCommand('dmgtest', { help = 'Weapons: show the damage of every hit you land (admin)', restricted = 'group.admin' }, function(source)
     TriggerClientEvent('exti_weapons:client:dmgtest', source)
 end)
+
+-- EX_Tii (Moe): guns are never dropped on the ground: in your trunk or glove box, or handed to someone.
+-- (ammo, attachments and everything else drop as usual)
+CreateThread(function()
+    Wait(3000)
+    local guns = {}
+    local okI, items = pcall(function() return exports.ox_inventory:Items() end)
+    if okI and type(items) == 'table' then
+        for name in pairs(items) do
+            if type(name) == 'string' and name:find('^WEAPON_') then guns[name] = true end
+        end
+    end
+    if not next(guns) then return end
+    local ok, err = pcall(function()
+        exports.ox_inventory:registerHook('swapItems', function(payload)
+            if payload.fromType == 'player' and (payload.toType == 'drop' or payload.toType == 'newdrop') then
+                pcall(function()
+                    TriggerClientEvent('ox_lib:notify', payload.source, { description = 'لا تُرمى الأسلحة على الأرض: ضعها في صندوق سيارتك أو درجها، أو أعطها لشخص', type = 'error', duration = 5000 })
+                end)
+                return false
+            end
+            return true
+        end, { itemFilter = guns })
+    end)
+    if not ok then print('^1[exti_weapons] swapItems hook: ' .. tostring(err) .. '^0') end
+end)

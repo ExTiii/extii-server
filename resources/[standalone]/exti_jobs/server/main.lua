@@ -1426,7 +1426,7 @@ lib.callback.register('exti_jobs:server:batchFinish', function(source, token, sc
     return a, b, c
 end)
 
--- the goods of these jobs can't be kept in a stash or dropped on the ground (only carried, in your car, or given):
+-- the goods of these jobs can't be kept in a stash (carried, in your car, on the ground, or given are all fine):
 -- the weight of your bag plus your car's trunk is what limits a batch
 CreateThread(function()
     Wait(2000)
@@ -1437,11 +1437,11 @@ CreateThread(function()
     if not next(goods) then return end
     local ok, err = pcall(function()
         ox:registerHook('swapItems', function(payload)
-            -- EX_Tii (Moe): your car is your work partner: the trunk and the glove box are allowed; stashes, the
-            -- ground and containers are not (only carried, in a car, or given to a person)
+            -- EX_Tii (Moe): the trunk, the glove box, the ground and other people are all fine; only stashes and
+            -- containers are not (goods are not kept across days in a house)
             local to = payload.toType
-            if payload.fromType == 'player' and to ~= 'player' and to ~= 'trunk' and to ~= 'glovebox' then
-                notify(payload.source, 'لا يمكن تخزين هذه البضاعة إلا في سيارتك (الصندوق أو الدرج)', 'error', 5000)
+            if payload.fromType == 'player' and to ~= 'player' and to ~= 'trunk' and to ~= 'glovebox' and to ~= 'drop' and to ~= 'newdrop' then
+                notify(payload.source, 'لا تُخزَّن هذه البضاعة في المخازن: في سيارتك، على الأرض، أو أعطها لشخص', 'error', 5000)
                 return false
             end
             return true
