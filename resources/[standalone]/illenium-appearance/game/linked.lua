@@ -17,6 +17,33 @@ local function shopRecord(nameHash, slot)
     return { comp = slot, drawable = drawable, texture = texture }
 end
 
+-- the DLC pack (collection) whose name hashes to this: forced pieces are "piece N of pack X"
+local packs = {}   -- [model .. ':' .. hash] = pack name | false
+local function packByHash(ped, hash)
+    local key = GetEntityModel(ped) .. ':' .. hash
+    local hit = packs[key]
+    if hit ~= nil then return hit or nil end
+    local okN, n = pcall(GetPedCollectionsCount, ped)
+    for i = 0, (okN and n or 0) - 1 do
+        local okName, name = pcall(GetPedCollectionName, ped, i)
+        if okName and name and name ~= '' and GetHashKey(name) == hash then
+            packs[key] = name
+            return name
+        end
+    end
+    packs[key] = false
+    return nil
+end
+
+---a forced piece given as pack + local number: the global drawable of that slot
+local function fromPack(ped, comp, packHash, localIndex)
+    local pack = packByHash(ped, packHash)
+    if not pack then return nil end
+    local ok, global = pcall(GetPedDrawableGlobalIndexFromCollection, ped, comp, pack, localIndex)
+    if not ok or type(global) ~= 'number' or global < 0 or global >= GetNumberOfPedDrawableVariations(ped, comp) then return nil end
+    return { comp = comp, drawable = global, texture = 0, pack = pack }
+end
+
 -- a forced piece given by name: its shop record first, else which drawable/texture of that slot carries this name
 local function byName(ped, comp, nameHash)
     local key = GetEntityModel(ped) .. ':' .. nameHash
@@ -59,7 +86,7 @@ local function linkedComponents(ped, comp, drawable, texture)
             if nameHash == 0 or nameHash == nil then
                 piece = { comp = slot, drawable = tonumber(enumValue) or 0, texture = 0 }
             else
-                piece = byName(ped, slot, nameHash)
+                piece = fromPack(ped, slot, nameHash, tonumber(enumValue) or 0) or byName(ped, slot, nameHash)
             end
             if piece and piece.drawable >= 0 and piece.drawable < GetNumberOfPedDrawableVariations(ped, slot) then
                 out[#out + 1] = { component_id = slot, drawable = piece.drawable, texture = piece.texture or 0 }
@@ -116,18 +143,19 @@ RegisterCommand('extilinked', function()
         print(('[extilinked] comp %d: drawable %d texture %d hash %s forced %d'):format(comp, d, t, tostring(hash), n))
         for i = 0, (n or 0) - 1 do
             local nameHash, enumValue, slot = GetForcedComponent(hash, i)
-            local piece = (nameHash ~= 0 and nameHash ~= nil) and byName(ped, tonumber(slot) or 0, nameHash)
-            local raw = ''
+            local piece
             if nameHash ~= 0 and nameHash ~= nil then
-                local buf = string.rep('\0', 80)
-                pcall(Citizen.InvokeNative, 0x74C0E2A57EC66760, nameHash, buf)
-                local v = {}
-                for k = 0, 8 do v[#v + 1] = tostring(string.unpack('<i4', buf, k * 8 + 1)) end
-                raw = ' record[' .. table.concat(v, ' ') .. ']'
+                piece = fromPack(ped, tonumber(slot) or 0, nameHash, tonumber(enumValue) or 0) or byName(ped, tonumber(slot) or 0, nameHash)
             end
-            print(('[extilinked]   forced %d: nameHash %s enumValue %s slot %s -> %s%s'):format(i, tostring(nameHash),
-                tostring(enumValue), tostring(slot), piece and ('drawable %d texture %d'):format(piece.drawable, piece.texture) or 'NOT FOUND', raw))
+            print(('[extilinked]   forced %d: nameHash %s enumValue %s slot %s -> %s'):format(i, tostring(nameHash),
+                tostring(enumValue), tostring(slot), piece and ('drawable %d texture %d%s'):format(piece.drawable, piece.texture,
+                piece.pack and (' (pack ' .. piece.pack .. ')') or '') or (nameHash == 0 and 'by value' or 'NOT FOUND')))
         end
+    end
+    do
+        local okN, n = pcall(GetPedCollectionsCount, ped)
+        local okP, jp = pcall(GetPedDrawableVariationCollectionName, ped, 11)
+        print(('[extilinked] packs on this body: %s · the jacket is from pack: %s'):format(okN and tostring(n) or 'n/a', okP and tostring(jp) or 'n/a'))
     end
     print(('[extilinked] arms now: drawable %d texture %d · undershirt: drawable %d texture %d'):format(
         GetPedDrawableVariation(ped, 3), GetPedTextureVariation(ped, 3), GetPedDrawableVariation(ped, 8), GetPedTextureVariation(ped, 8)))
