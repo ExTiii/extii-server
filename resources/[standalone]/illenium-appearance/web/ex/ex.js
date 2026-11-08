@@ -26,8 +26,8 @@ async function post(name, data) {
 
 /* ---------------- what is what ---------------- */
 const COMP = {
-    11: { label: 'السترات', icon: 'jacket', group: 'top', cfg: 'jackets' },
-    8: { label: 'القمصان', icon: 'shirt', group: 'top', cfg: 'shirts' },
+    11: { label: 'الملابس العلوية', icon: 'jacket', group: 'top', cfg: 'jackets' },
+    8: { label: 'تحت السترة', icon: 'shirt', group: 'top', cfg: 'shirts' },
     3: { label: 'اليدان والقفازات', icon: 'hand', group: 'top', cfg: 'upperBody' },
     7: { label: 'الوشاح والسلاسل', icon: 'scarf', group: 'top', cfg: 'scarfAndChains' },
     5: { label: 'الحقائب', icon: 'bag', group: 'top', cfg: 'bags' },
