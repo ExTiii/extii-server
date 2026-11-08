@@ -112,8 +112,13 @@ function RAD.vehicleMenu()
             items[#items + 1] = { id = 'flip', label = 'قلب المركبة', icon = 'rotate', action = 'flip' }
         end
     end
-    items[#items + 1] = { id = 'keys', label = 'إعطاء المفتاح', icon = 'key', action = 'giveKeys' }
-    items[#items + 1] = { id = 'takekeys', label = 'استرجاع المفاتيح', icon = 'key', action = 'takeKeys' }
+    -- EX_Tii (Moe): giving / taking back keys is for the owner of the car only
+    local owner = Entity(veh).state.owner
+    local me = QBX and QBX.PlayerData and QBX.PlayerData.citizenid
+    if owner and me and owner == me then
+        items[#items + 1] = { id = 'keys', label = 'إعطاء المفتاح', icon = 'key', action = 'giveKeys' }
+        items[#items + 1] = { id = 'takekeys', label = 'استرجاع المفاتيح', icon = 'key', action = 'takeKeys' }
+    end
     return items
 end
 
@@ -234,6 +239,8 @@ RAD.actions.giveKeys = function()
         notify('نظام المفاتيح غير مفعّل', 'error')
     elseif err == 'keys' then
         notify('ليس معك مفتاح هذه المركبة', 'error')
+    elseif err == 'owner' then
+        notify('هذه المركبة ليست ملكك', 'error')
     elseif err == 'nobody' then
         notify('لا يوجد أحد قريب منك', 'error')
     end

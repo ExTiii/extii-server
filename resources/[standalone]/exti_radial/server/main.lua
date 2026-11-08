@@ -25,6 +25,9 @@ lib.callback.register('exti_radial:server:giveKeys', function(source)
     local coords = GetEntityCoords(ped)
     local vehicle = lib.getClosestVehicle(coords, Config.vehicleReach)
     if not vehicle then return false, 'vehicle' end
+    -- EX_Tii (Moe): only the owner of the car hands out keys (a stolen or NPC car: nobody can)
+    local owner = Entity(vehicle).state.owner
+    if not owner or owner ~= player.PlayerData.citizenid then return false, 'owner' end
     local hasKeys = false   -- (EX_Tii: no answer from the key system = no key)
     pcall(function() hasKeys = exports.qbx_vehiclekeys:HasKeys(source, vehicle) == true end)
     if not hasKeys then return false, 'keys' end
