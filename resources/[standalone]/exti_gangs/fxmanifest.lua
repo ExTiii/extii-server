@@ -23,6 +23,7 @@ client_scripts {
     'client/turf.lua',
     'client/craft.lua',
     'client/weed.lua',
+    'client/fencespots.lua',
 }
 
 server_scripts {

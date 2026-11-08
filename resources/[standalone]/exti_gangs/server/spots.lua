@@ -45,6 +45,12 @@ do
             spots.fenceAdmin = { day = tostring(data.fenceAdmin.day), x = data.fenceAdmin.x, y = data.fenceAdmin.y, z = data.fenceAdmin.z, h = data.fenceAdmin.h }
         end
         spots.blackmarket = pos4(data.blackmarket)
+        -- the fence's daily spots, edited in game with /fencespots (else the list in config.lua)
+        if type(data.fenceList) == 'table' then
+            local list = {}
+            for _, d in ipairs(data.fenceList) do local p = pos4(d); if p then p.label = type(d.label) == 'string' and d.label or nil; list[#list + 1] = p end end
+            if #list > 0 then spots.fenceList = list end
+        end
     end
 end
 GANG.spots = spots
@@ -54,10 +60,17 @@ local function fenceToday()
     local day = os.date('%Y-%m-%d')
     local a = spots.fenceAdmin
     if a and a.day == day and num(a.x) then return { x = a.x, y = a.y, z = a.z, h = num(a.h) and a.h or 0.0 } end
-    local list = C.fence.spots or {}
+    local list = GANG.fenceList()
     if #list == 0 then return nil end
     local p = list[(tonumber(os.date('%j')) + tonumber(os.date('%Y'))) % #list + 1]
-    return { x = p.x, y = p.y, z = p.z, h = p.w, snap = true }
+    return { x = p.x, y = p.y, z = p.z, h = p.h, snap = true }
+end
+-- the daily spots: { x, y, z, h, label }
+function GANG.fenceList()
+    if spots.fenceList and #spots.fenceList > 0 then return spots.fenceList end
+    local out = {}
+    for i, p in ipairs(C.fence.spots or {}) do out[i] = { x = p.x, y = p.y, z = p.z, h = p.w or 0.0 } end
+    return out
 end
 GANG.fenceToday = fenceToday
 
@@ -143,4 +156,58 @@ lib.callback.register('exti_gangs:server:spotSave', function(source, what, a, b)
     publish()
     GANG.log(type(a) == 'string' and a or '-', GANG.charName(GANG.player(source)), 'spot_' .. what, type(b) == 'string' and b or '')
     return true
+end)
+
+
+---------------------------------------------------------------------------
+-- /fencespots (admins): the fence's daily spots. Add one where you stand, remove one, go to one,
+-- or put him where you stand for today only. Saved in data/spots.json (wins over config.lua).
+---------------------------------------------------------------------------
+local function fenceMenu(source)
+    local list = GANG.fenceList()
+    local f = fenceToday()
+    local out = {}
+    for i, p in ipairs(list) do
+        out[i] = { x = p.x, y = p.y, z = p.z, h = p.h, label = p.label, today = f ~= nil and math.abs(f.x - p.x) < 0.5 and math.abs(f.y - p.y) < 0.5 }
+    end
+    TriggerClientEvent('exti_gangs:client:fenceSpots', source, out, spots.fenceAdmin and spots.fenceAdmin.day == os.date('%Y-%m-%d'))
+end
+lib.addCommand('fencespots', { help = 'أماكن المصرّف اليومية (للإدارة)', restricted = 'group.admin' }, function(source) fenceMenu(source) end)
+
+lib.callback.register('exti_gangs:server:fenceSpots', function(source, what, i, label)
+    if not isAdmin(source) then return false end
+    local ped = GetPlayerPed(source)
+    local c, h = GetEntityCoords(ped), GetEntityHeading(ped)
+    -- the first change copies the config list, then the copy is what counts
+    if not spots.fenceList then spots.fenceList = GANG.fenceList() end
+    local list = spots.fenceList
+    local msg
+    if what == 'add' then
+        if #list >= 30 then return false, 'الحد 30 مكانًا' end
+        list[#list + 1] = { x = c.x, y = c.y, z = c.z, h = h, label = type(label) == 'string' and label:sub(1, 40) or nil }
+        msg = ('أُضيف المكان رقم %d'):format(#list)
+    elseif what == 'remove' then
+        i = math.tointeger(i)
+        if not i or not list[i] then return false end
+        if #list <= 1 then return false, 'لا بد من مكان واحد على الأقل' end
+        table.remove(list, i)
+        msg = 'حُذف المكان'
+    elseif what == 'move' then
+        i = math.tointeger(i)
+        if not i or not list[i] then return false end
+        list[i] = { x = c.x, y = c.y, z = c.z, h = h, label = list[i].label }
+        msg = ('نُقل المكان رقم %d إلى حيث تقف'):format(i)
+    elseif what == 'today' then
+        spots.fenceAdmin = { day = os.date('%Y-%m-%d'), x = c.x, y = c.y, z = c.z, h = h }
+        msg = 'المصرّف هنا اليوم فقط'
+    elseif what == 'today_clear' then
+        spots.fenceAdmin = nil
+        msg = 'رجع المصرّف لمكان اليوم من القائمة'
+    else
+        return false
+    end
+    publish()
+    GANG.log('-', GANG.charName(GANG.player(source)), 'fence_' .. what, tostring(i or ''))
+    SetTimeout(200, function() fenceMenu(source) end)
+    return true, msg
 end)
