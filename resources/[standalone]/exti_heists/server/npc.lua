@@ -280,6 +280,7 @@ end)
 -- start a response at pos for these players (already in no-police mode)
 ---------------------------------------------------------------------------
 function H.npcRespond(players, pos, kind)
+    if N.enabled == false then return end   -- (switched off in config.lua)
     local spec = N.kinds[kind] or N.kinds.store
     -- one response per robber: a second alarm only adds people to it
     for _, s in ipairs(players) do

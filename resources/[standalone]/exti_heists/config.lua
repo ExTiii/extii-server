@@ -60,6 +60,7 @@ Config.combatLog = {
 -- NPC security (no-police mode): "حراسة الحي"
 ---------------------------------------------------------------------------
 Config.npc = {
+    enabled = false,         -- EX_Tii (Moe): off for now. true = the NPC guards come to robberies again
     kinds = {   -- delay = seconds after the alarm, cars = how many (each car: 2 guards)
         -- (EX_Tii: faster and more of them; they drive in from 160-260 m, about 20-30 s more)
         store   = { delay = 40,  cars = { 2, 3 }, weapons = { 'WEAPON_PISTOL', 'WEAPON_PUMPSHOTGUN' } },
