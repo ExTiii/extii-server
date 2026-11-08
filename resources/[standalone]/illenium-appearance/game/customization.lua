@@ -558,6 +558,8 @@ function client.startPlayerCustomization(cb, conf)
     TaskStandStill(cache.ped, -1)
 
     if Config.HideRadar then DisplayRadar(false) end
+    -- EX_Tii (Moe): the panel is see-through, so the HUD (money, bars) hides while the screen is open
+    LocalPlayer.state:set("characterScreen", true, false)
 
     SendNuiMessage(json.encode({
         type = "appearance_display",
@@ -573,6 +575,7 @@ function client.exitPlayerCustomization(appearance)
     SetNuiFocus(false, false)
 
     if Config.HideRadar then DisplayRadar(true) end
+    LocalPlayer.state:set("characterScreen", false, false)
 
     ClearPedTasksImmediately(cache.ped)
     SetEntityInvincible(cache.ped, false)
