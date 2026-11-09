@@ -40,6 +40,6 @@ Config.checkpoint = {
     policeJob = 'police',
     gateSwingTime = 3.0, gateForward = 1.5, gateGap = 0.35,   -- seconds to open / shut; how far the gates sit from the booth's middle; the gap between the two halves
     boothModels = { 'prop_air_sechut_01', 'prop_sec_hut_01', 'prop_gatehouse_01', 'prop_air_gate_booth_01', 'prop_parking_hut_2' },
-    gateModels = { 'prop_gate_prison_01', 'prop_facgate_07b', 'prop_facgate_08', 'prop_gate_military_01', 'prop_facgate_01', 'prop_gate_docks_ld' },
+    gateModels = { 'prop_fnclink_06gate3', 'prop_gate_prison_01', 'prop_facgate_07b', 'prop_facgate_08', 'prop_gate_military_01', 'prop_facgate_01', 'prop_gate_docks_ld' },
     signModels = { 'prop_sign_road_01a' },
 }

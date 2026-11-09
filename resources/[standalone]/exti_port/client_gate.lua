@@ -162,7 +162,7 @@ local function makeGate()
         print('^3[exti_port] no booth model found^0')
     end
     -- the gates: each lane two halves (right = into the port, left = out)
-    local gate = pickHalf((W - boothHalf) / 2 + 0.3, GlobalState.extiPortArmModel)
+    local gate = pickHalf((math.max(Wr, Wl) - boothHalf) / 2 + 0.3, GlobalState.extiPortArmModel)   -- (two big halves per lane)
     used.arm = gate
     if gate then
         addLane(gate, 1, boothHalf, Wr)
