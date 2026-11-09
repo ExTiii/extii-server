@@ -280,10 +280,15 @@ end
 
 local function playerEnterVehLoop()
     CreateThread(function()
+        local lastCheck = 0
         while isLoggedIn do
             local vehicle = GetVehiclePedIsTryingToEnter(cache.ped)
             if vehicle ~= 0 then
-                onVehicleAttemptToEnter(vehicle)
+                local now = GetGameTimer()
+                if now - lastCheck >= 100 then   -- (the lock roll / server message: as often as before, not every frame)
+                    lastCheck = now
+                    onVehicleAttemptToEnter(vehicle)
+                end
                 stopBreakIn()
             end
             Wait(vehicle ~= 0 and 0 or 100)   -- EX_Tii: every frame while walking up to a car (see stopBreakIn)
@@ -293,6 +298,7 @@ end
 
 CreateThread(function()
     if LocalPlayer.state.isLoggedIn then
+        isLoggedIn = true   -- EX_Tii: after a restart of this script the loop must run for players already in the city
         playerEnterVehLoop()
     end
 end)

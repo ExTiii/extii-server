@@ -1324,9 +1324,15 @@ lib.callback.register('exti_jobs:server:batchBegin', function(source, stepIndex,
     local have = countBoth(source, trunk, step.take)
     for item in pairs(step.takeAlso or {}) do have = have + countBoth(source, trunk, item) end   -- (metals: every kind of bar)
     if have < 1 then return false, 'missing', step.take end
-    shift.pending = { step = stepIndex, count = math.min(have, MAX_BATCH), at = GetGameTimer(), token = math.random(100000, 999999), trunk = trunk }
+    shift.pending = { step = stepIndex, count = math.min(have, MAX_BATCH), at = GetGameTimer(), token = math.random(100000, 999999), trunk = trunk, trunkNet = trunk and helperNetId or nil }
     return true, { token = shift.pending.token, count = shift.pending.count, seconds = step.seconds, trunk = trunk ~= nil }
 end)
+
+-- the same time scale as the screen (client/chain.lua): 20 pieces = the normal time, fewer = a bit quicker
+-- (never under 3/4), more = longer (up to 3x)
+local function batchScale(count)
+    return math.max(0.75, math.min(3.0, 0.5 + (tonumber(count) or 20) / 40))
+end
 
 local function batchFinish(source, token, score)
     local shift, step, job = batchStep(source, shifts[source] and shifts[source].pending and shifts[source].pending.step)
@@ -1335,7 +1341,10 @@ local function batchFinish(source, token, score)
     shift.pending = nil
     if not pending or pending.token ~= token then return false, 'failed' end
     -- the game (or the progress bar) really took its time
-    if GetGameTimer() - pending.at < step.seconds * 1000 - 1500 then return false, 'fast' end
+    local scale = step.kind == 'batch' and batchScale(pending.count) or 1.0
+    if GetGameTimer() - pending.at < step.seconds * 1000 * scale - 1500 then return false, 'fast' end
+    -- the work car must still be there at the end (parked next to you, your keys): else only your bag counts
+    if pending.trunk and helperTrunk(source, pending.trunkNet) ~= pending.trunk then pending.trunk = nil end
     if step.kind == 'sellall' and step.takeAlso then
         -- several goods, each its own price (metals: copper, iron, gold)
         local total, money, list = 0, 0, { { step.take, step.price } }

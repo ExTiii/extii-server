@@ -29,7 +29,13 @@ CreateThread(function()
             if okI and type(items) == 'table' and items.label then label = items.label end
             TriggerClientEvent('ox_lib:notify', from, { description = ('عرضت %d × %s على %s… بانتظار الرد'):format(payload.count or 1, label, nameOf(to)), type = 'inform', duration = 4000 })
             local okA, accepted = pcall(lib.callback.await, 'exti_tools:give:ask', to, { from = nameOf(from), label = label, count = payload.count or 1 })
-            if okA and accepted == true then return true end
+            if okA and accepted == true then
+                -- still next to each other when he says yes (the inventory checks this only before asking)
+                local a, b = GetPlayerPed(from), GetPlayerPed(to)
+                if a ~= 0 and b ~= 0 and #(GetEntityCoords(a) - GetEntityCoords(b)) <= 15.0 then return true end
+                TriggerClientEvent('ox_lib:notify', from, { description = 'ابتعدتما عن بعض، لم يتم التسليم', type = 'error', duration = 5000 })
+                return false
+            end
             TriggerClientEvent('ox_lib:notify', from, { description = ('%s لم يقبل %s'):format(nameOf(to), label), type = 'error', duration = 5000 })
             return false
         end)

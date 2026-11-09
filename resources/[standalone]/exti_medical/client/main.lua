@@ -4,6 +4,7 @@
 -- =====================================================================
 
 local lastHp, lastArmor
+local goingDown = false   -- EX_Tii: a one-tap headshot is on its way (see below)
 local pending = {}
 local flushing = false
 
@@ -74,7 +75,10 @@ AddEventHandler('gameEventTriggered', function(name, args)
     if hit and bone == 31086 and (kind == 'bullet' or kind == 'pellet') and damage > 0 and hp > 100 then
         local okD, down = pcall(function() return exports.qbx_medical:IsLaststand() or exports.qbx_medical:IsDead() end)
         local alreadyDown = okD and down == true   -- (a man in the last stand is finished by normal damage, not one tap)
-        if Config.headshotOneTap ~= false and not alreadyDown and not IsPedWearingHelmet(ped) then
+        if Config.headshotOneTap ~= false and not alreadyDown and not goingDown and not IsPedWearingHelmet(ped) then
+            -- (a shotgun is several pellets in the same moment: only the first one sends him down)
+            goingDown = true
+            SetTimeout(3000, function() goingDown = false end)
             -- straight into the last stand (qbx_medical's own flow: the same as the game killing him; EMS can
             -- still revive). Done through its export so the down state is never skipped or half-set.
             damage = damage + (hp - 100)

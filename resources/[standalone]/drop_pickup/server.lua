@@ -66,6 +66,13 @@ lib.callback.register('drop_pickup:take', function(source, dropId)
     end
     lastUse[source] = now
 
+    -- EX_Tii: down or cuffed = no picking up (the screen already hides the key; this is the server's own check)
+    local okP, player = pcall(function() return exports.qbx_core:GetPlayer(source) end)
+    local meta = okP and player and player.PlayerData and player.PlayerData.metadata
+    if meta and (meta.isdead or meta.inlaststand or meta.ishandcuffed) then
+        return { ok = false, error = 'busy' }
+    end
+
     local drop = getNearbyDrop(source, dropId)
     if not drop then return { ok = false, error = 'gone' } end
 

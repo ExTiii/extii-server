@@ -429,6 +429,14 @@ lib.callback.register("illenium-appearance:server:extiPayCart", function(source,
     if type(appearance) ~= "table" or type(appearance.components) ~= "table" or type(appearance.props) ~= "table" then
         return { ok = false, msg = "لم يتم الدفع، حاول مرة أخرى" }
     end
+    -- EX_Tii: every piece must be a real number (a broken piece would price as "nothing on" and be saved broken)
+    for _, list in ipairs({ appearance.components, appearance.props }) do
+        for _, v in pairs(list) do
+            if type(v) ~= "table" or not tonumber(v.drawable) or not tonumber(v.texture) then
+                return { ok = false, msg = "لم يتم الدفع، حاول مرة أخرى" }
+            end
+        end
+    end
     local citizenID = Framework.GetPlayerID(src)
     if not citizenID then return { ok = false, msg = "لم يتم الدفع، حاول مرة أخرى" } end
     paying[src] = true
