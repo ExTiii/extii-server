@@ -124,3 +124,78 @@ CreateThread(function()
         Wait(2000)
     end
 end)
+
+-- =====================================================================
+-- EX_Tii (Moe): the protective helmet. Use it from the bag to put it on (and again to take it off). While it
+-- is on, a headshot doesn't one-tap you: the helmet takes it and breaks (exti_medical calls BreakHelmet).
+-- It comes off by itself when it leaves your bag (dropped, given, taken) or when the clothing screen opens.
+-- =====================================================================
+local helmet = { on = false }
+
+local function helmetLook()
+    local look = Config.helmet.look
+    return GetEntityModel(cache.ped) == `mp_f_freemode_01` and look.female or look.male
+end
+
+local function takeOffHelmet(silent)
+    if not helmet.on then return end
+    helmet.on = false
+    local ped = cache.ped
+    -- the hat you had on before comes back
+    if helmet.prev and helmet.prev[1] >= 0 then
+        SetPedPropIndex(ped, 0, helmet.prev[1], helmet.prev[2], true)
+    else
+        ClearPedProp(ped, 0)
+    end
+    helmet.prev = nil
+    if not silent then lib.notify({ description = 'نزعت الخوذة', type = 'inform' }) end
+end
+
+local function putOnHelmet()
+    local ped = cache.ped
+    local look = helmetLook()
+    helmet.prev = { GetPedPropIndex(ped, 0), GetPedPropTextureIndex(ped, 0) }
+    SetPedPropIndex(ped, 0, look.drawable, look.texture, true)
+    helmet.on = true
+    lib.notify({ description = 'لبست الخوذة الواقية: تحميك من رصاصة واحدة في الرأس', type = 'success' })
+    -- off by itself when the helmet is no longer in your bag, or the hat slot was changed by something else
+    CreateThread(function()
+        while helmet.on do
+            Wait(1500)
+            if not helmet.on then break end
+            local count = exports.ox_inventory:Search('count', Config.helmet.item) or 0
+            local now = GetPedPropIndex(cache.ped, 0)
+            if count < 1 then takeOffHelmet(true)
+            elseif now ~= helmetLook().drawable then helmet.on = false; helmet.prev = nil end
+        end
+    end)
+end
+
+exports('useHelmet', function(data, slot)
+    if helmet.on then return takeOffHelmet() end
+    lib.playAnim(cache.ped, 'mp_masks@standard_car@ds@', 'put_on_mask', 8.0, 8.0, 800, 49)
+    Wait(800)
+    putOnHelmet()
+end)
+
+exports('HasHelmet', function() return helmet.on end)
+
+-- a headshot: the helmet takes it and is gone
+exports('BreakHelmet', function()
+    if not helmet.on then return false end
+    takeOffHelmet(true)
+    TriggerServerEvent('exti_weapons:server:helmetBroke')
+    lib.notify({ description = 'تحطمت خوذتك! أنقذتك من الرصاصة', type = 'error', duration = 6000 })
+    return true
+end)
+
+-- the clothing screen opens: the helmet comes off first (so it is never bought or saved as a hat)
+AddEventHandler('exti_weapons:client:takeOffHelmet', function() takeOffHelmet(true) end)
+
+-- admins: try a head prop on yourself to pick the helmet's look (/extihelmetlook 39 0)
+RegisterNetEvent('exti_weapons:client:helmetLook', function(drawable, texture)
+    if GetInvokingResource() then return end
+    drawable, texture = tonumber(drawable) or 0, tonumber(texture) or 0
+    SetPedPropIndex(cache.ped, 0, drawable, texture, true)
+    lib.notify({ description = ('الرأس: %d / %d (من أصل %d)'):format(drawable, texture, GetNumberOfPedPropDrawableVariations(cache.ped, 0)), type = 'inform', duration = 6000 })
+end)

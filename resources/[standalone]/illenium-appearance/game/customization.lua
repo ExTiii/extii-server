@@ -540,6 +540,9 @@ local callback
 function client.startPlayerCustomization(cb, conf)
     repeat Wait(0) until IsScreenFadedIn() and not IsPlayerTeleportActive() and not IsPlayerSwitchInProgress()
 
+    -- EX_Tii (Moe): the protective helmet comes off first (your own hat comes back), so it is never priced or saved
+    TriggerEvent('exti_weapons:client:takeOffHelmet')
+
     playerAppearance = client.getPedAppearance(cache.ped)
     playerCoords = GetEntityCoords(cache.ped, true)
     playerHeading = GetEntityHeading(cache.ped)

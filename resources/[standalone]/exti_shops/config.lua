@@ -77,14 +77,15 @@ Config.types = {
     ammunation = {
         label = 'متجر الأسلحة',
         icon = 'target',
-        greeting = 'أهلًا. لم نعد نبيع الأسلحة النارية ولا الذخيرة… الشارع هو من يبيعها الآن. عندنا سترات وأسلحة بيضاء فقط.',
-        notice = 'بأمر من البلدية: بيع الأسلحة النارية والذخيرة متوقف في هذا المتجر. السترات الخفيفة: واحدة لكل شخص في اليوم.',
+        greeting = 'أهلًا. لم نعد نبيع الأسلحة النارية ولا الذخيرة… الشارع هو من يبيعها الآن. عندنا سترات وخوذ واقية وأسلحة بيضاء فقط.',
+        notice = 'بأمر من البلدية: بيع الأسلحة النارية والذخيرة متوقف في هذا المتجر. السترة الخفيفة والخوذة الواقية: واحدة من كل نوع لكل شخص في اليوم.',
         clerk = { model = 's_m_y_ammucity_01' },
         circleDistance = 1.6,
         blip = { sprite = 110, colour = 1 }, -- the gun shop icon, red (Moe asked for it back)
         products = {
             -- EX_Tii gun rework: no guns, no ammo (the gangs supply them). Armour + melee only.
             { name = 'light_armour', price = 750, category = 'armour', max = 1, daily = 1 },   -- 50% armour, 1 a day per person
+            { name = 'ballistic_helmet', price = 1500, category = 'armour', max = 1, daily = 1 },   -- stops one headshot, then breaks (Moe)
             { name = 'WEAPON_KNIFE', price = 300, category = 'melee', max = 1 },
             { name = 'WEAPON_SWITCHBLADE', price = 270, category = 'melee', max = 1 },
             { name = 'WEAPON_MACHETE', price = 300, category = 'melee', max = 1 },

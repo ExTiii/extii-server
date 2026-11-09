@@ -5,6 +5,7 @@
 
 local lastHp, lastArmor
 local goingDown = false   -- EX_Tii: a one-tap headshot is on its way (see below)
+local helmetGrace = 0     -- EX_Tii: the helmet just broke: the rest of that same blast (shotgun pellets) is a normal hit
 local pending = {}
 local flushing = false
 
@@ -70,12 +71,21 @@ AddEventHandler('gameEventTriggered', function(name, args)
     end
 
     -- EX_Tii gun rework (Moe, Nov 2026): a bullet in the head is one tap: he goes down at once (health 100 =
-    -- the down / last stand, not a permanent death: EMS can still bring him back). A helmet saves him from
-    -- the one tap: then it is +50% like before (Config.headshotBonus). Armour never covers the head.
+    -- the down / last stand, not a permanent death: EMS can still bring him back). Only the protective helmet
+    -- (exti_weapons) saves him: it takes that shot and breaks. Armour never covers the head.
     if hit and bone == 31086 and (kind == 'bullet' or kind == 'pellet') and damage > 0 and hp > 100 then
         local okD, down = pcall(function() return exports.qbx_medical:IsLaststand() or exports.qbx_medical:IsDead() end)
         local alreadyDown = okD and down == true   -- (a man in the last stand is finished by normal damage, not one tap)
-        if Config.headshotOneTap ~= false and not alreadyDown and not goingDown and not IsPedWearingHelmet(ped) then
+        -- EX_Tii (Moe): only our protective helmet (Ammu-Nation) saves the head; it takes the shot and breaks.
+        -- Clothing-shop and bike helmets don't protect.
+        local okH, hasHelmet = pcall(function() return exports.exti_weapons:HasHelmet() end)
+        hasHelmet = okH and hasHelmet == true
+        if hasHelmet and not alreadyDown then
+            pcall(function() exports.exti_weapons:BreakHelmet() end)
+            helmetGrace = GetGameTimer() + 500
+        elseif GetGameTimer() < helmetGrace then
+            -- (same blast as the shot the helmet stopped: a normal hit)
+        elseif Config.headshotOneTap ~= false and not alreadyDown and not goingDown then
             -- (a shotgun is several pellets in the same moment: only the first one sends him down)
             goingDown = true
             SetTimeout(3000, function() goingDown = false end)

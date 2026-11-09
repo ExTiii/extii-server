@@ -99,3 +99,19 @@ CreateThread(function()
     end)
     if not ok then print('^1[exti_weapons] swapItems hook: ' .. tostring(err) .. '^0') end
 end)
+
+-- EX_Tii (Moe): the protective helmet broke on a headshot: it leaves the bag
+RegisterNetEvent('exti_weapons:server:helmetBroke', function()
+    local src = source
+    exports.ox_inventory:RemoveItem(src, Config.helmet.item, 1)
+    lib.logger(src, 'weapons', 'helmet broke on a headshot')
+end)
+
+-- admins: try a head prop on yourself (to pick the helmet's look)
+lib.addCommand('extihelmetlook', {
+    help = 'Weapons: try a head prop on yourself (admin) - number, colour',
+    params = { { name = 'number', type = 'number' }, { name = 'colour', type = 'number', optional = true } },
+    restricted = 'group.admin',
+}, function(source, args)
+    TriggerClientEvent('exti_weapons:client:helmetLook', source, args.number, args.colour or 0)
+end)

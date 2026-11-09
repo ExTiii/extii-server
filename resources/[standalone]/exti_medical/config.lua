@@ -203,5 +203,5 @@ Config.treat = {
 
 -- EX_Tii gun rework: a bullet in the head does this much more than a body shot (0.5 = +50%)
 Config.headshotBonus = 0.5
--- EX_Tii (Moe): a bullet in the head without a helmet = down at once (one tap). false = the +50% rule only
+-- EX_Tii (Moe): a bullet in the head without the protective helmet (exti_weapons) = down at once (one tap). false = the +50% rule only
 Config.headshotOneTap = true

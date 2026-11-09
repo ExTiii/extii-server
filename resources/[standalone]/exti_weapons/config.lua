@@ -68,3 +68,15 @@ Config.shots = {
     townZones = { 'SANDY', 'GRAPES', 'PALETO', 'HARMO', 'CHU', 'SLAB', 'GALFISH', 'ALAMO', 'DESRT', 'SANCHIA' },
     streakStep = 0.25,           -- each burst that wasn't reported (within 45 s) adds 25% (half with a suppressor)
 }
+
+-- EX_Tii (Moe): the protective helmet (Ammu-Nation). The only thing that saves a head from the one-tap: the
+-- helmet takes the shot and breaks (it is gone from the bag). Clothing-shop and bike helmets don't protect.
+-- `look` = the head prop (hats slot) it puts on. To pick another look in game: /extihelmetlook <number> <colour>
+-- (admin) tries one on you; then put the numbers here.
+Config.helmet = {
+    item = 'ballistic_helmet',
+    look = {
+        male = { drawable = 39, texture = 0 },
+        female = { drawable = 38, texture = 0 },
+    },
+}

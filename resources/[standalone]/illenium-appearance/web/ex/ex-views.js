@@ -259,8 +259,8 @@ function cart() {
         const isProp = cat[0] === 'p', id = +cat.slice(1);
         const a = isProp ? propOf(S.cur, id) : compOf(S.cur, id);
         const removed = a.drawable === noneDrawable(cat);
-        // arms come with the jacket or the shirt, and the undershirt with the jacket: free (the server prices it the same way)
-        const free = removed || (cat === 'c8' && changed('c11')) || (cat === 'c3' && (changed('c11') || changed('c8')));
+        // only taking a piece off is free; arms/gloves and undershirts always cost (Moe; the server prices it the same way)
+        const free = removed;
         lines.push({ cat, label: catInfo(cat).label, d: a.drawable, t: a.texture, price: free ? 0 : priceOf(cat), removed });
     });
     return lines;

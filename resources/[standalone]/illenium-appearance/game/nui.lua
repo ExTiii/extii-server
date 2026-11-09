@@ -8,8 +8,24 @@ RegisterNUICallback("appearance_get_settings", function(_, cb)
     cb({ appearanceSettings = client.getAppearanceSettings() })
 end)
 
+-- EX_Tii (Moe): the shop remembers your gloves while you browse. Arms/gloves (component 3) are remembered per
+-- top: the jacket when one is on, the undershirt when there is none (that is what decides the sleeves). Trying
+-- another jacket gives the arms that fit it; going back to a top you had gloves with gives your gloves back.
+local armsMemory = {}
+local function topKey(ped)
+    if client.jacketOff(ped) then
+        return ('u:%d:%d'):format(GetPedDrawableVariation(ped, 8), GetPedTextureVariation(ped, 8))
+    end
+    return ('j:%d:%d'):format(GetPedDrawableVariation(ped, 11), GetPedTextureVariation(ped, 11))
+end
+local function rememberArms(ped)
+    armsMemory[topKey(ped)] = { GetPedDrawableVariation(ped, 3), GetPedTextureVariation(ped, 3) }
+end
+
 RegisterNUICallback("appearance_get_data", function(_, cb)
     Wait(250)
+    armsMemory = {}
+    rememberArms(cache.ped)   -- what you walked in with
     local appearanceData = client.getAppearance()
     if appearanceData.tattoos then
         client.setPedTattoos(cache.ped, appearanceData.tattoos)
@@ -57,6 +73,19 @@ RegisterNUICallback("appearance_change_component", function(component, cb)
     -- brings its own arms (game/linked.lua)
     if component.component_id == 11 or component.component_id == 8 then
         settings.linked = client.applyLinkedTop(cache.ped, component.component_id, component.drawable, component.texture)
+        -- back on a top you had gloves with: your gloves, not the game's plain arms
+        if component.component_id == 11 or client.jacketOff(cache.ped) then
+            local m = armsMemory[topKey(cache.ped)]
+            if m then
+                SetPedComponentVariation(cache.ped, 3, m[1], m[2], 0)
+                local entry
+                for _, c in ipairs(settings.linked) do if c.component_id == 3 then entry = c end end
+                if not entry then entry = { component_id = 3 }; settings.linked[#settings.linked + 1] = entry end
+                entry.drawable, entry.texture = m[1], m[2]
+            end
+        end
+    elseif component.component_id == 3 then
+        rememberArms(cache.ped)   -- gloves you picked: kept for this top
     end
     cb(settings)
 end)

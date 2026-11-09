@@ -1207,6 +1207,17 @@ return {
         client = { image = 'armour.png', export = 'exti_weapons.useLightArmour' },
     },
 
+    -- EX_Tii (Moe): the protective helmet (Ammu-Nation). The only thing that stops a one-tap headshot: it takes
+    -- that shot and breaks. Use it to put it on / take it off (exti_weapons).
+    ['ballistic_helmet'] = {
+        label = 'خوذة واقية',
+        weight = 1200,
+        stack = false,
+        consume = 0,
+        description = 'تحميك من رصاصة واحدة في الرأس ثم تتحطم. استعملها لتلبسها أو تنزعها',
+        client = { image = 'ballistic_helmet.png', export = 'exti_weapons.useHelmet' },
+    },
+
     -- EX_Tii gangs: turf graffiti (tools shop). One can = one tag; the brush scrubs 3 rival tags
     ['spray_can'] = {
         label = 'علبة رش',
