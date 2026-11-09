@@ -5,7 +5,8 @@
 -- =====================================================================
 local marks = {}
 local corners, openings = {}, {}
-local pieces = {}            -- the objects we made
+local pieces = {}            -- (old name, kept for /portdebug) the fence objects that exist right now
+local slots = {}             -- EX_Tii: every fence piece of the whole port (where it goes); only the ones near you exist
 local built = false
 local center, reach = nil, 0
 local segs = {}              -- { a, b, len, dir } for the climb check
@@ -75,9 +76,11 @@ end
 
 local function clear()
     gen = gen + 1
-    for _, obj in ipairs(pieces) do if DoesEntityExist(obj) then DeleteEntity(obj) end end
+    for _, sl in ipairs(slots) do if sl.obj and DoesEntityExist(sl.obj) then DeleteEntity(sl.obj) end end
     for _, d in ipairs(doors) do for _, o in ipairs(d.objs) do if DoesEntityExist(o) then DeleteEntity(o) end end end
-    pieces, doors, built = {}, {}, false
+    if model then SetModelAsNoLongerNeeded(model) end
+    if doorModel then SetModelAsNoLongerNeeded(doorModel) end
+    slots, pieces, doors, built = {}, {}, {}, false
 end
 
 
@@ -145,6 +148,9 @@ local function placeDoor(d)
     end
 end
 
+-- EX_Tii (Moe): GTA holds only 1600 breakable objects at once (more = the game crashes: "fragInstGta Pool
+-- Full"). The whole port fence is far more than that, so build() only works out where every piece goes;
+-- the pieces themselves are made when you come within Config.streamDistance and removed when you leave.
 local function build()
     clear()
     if not center or not pickModel() then return end
@@ -158,8 +164,6 @@ local function build()
     end
     built = true
     local mine = gen
-    local made, nextYield = 0, 40
-    -- the doors: each one takes the place of the one fence panel nearest to where it was marked
     local rows = math.max(1, math.min(4, math.floor(tonumber(GlobalState.extiPortHeight) or 1)))
     local tall = dims.mx.z - dims.mn.z
     for _, o in ipairs(openings) do if o.door then o.half, o.used = dims.len / 2 + 0.05, nil end end
@@ -169,8 +173,13 @@ local function build()
         RequestModel(doorModel)
         local td = GetGameTimer() + 3000
         while not HasModelLoaded(doorModel) and GetGameTimer() < td do Wait(10) end
-        if not HasModelLoaded(doorModel) then doorModel = nil end   -- (try again next build; this time panels)
+        if not HasModelLoaded(doorModel) then doorModel = nil end
     end
+    if gen ~= mine then return end
+    local function slot(m, x, y, ground, off, h)
+        slots[#slots + 1] = { m = m, x = x, y = y, ground = ground, off = off, h = h }
+    end
+    local count0 = 0
     for _, s in ipairs(segs) do
         local count = math.max(1, math.ceil(s.len / dims.len))
         local step = s.len / count
@@ -178,17 +187,13 @@ local function build()
         local ax, ay = s.dir.x, s.dir.y           -- the piece's own X (along the fence)
         local bx, by = -s.dir.y, s.dir.x          -- its Y
         for k = 1, count do
-            if not built or gen ~= mine then return end
             local f = (k - 0.5) * step / s.len
             local c = s.a + (s.b - s.a) * f
             local z = c.z
-            local ok, gz = GetGroundZFor_3dCoord(c.x, c.y, c.z + 1.5, false)
-            if ok and math.abs(gz - c.z) < 2.0 then z = gz end
             -- this panel is a door?
             local door
             for _, o in ipairs(openings) do
                 if o.door and not o.used then
-                    -- where the mark falls along this stretch of fence, and how far off the line it is
                     local rx, ry = o.pos.x - s.a.x, o.pos.y - s.a.y
                     local along = rx * s.dir.x + ry * s.dir.y
                     local off = math.abs(rx * s.dir.y - ry * s.dir.x)
@@ -207,62 +212,75 @@ local function build()
                 local dm = doorModel or model
                 local dc = vec3(sx + ax * dd.len / 2, sy + ay * dd.len / 2, z)
                 door.pos, door.half = dc, dd.len / 2 + 0.1   -- (only the door itself lets you through)
-                local d = { objs = {}, c = dc, h = h, d = dd, open = false }
-                local obj = CreateObjectNoOffset(dm, dc.x, dc.y, z, false, false, false)
-                if (not obj or obj == 0) and dm ~= model then
-                    -- (the gate would not appear: a fence panel is the door instead, never a hole)
-                    print(('[exti_port] door model %d did not appear: using a fence panel'):format(dm))
-                    dd, dm = dims, model
-                    dc = vec3(sx + ax * dd.len / 2, sy + ay * dd.len / 2, z)
-                    door.pos, door.half = dc, dd.len / 2 + 0.1
-                    d.c, d.d = dc, dd
-                    obj = CreateObjectNoOffset(dm, dc.x, dc.y, z, false, false, false)
-                end
-                if obj and obj ~= 0 then
-                    FreezeEntityPosition(obj, true)
-                    SetEntityInvincible(obj, true)
-                    d.objs[1] = obj
-                    placeDoor(d)
-                    doors[#doors + 1] = d
-                end
-                local rest = dims.len - dd.len
-                if rest > 0.1 then
-                    -- a fence panel right after the door (it reaches into the next panel a little: no hole)
+                doors[#doors + 1] = { objs = {}, c = dc, h = h, d = dd, m = dm, angle = 0.0 }
+                if dims.len - dd.len > 0.1 then
                     local fx, fy = sx + ax * (dd.len + dims.len / 2), sy + ay * (dd.len + dims.len / 2)
-                    local f = CreateObjectNoOffset(model, fx - ax * dims.cx - bx * dims.cy, fy - ay * dims.cx - by * dims.cy, z - dims.mn.z, false, false, false)
-                    if f and f ~= 0 then
-                        SetEntityHeading(f, h); FreezeEntityPosition(f, true); SetEntityInvincible(f, true)
-                        pieces[#pieces + 1] = f
-                    end
+                    slot(model, fx - ax * dims.cx - bx * dims.cy, fy - ay * dims.cx - by * dims.cy, z, -dims.mn.z, h)
                 end
                 for r = 1, rows - 1 do
-                    local up = CreateObjectNoOffset(model, c.x - ax * dims.cx - bx * dims.cy, c.y - ay * dims.cx - by * dims.cy, z - dims.mn.z + r * tall * 0.97, false, false, false)
-                    if up and up ~= 0 then
-                        SetEntityHeading(up, h); FreezeEntityPosition(up, true); SetEntityInvincible(up, true)
-                        pieces[#pieces + 1] = up
-                    end
+                    slot(model, c.x - ax * dims.cx - bx * dims.cy, c.y - ay * dims.cx - by * dims.cy, z, -dims.mn.z + r * tall * 0.97, h)
                 end
             elseif not gate then
-                local x = c.x - ax * dims.cx - bx * dims.cy
-                local y = c.y - ay * dims.cx - by * dims.cy
-                -- EX_Tii (Moe): rows stacked on top of each other (/port height 2 or 3) make it a tall wall
                 for r = 0, rows - 1 do
-                    local obj = CreateObjectNoOffset(model, x, y, z - dims.mn.z + r * tall * 0.97, false, false, false)
-                    if gen ~= mine then if obj and obj ~= 0 then DeleteEntity(obj) end return end
-                    if obj and obj ~= 0 then
-                        SetEntityHeading(obj, h)
-                        FreezeEntityPosition(obj, true)
-                        SetEntityInvincible(obj, true)
-                        pieces[#pieces + 1] = obj
-                    end
+                    slot(model, c.x - ax * dims.cx - bx * dims.cy, c.y - ay * dims.cx - by * dims.cy, z, -dims.mn.z + r * tall * 0.97, h)
                 end
-                made = made + rows
-                if made >= nextYield then nextYield = made + 40; Wait(0) end   -- (a few at a time: no hitch)
             end
+            count0 = count0 + 1
+            if count0 % 200 == 0 then Wait(0); if gen ~= mine then return end end
         end
     end
-    SetModelAsNoLongerNeeded(model)
 end
+
+-- the pieces near you exist, the others don't (a few made per frame: no hitch, never the 1600 limit)
+CreateThread(function()
+    while true do
+        local sleep = 500
+        if built and #slots + #doors > 0 then
+            local me = GetEntityCoords(cache.ped)
+            local R = Config.streamDistance
+            local inR, outR = R * R, (R + 25.0) * (R + 25.0)
+            local made, live = 0, {}
+            for _, sl in ipairs(slots) do
+                local dx, dy = sl.x - me.x, sl.y - me.y
+                local d2 = dx * dx + dy * dy
+                if d2 < inR then
+                    if not sl.obj and made < 40 and HasModelLoaded(sl.m) then
+                        local gz = sl.ground
+                        local ok, z = GetGroundZFor_3dCoord(sl.x, sl.y, sl.ground + 1.5, false)
+                        if ok and math.abs(z - sl.ground) < 2.0 then gz = z end
+                        local obj = CreateObjectNoOffset(sl.m, sl.x, sl.y, gz + sl.off, false, false, false)
+                        if obj ~= 0 then
+                            SetEntityHeading(obj, sl.h); FreezeEntityPosition(obj, true); SetEntityInvincible(obj, true)
+                            sl.obj = obj
+                        end
+                        made = made + 1
+                    end
+                elseif sl.obj and d2 > outR then
+                    if DoesEntityExist(sl.obj) then DeleteEntity(sl.obj) end
+                    sl.obj = nil
+                end
+                if sl.obj then live[#live + 1] = sl.obj end
+            end
+            pieces = live
+            for _, d in ipairs(doors) do
+                local d2 = (d.c.x - me.x) ^ 2 + (d.c.y - me.y) ^ 2
+                if d2 < inR and #d.objs == 0 and HasModelLoaded(d.m) then
+                    local obj = CreateObjectNoOffset(d.m, d.c.x, d.c.y, d.c.z, false, false, false)
+                    if obj ~= 0 then
+                        FreezeEntityPosition(obj, true); SetEntityInvincible(obj, true)
+                        d.objs = { obj }
+                        placeDoor(d)
+                    end
+                elseif d2 > outR and #d.objs > 0 then
+                    for _, o in ipairs(d.objs) do if DoesEntityExist(o) then DeleteEntity(o) end end
+                    d.objs, d.angle = {}, 0.0
+                end
+            end
+            if made >= 40 then sleep = 0 end
+        end
+        Wait(sleep)
+    end
+end)
 
 local function refresh(value)
     marks = type(value) == 'table' and value or {}

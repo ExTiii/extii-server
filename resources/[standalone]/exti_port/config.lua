@@ -4,7 +4,8 @@ Config = {}
 
 Config.gateWidth = 12.0      -- metres: the opening at the front gate (two lanes)
 Config.doorWidth = 2.2       -- metres: each little door by the water (one person)
-Config.buildDistance = 350.0 -- the fence is there for you when you are this close to the terminal
+Config.buildDistance = 350.0 -- the fence is worked out when you are this close to the terminal
+Config.streamDistance = 120.0 -- only the pieces this close to you exist (GTA can't hold the whole fence at once)
 Config.noClimb = 2.2         -- this close to the fence you can't jump or climb over it
 
 -- the fence piece: the first of these that exists in the game is used (tall chain-link / security fence)
