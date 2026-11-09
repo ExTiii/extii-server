@@ -61,42 +61,38 @@ local function place(m, p, heading)
     return o, d, z
 end
 
--- a barrier arm: its hinge end stays put, it lifts (angle 0 = across the road, CP.armUp = raised)
--- works whether the model is long along its X or its Y (a.ax = 'x' or 'y')
-local function hingeOff(a) local d = a.d; return a.ax == 'x' and vec3(d.mn.x, d.cy, d.mn.z) or vec3(d.cx, d.mn.y, d.mn.z) end
-local function tipOff(a) local d = a.d; return a.ax == 'x' and vec3(d.mx.x, d.cy, d.mn.z) or vec3(d.cx, d.mx.y, d.mn.z) end
-local function poseArm(a)
-    -- turn it, then move it so its hinge end sits on the hinge point (works whatever the model's centre is)
-    if a.ax == 'x' then
-        SetEntityRotation(a.obj, 0.0, a.sign * a.angle, a.h, 2, true)
-    else
-        SetEntityRotation(a.obj, a.sign * a.angle, 0.0, a.h, 2, true)
-    end
-    local o = hingeOff(a)
-    local now = GetOffsetFromEntityInWorldCoords(a.obj, o.x, o.y, o.z)
-    local cur = GetEntityCoords(a.obj)
-    SetEntityCoordsNoOffset(a.obj, cur.x + (a.hinge.x - now.x), cur.y + (a.hinge.y - now.y), cur.z + (a.hinge.z - now.z), false, false, false)
+-- a sliding gate (like the prison's): closed = across its lane, open = slid out sideways past the road edge.
+-- works whether the model is long along its X or its Y (g.ax = 'x' or 'y')
+local function poseGate(g)
+    -- where the gate's middle should be now, then move the model so its middle sits there
+    local p = g.closed + g.out * (g.slide * g.t)
+    local d = g.d
+    local mid = GetOffsetFromEntityInWorldCoords(g.obj, d.cx, d.cy, d.mn.z)
+    local cur = GetEntityCoords(g.obj)
+    SetEntityCoordsNoOffset(g.obj, cur.x + (p.x - mid.x), cur.y + (p.y - mid.y), cur.z + (p.z - mid.z), false, false, false)
 end
 
-local function addArm(m, hingeP, towards)
+local function addSlider(m, side, boothHalf, W)
     local d = dimsOf(m)
-    local z = ground(hingeP)
     local ax = (d.mx.x - d.mn.x) >= (d.mx.y - d.mn.y) and 'x' or 'y'
-    local dir = math.deg(math.atan(towards.y - hingeP.y, towards.x - hingeP.x))   -- the arm points this way
-    local h = ax == 'x' and dir or (dir - 90.0)                                      -- (a model's +Y is its heading)
-    local o = spawn(m, hingeP.x, hingeP.y, z)
-    if o == 0 then print('^3[exti_port] the barrier arm could not be made^0') return end
+    local L = ax == 'x' and (d.mx.x - d.mn.x) or (d.mx.y - d.mn.y)
+    local gap = W - boothHalf
+    -- the inner end touches the booth; a gate longer than the lane sticks out past the road edge
+    local c = at(side * (boothHalf + math.max(L, gap) / 2), side * CP.gateForward)
+    local z = ground(c)
+    local rr = math.rad(spot.h)
+    local out = vec3(math.cos(rr), math.sin(rr), 0.0) * side          -- the right hand (x side): towards the road edge
+    local dir = math.deg(math.atan(out.y, out.x))
+    local h = ax == 'x' and dir or (dir - 90.0)                        -- (a model's +Y is its heading)
+    local o = spawn(m, c.x, c.y, z - d.mn.z)
+    if o == 0 then print('^3[exti_port] the gate could not be made^0') return end
+    SetEntityHeading(o, h)
     FreezeEntityPosition(o, true)
     SetEntityInvincible(o, true)
     objs[#objs + 1] = o
-    local a = { obj = o, d = d, h = h, ax = ax, hinge = vec3(hingeP.x, hingeP.y, z + CP.armHeight), angle = 0.0, sign = 1 }
-    -- which way is "up" for this model: try a lift and look where the far end went
-    a.angle = 30.0; poseArm(a)
-    local t = tipOff(a)
-    local tip = GetOffsetFromEntityInWorldCoords(o, t.x, t.y, t.z)
-    if tip.z < a.hinge.z then a.sign = -1 end
-    a.angle = 0.0; poseArm(a)
-    arms[#arms + 1] = a
+    local g = { obj = o, d = d, ax = ax, closed = vec3(c.x, c.y, z), out = out, slide = L * 0.95, t = 0.0 }
+    poseGate(g)
+    arms[#arms + 1] = g
 end
 
 local function clearGate()
@@ -119,21 +115,14 @@ local function makeGate()
     else
         print('^3[exti_port] no booth model found^0')
     end
-    -- the barriers: for each direction one arm from the road edge and one from the booth, meeting in the lane
-    local arm = firstModel(CP.armModels, GlobalState.extiPortArmModel)
-    used.arm = arm
-    if arm then
-        -- one arm from the road edge when it is long enough to reach the booth, otherwise two meeting in the lane
-        local ad = dimsOf(arm)
-        local long = math.max(ad.mx.x - ad.mn.x, ad.mx.y - ad.mn.y)
-        local gap = W - boothHalf
-        for _, side in ipairs({ 1, -1 }) do                   -- right = into the port, left = out
-            local edge, mid = at(side * W, side * 1.5), at(side * boothHalf, side * 1.5)
-            addArm(arm, edge, mid)
-            if long < gap * 0.8 then addArm(arm, mid, edge) end
-        end
+    -- the gates: one sliding gate across each lane (right = into the port, left = out)
+    local gate = firstModel(CP.gateModels, GlobalState.extiPortArmModel)
+    used.arm = gate
+    if gate then
+        addSlider(gate, 1, boothHalf, W)
+        addSlider(gate, -1, boothHalf, W)
     else
-        print('^3[exti_port] no barrier arm model found^0')
+        print('^3[exti_port] no gate model found^0')
     end
     -- stop signs at the road edges, facing the cars coming in / going out
     local sign = firstModel(CP.signModels)
@@ -171,12 +160,12 @@ CreateThread(function()
             elseif d > CP.distance + 30.0 and made then clearGate() end
             if made then
                 wait = 250
-                local target = isOpen() and CP.armUp or 0.0
-                for _, a in ipairs(arms) do
-                    if math.abs(a.angle - target) > 0.1 then
-                        local step = CP.armSpeed * dt
-                        a.angle = a.angle < target and math.min(target, a.angle + step) or math.max(target, a.angle - step)
-                        poseArm(a)
+                local target = isOpen() and 1.0 or 0.0
+                for _, g in ipairs(arms) do
+                    if math.abs(g.t - target) > 0.001 then
+                        local step = (CP.gateSpeed / math.max(1.0, g.slide)) * dt
+                        g.t = g.t < target and math.min(target, g.t + step) or math.max(target, g.t - step)
+                        poseGate(g)
                         wait = 0
                     end
                 end
@@ -232,12 +221,12 @@ RegisterCommand('portgate', function()
         end
     end
     list('booth', CP.boothModels)
-    list('arm', CP.armModels)
-    print(('[exti_port] spot %s made %s booth %s arm %s arms %d cops %s open %s'):format(spot and 'yes' or 'no', tostring(made),
+    list('gate', CP.gateModels)
+    print(('[exti_port] spot %s made %s booth %s gate %s gates %d cops %s open %s'):format(spot and 'yes' or 'no', tostring(made),
         tostring(used.booth), tostring(used.arm), #arms, tostring(GlobalState.extiPortCops), tostring(isOpen())))
     for i, a in ipairs(arms) do
         local c = GetEntityCoords(a.obj)
-        print(('[exti_port] arm %d axis %s sign %d angle %.0f at %.1f %.1f %.1f'):format(i, a.ax, a.sign, a.angle, c.x, c.y, c.z))
+        print(('[exti_port] gate %d axis %s open %.2f at %.1f %.1f %.1f'):format(i, a.ax, a.t, c.x, c.y, c.z))
     end
     lib.notify({ description = 'افتح F8 وصوّر الأسطر التي تبدأ بـ [exti_port]', type = 'inform' })
 end, false)

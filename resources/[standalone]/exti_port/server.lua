@@ -36,7 +36,7 @@ end
 
 -- /port corner | gate | door | undo | list | clear yes | done
 lib.addCommand('port', {
-    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / armmodel / done',
+    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / done',
     params = { { name = 'what', type = 'string', help = 'corner, gate, door, undo, list, clear, done' },
                { name = 'confirm', help = 'a number or yes', optional = true } },
     restricted = 'group.admin',
@@ -85,7 +85,7 @@ lib.addCommand('port', {
         data.checkpoint = { x = mark.x, y = mark.y, z = mark.z, h = math.floor(GetEntityHeading(ped) * 10) / 10 }
         save()
         say(source, 'نقطة التفتيش هنا (الكشك في وسط الطريق، الحواجز على الجانبين)', 'success')
-    elseif what == 'boothmodel' or what == 'armmodel' then
+    elseif what == 'boothmodel' or what == 'armmodel' or what == 'gatemodel' then
         local m = tonumber(args.confirm)
         if not m then return say(source, ('اكتب: /port %s <الرقم من /portpick>'):format(what), 'error') end
         if what == 'boothmodel' then data.boothModel = math.floor(m) else data.armModel = math.floor(m) end

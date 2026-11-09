@@ -38,9 +38,8 @@ Config.checkpoint = {
     distance = 220.0,    -- it exists for you this close
     reach = 7.0,         -- police this close to the booth can work the barriers
     policeJob = 'police',
-    armUp = 85.0, armSpeed = 70.0, armHeight = 0.0,
+    gateSpeed = 1.6, gateForward = 1.5,   -- metres a second it slides; how far the gates sit from the booth's middle
     boothModels = { 'prop_air_sechut_01', 'prop_sec_hut_01', 'prop_gatehouse_01', 'prop_air_gate_booth_01', 'prop_parking_hut_2' },
-    armModels = { 'prop_sec_barrier_ld_02a', 'prop_sec_barrier_ld_01a',
-                  'prop_sec_barier_01a', 'prop_sec_barier_02a', 'prop_sec_barier_02b', 'prop_sec_barier_03a', 'prop_sec_barier_04a' },
+    gateModels = { 'prop_gate_prison_01', 'prop_facgate_07b', 'prop_facgate_08', 'prop_gate_military_01', 'prop_facgate_01', 'prop_gate_docks_ld' },
     signModels = { 'prop_sign_road_01a' },
 }
