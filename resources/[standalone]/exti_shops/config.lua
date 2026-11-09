@@ -270,7 +270,8 @@ Config.stores = {
     -- banks
     { type = 'bank', area = 'باسيفيك ستاندرد', clerk = vec4(241.44, 227.19, 106.29, 170.43), model = 'u_m_m_bankman', manage = true },
     { type = 'bank', area = 'هاويك', clerk = vec4(313.84, -280.58, 54.16, 338.31) },
-    { type = 'bank', area = 'ليجن سكوير', clerk = vec4(149.46, -1042.09, 29.37, 335.43) },
+    -- (Legion Square: the branch is off while the new Legion Square map has no bank interior — Moe, Nov 2026)
+    -- { type = 'bank', area = 'ليجن سكوير', clerk = vec4(149.46, -1042.09, 29.37, 335.43) },
     { type = 'bank', area = 'بيرتون', clerk = vec4(-351.23, -51.28, 49.04, 341.73) },
     { type = 'bank', area = 'ديل بيرو', clerk = vec4(-1211.9, -331.9, 37.78, 20.07) },
     { type = 'bank', area = 'المحيط الكبير', clerk = vec4(-2961.14, 483.09, 15.7, 83.84) },
