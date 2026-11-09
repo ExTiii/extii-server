@@ -30,3 +30,16 @@ Config.doorModels = {
     'prop_gate_tep_01_l', 'prop_gate_tep_01_r', 'prop_gate_docks_ld', 'prop_fnclink_05gate1', 'prop_fnclink_08gate1',
     'prop_ld_fence_gate', 'prop_fncres_01gate1', 'prop_fncres_02gate1', 'prop_fnccorgm_05a',
 }
+
+-- the entrance checkpoint on the road into the port (marked with /port checkpoint, standing in the middle of
+-- the road facing into the port). Police on duty raise/lower the barriers at the booth; no police = up.
+Config.checkpoint = {
+    halfWidth = 7.5,     -- metres from the middle of the road to its edge
+    distance = 220.0,    -- it exists for you this close
+    reach = 7.0,         -- police this close to the booth can work the barriers
+    policeJob = 'police',
+    armUp = 85.0, armSpeed = 70.0, armHeight = 0.0,
+    boothModels = { 'prop_air_sechut_01', 'prop_sec_hut_01', 'prop_gatehouse_01', 'prop_air_gate_booth_01', 'prop_parking_hut_2' },
+    armModels = { 'prop_sec_barrier_ld_01a', 'prop_sec_barrier_ld_02a', 'prop_sec_barier_ld_01a', 'prop_sec_barier_ld_02a' },
+    signModels = { 'prop_sign_road_01a' },
+}
