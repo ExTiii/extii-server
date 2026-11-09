@@ -24,11 +24,34 @@ local function clear()
     objs, made = {}, false
 end
 
+-- every block to make: the single ones, and the rows filled from point to point
+local function allBlocks()
+    local out = {}
+    for _, b in ipairs(type(GlobalState.extiPortBlocks) == 'table' and GlobalState.extiPortBlocks or {}) do out[#out + 1] = b end
+    for _, row in ipairs(type(GlobalState.extiPortBlockRows) == 'table' and GlobalState.extiPortBlockRows or {}) do
+        for i = 1, #row - 1 do
+            local a, b = row[i], row[i + 1]
+            local dx, dy = b.x - a.x, b.y - a.y
+            local D = math.sqrt(dx * dx + dy * dy)
+            if D > 0.3 then
+                local n = math.max(1, math.ceil(D / B.length))    -- (evenly spread: no gap anywhere)
+                local step = D / n
+                local h = math.deg(math.atan(dy, dx))              -- the line's direction: the block's long side along it
+                for k = 0, n - 1 do
+                    local t = (k + 0.5) * step / D
+                    out[#out + 1] = { x = a.x + dx * t, y = a.y + dy * t, z = a.z + (b.z - a.z) * t, h = h }
+                end
+            end
+        end
+    end
+    return out
+end
+
 local function build()
     clear()
     made = true
-    local list = GlobalState.extiPortBlocks
-    if type(list) ~= 'table' or #list == 0 then return end
+    local list = allBlocks()
+    if #list == 0 then return end
     model = pickModel()
     if not model then return print('^3[exti_port] no concrete block model found^0') end
     local mn = GetModelDimensions(model)
@@ -47,8 +70,12 @@ end
 
 -- how far the nearest block is
 local function nearest()
-    local list = GlobalState.extiPortBlocks
-    if type(list) ~= 'table' or #list == 0 then return nil end
+    local list = {}
+    for _, b in ipairs(type(GlobalState.extiPortBlocks) == 'table' and GlobalState.extiPortBlocks or {}) do list[#list + 1] = b end
+    for _, row in ipairs(type(GlobalState.extiPortBlockRows) == 'table' and GlobalState.extiPortBlockRows or {}) do
+        for _, p in ipairs(row) do list[#list + 1] = p end
+    end
+    if #list == 0 then return nil end
     local p, best = GetEntityCoords(cache.ped).xy, nil
     for _, b in ipairs(list) do
         local d = #(p - vector2(b.x, b.y))
@@ -58,6 +85,7 @@ local function nearest()
 end
 
 AddStateBagChangeHandler('extiPortBlocks', 'global', function() SetTimeout(0, function() if made then build() end end) end)
+AddStateBagChangeHandler('extiPortBlockRows', 'global', function() SetTimeout(0, function() if made then build() end end) end)
 AddStateBagChangeHandler('extiPortBlockModel', 'global', function() SetTimeout(0, function() if made then build() end end) end)
 
 CreateThread(function()

@@ -18,6 +18,7 @@ local function publish()
     GlobalState.extiPortBoothModel = data.boothModel
     GlobalState.extiPortArmModel = data.armModel
     GlobalState.extiPortBlocks = data.blocks or {}
+    GlobalState.extiPortBlockRows = data.blockRows or {}
     GlobalState.extiPortBlockModel = data.blockModel
 end
 local function save()
@@ -39,7 +40,7 @@ end
 
 -- /port corner | gate | door | undo | list | clear yes | done
 lib.addCommand('port', {
-    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / gatetest / edge / block / blockmodel / done',
+    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / gatetest / edge / block / blockpoint / blocknew / blockmodel / done',
     params = { { name = 'what', type = 'string', help = 'corner, gate, door, undo, list, clear, done' },
                { name = 'confirm', help = 'a number or yes', optional = true } },
     restricted = 'group.admin',
@@ -126,6 +127,7 @@ lib.addCommand('port', {
             return say(source, last and ('حُذفت آخر كتلة (باقي %d)'):format(#data.blocks) or 'لا توجد كتل', last and 'success' or 'error')
         elseif args.confirm == 'clear' then
             data.blocks = {}
+            data.blockRows = {}
             save()
             return say(source, 'حُذفت كل الكتل', 'success')
         end
@@ -151,6 +153,28 @@ lib.addCommand('port', {
         }
         save()
         say(source, ('كتلة رقم %d %s'):format(#data.blocks, snapped and 'وُضعت في نهاية السابقة' or 'وُضعت أمامك'), 'success')
+    elseif what == 'blockpoint' then
+        -- a wall of blocks like the fence: mark points, the blocks fill the line from one point to the next
+        data.blockRows = data.blockRows or {}
+        if args.confirm == 'undo' then
+            local row = data.blockRows[#data.blockRows]
+            if row then table.remove(row) if #row == 0 then table.remove(data.blockRows) end end
+            save()
+            return say(source, row and 'حُذفت آخر نقطة' or 'لا توجد نقاط', row and 'success' or 'error')
+        end
+        local row = data.blockRows[#data.blockRows]
+        if not row or data.blockRowNew then
+            row = {}
+            data.blockRows[#data.blockRows + 1] = row
+            data.blockRowNew = false
+        end
+        row[#row + 1] = { x = mark.x, y = mark.y, z = mark.z }
+        save()
+        say(source, #row == 1 and 'أول نقطة للصف: اذهب للنقطة التالية واكتب /port blockpoint' or ('نقطة رقم %d: الكتل امتلأت حتى هنا'):format(#row), 'success')
+    elseif what == 'blocknew' then
+        data.blockRowNew = true
+        save()
+        say(source, 'النقطة القادمة تبدأ صفًا جديدًا (لا يتصل بالسابق)', 'success')
     elseif what == 'blockmodel' then
         local m = tonumber(args.confirm)
         if not m then return say(source, 'اكتب: /port blockmodel <الرقم من /portpick وأنت تنظر إلى كتلة>', 'error') end
