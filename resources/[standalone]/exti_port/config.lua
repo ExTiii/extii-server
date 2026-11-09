@@ -43,3 +43,9 @@ Config.checkpoint = {
     gateModels = { 'prop_fnclink_06gate3', 'prop_gate_prison_01', 'prop_facgate_07b', 'prop_facgate_08', 'prop_gate_military_01', 'prop_facgate_01', 'prop_gate_docks_ld' },
     signModels = { 'prop_sign_road_01a' },
 }
+
+-- concrete blocks an admin places with /port block (the first model here that exists in the game is used)
+Config.blocks = {
+    distance = 250.0,
+    models = { 'prop_mp_barrier_02b', 'prop_barier_conc_02a', 'prop_barier_conc_01a', 'prop_mp_conc_barrier_01', 'prop_barier_conc_05a' },
+}

@@ -17,6 +17,8 @@ local function publish()
     GlobalState.extiPortCheckpoint = data.checkpoint
     GlobalState.extiPortBoothModel = data.boothModel
     GlobalState.extiPortArmModel = data.armModel
+    GlobalState.extiPortBlocks = data.blocks or {}
+    GlobalState.extiPortBlockModel = data.blockModel
 end
 local function save()
     SaveResourceFile(GetCurrentResourceName(), FILE, json.encode(data, { indent = true }), -1)
@@ -37,7 +39,7 @@ end
 
 -- /port corner | gate | door | undo | list | clear yes | done
 lib.addCommand('port', {
-    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / gatetest / edge / done',
+    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / gatetest / edge / block / blockmodel / done',
     params = { { name = 'what', type = 'string', help = 'corner, gate, door, undo, list, clear, done' },
                { name = 'confirm', help = 'a number or yes', optional = true } },
     restricted = 'group.admin',
@@ -115,6 +117,32 @@ lib.addCommand('port', {
         if off >= 0 then cp.wr = w else cp.wl = w end
         save()
         say(source, ('حافة الطريق %s: %.1f م من الكشك'):format(off >= 0 and 'اليمنى' or 'اليسرى', w), 'success')
+    elseif what == 'block' then
+        -- concrete blocks: one in front of you, its long side across the way you face
+        data.blocks = data.blocks or {}
+        if args.confirm == 'undo' then
+            local last = table.remove(data.blocks)
+            save()
+            return say(source, last and ('حُذفت آخر كتلة (باقي %d)'):format(#data.blocks) or 'لا توجد كتل', last and 'success' or 'error')
+        elseif args.confirm == 'clear' then
+            data.blocks = {}
+            save()
+            return say(source, 'حُذفت كل الكتل', 'success')
+        end
+        local h = GetEntityHeading(ped)
+        local r = math.rad(h)
+        data.blocks[#data.blocks + 1] = {
+            x = math.floor((c.x - math.sin(r) * 1.6) * 100) / 100, y = math.floor((c.y + math.cos(r) * 1.6) * 100) / 100,
+            z = mark.z, h = math.floor(h * 10) / 10,
+        }
+        save()
+        say(source, ('كتلة رقم %d وُضعت أمامك'):format(#data.blocks), 'success')
+    elseif what == 'blockmodel' then
+        local m = tonumber(args.confirm)
+        if not m then return say(source, 'اكتب: /port blockmodel <الرقم من /portpick وأنت تنظر إلى كتلة>', 'error') end
+        data.blockModel = math.floor(m)
+        save()
+        say(source, 'الكتل الآن من هذا النوع', 'success')
     elseif what == 'gatetest' then
         GlobalState.extiPortGateTest = not GlobalState.extiPortGateTest
         say(source, GlobalState.extiPortGateTest and 'البوابة مغلقة للتجربة (اكتب /port gatetest مرة ثانية للرجوع)' or 'رجعت البوابة لوضعها العادي', 'success')
