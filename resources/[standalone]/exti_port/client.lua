@@ -429,14 +429,22 @@ CreateThread(function()
                 end
                 local now = GetGameTimer()
                 for _, d in ipairs(doors) do
-                    local someone = false
+                    -- someone walking into it: which side is he on? (it opens away from him, like a pushed door)
+                    local someone, side = false, nil
+                    local fx, fy = math.cos(math.rad(d.h)), math.sin(math.rad(d.h))
                     for _, p in ipairs(feet) do
-                        if math.abs(p.z - d.c.z) < 3.0 and #(p.xy - d.c.xy) < Config.doorReach then someone = true break end
+                        if math.abs(p.z - d.c.z) < 3.0 and #(p.xy - d.c.xy) < Config.doorReach then
+                            someone = true
+                            local rx, ry = p.x - d.c.x, p.y - d.c.y
+                            side = (fx * ry - fy * rx) >= 0.0 and 1 or -1
+                            break
+                        end
                     end
                     if someone then
                         d.lastSeen = now
                         if not d.open then
                             d.open = true
+                            d.dir = -side   -- (swings to the far side)
                             PlaySoundFromCoord(-1, 'Grab_Gate', d.c.x, d.c.y, d.c.z, 'DLC_Biker_Mailbox_Sounds', false, 10, false)
                         end
                     elseif d.open and now - (d.lastSeen or 0) > Config.doorCloseMs then
@@ -458,7 +466,7 @@ CreateThread(function()
         last = now
         local moving = false
         for _, d in ipairs(doors) do
-            local target = d.open and 90.0 or 0.0
+            local target = d.open and (90.0 * (d.dir or 1)) or 0.0
             local a = d.angle or 0.0
             if math.abs(target - a) > 0.05 then
                 moving = true

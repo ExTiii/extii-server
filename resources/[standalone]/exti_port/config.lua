@@ -15,7 +15,7 @@ Config.fenceModels = {
 
 -- the doors by the water: a panel of the fence itself that swings open on its own when someone on foot
 -- comes this close, and closes again once nobody has been next to it for this long
-Config.doorReach = 1.8
+Config.doorReach = 1.1   -- (you walk into it: it opens like a pushed house door)
 Config.doorCloseMs = 1500
 Config.doorSwingSpeed = 240   -- degrees a second at its fastest (90 = fully open: about half a second)
 -- small fence gates the door can be (the one closest to half a fence panel wide is used)
