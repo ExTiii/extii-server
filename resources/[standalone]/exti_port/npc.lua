@@ -90,11 +90,12 @@ AddEventHandler('entityCreating', function(entity)
 end)
 
 -- any already there (made before this started, or that walked / drove in): removed
+local removed = 0
 local function sweep()
     for _, ped in ipairs(GetAllPeds()) do
         if DoesEntityExist(ped) and not IsPedAPlayer(ped) and isAmbient(ped) and inPort(GetEntityCoords(ped)) then
             local veh = GetVehiclePedIsIn(ped, false)
-            if veh == 0 or not hasPlayer(veh) then DeleteEntity(ped) end
+            if veh == 0 or not hasPlayer(veh) then DeleteEntity(ped) removed = removed + 1 end
         end
     end
     for _, veh in ipairs(GetAllVehicles()) do
@@ -104,6 +105,7 @@ local function sweep()
                 if not st.extiPlayerUsed then st:set('extiPlayerUsed', true, false) end   -- (a player took it: it stays)
             elseif not st.extiPlayerUsed and inPort(GetEntityCoords(veh)) then
                 DeleteEntity(veh)
+                removed = removed + 1
             end
         end
     end
@@ -112,11 +114,16 @@ end
 CreateThread(function()
     Wait(2000)
     rebuild()
-    local last = 0
+    local last, told, warned = 0, 0, false
     while true do
         -- (the fence or the checkpoint may have been changed with /port)
         if GetGameTimer() - last > 30000 then rebuild(); last = GetGameTimer() end
-        pcall(sweep)
+        local ok, err = pcall(sweep)
+        if not ok and not warned then warned = true print('^1[exti_port] npc sweep: ' .. tostring(err) .. '^0') end
+        if removed > 0 and GetGameTimer() - told > 60000 then
+            print(('[exti_port] removed %d NPCs / NPC cars from the port'):format(removed))
+            removed, told = 0, GetGameTimer()
+        end
         Wait(2000)
     end
 end)
