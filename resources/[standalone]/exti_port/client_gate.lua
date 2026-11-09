@@ -48,7 +48,8 @@ local function pickHalf(want, override)
             while not HasModelLoaded(h) and GetGameTimer() < t do Wait(10) end
             if HasModelLoaded(h) then
                 local L = longOf(h)
-                local err = L >= want and (L - want) or (want - L) * 3.0   -- too short leaves a hole: worse
+                -- (two halves must close the whole lane with a little overlap: a shorter one is never picked)
+                local err = L >= want and (L - want) or (100.0 + want - L)
                 if not bestErr or err < bestErr then best, bestErr = h, err end
             end
         end
@@ -152,7 +153,7 @@ local function makeGate()
         print('^3[exti_port] no booth model found^0')
     end
     -- the gates: each lane two halves (right = into the port, left = out)
-    local gate = pickHalf((W - boothHalf) * 0.55, GlobalState.extiPortArmModel)
+    local gate = pickHalf((W - boothHalf) / 2 + 0.3, GlobalState.extiPortArmModel)
     used.arm = gate
     if gate then
         addLane(gate, 1, boothHalf, W)
@@ -179,6 +180,7 @@ AddStateBagChangeHandler('extiPortArmModel', 'global', function() SetTimeout(0, 
 CreateThread(function() Wait(800); readSpot() end)
 
 local function isOpen()
+    if GlobalState.extiPortGateTest then return false end   -- (an admin looking at it shut: /port gatetest)
     return (tonumber(GlobalState.extiPortCops) or 0) < 1 or GlobalState.extiPortBarrierOpen == true
 end
 

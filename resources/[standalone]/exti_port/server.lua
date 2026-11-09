@@ -23,6 +23,7 @@ local function save()
     publish()
 end
 publish()
+PORT = { data = function() return data end }
 
 local function count(kind)
     local n = 0
@@ -36,7 +37,7 @@ end
 
 -- /port corner | gate | door | undo | list | clear yes | done
 lib.addCommand('port', {
-    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / done',
+    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / gatetest / done',
     params = { { name = 'what', type = 'string', help = 'corner, gate, door, undo, list, clear, done' },
                { name = 'confirm', help = 'a number or yes', optional = true } },
     restricted = 'group.admin',
@@ -103,6 +104,9 @@ lib.addCommand('port', {
         data.model = math.floor(m)
         save()
         say(source, 'السياج الآن من هذا النوع', 'success')
+    elseif what == 'gatetest' then
+        GlobalState.extiPortGateTest = not GlobalState.extiPortGateTest
+        say(source, GlobalState.extiPortGateTest and 'البوابة مغلقة للتجربة (اكتب /port gatetest مرة ثانية للرجوع)' or 'رجعت البوابة لوضعها العادي', 'success')
     elseif what == 'done' then
         GlobalState.extiPortEditing = false
         say(source, 'انتهى التحديد: العلامات اختفت والسياج باقٍ', 'success')
@@ -114,6 +118,7 @@ end)
 
 -- the checkpoint barriers: police on duty at the booth raise / lower them (everyone sees the same)
 GlobalState.extiPortBarrierOpen = false
+GlobalState.extiPortGateTest = false
 local function isCop(src)
     local p = exports.qbx_core:GetPlayer(src)
     local job = p and p.PlayerData and p.PlayerData.job
