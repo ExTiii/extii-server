@@ -100,6 +100,7 @@ local function smash(i)
     if res then HC.notify('أخذت: ' .. itemsText(got), 'success', 6000) end
 end
 
+local panelZ   -- (the roof's ground height under the security box, found once)
 CreateThread(function()
     while true do
         local sleep = 1000
@@ -109,9 +110,20 @@ CreateThread(function()
         if near then
             sleep = 0
             local quiet = (st.quietUntil or 0) > GetCloudTimeAsInt()
+            -- EX_Tii (Moe): a green circle on the roof where the security box is (only while it can still be hacked)
+            local pd = #(here - vec3(J.panel.x, J.panel.y, J.panel.z))
+            if pd < 25.0 and not quiet and not st.alarm then
+                if not panelZ then
+                    local ok, gz = GetGroundZFor_3dCoord(J.panel.x, J.panel.y, J.panel.z + 1.0, false)
+                    panelZ = (ok and math.abs(gz - J.panel.z) < 3.0) and (gz + 0.02) or (J.panel.z - 0.97)
+                end
+                local inside = pd < 1.6
+                DrawMarker(1, J.panel.x, J.panel.y, panelZ, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 1.5, 0.42,
+                    32, 201, 151, inside and 215 or 150, false, false, 2, false, nil, nil, false)
+            end
             if HC.canAct() then
                 -- the security box
-                if #(here - vec3(J.panel.x, J.panel.y, J.panel.z)) < 1.6 and not quiet and not st.alarm then
+                if pd < 1.6 and not quiet and not st.alarm then
                     if HC.count('usb_green') > 0 or st.phase == 'on' then text, act = '[E] ركّب الفلاشة الخضراء في لوحة الأمن', hack
                     else text = 'لوحة الأمن: تحتاج فلاشة اختراق خضراء' end
                 end
