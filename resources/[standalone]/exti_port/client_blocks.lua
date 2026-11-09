@@ -19,9 +19,26 @@ local function pickModel()
     end
 end
 
+local pending = {}   -- blocks not yet sat on the road: { o, x, y, z } (the ground far away isn't loaded yet)
+
 local function clear()
     for _, o in ipairs(objs) do if DoesEntityExist(o) then DeleteEntity(o) end end
-    objs, made = {}, false
+    objs, made, pending = {}, false, {}
+end
+
+-- sit a block on the road under it, tilted with the slope (a ramp, a bridge, a curb). Only works once the
+-- ground there is loaded (close to you): until then it waits in the pending list
+local function settle(p)
+    if not DoesEntityExist(p.o) then return true end
+    local ok, gz = GetGroundZFor_3dCoord(p.x, p.y, p.z + 8.0, false)   -- (from just above: on a bridge = the bridge)
+    if not ok or gz < p.z - 12.0 then return false end
+    local mn = GetModelDimensions(GetEntityModel(p.o))
+    FreezeEntityPosition(p.o, false)
+    SetEntityCoordsNoOffset(p.o, p.x, p.y, gz - mn.z, false, false, false)
+    SetEntityHeading(p.o, p.h)
+    PlaceObjectOnGroundProperly(p.o)
+    FreezeEntityPosition(p.o, true)
+    return true
 end
 
 -- every block to make: the single ones, and the rows filled from point to point
@@ -56,14 +73,14 @@ local function build()
     if not model then return print('^3[exti_port] no concrete block model found^0') end
     local mn = GetModelDimensions(model)
     for _, b in ipairs(list) do
-        local ok, gz = GetGroundZFor_3dCoord(b.x, b.y, b.z + 2.0, false)
-        local z = (ok and math.abs(gz - b.z) < 3.0) and gz or b.z
-        local o = CreateObjectNoOffset(model, b.x, b.y, z - mn.z, false, false, false)
+        local o = CreateObjectNoOffset(model, b.x, b.y, b.z - mn.z, false, false, false)
         if o ~= 0 then
             SetEntityHeading(o, b.h or 0.0)
             FreezeEntityPosition(o, true)
             SetEntityInvincible(o, true)
             objs[#objs + 1] = o
+            local p = { o = o, x = b.x, y = b.y, z = b.z, h = b.h or 0.0 }
+            if not settle(p) then pending[#pending + 1] = p end
         end
     end
 end
@@ -97,6 +114,20 @@ CreateThread(function()
             elseif d > B.distance + 40.0 and made then clear() end
         elseif made then clear() end
         Wait(1500)
+    end
+end)
+
+-- the ones still waiting: sat on the road as you come close (the ground loads around you)
+CreateThread(function()
+    while true do
+        if #pending > 0 then
+            local me = GetEntityCoords(cache.ped).xy
+            for i = #pending, 1, -1 do
+                local p = pending[i]
+                if #(me - vector2(p.x, p.y)) < 150.0 and settle(p) then table.remove(pending, i) end
+            end
+        end
+        Wait(1000)
     end
 end)
 
