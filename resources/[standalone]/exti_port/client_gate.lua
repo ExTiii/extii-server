@@ -123,13 +123,19 @@ local function addHalf(m, side, fromC, toC, back)
     arms[#arms + 1] = g
 end
 
--- the two halves of one lane (side 1 = into the port, -1 = out); the lane runs from the booth to the road edge
+-- one lane (side 1 = into the port, -1 = out), from the booth (x0) to the road edge (x1): as many gate panels
+-- as it takes to close it, each a little over the next. The one at the road edge never moves; to open,
+-- the others slide out and stack behind it (like the prison gate)
 local function addLane(m, side, x0, x1)
     local L = longOf(m)
-    local outer = x1 - L / 2                                 -- the outer half: its end at the road edge, it never moves
-    local inner = x0 + L / 2                                 -- the inner half: its end at the booth when shut
-    addHalf(m, side, outer, outer, 0.0)
-    addHalf(m, side, inner, outer, CP.gateGap)               -- slides out to sit right behind the outer half
+    local lap = 0.3
+    local n = math.max(2, math.ceil(((x1 - x0) - lap) / (L - lap)))
+    local outer = x1 - L / 2
+    for i = 0, n - 1 do
+        local c = (i == n - 1) and (x0 + L / 2) or (outer - i * (L - lap))
+        if i > 0 then c = math.max(c, x0 + L / 2) end
+        addHalf(m, side, c, outer, i * CP.gateGap)
+    end
 end
 
 local function clearGate()
@@ -142,6 +148,9 @@ local function makeGate()
     if not spot then return end
     made = true
     local W = CP.halfWidth
+    -- the road edge on each side (measured in game with /port edge), else the default
+    local Wr = tonumber(spot.wr) or W
+    local Wl = tonumber(spot.wl) or W
     -- the booth, in the middle of the road
     local booth = firstModel(CP.boothModels, GlobalState.extiPortBoothModel)
     used = { booth = booth }
@@ -156,22 +165,22 @@ local function makeGate()
     local gate = pickHalf((W - boothHalf) / 2 + 0.3, GlobalState.extiPortArmModel)
     used.arm = gate
     if gate then
-        addLane(gate, 1, boothHalf, W)
-        addLane(gate, -1, boothHalf, W)
+        addLane(gate, 1, boothHalf, Wr)
+        addLane(gate, -1, boothHalf, Wl)
     else
         print('^3[exti_port] no gate model found^0')
     end
     -- stop signs at the road edges, facing the cars coming in / going out
     local sign = firstModel(CP.signModels)
     if sign then
-        place(sign, at(W + 0.8, -3.0), spot.h)            -- faces the cars coming in (right side)
-        place(sign, at(-W - 0.8, 3.0), spot.h + 180.0)    -- faces the cars going out (left side)
+        place(sign, at(Wr + 0.8, -3.0), spot.h)            -- faces the cars coming in (right side)
+        place(sign, at(-Wl - 0.8, 3.0), spot.h + 180.0)    -- faces the cars going out (left side)
     end
 end
 
 local function readSpot()
     local c = GlobalState.extiPortCheckpoint
-    spot = type(c) == 'table' and c.x and { x = c.x, y = c.y, z = c.z, h = c.h } or nil
+    spot = type(c) == 'table' and c.x and { x = c.x, y = c.y, z = c.z, h = c.h, wr = c.wr, wl = c.wl } or nil
     if made then makeGate() end
 end
 AddStateBagChangeHandler('extiPortCheckpoint', 'global', function() SetTimeout(0, readSpot) end)

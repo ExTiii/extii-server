@@ -37,7 +37,7 @@ end
 
 -- /port corner | gate | door | undo | list | clear yes | done
 lib.addCommand('port', {
-    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / gatetest / done',
+    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / gatetest / edge / done',
     params = { { name = 'what', type = 'string', help = 'corner, gate, door, undo, list, clear, done' },
                { name = 'confirm', help = 'a number or yes', optional = true } },
     restricted = 'group.admin',
@@ -104,6 +104,17 @@ lib.addCommand('port', {
         data.model = math.floor(m)
         save()
         say(source, 'السياج الآن من هذا النوع', 'success')
+    elseif what == 'edge' then
+        -- stand at the road edge (by the wall) on one side, level with the gate: that side's gate reaches here
+        local cp = data.checkpoint
+        if not cp then return say(source, 'ضع نقطة التفتيش أولًا: /port checkpoint', 'error') end
+        local r = math.rad(cp.h)
+        local off = (c.x - cp.x) * math.cos(r) + (c.y - cp.y) * math.sin(r)   -- + = right of the road (into the port)
+        local w = math.floor(math.abs(off) * 10 + 0.5) / 10
+        if w < 3.0 or w > 30.0 then return say(source, ('أنت على بعد %.1f م من وسط الطريق: قف عند حافة الطريق بجانب الجدار'):format(w), 'error') end
+        if off >= 0 then cp.wr = w else cp.wl = w end
+        save()
+        say(source, ('حافة الطريق %s: %.1f م من الكشك'):format(off >= 0 and 'اليمنى' or 'اليسرى', w), 'success')
     elseif what == 'gatetest' then
         GlobalState.extiPortGateTest = not GlobalState.extiPortGateTest
         say(source, GlobalState.extiPortGateTest and 'البوابة مغلقة للتجربة (اكتب /port gatetest مرة ثانية للرجوع)' or 'رجعت البوابة لوضعها العادي', 'success')
