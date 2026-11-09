@@ -61,36 +61,37 @@ local function place(m, p, heading)
     return o, d, z
 end
 
--- a sliding gate (like the prison's): closed = across its lane, open = slid out sideways past the road edge.
--- works whether the model is long along its X or its Y (g.ax = 'x' or 'y')
+-- a swing gate (the prison's gate model): hinged at the road edge. Closed = across its lane to the booth,
+-- open = swung 90 degrees into the port, lying along the side wall. Works whether the model is long along X or Y.
 local function poseGate(g)
-    -- where the gate's middle should be now, then move the model so its middle sits there
-    local p = g.closed + g.out * (g.slide * g.t)
+    local yaw = g.closedDir + g.delta * g.t                 -- the way the gate points from its hinge now
+    SetEntityHeading(g.obj, g.ax == 'x' and yaw or (yaw - 90.0))   -- (a model's +Y is its heading)
     local d = g.d
-    local mid = GetOffsetFromEntityInWorldCoords(g.obj, d.cx, d.cy, d.mn.z)
+    local hx, hy = (g.ax == 'x') and d.mn.x or d.cx, (g.ax == 'x') and d.cy or d.mn.y
+    local now = GetOffsetFromEntityInWorldCoords(g.obj, hx, hy, d.mn.z)
     local cur = GetEntityCoords(g.obj)
-    SetEntityCoordsNoOffset(g.obj, cur.x + (p.x - mid.x), cur.y + (p.y - mid.y), cur.z + (p.z - mid.z), false, false, false)
+    SetEntityCoordsNoOffset(g.obj, cur.x + (g.hinge.x - now.x), cur.y + (g.hinge.y - now.y), cur.z + (g.hinge.z - now.z), false, false, false)
 end
 
-local function addSlider(m, side, boothHalf, W)
+local function angleOf(v) return math.deg(math.atan(v.y, v.x)) end
+
+local function addSwing(m, side, W)
     local d = dimsOf(m)
     local ax = (d.mx.x - d.mn.x) >= (d.mx.y - d.mn.y) and 'x' or 'y'
-    local L = ax == 'x' and (d.mx.x - d.mn.x) or (d.mx.y - d.mn.y)
-    local gap = W - boothHalf
-    -- the inner end touches the booth; a gate longer than the lane sticks out past the road edge
-    local c = at(side * (boothHalf + math.max(L, gap) / 2), side * CP.gateForward)
-    local z = ground(c)
+    local hingeP = at(side * W, side * CP.gateForward)
+    local z = ground(hingeP)
     local rr = math.rad(spot.h)
-    local out = vec3(math.cos(rr), math.sin(rr), 0.0) * side          -- the right hand (x side): towards the road edge
-    local dir = math.deg(math.atan(out.y, out.x))
-    local h = ax == 'x' and dir or (dir - 90.0)                        -- (a model's +Y is its heading)
-    local o = spawn(m, c.x, c.y, z - d.mn.z)
+    local right = vec3(math.cos(rr), math.sin(rr), 0.0)    -- the right hand when facing into the port
+    local fwd = vec3(-math.sin(rr), math.cos(rr), 0.0)     -- into the port
+    local closedDir = angleOf(right * -side)               -- from the road edge towards the booth
+    local delta = angleOf(fwd) - closedDir                 -- swing into the port: the short way round (90 degrees)
+    delta = (delta + 180.0) % 360.0 - 180.0
+    local o = spawn(m, hingeP.x, hingeP.y, z - d.mn.z)
     if o == 0 then print('^3[exti_port] the gate could not be made^0') return end
-    SetEntityHeading(o, h)
     FreezeEntityPosition(o, true)
     SetEntityInvincible(o, true)
     objs[#objs + 1] = o
-    local g = { obj = o, d = d, ax = ax, closed = vec3(c.x, c.y, z), out = out, slide = L * 0.95, t = 0.0 }
+    local g = { obj = o, d = d, ax = ax, hinge = vec3(hingeP.x, hingeP.y, z), closedDir = closedDir, delta = delta, t = 0.0 }
     poseGate(g)
     arms[#arms + 1] = g
 end
@@ -115,12 +116,12 @@ local function makeGate()
     else
         print('^3[exti_port] no booth model found^0')
     end
-    -- the gates: one sliding gate across each lane (right = into the port, left = out)
+    -- the gates: one swing gate across each lane, hinged at the road edge (right = into the port, left = out)
     local gate = firstModel(CP.gateModels, GlobalState.extiPortArmModel)
     used.arm = gate
     if gate then
-        addSlider(gate, 1, boothHalf, W)
-        addSlider(gate, -1, boothHalf, W)
+        addSwing(gate, 1, W)
+        addSwing(gate, -1, W)
     else
         print('^3[exti_port] no gate model found^0')
     end
@@ -163,7 +164,7 @@ CreateThread(function()
                 local target = isOpen() and 1.0 or 0.0
                 for _, g in ipairs(arms) do
                     if math.abs(g.t - target) > 0.001 then
-                        local step = (CP.gateSpeed / math.max(1.0, g.slide)) * dt
+                        local step = dt / CP.gateSwingTime
                         g.t = g.t < target and math.min(target, g.t + step) or math.max(target, g.t - step)
                         poseGate(g)
                         wait = 0
