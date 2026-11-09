@@ -35,7 +35,7 @@ end
 lib.addCommand('port', {
     help = 'Port fence (admin): corner / gate / door / undo / list / clear yes / fence <number> / done',
     params = { { name = 'what', type = 'string', help = 'corner, gate, door, undo, list, clear, done' },
-               { name = 'confirm', type = 'string', optional = true } },
+               { name = 'confirm', help = 'a number or yes', optional = true } },
     restricted = 'group.admin',
 }, function(source, args)
     local what = tostring(args.what or ''):lower()
