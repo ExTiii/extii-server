@@ -455,6 +455,11 @@ RegisterNetEvent('hud:client:UpdateNeeds', function(newHunger, newThirst) -- Tri
     thirst = newThirst
 end)
 
+-- EX_Tii (Moe): the protective helmet icon next to the shield bar: shown / gone at once (exti_weapons)
+AddStateBagChangeHandler('extiHelmet', ('player:%s'):format(cache.serverId), function(_, _, value)
+    SendNUIMessage({ action = 'helmet', on = value == true })
+end)
+
 AddStateBagChangeHandler('hunger', ('player:%s'):format(cache.serverId), function(_, _, value)
     hunger = value
 end)
@@ -548,6 +553,7 @@ local function updatePlayerHud(data)
             health = data[10],
             playerDead = data[11],
             armor = data[12],
+            helmet = LocalPlayer.state.extiHelmet == true,   -- EX_Tii: the protective helmet (next to the shield bar)
             thirst = data[13],
             hunger = data[14],
             stress = data[15],

@@ -100,11 +100,49 @@ CreateThread(function()
     if not ok then print('^1[exti_weapons] swapItems hook: ' .. tostring(err) .. '^0') end
 end)
 
--- EX_Tii (Moe): the protective helmet broke on a headshot: it leaves the bag
+-- EX_Tii (Moe): the protective helmet. Put on = taken out of the bag and kept on the character (metadata
+-- `extihelmet`) until a headshot breaks it. The state bag `extiHelmet` tells the player's game and the HUD.
+local function setHelmet(src, on)
+    Player(src).state:set('extiHelmet', on == true, true)
+    local player = exports.qbx_core:GetPlayer(src)
+    if player then player.Functions.SetMetaData('extihelmet', on == true) end
+end
+
+RegisterNetEvent('exti_weapons:server:wearHelmet', function(slot)
+    local src = source
+    if Player(src).state.extiHelmet then return end
+    if not exports.qbx_core:GetPlayer(src) then return end
+    slot = tonumber(slot)
+    local removed = exports.ox_inventory:RemoveItem(src, Config.helmet.item, 1, nil, slot)
+        or exports.ox_inventory:RemoveItem(src, Config.helmet.item, 1)
+    if not removed then return end
+    setHelmet(src, true)
+    TriggerClientEvent('ox_lib:notify', src, { description = 'لبست الخوذة الواقية: تحميك من رصاصة واحدة في الرأس', type = 'success' })
+    lib.logger(src, 'weapons', 'put on a protective helmet')
+end)
+
 RegisterNetEvent('exti_weapons:server:helmetBroke', function()
     local src = source
-    exports.ox_inventory:RemoveItem(src, Config.helmet.item, 1)
+    if not Player(src).state.extiHelmet then return end
+    setHelmet(src, false)
     lib.logger(src, 'weapons', 'helmet broke on a headshot')
+end)
+
+-- the character's helmet comes back with him (relog, restart); another character starts without it
+local function loadHelmet(player)
+    local src = player and player.PlayerData and player.PlayerData.source
+    if not src then return end
+    local meta = player.PlayerData.metadata or {}
+    Player(src).state:set('extiHelmet', meta.extihelmet == true, true)
+end
+AddEventHandler('QBCore:Server:PlayerLoaded', loadHelmet)
+AddEventHandler('QBCore:Server:OnPlayerUnload', function(src)
+    Player(src).state:set('extiHelmet', false, true)
+end)
+CreateThread(function()
+    Wait(1000)
+    local ok, players = pcall(function() return exports.qbx_core:GetQBPlayers() end)
+    for _, player in pairs(ok and players or {}) do loadHelmet(player) end
 end)
 
 -- admins: try a head prop on yourself (to pick the helmet's look)

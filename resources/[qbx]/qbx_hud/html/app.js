@@ -670,6 +670,7 @@ const playerHud = {
       health: 0,
       playerDead: 0,
       armor: 0,
+      helmet: false, // EX_Tii: the protective helmet is on (icon next to the shield bar)
       hunger: 0,
       thirst: 0,
       stress: 0,
@@ -774,6 +775,8 @@ const playerHud = {
     this.listener = (event) => {
       if (event.data.action === "hudtick") {
         this.hudTick(event.data);
+      } else if (event.data.action === "helmet") {
+        this.helmet = event.data.on === true;
       } else if (event.data.action === "addCustomIndicator") {
         this.addCustomIndicator(event.data.indicator);
       } else if (event.data.action === "updateCustomIndicator") {
@@ -822,6 +825,7 @@ const playerHud = {
       this.show = data.show;
       this.health = data.health;
       this.armor = data.armor;
+      this.helmet = data.helmet === true;
       this.hunger = data.hunger;
       this.thirst = data.thirst;
       this.stress = data.stress;

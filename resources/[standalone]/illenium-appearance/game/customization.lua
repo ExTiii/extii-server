@@ -540,7 +540,7 @@ local callback
 function client.startPlayerCustomization(cb, conf)
     repeat Wait(0) until IsScreenFadedIn() and not IsPlayerTeleportActive() and not IsPlayerSwitchInProgress()
 
-    -- EX_Tii (Moe): the protective helmet comes off first (your own hat comes back), so it is never priced or saved
+    -- EX_Tii (Moe): the protective helmet is set aside while you shop (your own hat shows), never priced or saved
     TriggerEvent('exti_weapons:client:takeOffHelmet')
 
     playerAppearance = client.getPedAppearance(cache.ped)
@@ -602,6 +602,7 @@ function client.exitPlayerCustomization(appearance)
     if callback then
         callback(appearance)
     end
+    TriggerEvent('exti_weapons:client:helmetBack')   -- EX_Tii: the protective helmet goes back on
 
     callback = nil
     config = nil

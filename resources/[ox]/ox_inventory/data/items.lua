@@ -1208,13 +1208,13 @@ return {
     },
 
     -- EX_Tii (Moe): the protective helmet (Ammu-Nation). The only thing that stops a one-tap headshot: it takes
-    -- that shot and breaks. Use it to put it on / take it off (exti_weapons).
+    -- that shot and breaks. Using it puts it on for good: it leaves the bag (exti_weapons).
     ['ballistic_helmet'] = {
         label = 'خوذة واقية',
         weight = 1200,
         stack = false,
         consume = 0,
-        description = 'تحميك من رصاصة واحدة في الرأس ثم تتحطم. استعملها لتلبسها أو تنزعها',
+        description = 'استعملها لتلبسها (لا تُنزع): تحميك من رصاصة واحدة في الرأس ثم تتحطم',
         client = { image = 'ballistic_helmet.png', export = 'exti_weapons.useHelmet' },
     },
 
