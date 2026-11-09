@@ -12,7 +12,6 @@ local segs = {}              -- { a, b, len, dir } for the climb check
 local model, dims = nil, nil
 local gen = 0                -- each build has a number: an older one still running stops by itself
 local doors = {}             -- the door gates: { obj, c, dir, h, d (dims), open, until }
-local doorModel, doorDims = nil, nil
 
 local function pickModel()
     if model then return model end
@@ -37,36 +36,10 @@ end
 local function clear()
     gen = gen + 1
     for _, obj in ipairs(pieces) do if DoesEntityExist(obj) then DeleteEntity(obj) end end
-    for _, d in ipairs(doors) do if d.obj and DoesEntityExist(d.obj) then DeleteEntity(d.obj) end end
+    for _, d in ipairs(doors) do for _, o in ipairs(d.objs) do if DoesEntityExist(o) then DeleteEntity(o) end end end
     pieces, doors, built = {}, {}, false
 end
 
--- the door: a fence gate model (the one an admin picked with /port doormodel, else the first that exists)
-local function pickDoor()
-    if doorModel ~= nil then return doorModel end
-    local list = {}
-    local chosen = tonumber(GlobalState.extiPortDoorModel)
-    if chosen then list[#list + 1] = chosen end
-    for _, name in ipairs(Config.doorModels) do list[#list + 1] = joaat(name) end
-    for _, h in ipairs(list) do
-        if IsModelInCdimage(h) and IsModelValid(h) then
-            RequestModel(h)
-            local t = GetGameTimer() + 3000
-            while not HasModelLoaded(h) and GetGameTimer() < t do Wait(10) end
-            local mn, mx = GetModelDimensions(h)
-            local len = mx.x - mn.x
-            if len > 0.8 and len < 3.5 then
-                doorModel = h
-                doorDims = { mn = mn, mx = mx, len = len, cx = (mn.x + mx.x) / 2, cy = (mn.y + mx.y) / 2 }
-                print(('[exti_port] door model: %d (%.1f m wide)'):format(h, len))
-                return doorModel
-            end
-        end
-    end
-    doorModel = false
-    print('^3[exti_port] no door model found: the doors are open gaps^0')
-    return false
-end
 
 local function parse()
     corners, openings, segs = {}, {}, {}
@@ -115,7 +88,8 @@ local function onLine(p)
     return best, bs
 end
 
--- a door's pose: closed = along the fence; open = swung 90 degrees on its hinge (one end)
+-- a door's pose: closed = along the fence (it IS a fence panel, every row of it); open = swung 90 degrees
+-- on its hinge (one end)
 local function placeDoor(d)
     local dd = d.d
     local h = d.h + (d.open and 90.0 or 0.0)
@@ -124,8 +98,11 @@ local function placeDoor(d)
     local ax, ay = math.cos(math.rad(h)), math.sin(math.rad(h))
     local bx, by = -ay, ax
     local cx, cy = hinge.x + ax * dd.len / 2, hinge.y + ay * dd.len / 2
-    SetEntityCoordsNoOffset(d.obj, cx - ax * dd.cx - bx * dd.cy, cy - ay * dd.cx - by * dd.cy, d.c.z - dd.mn.z, false, false, false)
-    SetEntityHeading(d.obj, h)
+    local tall = dd.mx.z - dd.mn.z
+    for r, obj in ipairs(d.objs) do
+        SetEntityCoordsNoOffset(obj, cx - ax * dd.cx - bx * dd.cy, cy - ay * dd.cx - by * dd.cy, d.c.z - dd.mn.z + (r - 1) * tall * 0.97, false, false, false)
+        SetEntityHeading(obj, h)
+    end
 end
 
 local function build()
@@ -142,10 +119,10 @@ local function build()
     built = true
     local mine = gen
     local made, nextYield = 0, 40
-    -- the doors: the gap is as wide as the gate that fills it; each sits on the fence line
-    if pickDoor() then
-        for _, o in ipairs(openings) do if o.door then o.half = math.max(Config.doorWidth / 2, doorDims.len / 2 + 0.05) end end
-    end
+    -- the doors: each one takes the place of the one fence panel nearest to where it was marked
+    local rows = math.max(1, math.min(4, math.floor(tonumber(GlobalState.extiPortHeight) or 1)))
+    local tall = dims.mx.z - dims.mn.z
+    for _, o in ipairs(openings) do if o.door then o.half, o.used = dims.len / 2 + 0.05, nil end end
     for _, s in ipairs(segs) do
         local count = math.max(1, math.ceil(s.len / dims.len))
         local step = s.len / count
@@ -156,19 +133,43 @@ local function build()
             if not built or gen ~= mine then return end
             local f = (k - 0.5) * step / s.len
             local c = s.a + (s.b - s.a) * f
-            local op = openingAt(c, step / 2)
-            local rows = math.max(1, math.min(4, math.floor(tonumber(GlobalState.extiPortHeight) or 1)))
-            -- a door leaves the rows above it (a doorway in the wall); the gate leaves nothing
-            local fromRow = (op and op.door) and 1 or 0
-            if not op or (op.door and rows > 1) then
-                local z = c.z
-                local ok, gz = GetGroundZFor_3dCoord(c.x, c.y, c.z + 1.5, false)
-                if ok and math.abs(gz - c.z) < 2.0 then z = gz end
+            local z = c.z
+            local ok, gz = GetGroundZFor_3dCoord(c.x, c.y, c.z + 1.5, false)
+            if ok and math.abs(gz - c.z) < 2.0 then z = gz end
+            -- this panel is a door?
+            local door
+            for _, o in ipairs(openings) do
+                if o.door and not o.used then
+                    -- where the mark falls along this stretch of fence, and how far off the line it is
+                    local rx, ry = o.pos.x - s.a.x, o.pos.y - s.a.y
+                    local along = rx * s.dir.x + ry * s.dir.y
+                    local off = math.abs(rx * s.dir.y - ry * s.dir.x)
+                    if off < 3.0 and math.abs(along - (k - 0.5) * step) <= step / 2 + 0.01 then door = o break end
+                end
+            end
+            local gate = false
+            for _, o in ipairs(openings) do
+                if not o.door and #(c.xy - o.pos.xy) < o.half + step / 2 then gate = true break end
+            end
+            if door then
+                door.used = true
+                door.pos = vec3(c.x, c.y, z)   -- (the walk-through check uses the door's real place)
+                local d = { objs = {}, c = vec3(c.x, c.y, z), h = h, d = dims, open = false }
+                for _ = 1, rows do
+                    local obj = CreateObjectNoOffset(model, c.x, c.y, z, false, false, false)
+                    if obj and obj ~= 0 then
+                        FreezeEntityPosition(obj, true)
+                        SetEntityInvincible(obj, true)
+                        d.objs[#d.objs + 1] = obj
+                    end
+                end
+                placeDoor(d)
+                doors[#doors + 1] = d
+            elseif not gate then
                 local x = c.x - ax * dims.cx - bx * dims.cy
                 local y = c.y - ay * dims.cx - by * dims.cy
                 -- EX_Tii (Moe): rows stacked on top of each other (/port height 2 or 3) make it a tall wall
-                local tall = dims.mx.z - dims.mn.z
-                for r = fromRow, rows - 1 do
+                for r = 0, rows - 1 do
                     local obj = CreateObjectNoOffset(model, x, y, z - dims.mn.z + r * tall * 0.97, false, false, false)
                     if gen ~= mine then if obj and obj ~= 0 then DeleteEntity(obj) end return end
                     if obj and obj ~= 0 then
@@ -184,31 +185,6 @@ local function build()
         end
     end
     SetModelAsNoLongerNeeded(model)
-    -- the door gates themselves
-    if doorModel then
-        RequestModel(doorModel)
-        local t2 = GetGameTimer() + 5000
-        while not HasModelLoaded(doorModel) and GetGameTimer() < t2 do Wait(10) end
-        for _, o in ipairs(openings) do
-            if o.door and HasModelLoaded(doorModel) and gen == mine then
-                local q, sg = onLine(o.pos)
-                if q and sg then
-                    local z = q.z
-                    local ok, gz = GetGroundZFor_3dCoord(q.x, q.y, q.z + 1.5, false)
-                    if ok and math.abs(gz - q.z) < 2.0 then z = gz end
-                    local obj = CreateObjectNoOffset(doorModel, q.x, q.y, z, false, false, false)
-                    if obj and obj ~= 0 then
-                        FreezeEntityPosition(obj, true)
-                        SetEntityInvincible(obj, true)
-                        local d = { obj = obj, c = vec3(q.x, q.y, z), h = math.deg(math.atan(sg.dir.y, sg.dir.x)), d = doorDims, open = false }
-                        placeDoor(d)
-                        doors[#doors + 1] = d
-                    end
-                end
-            end
-        end
-        SetModelAsNoLongerNeeded(doorModel)
-    end
 end
 
 local function refresh(value)
@@ -219,9 +195,6 @@ end
 AddStateBagChangeHandler('extiPort', 'global', function(_, _, value) refresh(value) end)
 AddStateBagChangeHandler('extiPortHeight', 'global', function()
     SetTimeout(0, function() if built then build() end end)
-end)
-AddStateBagChangeHandler('extiPortDoorModel', 'global', function()
-    SetTimeout(0, function() doorModel, doorDims = nil, nil; if built then build() end end)
 end)
 AddStateBagChangeHandler('extiPortModel', 'global', function()
     SetTimeout(0, function() model, dims = nil, nil; if built then build() end end)
@@ -357,36 +330,37 @@ CreateThread(function()
     end
 end)
 
--- the doors: walk up, [E] opens it (it swings on its hinge), it closes again by itself after a few seconds.
--- Each player opens his own (the fence is built on every game), so nobody locks anyone out.
+-- the doors: walk up to one on foot and it swings open by itself; it closes once nobody is next to it.
+-- Anyone on foot opens it on everyone's screen (the other players near it count too). Cars don't fit.
 CreateThread(function()
-    local shown = false
     while true do
         local sleep = 500
         if built and #doors > 0 then
-            local p = GetEntityCoords(cache.ped)
-            local near
-            for _, d in ipairs(doors) do
-                local dist = #(p.xy - d.c.xy)
-                if dist < 25.0 then sleep = 100 end
-                if dist < 1.8 and not cache.vehicle then near = d end
-                -- open long enough: closes (not on top of someone standing in the doorway)
-                if d.open and GetGameTimer() > d.untilAt and dist > 1.4 then d.open = false; placeDoor(d) end
-            end
-            if near and not near.open then
-                sleep = 0
-                if not shown then lib.showTextUI('[E] افتح الباب'); shown = true end
-                if IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName()) then
-                    near.open, near.untilAt = true, GetGameTimer() + Config.doorOpenSeconds * 1000
-                    placeDoor(near)
-                    PlaySoundFromCoord(-1, 'DOOR_OPEN', near.c.x, near.c.y, near.c.z, 'MP_PROPERTIES_ELEVATOR_DOORS', false, 0, false)
-                    lib.hideTextUI(); shown = false
+            local me = GetEntityCoords(cache.ped)
+            local close = false
+            for _, d in ipairs(doors) do if #(me.xy - d.c.xy) < 40.0 then close = true break end end
+            if close then
+                sleep = 150
+                -- everyone on foot near the port's doors (me and the players around)
+                local feet = {}
+                for _, pl in ipairs(GetActivePlayers()) do
+                    local ped = GetPlayerPed(pl)
+                    if ped ~= 0 and not IsPedInAnyVehicle(ped, false) then feet[#feet + 1] = GetEntityCoords(ped) end
                 end
-            elseif shown then
-                lib.hideTextUI(); shown = false
+                local now = GetGameTimer()
+                for _, d in ipairs(doors) do
+                    local someone = false
+                    for _, p in ipairs(feet) do
+                        if math.abs(p.z - d.c.z) < 3.0 and #(p.xy - d.c.xy) < Config.doorReach then someone = true break end
+                    end
+                    if someone then
+                        d.lastSeen = now
+                        if not d.open then d.open = true; placeDoor(d) end
+                    elseif d.open and now - (d.lastSeen or 0) > Config.doorCloseMs then
+                        d.open = false; placeDoor(d)
+                    end
+                end
             end
-        elseif shown then
-            lib.hideTextUI(); shown = false
         end
         Wait(sleep)
     end
