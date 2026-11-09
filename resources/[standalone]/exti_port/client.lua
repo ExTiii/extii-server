@@ -50,7 +50,14 @@ local function pickDoor(want)
             while not HasModelLoaded(h) and GetGameTimer() < t do Wait(10) end
             local mn, mx = GetModelDimensions(h)
             local len = mx.x - mn.x
-            if len > 0.6 and len < 3.0 then
+            -- (some gates are the map's own doors: they measure fine but a script can't make them. Try it.)
+            local test = 0
+            if len > 0.6 and len < 3.0 and HasModelLoaded(h) then
+                local me = GetEntityCoords(cache.ped)
+                test = CreateObjectNoOffset(h, me.x, me.y, me.z - 60.0, false, false, false)
+                if test ~= 0 then DeleteEntity(test) else print(('[exti_port] door model %d can not be made by a script, skipped'):format(h)) end
+            end
+            if test ~= 0 then
                 local score = (chosen and i == 1) and -1 or math.abs(len - want)   -- (the admin's pick always wins)
                 if not bestScore or score < bestScore then
                     best, bestScore = h, score
@@ -200,6 +207,15 @@ local function build()
                 door.pos, door.half = dc, dd.len / 2 + 0.1   -- (only the door itself lets you through)
                 local d = { objs = {}, c = dc, h = h, d = dd, open = false }
                 local obj = CreateObjectNoOffset(dm, dc.x, dc.y, z, false, false, false)
+                if (not obj or obj == 0) and dm ~= model then
+                    -- (the gate would not appear: a fence panel is the door instead, never a hole)
+                    print(('[exti_port] door model %d did not appear: using a fence panel'):format(dm))
+                    dd, dm = dims, model
+                    dc = vec3(sx + ax * dd.len / 2, sy + ay * dd.len / 2, z)
+                    door.pos, door.half = dc, dd.len / 2 + 0.1
+                    d.c, d.d = dc, dd
+                    obj = CreateObjectNoOffset(dm, dc.x, dc.y, z, false, false, false)
+                end
                 if obj and obj ~= 0 then
                     FreezeEntityPosition(obj, true)
                     SetEntityInvincible(obj, true)
