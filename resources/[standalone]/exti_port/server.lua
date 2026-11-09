@@ -238,3 +238,34 @@ CreateThread(function()
         Wait(15000)
     end
 end)
+
+-- /portplace (client): the see-through copy was clicked into place. Admins only (the same right as /port)
+RegisterNetEvent('exti_port:server:place', function(kind, x, y, z, h)
+    local src = source
+    if not IsPlayerAceAllowed(src, 'command.port') then return end
+    x, y, z, h = tonumber(x), tonumber(y), tonumber(z), tonumber(h)
+    if not (x and y and z and h) then return end
+    -- (it must be where they are looking: near them)
+    if #(GetEntityCoords(GetPlayerPed(src)) - vec3(x, y, z)) > 60.0 then return end
+    local function r2(v) return math.floor(v * 100 + 0.5) / 100 end
+    h = math.floor((h % 360.0) * 10 + 0.5) / 10
+    if kind == 'block' then
+        data.blocks = data.blocks or {}
+        data.blocks[#data.blocks + 1] = { x = r2(x), y = r2(y), z = r2(z), h = h, f = (h - 90.0) % 360.0 }
+        save()
+        say(src, ('كتلة رقم %d'):format(#data.blocks), 'success')
+    elseif kind == 'booth' then
+        data.booths = data.booths or {}
+        data.booths[#data.booths + 1] = { x = r2(x), y = r2(y), z = r2(z), h = h }
+        save()
+        say(src, ('كشك رقم %d وُضع'):format(#data.booths), 'success')
+    elseif kind == 'checkpoint' then
+        local old = data.checkpoint or {}
+        data.checkpoint = { x = r2(x), y = r2(y), z = r2(z), h = h, wr = old.wr, wl = old.wl }
+        save()
+        say(src, 'نقطة التفتيش نُقلت هنا', 'success')
+    else
+        return
+    end
+    lib.logger(src, 'port', ('placed a %s'):format(kind))
+end)
