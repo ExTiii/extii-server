@@ -34,7 +34,7 @@ Config.doorModels = {
 -- the entrance checkpoint on the road into the port (marked with /port checkpoint, standing in the middle of
 -- the road facing into the port). Police on duty raise/lower the barriers at the booth; no police = up.
 Config.checkpoint = {
-    halfWidth = 7.5,     -- metres from the middle of the road to its edge
+    halfWidth = 7.5, roadHalfWidth = 13.1,   -- (roadHalfWidth: booth middle to the wall: each gate twice as long as the first try)     -- metres from the middle of the road to its edge
     distance = 220.0,    -- it exists for you this close
     reach = 7.0,         -- police this close to the booth can work the barriers
     policeJob = 'police',

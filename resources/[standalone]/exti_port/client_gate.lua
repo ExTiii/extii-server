@@ -149,8 +149,8 @@ local function makeGate()
     made = true
     local W = CP.halfWidth
     -- the road edge on each side (measured in game with /port edge), else the default
-    local Wr = tonumber(spot.wr) or W
-    local Wl = tonumber(spot.wl) or W
+    local Wr = tonumber(spot.wr) or CP.roadHalfWidth or W
+    local Wl = tonumber(spot.wl) or CP.roadHalfWidth or W
     -- the booth, in the middle of the road
     local booth = firstModel(CP.boothModels, GlobalState.extiPortBoothModel)
     used = { booth = booth }
