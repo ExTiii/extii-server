@@ -14,6 +14,13 @@ local gen = 0                -- each build has a number: an older one still runn
 
 local function pickModel()
     if model then return model end
+    -- the fence an admin picked in game (/portpick, then /port fence <number>) wins over the list
+    local chosen = tonumber(GlobalState.extiPortModel)
+    if chosen and IsModelInCdimage(chosen) and IsModelValid(chosen) then
+        model = chosen
+        print(('[exti_port] fence model (picked in game): %d'):format(chosen))
+        return model
+    end
     for _, name in ipairs(Config.fenceModels) do
         local h = joaat(name)
         if IsModelInCdimage(h) and IsModelValid(h) then
@@ -117,6 +124,9 @@ local function refresh(value)
     if built then build() end   -- (already near it: rebuilt at once with the new marks)
 end
 AddStateBagChangeHandler('extiPort', 'global', function(_, _, value) refresh(value) end)
+AddStateBagChangeHandler('extiPortModel', 'global', function()
+    SetTimeout(0, function() model, dims = nil, nil; if built then build() end end)
+end)
 AddStateBagChangeHandler('extiPortEditing', 'global', function() SetTimeout(0, function() refresh(GlobalState.extiPort) end) end)
 CreateThread(function() Wait(500); refresh(GlobalState.extiPort) end)
 
@@ -247,6 +257,44 @@ CreateThread(function()
         end
     end
 end)
+
+-- /portpick: look at a fence in the world and type it: its model number is shown (and written in F8).
+-- Then /port fence <number> makes the port fence out of that one.
+local function isOurs(ent)
+    for _, o in ipairs(pieces) do if o == ent then return true end end
+    return false
+end
+RegisterCommand('portpick', function()
+    local cam = GetGameplayCamCoord()
+    local rot = GetGameplayCamRot(2)
+    local rx, rz = math.rad(rot.x), math.rad(rot.z)
+    local dir = vec3(-math.sin(rz) * math.abs(math.cos(rx)), math.cos(rz) * math.abs(math.cos(rx)), math.sin(rx))
+    local to = cam + dir * 20.0
+    local ray = StartExpensiveSynchronousShapeTestLosProbe(cam.x, cam.y, cam.z, to.x, to.y, to.z, -1, cache.ped, 0)
+    local _, hit, _, _, ent = GetShapeTestResult(ray)
+    local found
+    if hit == 1 and ent and ent ~= 0 and DoesEntityExist(ent) and not isOurs(ent) then
+        local m = GetEntityModel(ent)
+        if m and m ~= 0 and GetEntityType(ent) ~= 1 and GetEntityType(ent) ~= 2 then found = m end
+    end
+    if not found then
+        -- not hit by the look: the nearest object around you instead
+        local here, best, bd = GetEntityCoords(cache.ped), nil, 6.0
+        for _, obj in ipairs(GetGamePool('CObject')) do
+            if not isOurs(obj) then
+                local d = #(GetEntityCoords(obj) - here)
+                if d < bd then best, bd = obj, d end
+            end
+        end
+        if best then found = GetEntityModel(best) end
+    end
+    if not found then
+        return lib.notify({ description = 'لم أجد شيئًا: انظر إلى السياج من قريب (أقل من 20 مترًا) وجرّب مرة أخرى', type = 'error' })
+    end
+    local mn, mx = GetModelDimensions(found)
+    print(('[exti_port] picked model %d  (length %.1f m, height %.1f m)  ->  /port fence %d'):format(found, mx.x - mn.x, mx.z - mn.z, found))
+    lib.notify({ description = ('رقم هذا السياج: %d (طوله %.1f م، ارتفاعه %.1f م). اكتب: /port fence %d'):format(found, mx.x - mn.x, mx.z - mn.z, found), type = 'success', duration = 15000 })
+end, false)
 
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() then clear() end

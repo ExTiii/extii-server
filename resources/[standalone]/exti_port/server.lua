@@ -11,6 +11,7 @@ local data = load()
 
 local function publish()
     GlobalState.extiPort = data.marks
+    GlobalState.extiPortModel = data.model
 end
 local function save()
     SaveResourceFile(GetCurrentResourceName(), FILE, json.encode(data, { indent = true }), -1)
@@ -30,7 +31,7 @@ end
 
 -- /port corner | gate | door | undo | list | clear yes | done
 lib.addCommand('port', {
-    help = 'Port fence (admin): corner / gate / door / undo / list / clear yes / done',
+    help = 'Port fence (admin): corner / gate / door / undo / list / clear yes / fence <number> / done',
     params = { { name = 'what', type = 'string', help = 'corner, gate, door, undo, list, clear, done' },
                { name = 'confirm', type = 'string', optional = true } },
     restricted = 'group.admin',
@@ -63,6 +64,12 @@ lib.addCommand('port', {
         data.marks = {}
         save()
         say(source, 'مُسح كل شيء', 'success')
+    elseif what == 'fence' then
+        local m = tonumber(args.confirm)
+        if not m then return say(source, 'اكتب: /port fence <الرقم الذي أعطاك إياه /portpick>', 'error') end
+        data.model = math.floor(m)
+        save()
+        say(source, 'السياج الآن من هذا النوع', 'success')
     elseif what == 'done' then
         GlobalState.extiPortEditing = false
         say(source, 'انتهى التحديد: العلامات اختفت والسياج باقٍ', 'success')
