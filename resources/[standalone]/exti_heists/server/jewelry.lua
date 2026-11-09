@@ -133,6 +133,7 @@ lib.callback.register('exti_heists:server:jewelCaseBegin', function(src, i, how)
     if how == 'cut' then
         if st.quietUntil <= H.now() then return false, 'الكاميرات تعمل: عطّلها أولًا من لوحة الأمن على السطح' end
         st.crew[src] = true
+        H.setHeat(src, J.tier)   -- EX_Tii: cutting cases makes you hot too (like the smash and the roof hack)
         local lv = H.skillLevel(H.rec(src), 'breaching')
         return true, H.gameBegin(src, 'glasscut', { case = i }), { time = 1.0 + (lv - 1) * C.skills.timeBonus, level = lv }
     end

@@ -53,6 +53,8 @@ local function setHands(on)
     end
 end
 RegisterCommand('handsup', function()
+    -- EX_Tii: X also cancels a progress bar (ox_lib): during one, X only cancels and the hands stay down
+    if lib.progressActive() then return end
     if LocalPlayer.state.exti_tied or LocalPlayer.state.cuffed or cache.vehicle or HC.isDown() or IsNuiFocused() then return end
     setHands(not up)
 end, false)
