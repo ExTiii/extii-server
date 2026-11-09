@@ -52,9 +52,17 @@ local function setHands(on)
         end)
     end
 end
+-- EX_Tii: X also cancels a progress bar (ox_lib). Both run on the same key press, in any order: if the cancel
+-- runs first the bar is already gone, so we remember when a bar was last on screen and ignore X right after it
+local lastProgress = 0
+CreateThread(function()
+    while true do
+        if lib.progressActive() then lastProgress = GetGameTimer() end
+        Wait(50)
+    end
+end)
 RegisterCommand('handsup', function()
-    -- EX_Tii: X also cancels a progress bar (ox_lib): during one, X only cancels and the hands stay down
-    if lib.progressActive() then return end
+    if lib.progressActive() or GetGameTimer() - lastProgress < 400 then return end
     if LocalPlayer.state.exti_tied or LocalPlayer.state.cuffed or cache.vehicle or HC.isDown() or IsNuiFocused() then return end
     setHands(not up)
 end, false)
