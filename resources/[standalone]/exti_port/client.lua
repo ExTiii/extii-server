@@ -188,53 +188,73 @@ local function build()
         slots[#slots + 1] = { m = m, x = x, y = y, ground = ground, off = off, h = h }
     end
     local count0 = 0
+    local L = dims.len
+    local dd = doorModel and doorDims or dims
+    local dm = doorModel or model
     for _, s in ipairs(segs) do
-        local count = math.max(1, math.ceil(s.len / dims.len))
-        local step = s.len / count
         local h = math.deg(math.atan(s.dir.y, s.dir.x))
         local ax, ay = s.dir.x, s.dir.y           -- the piece's own X (along the fence)
         local bx, by = -s.dir.y, s.dir.x          -- its Y
-        for k = 1, count do
-            local f = (k - 0.5) * step / s.len
-            local c = s.a + (s.b - s.a) * f
-            local z = c.z
-            -- this panel is a door?
-            local door
-            for _, o in ipairs(openings) do
-                if o.door and not o.used then
-                    local rx, ry = o.pos.x - s.a.x, o.pos.y - s.a.y
-                    local along = rx * s.dir.x + ry * s.dir.y
-                    local off = math.abs(rx * s.dir.y - ry * s.dir.x)
-                    if off < 3.0 and math.abs(along - (k - 0.5) * step) <= step / 2 + 0.01 then door = o break end
+        local function at(along) return s.a + vec3(ax, ay, 0.0) * along + vec3(0.0, 0.0, (s.b.z - s.a.z) * (along / s.len)) end
+        local function panel(along, r)
+            local c = at(along)
+            slot(model, c.x - ax * dims.cx - bx * dims.cy, c.y - ay * dims.cx - by * dims.cy, c.z, -dims.mn.z + r * tall * 0.97, h)
+        end
+        -- EX_Tii (Moe): the doors and the gate sit exactly where they were marked; the fence fits around them.
+        -- cuts = stretches of this side with no fence panel at the bottom: { from, to, door }
+        local cuts = {}
+        for _, o in ipairs(openings) do
+            local rx, ry = o.pos.x - s.a.x, o.pos.y - s.a.y
+            local along = rx * ax + ry * ay
+            local off = math.abs(rx * ay - ry * ax)
+            if o.door then
+                if not o.used and off < 3.0 and along >= -0.5 and along <= s.len + 0.5 then
+                    o.used = true
+                    along = math.max(dd.len / 2, math.min(s.len - dd.len / 2, along))
+                    cuts[#cuts + 1] = { from = along - dd.len / 2, to = along + dd.len / 2, door = o, mid = along }
                 end
+            elseif off < o.half + 3.0 and along > -o.half and along < s.len + o.half then
+                cuts[#cuts + 1] = { from = along - o.half, to = along + o.half }
             end
-            local gate = false
-            for _, o in ipairs(openings) do
-                if not o.door and #(c.xy - o.pos.xy) < o.half + step / 2 then gate = true break end
-            end
-            if door then
-                door.used = true
-                -- the panel's place: [ door | the rest of it fence ]; the rows above stay whole
-                local sx, sy = c.x - ax * dims.len / 2, c.y - ay * dims.len / 2   -- the start of the gap (the hinge)
-                local dd = doorModel and doorDims or dims
-                local dm = doorModel or model
-                local dc = vec3(sx + ax * dd.len / 2, sy + ay * dd.len / 2, z)
-                door.pos, door.half = dc, dd.len / 2 + 0.1   -- (only the door itself lets you through)
-                doors[#doors + 1] = { objs = {}, c = dc, h = h, d = dd, m = dm, angle = 0.0, flag = (dm == doorModel) and doorFlag or false }
-                if dims.len - dd.len > 0.1 then
-                    local fx, fy = sx + ax * (dd.len + dims.len / 2), sy + ay * (dd.len + dims.len / 2)
-                    slot(model, fx - ax * dims.cx - bx * dims.cy, fy - ay * dims.cx - by * dims.cy, z, -dims.mn.z, h)
-                end
-                for r = 1, rows - 1 do
-                    slot(model, c.x - ax * dims.cx - bx * dims.cy, c.y - ay * dims.cx - by * dims.cy, z, -dims.mn.z + r * tall * 0.97, h)
-                end
-            elseif not gate then
-                for r = 0, rows - 1 do
-                    slot(model, c.x - ax * dims.cx - bx * dims.cy, c.y - ay * dims.cx - by * dims.cy, z, -dims.mn.z + r * tall * 0.97, h)
+        end
+        table.sort(cuts, function(x, y) return x.from < y.from end)
+        -- the fence between the cuts: each run filled with whole panels, end to end (they overlap a little
+        -- when a run isn't a whole number of panels; a run shorter than a panel leans away from the door)
+        local pos = 0.0
+        local runs = {}
+        for _, c in ipairs(cuts) do
+            if c.from > pos then runs[#runs + 1] = { from = pos, to = c.from, rightDoor = c.door ~= nil, leftDoor = runs.lastDoor } end
+            pos = math.max(pos, c.to)
+            runs.lastDoor = c.door ~= nil
+        end
+        if pos < s.len then runs[#runs + 1] = { from = pos, to = s.len, leftDoor = runs.lastDoor } end
+        for _, run in ipairs(runs) do
+            local len = run.to - run.from
+            if len > 0.25 then
+                local n = math.max(1, math.ceil(len / L))
+                local first, last = run.from + L / 2, run.to - L / 2
+                if n == 1 then
+                    -- one panel: its edge against the door, the rest hangs over the corner (never into a door)
+                    local mid = run.rightDoor and last or (run.leftDoor and first or (run.from + run.to) / 2)
+                    for r = 0, rows - 1 do panel(mid, r) end
+                else
+                    for k = 0, n - 1 do
+                        local m = first + (last - first) * k / (n - 1)
+                        for r = 0, rows - 1 do panel(m, r) end
+                    end
                 end
             end
             count0 = count0 + 1
-            if count0 % 200 == 0 then Wait(0); if gen ~= mine then return end end
+            if count0 % 50 == 0 then Wait(0); if gen ~= mine then return end end
+        end
+        -- the doors themselves (and the fence rows above them)
+        for _, c in ipairs(cuts) do
+            if c.door then
+                local dc = at(c.mid)
+                c.door.pos, c.door.half = dc, dd.len / 2 + 0.1   -- (only the door itself lets you through)
+                doors[#doors + 1] = { objs = {}, c = dc, h = h, d = dd, m = dm, angle = 0.0, flag = (dm == doorModel) and doorFlag or false }
+                for r = 1, rows - 1 do panel(c.mid, r) end
+            end
         end
     end
 end
