@@ -118,7 +118,7 @@ lib.addCommand('port', {
         save()
         say(source, ('حافة الطريق %s: %.1f م من الكشك'):format(off >= 0 and 'اليمنى' or 'اليسرى', w), 'success')
     elseif what == 'block' then
-        -- concrete blocks: one in front of you, its long side across the way you face
+        -- concrete blocks: one in front of you
         data.blocks = data.blocks or {}
         if args.confirm == 'undo' then
             local last = table.remove(data.blocks)
@@ -129,14 +129,28 @@ lib.addCommand('port', {
             save()
             return say(source, 'حُذفت كل الكتل', 'success')
         end
-        local h = GetEntityHeading(ped)
-        local r = math.rad(h)
+        -- its long side runs the way you face (so a row is easy to line up). Next to the last block and facing
+        -- the same way: it goes right on the end of it, in a straight line
+        local f = GetEntityHeading(ped)
+        local r = math.rad(f)
+        local x, y = c.x - math.sin(r) * 1.6, c.y + math.cos(r) * 1.6
+        local last = data.blocks[#data.blocks]
+        local snapped = false
+        if last and last.f then
+            local diff = math.abs(((f - last.f) + 180.0) % 360.0 - 180.0)
+            local len = Config.blocks.length
+            if diff < 35.0 and #(vec2(x, y) - vec2(last.x, last.y)) < len * 2.5 then
+                local lr = math.rad(last.f)
+                x, y, f = last.x - math.sin(lr) * len, last.y + math.cos(lr) * len, last.f
+                snapped = true
+            end
+        end
         data.blocks[#data.blocks + 1] = {
-            x = math.floor((c.x - math.sin(r) * 1.6) * 100) / 100, y = math.floor((c.y + math.cos(r) * 1.6) * 100) / 100,
-            z = mark.z, h = math.floor(h * 10) / 10,
+            x = math.floor(x * 100) / 100, y = math.floor(y * 100) / 100,
+            z = mark.z, h = math.floor((f + 90.0) * 10) / 10, f = math.floor(f * 10) / 10,
         }
         save()
-        say(source, ('كتلة رقم %d وُضعت أمامك'):format(#data.blocks), 'success')
+        say(source, ('كتلة رقم %d %s'):format(#data.blocks, snapped and 'وُضعت في نهاية السابقة' or 'وُضعت أمامك'), 'success')
     elseif what == 'blockmodel' then
         local m = tonumber(args.confirm)
         if not m then return say(source, 'اكتب: /port blockmodel <الرقم من /portpick وأنت تنظر إلى كتلة>', 'error') end

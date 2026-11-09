@@ -101,10 +101,10 @@ RegisterCommand('portblocks', function()
             while not HasModelLoaded(h) and GetGameTimer() < t do Wait(10) end
             if HasModelLoaded(h) then
                 local mn, mx = GetModelDimensions(h)
-                local p = GetOffsetFromEntityInWorldCoords(cache.ped, 0.0, 2.0 + (mx.y - mn.y) / 2, 0.0)
+                local p = GetOffsetFromEntityInWorldCoords(cache.ped, 0.0, 1.0 + (mx.x - mn.x) / 2, 0.0)
                 local ok, gz = GetGroundZFor_3dCoord(p.x, p.y, p.z + 2.0, false)
                 lookObj = CreateObjectNoOffset(h, p.x, p.y, (ok and gz or p.z - 1.0) - mn.z, false, false, false)
-                SetEntityHeading(lookObj, GetEntityHeading(cache.ped))
+                SetEntityHeading(lookObj, GetEntityHeading(cache.ped) + 90.0)   -- (long side the way you face, like /port block)
                 FreezeEntityPosition(lookObj, true)
                 SetModelAsNoLongerNeeded(h)
                 local msg = ('%d) %s  ·  /port blockmodel %d  ·  %.1f م طول، %.1f م ارتفاع'):format(lookAt, name, h, mx.x - mn.x, mx.z - mn.z)

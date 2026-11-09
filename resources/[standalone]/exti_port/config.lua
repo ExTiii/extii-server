@@ -47,5 +47,6 @@ Config.checkpoint = {
 -- concrete blocks an admin places with /port block (the first model here that exists in the game is used)
 Config.blocks = {
     distance = 250.0,
-    models = { 'prop_mp_barrier_02b', 'prop_barier_conc_02a', 'prop_barier_conc_01a', 'prop_mp_conc_barrier_01', 'prop_barier_conc_05a' },
+    length = 2.05,   -- metres from one block to the next in a row (prop_mp_conc_barrier_01 is 2.1 m long)
+    models = { 'prop_mp_conc_barrier_01', 'prop_mp_barrier_02b', 'prop_barier_conc_02a', 'prop_barier_conc_01a', 'prop_mp_conc_barrier_01', 'prop_barier_conc_05a' },
 }
