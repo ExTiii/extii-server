@@ -439,6 +439,20 @@ local function points()
     return list
 end
 
+-- EX_Tii (Moe): E belongs to the line on screen. This script has several features that share one line in the
+-- list: a feature acts on E only when its own text is the one showing (one press never does two things)
+local claimedFrame = -1
+function GC.lineIs(text)
+    if not text then return false end
+    local open, cur = lib.isTextUIOpen()
+    if open ~= true or cur ~= text then return false end
+    -- (and one press is used once: two features showing in the same instant can't both act)
+    local f = GetFrameCount()
+    if claimedFrame == f then return false end
+    claimedFrame = f
+    return true
+end
+
 local shown, shownAt = nil, 0
 local function showPrompt(text)
     local open, cur = lib.isTextUIOpen()
@@ -467,8 +481,9 @@ CreateThread(function()
                 end
             end
         end
-        if not GC.holdText then showPrompt(best and (best.label or LABELS[best.kind]) or nil) end
-        if best and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
+        local bestText = best and (best.label or LABELS[best.kind]) or nil
+        if not GC.holdText then showPrompt(bestText) end
+        if best and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and GC.lineIs(bestText) then
             busy = true; showPrompt(nil)
             local k = best.kind
             if k == 'laptop' then openLaptop()

@@ -77,8 +77,14 @@ end
 EXJ.isDown = isDown
 
 -- E for any job action (never while you are down)
+local claimedFrame = -1
 function EXJ.pressedE()
-    return (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and not isDown()
+    if not ((IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and not isDown()) then return false end
+    -- EX_Tii (Moe): one E press does one thing: the first job action that takes it, never two at once
+    local f = GetFrameCount()
+    if claimedFrame == f then return false end
+    claimedFrame = f
+    return true
 end
 
 local promptOwner, promptText, promptAt = nil, nil, 0

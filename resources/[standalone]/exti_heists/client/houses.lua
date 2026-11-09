@@ -525,7 +525,7 @@ CreateThread(function()
             end
         end
         HC.prompt(text, 'houses')
-        if act and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then act() end
+        if act and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and HC.lineIs(text) then act() end
         if alt and IsControlJustReleased(0, 47) then alt() end
         Wait(sleep)
     end

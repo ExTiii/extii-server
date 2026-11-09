@@ -361,7 +361,7 @@ CreateThread(function()
             bellOff()
         end
         HC.prompt(text, 'stores')
-        if act and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then act() end
+        if act and (IsControlJustReleased(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and HC.lineIs(text) then act() end
         if mine and (not near or (phases[mine.i] ~= 'held' and phases[mine.i] ~= 'open' and phases[mine.i] ~= 'cower')) then
             -- (the server's "it's yours" message can arrive before the store's new state does: give it 5 s)
             if (not phases[mine.i] and GetGameTimer() - (mine.at or 0) > 5000) or phases[mine.i] == 'emptied' then mine = nil end

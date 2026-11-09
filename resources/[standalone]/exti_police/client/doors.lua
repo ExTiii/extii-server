@@ -65,7 +65,7 @@ CreateThread(function()
                     or ('%s مقفلة · %s'):format(nearest.label, nearest.minGradeLabel and ('من رتبة %s فما فوق'):format(nearest.minGradeLabel) or 'للشرطة فقط')
                 lib.showTextUI(text, { icon = nearest.locked and 'lock' or 'lock-open', position = 'top-center' })
                 shown = true
-                if can and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
+                if can and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and POL.lineIs(text) then
                     TriggerServerEvent('exti_police:server:door', nearest.id)
                     Wait(400)
                 end

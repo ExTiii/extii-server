@@ -54,6 +54,21 @@ function HC.prompt(text, owner)
     end
 end
 
+-- EX_Tii (Moe): E belongs to the line on screen. Several features of this script share one line (only the
+-- first that has something to say is shown): a feature acts on E only when its own text is the one showing,
+-- so one press never does two things (the till and the ATM, the safe and a door...)
+local claimedFrame = -1
+function HC.lineIs(text)
+    if not text then return false end
+    local open, cur = lib.isTextUIOpen()
+    if open ~= true or cur ~= text then return false end
+    -- (and one press is used once: two features showing in the same instant can't both act)
+    local f = GetFrameCount()
+    if claimedFrame == f then return false end
+    claimedFrame = f
+    return true
+end
+
 function HC.notify(text, kind, duration)
     lib.notify({ description = text, type = kind or 'inform', position = 'top', duration = duration or 5000 })
 end

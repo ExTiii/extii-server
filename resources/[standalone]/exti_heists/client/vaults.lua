@@ -164,7 +164,7 @@ CreateThread(function()
             end
         end
         HC.prompt(text, 'vault')
-        if action and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then CreateThread(action); Wait(400) end
+        if action and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and HC.lineIs(text) then CreateThread(action); Wait(400) end
         Wait(sleep)
     end
 end)

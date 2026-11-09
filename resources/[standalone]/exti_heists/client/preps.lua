@@ -88,7 +88,7 @@ CreateThread(function()
             if d < 1.6 and not busy and HC.canAct() then
                 sleep = 0
                 text = '[E] افتح الباب (مفتاح فتح)'
-                if (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
+                if (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and HC.lineIs(text) then
                     busy = true; HC.prompt(nil)
                     CreateThread(function()
                         local ok, token, params = lib.callback.await('exti_heists:server:prepBegin', false)

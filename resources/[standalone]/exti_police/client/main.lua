@@ -56,6 +56,20 @@ end
 ---------------------------------------------------------------------------
 -- "[E] ..." line
 ---------------------------------------------------------------------------
+-- EX_Tii (Moe): E belongs to the line on screen. This script has several features that share one line in the
+-- list: a feature acts on E only when its own text is the one showing (one press never does two things)
+local claimedFrame = -1
+function POL.lineIs(text)
+    if not text then return false end
+    local open, cur = lib.isTextUIOpen()
+    if open ~= true or cur ~= text then return false end
+    -- (and one press is used once: two features showing in the same instant can't both act)
+    local f = GetFrameCount()
+    if claimedFrame == f then return false end
+    claimedFrame = f
+    return true
+end
+
 local shownText, shownAt = nil, 0
 function POL.prompt(text)
     -- another script may have hidden it: show it again (and every second: exti_interact drops a line its owner stopped renewing)
@@ -287,7 +301,7 @@ CreateThread(function()
             end
         end
         POL.prompt(text)
-        if action and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) then
+        if action and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and POL.lineIs(text) then
             POL.prompt(nil)
             CreateThread(action)
             Wait(400)
