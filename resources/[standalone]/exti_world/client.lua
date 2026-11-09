@@ -206,3 +206,34 @@ CreateThread(function()
         Wait(5000)
     end
 end)
+
+---------------------------------------------------------------------------
+-- EX_Tii (Moe): the Legion Square Fleeca has no interior while the new map is incomplete (no floor: you fall
+-- through). Nobody goes in: inside its footprint, or under it, you are put back on the pavement outside.
+-- Remove this block when the bank interior is back (and put the branch / heist back in the configs).
+---------------------------------------------------------------------------
+local BANK_OFF = {
+    min = vec3(140.0, -1056.0, 20.0), max = vec3(158.0, -1037.0, 33.0),   -- the building footprint (and under it)
+    out = vec4(150.8, -1033.6, 29.35, 160.0),                             -- the pavement in front of the door
+    text = 'البنك مغلق حاليًا',
+}
+CreateThread(function()
+    local lastWarn = 0
+    while true do
+        local ped = cache.ped
+        local c = GetEntityCoords(ped)
+        local near = #(c.xy - BANK_OFF.out.xy) < 60.0
+        if near and c.x > BANK_OFF.min.x and c.x < BANK_OFF.max.x and c.y > BANK_OFF.min.y and c.y < BANK_OFF.max.y
+            and c.z > BANK_OFF.min.z and c.z < BANK_OFF.max.z then
+            local veh = cache.vehicle
+            local ent = veh or ped
+            SetEntityCoords(ent, BANK_OFF.out.x, BANK_OFF.out.y, BANK_OFF.out.z, false, false, false, false)
+            SetEntityHeading(ent, BANK_OFF.out.w)
+            if GetGameTimer() - lastWarn > 3000 then
+                lastWarn = GetGameTimer()
+                lib.notify({ description = BANK_OFF.text, type = 'error' })
+            end
+        end
+        Wait(near and 150 or 1000)
+    end
+end)
