@@ -105,7 +105,7 @@ local function noclipLoop()
         SetEntityHeading(ent, cam.z)
         -- the help line, GTA style
         SetTextFont(4); SetTextScale(0.36, 0.36); SetTextColour(255, 255, 255, 220); SetTextOutline()
-        BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(('NOCLIP  W A S D  ·  Space / Ctrl  ·  Shift سريع · Alt بطيء  ·  عجلة الفأرة: %.1f'):format(speed)); EndTextCommandDisplayText(0.4, 0.95)
+        BeginTextCommandDisplayText('STRING'); AddTextComponentSubstringPlayerName(('NOCLIP  W A S D  ·  Space / Ctrl  ·  Shift fast · Alt slow  ·  wheel: %.1f'):format(speed)); EndTextCommandDisplayText(0.4, 0.95)
     end
     SetEntityCollision(ent, true, true); FreezeEntityPosition(ent, false)
     if not state.god then SetEntityInvincible(ent, false) end
