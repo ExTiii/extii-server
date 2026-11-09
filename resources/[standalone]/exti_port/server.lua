@@ -55,6 +55,7 @@ lib.addCommand('port', {
         say(source, 'البوابة حُفظت هنا', 'success')
     elseif what == 'undo' then
         local last = table.remove(data.marks)
+        GlobalState.extiPortEditing = true   -- (back to marking: the fence stays open until /port done)
         save()
         say(source, last and ('حُذف آخر شيء (%s)'):format(last.kind) or 'لا شيء لحذفه')
     elseif what == 'list' then
