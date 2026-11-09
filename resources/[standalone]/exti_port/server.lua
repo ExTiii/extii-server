@@ -12,6 +12,7 @@ local data = load()
 local function publish()
     GlobalState.extiPort = data.marks
     GlobalState.extiPortModel = data.model
+    GlobalState.extiPortHeight = data.height or 1
 end
 local function save()
     SaveResourceFile(GetCurrentResourceName(), FILE, json.encode(data, { indent = true }), -1)
@@ -65,6 +66,12 @@ lib.addCommand('port', {
         data.marks = {}
         save()
         say(source, 'مُسح كل شيء', 'success')
+    elseif what == 'height' then
+        local n = math.floor(tonumber(args.confirm) or 0)
+        if n < 1 or n > 4 then return say(source, 'اكتب: /port height 1 أو 2 أو 3 أو 4 (عدد الصفوف فوق بعض)', 'error') end
+        data.height = n
+        save()
+        say(source, ('السياج الآن %d صفوف فوق بعض'):format(n), 'success')
     elseif what == 'fence' then
         local m = tonumber(args.confirm)
         if not m then return say(source, 'اكتب: /port fence <الرقم الذي أعطاك إياه /portpick>', 'error') end

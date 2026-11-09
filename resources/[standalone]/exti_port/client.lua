@@ -102,15 +102,20 @@ local function build()
                 if ok and math.abs(gz - c.z) < 2.0 then z = gz end
                 local x = c.x - ax * dims.cx - bx * dims.cy
                 local y = c.y - ay * dims.cx - by * dims.cy
-                local obj = CreateObjectNoOffset(model, x, y, z - dims.mn.z, false, false, false)
-                if gen ~= mine then if obj and obj ~= 0 then DeleteEntity(obj) end return end
-                if obj and obj ~= 0 then
-                    SetEntityHeading(obj, h)
-                    FreezeEntityPosition(obj, true)
-                    SetEntityInvincible(obj, true)
-                    pieces[#pieces + 1] = obj
+                -- EX_Tii (Moe): rows stacked on top of each other (/port height 2 or 3) make it a tall wall
+                local rows = math.max(1, math.min(4, math.floor(tonumber(GlobalState.extiPortHeight) or 1)))
+                local tall = dims.mx.z - dims.mn.z
+                for r = 0, rows - 1 do
+                    local obj = CreateObjectNoOffset(model, x, y, z - dims.mn.z + r * tall * 0.97, false, false, false)
+                    if gen ~= mine then if obj and obj ~= 0 then DeleteEntity(obj) end return end
+                    if obj and obj ~= 0 then
+                        SetEntityHeading(obj, h)
+                        FreezeEntityPosition(obj, true)
+                        SetEntityInvincible(obj, true)
+                        pieces[#pieces + 1] = obj
+                    end
                 end
-                made = made + 1
+                made = made + rows
                 if made % 40 == 0 then Wait(0) end   -- (a few at a time: no hitch)
             end
         end
@@ -124,6 +129,9 @@ local function refresh(value)
     if built then build() end   -- (already near it: rebuilt at once with the new marks)
 end
 AddStateBagChangeHandler('extiPort', 'global', function(_, _, value) refresh(value) end)
+AddStateBagChangeHandler('extiPortHeight', 'global', function()
+    SetTimeout(0, function() if built then build() end end)
+end)
 AddStateBagChangeHandler('extiPortModel', 'global', function()
     SetTimeout(0, function() model, dims = nil, nil; if built then build() end end)
 end)
