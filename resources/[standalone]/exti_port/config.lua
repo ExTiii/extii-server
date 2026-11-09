@@ -17,6 +17,7 @@ Config.fenceModels = {
 -- comes this close, and closes again once nobody has been next to it for this long
 Config.doorReach = 1.8
 Config.doorCloseMs = 1500
+Config.doorSwingSpeed = 240   -- degrees a second at its fastest (90 = fully open: about half a second)
 -- small fence gates the door can be (the one closest to half a fence panel wide is used)
 Config.doorModels = {
     'prop_fnclink_03gate1', 'prop_fnclink_03gate2', 'prop_fnclink_03gate3', 'prop_fnclink_03gate4', 'prop_fnclink_03gate5',

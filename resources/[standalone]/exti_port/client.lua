@@ -132,7 +132,7 @@ end
 -- on its hinge (one end)
 local function placeDoor(d)
     local dd = d.d
-    local h = d.h + (d.open and 90.0 or 0.0)
+    local h = d.h + (d.angle or 0.0)   -- (0 = closed, 90 = wide open; it moves between them, see below)
     local hx, hy = math.cos(math.rad(d.h)), math.sin(math.rad(d.h))
     local hinge = d.c - vec3(hx, hy, 0.0) * (dd.len / 2)
     local ax, ay = math.cos(math.rad(h)), math.sin(math.rad(h))
@@ -435,14 +435,41 @@ CreateThread(function()
                     end
                     if someone then
                         d.lastSeen = now
-                        if not d.open then d.open = true; placeDoor(d) end
+                        if not d.open then
+                            d.open = true
+                            PlaySoundFromCoord(-1, 'Grab_Gate', d.c.x, d.c.y, d.c.z, 'DLC_Biker_Mailbox_Sounds', false, 10, false)
+                        end
                     elseif d.open and now - (d.lastSeen or 0) > Config.doorCloseMs then
-                        d.open = false; placeDoor(d)
+                        d.open = false
                     end
                 end
             end
         end
         Wait(sleep)
+    end
+end)
+
+-- the swing: every frame a moving door turns a little towards open (90) or closed (0), easing at the ends
+CreateThread(function()
+    local last = GetGameTimer()
+    while true do
+        local now = GetGameTimer()
+        local dt = math.min(0.1, (now - last) / 1000.0)
+        last = now
+        local moving = false
+        for _, d in ipairs(doors) do
+            local target = d.open and 90.0 or 0.0
+            local a = d.angle or 0.0
+            if math.abs(target - a) > 0.05 then
+                moving = true
+                -- fast in the middle, slow near the end (like a real gate on a spring)
+                local step = math.min(Config.doorSwingSpeed, math.max(Config.doorSwingSpeed * 0.25, math.abs(target - a) * 6.0)) * dt
+                if target > a then a = math.min(target, a + step) else a = math.max(target, a - step) end
+                d.angle = a
+                placeDoor(d)
+            end
+        end
+        Wait(moving and 0 or 100)
     end
 end)
 
