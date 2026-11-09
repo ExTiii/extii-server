@@ -24,6 +24,38 @@ local function firstModel(list, override)
     end
 end
 
+local function longOf(m)
+    local mn, mx = GetModelDimensions(m)
+    return math.max(mx.x - mn.x, mx.y - mn.y)
+end
+
+-- the gate halves: the admin's pick (/port gatemodel), otherwise the gate model whose length is closest to
+-- half a lane (a little more, so the two halves overlap when shut and leave a lane free when open)
+local function pickHalf(want, override)
+    if tonumber(override) then
+        local h = firstModel({}, override)
+        if h then return h end
+    end
+    local best, bestErr
+    local list = {}
+    for _, n in ipairs(CP.gateModels) do list[#list + 1] = n end
+    for _, n in ipairs(Config.doorModels or {}) do list[#list + 1] = n end
+    for _, n in ipairs(list) do
+        local h = joaat(n)
+        if IsModelInCdimage(h) and IsModelValid(h) then
+            RequestModel(h)
+            local t = GetGameTimer() + 2000
+            while not HasModelLoaded(h) and GetGameTimer() < t do Wait(10) end
+            if HasModelLoaded(h) then
+                local L = longOf(h)
+                local err = L >= want and (L - want) or (want - L) * 3.0   -- too short leaves a hole: worse
+                if not bestErr or err < bestErr then best, bestErr = h, err end
+            end
+        end
+    end
+    return best
+end
+
 local function dimsOf(m)
     local mn, mx = GetModelDimensions(m)
     return { mn = mn, mx = mx, len = mx.x - mn.x, cx = (mn.x + mx.x) / 2, cy = (mn.y + mx.y) / 2 }
@@ -61,39 +93,42 @@ local function place(m, p, heading)
     return o, d, z
 end
 
--- a swing gate (the prison's gate model): hinged at the road edge. Closed = across its lane to the booth,
--- open = swung 90 degrees into the port, lying along the side wall. Works whether the model is long along X or Y.
+-- each lane: a gate in two halves, like the prison. Shut: the outer half (at the road edge) and the inner half
+-- (at the booth) close the lane together. Open: the inner half slides behind the outer one.
+-- Works whether the model is long along its X or its Y.
 local function poseGate(g)
-    local yaw = g.closedDir + g.delta * g.t                 -- the way the gate points from its hinge now
-    SetEntityHeading(g.obj, g.ax == 'x' and yaw or (yaw - 90.0))   -- (a model's +Y is its heading)
+    local p = g.closed + g.move * g.t                       -- where its middle is now
     local d = g.d
-    local hx, hy = (g.ax == 'x') and d.mn.x or d.cx, (g.ax == 'x') and d.cy or d.mn.y
-    local now = GetOffsetFromEntityInWorldCoords(g.obj, hx, hy, d.mn.z)
+    local mid = GetOffsetFromEntityInWorldCoords(g.obj, d.cx, d.cy, d.mn.z)
     local cur = GetEntityCoords(g.obj)
-    SetEntityCoordsNoOffset(g.obj, cur.x + (g.hinge.x - now.x), cur.y + (g.hinge.y - now.y), cur.z + (g.hinge.z - now.z), false, false, false)
+    SetEntityCoordsNoOffset(g.obj, cur.x + (p.x - mid.x), cur.y + (p.y - mid.y), cur.z + (p.z - mid.z), false, false, false)
 end
 
-local function angleOf(v) return math.deg(math.atan(v.y, v.x)) end
-
-local function addSwing(m, side, W)
+local function addHalf(m, side, fromC, toC, back)
     local d = dimsOf(m)
     local ax = (d.mx.x - d.mn.x) >= (d.mx.y - d.mn.y) and 'x' or 'y'
-    local hingeP = at(side * W, side * CP.gateForward)
-    local z = ground(hingeP)
-    local rr = math.rad(spot.h)
-    local right = vec3(math.cos(rr), math.sin(rr), 0.0)    -- the right hand when facing into the port
-    local fwd = vec3(-math.sin(rr), math.cos(rr), 0.0)     -- into the port
-    local closedDir = angleOf(right * -side)               -- from the road edge towards the booth
-    local delta = angleOf(fwd) - closedDir                 -- swing into the port: the short way round (90 degrees)
-    delta = (delta + 180.0) % 360.0 - 180.0
-    local o = spawn(m, hingeP.x, hingeP.y, z - d.mn.z)
+    local f = side * (CP.gateForward + back)
+    local c, o2 = at(side * fromC, f), at(side * toC, f)
+    local z = ground(c)
+    local h = spot.h + 90.0                                   -- long side across the road
+    local o = spawn(m, c.x, c.y, z - d.mn.z)
     if o == 0 then print('^3[exti_port] the gate could not be made^0') return end
+    SetEntityHeading(o, ax == 'x' and spot.h or h)
     FreezeEntityPosition(o, true)
     SetEntityInvincible(o, true)
     objs[#objs + 1] = o
-    local g = { obj = o, d = d, ax = ax, hinge = vec3(hingeP.x, hingeP.y, z), closedDir = closedDir, delta = delta, t = 0.0 }
+    local g = { obj = o, d = d, closed = vec3(c.x, c.y, z), move = vec3(o2.x - c.x, o2.y - c.y, 0.0), t = 0.0 }
     poseGate(g)
     arms[#arms + 1] = g
+end
+
+-- the two halves of one lane (side 1 = into the port, -1 = out); the lane runs from the booth to the road edge
+local function addLane(m, side, x0, x1)
+    local L = longOf(m)
+    local outer = x1 - L / 2                                 -- the outer half: its end at the road edge, it never moves
+    local inner = x0 + L / 2                                 -- the inner half: its end at the booth when shut
+    addHalf(m, side, outer, outer, 0.0)
+    addHalf(m, side, inner, outer, CP.gateGap)               -- slides out to sit right behind the outer half
 end
 
 local function clearGate()
@@ -116,12 +151,12 @@ local function makeGate()
     else
         print('^3[exti_port] no booth model found^0')
     end
-    -- the gates: one swing gate across each lane, hinged at the road edge (right = into the port, left = out)
-    local gate = firstModel(CP.gateModels, GlobalState.extiPortArmModel)
+    -- the gates: each lane two halves (right = into the port, left = out)
+    local gate = pickHalf((W - boothHalf) * 0.55, GlobalState.extiPortArmModel)
     used.arm = gate
     if gate then
-        addSwing(gate, 1, W)
-        addSwing(gate, -1, W)
+        addLane(gate, 1, boothHalf, W)
+        addLane(gate, -1, boothHalf, W)
     else
         print('^3[exti_port] no gate model found^0')
     end
@@ -227,7 +262,7 @@ RegisterCommand('portgate', function()
         tostring(used.booth), tostring(used.arm), #arms, tostring(GlobalState.extiPortCops), tostring(isOpen())))
     for i, a in ipairs(arms) do
         local c = GetEntityCoords(a.obj)
-        print(('[exti_port] gate %d axis %s open %.2f at %.1f %.1f %.1f'):format(i, a.ax, a.t, c.x, c.y, c.z))
+        print(('[exti_port] gate half %d open %.2f at %.1f %.1f %.1f length %.2f'):format(i, a.t, c.x, c.y, c.z, math.max(a.d.mx.x - a.d.mn.x, a.d.mx.y - a.d.mn.y)))
     end
     lib.notify({ description = 'افتح F8 وصوّر الأسطر التي تبدأ بـ [exti_port]', type = 'inform' })
 end, false)
