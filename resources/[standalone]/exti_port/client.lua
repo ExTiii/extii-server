@@ -33,6 +33,37 @@ local function pickModel()
     print('^1[exti_port] none of the fence models exist in this game^0')
 end
 
+-- the door: a small fence gate from the game, as close as possible to half a panel wide
+-- (an admin can choose another one: /portpick on a gate, then /port doormodel <number>)
+local doorModel, doorDims
+local function pickDoor(want)
+    if doorModel ~= nil then return doorModel end
+    local list = {}
+    local chosen = tonumber(GlobalState.extiPortDoorModel)
+    if chosen then list[#list + 1] = chosen end
+    for _, name in ipairs(Config.doorModels) do list[#list + 1] = joaat(name) end
+    local best, bestDims, bestScore
+    for i, h in ipairs(list) do
+        if IsModelInCdimage(h) and IsModelValid(h) then
+            RequestModel(h)
+            local t = GetGameTimer() + 3000
+            while not HasModelLoaded(h) and GetGameTimer() < t do Wait(10) end
+            local mn, mx = GetModelDimensions(h)
+            local len = mx.x - mn.x
+            if len > 0.6 and len < 3.0 then
+                local score = (chosen and i == 1) and -1 or math.abs(len - want)   -- (the admin's pick always wins)
+                if not bestScore or score < bestScore then
+                    best, bestScore = h, score
+                    bestDims = { mn = mn, mx = mx, len = len, cx = (mn.x + mx.x) / 2, cy = (mn.y + mx.y) / 2 }
+                end
+            end
+        end
+    end
+    doorModel, doorDims = best or false, bestDims
+    print(best and ('[exti_port] door model: %d (%.2f m wide)'):format(best, bestDims.len) or '^3[exti_port] no door model: doors are fence panels^0')
+    return doorModel
+end
+
 local function clear()
     gen = gen + 1
     for _, obj in ipairs(pieces) do if DoesEntityExist(obj) then DeleteEntity(obj) end end
@@ -123,6 +154,14 @@ local function build()
     local rows = math.max(1, math.min(4, math.floor(tonumber(GlobalState.extiPortHeight) or 1)))
     local tall = dims.mx.z - dims.mn.z
     for _, o in ipairs(openings) do if o.door then o.half, o.used = dims.len / 2 + 0.05, nil end end
+    local hasDoor = false
+    for _, o in ipairs(openings) do if o.door then hasDoor = true end end
+    if hasDoor and pickDoor(dims.len / 2) then
+        RequestModel(doorModel)
+        local td = GetGameTimer() + 3000
+        while not HasModelLoaded(doorModel) and GetGameTimer() < td do Wait(10) end
+        if not HasModelLoaded(doorModel) then doorModel = nil end   -- (try again next build; this time panels)
+    end
     for _, s in ipairs(segs) do
         local count = math.max(1, math.ceil(s.len / dims.len))
         local step = s.len / count
@@ -153,18 +192,38 @@ local function build()
             end
             if door then
                 door.used = true
-                door.pos = vec3(c.x, c.y, z)   -- (the walk-through check uses the door's real place)
-                local d = { objs = {}, c = vec3(c.x, c.y, z), h = h, d = dims, open = false }
-                for _ = 1, rows do
-                    local obj = CreateObjectNoOffset(model, c.x, c.y, z, false, false, false)
-                    if obj and obj ~= 0 then
-                        FreezeEntityPosition(obj, true)
-                        SetEntityInvincible(obj, true)
-                        d.objs[#d.objs + 1] = obj
+                -- the panel's place: [ door | the rest of it fence ]; the rows above stay whole
+                local sx, sy = c.x - ax * dims.len / 2, c.y - ay * dims.len / 2   -- the start of the gap (the hinge)
+                local dd = doorModel and doorDims or dims
+                local dm = doorModel or model
+                local dc = vec3(sx + ax * dd.len / 2, sy + ay * dd.len / 2, z)
+                door.pos, door.half = dc, dd.len / 2 + 0.1   -- (only the door itself lets you through)
+                local d = { objs = {}, c = dc, h = h, d = dd, open = false }
+                local obj = CreateObjectNoOffset(dm, dc.x, dc.y, z, false, false, false)
+                if obj and obj ~= 0 then
+                    FreezeEntityPosition(obj, true)
+                    SetEntityInvincible(obj, true)
+                    d.objs[1] = obj
+                    placeDoor(d)
+                    doors[#doors + 1] = d
+                end
+                local rest = dims.len - dd.len
+                if rest > 0.1 then
+                    -- a fence panel right after the door (it reaches into the next panel a little: no hole)
+                    local fx, fy = sx + ax * (dd.len + dims.len / 2), sy + ay * (dd.len + dims.len / 2)
+                    local f = CreateObjectNoOffset(model, fx - ax * dims.cx - bx * dims.cy, fy - ay * dims.cx - by * dims.cy, z - dims.mn.z, false, false, false)
+                    if f and f ~= 0 then
+                        SetEntityHeading(f, h); FreezeEntityPosition(f, true); SetEntityInvincible(f, true)
+                        pieces[#pieces + 1] = f
                     end
                 end
-                placeDoor(d)
-                doors[#doors + 1] = d
+                for r = 1, rows - 1 do
+                    local up = CreateObjectNoOffset(model, c.x - ax * dims.cx - bx * dims.cy, c.y - ay * dims.cx - by * dims.cy, z - dims.mn.z + r * tall * 0.97, false, false, false)
+                    if up and up ~= 0 then
+                        SetEntityHeading(up, h); FreezeEntityPosition(up, true); SetEntityInvincible(up, true)
+                        pieces[#pieces + 1] = up
+                    end
+                end
             elseif not gate then
                 local x = c.x - ax * dims.cx - bx * dims.cy
                 local y = c.y - ay * dims.cx - by * dims.cy
@@ -196,8 +255,11 @@ AddStateBagChangeHandler('extiPort', 'global', function(_, _, value) refresh(val
 AddStateBagChangeHandler('extiPortHeight', 'global', function()
     SetTimeout(0, function() if built then build() end end)
 end)
+AddStateBagChangeHandler('extiPortDoorModel', 'global', function()
+    SetTimeout(0, function() doorModel, doorDims = nil, nil; if built then build() end end)
+end)
 AddStateBagChangeHandler('extiPortModel', 'global', function()
-    SetTimeout(0, function() model, dims = nil, nil; if built then build() end end)
+    SetTimeout(0, function() model, dims, doorModel, doorDims = nil, nil, nil, nil; if built then build() end end)
 end)
 AddStateBagChangeHandler('extiPortEditing', 'global', function() SetTimeout(0, function() refresh(GlobalState.extiPort) end) end)
 CreateThread(function() Wait(500); refresh(GlobalState.extiPort) end)

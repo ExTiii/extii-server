@@ -17,3 +17,10 @@ Config.fenceModels = {
 -- comes this close, and closes again once nobody has been next to it for this long
 Config.doorReach = 1.8
 Config.doorCloseMs = 1500
+-- small fence gates the door can be (the one closest to half a fence panel wide is used)
+Config.doorModels = {
+    'prop_fnclink_03gate1', 'prop_fnclink_03gate2', 'prop_fnclink_03gate3', 'prop_fnclink_03gate4', 'prop_fnclink_03gate5',
+    'prop_fnclink_02gate1', 'prop_fnclink_02gate2', 'prop_fnclink_02gate3', 'prop_fnclink_02gate4', 'prop_fnclink_02gate5',
+    'prop_fnclink_02gate6', 'prop_fnclink_02gate7', 'prop_fnclink_06gate2', 'prop_fnclink_06gate3', 'prop_fnclink_07gate1',
+    'prop_fnclink_09gate1', 'prop_fnclink_04gate1', 'prop_fncsec_01gate', 'prop_facgate_04_l', 'prop_gate_farm_01a',
+}

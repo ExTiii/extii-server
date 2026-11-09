@@ -13,6 +13,7 @@ local function publish()
     GlobalState.extiPort = data.marks
     GlobalState.extiPortModel = data.model
     GlobalState.extiPortHeight = data.height or 1
+    GlobalState.extiPortDoorModel = data.doorModel
 end
 local function save()
     SaveResourceFile(GetCurrentResourceName(), FILE, json.encode(data, { indent = true }), -1)
@@ -72,6 +73,12 @@ lib.addCommand('port', {
         data.height = n
         save()
         say(source, ('السياج الآن %d صفوف فوق بعض'):format(n), 'success')
+    elseif what == 'doormodel' then
+        local m = tonumber(args.confirm)
+        if not m then return say(source, 'اكتب: /port doormodel <الرقم من /portpick وأنت تنظر إلى بوابة صغيرة>', 'error') end
+        data.doorModel = math.floor(m)
+        save()
+        say(source, 'الأبواب الآن من هذا النوع', 'success')
     elseif what == 'fence' then
         local m = tonumber(args.confirm)
         if not m then return say(source, 'اكتب: /port fence <الرقم الذي أعطاك إياه /portpick>', 'error') end
