@@ -428,6 +428,21 @@ CreateThread(function()
     end
 end)
 
+-- /portdebug (F8): what the doors are made of and where they are
+RegisterCommand('portdebug', function()
+    print(('[exti_port] fence model %s  door model %s  doors %d  pieces %d'):format(tostring(model), tostring(doorModel), #doors, #pieces))
+    if doorDims then print(('[exti_port] door size %.2f x %.2f x %.2f'):format(doorDims.len, doorDims.mx.y - doorDims.mn.y, doorDims.mx.z - doorDims.mn.z)) end
+    local me = GetEntityCoords(cache.ped)
+    for i, d in ipairs(doors) do
+        local o = d.objs[1]
+        local ex = o and DoesEntityExist(o)
+        local at = ex and GetEntityCoords(o) or vec3(0, 0, 0)
+        print(('[exti_port] door %d: exists %s  model %s  at %.1f %.1f %.1f  (%.0f m from you)  visible %s  alpha %s  open %s'):format(
+            i, tostring(ex), ex and tostring(GetEntityModel(o)) or '-', at.x, at.y, at.z, #(at - me), ex and tostring(IsEntityVisible(o)) or '-',
+            ex and tostring(GetEntityAlpha(o)) or '-', tostring(d.open)))
+    end
+end, false)
+
 -- /portpick: look at a fence in the world and type it: its model number is shown (and written in F8).
 -- Then /port fence <number> makes the port fence out of that one.
 local function isOurs(ent)
