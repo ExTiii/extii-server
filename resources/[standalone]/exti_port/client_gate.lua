@@ -42,10 +42,16 @@ local function ground(p)
     return (ok and math.abs(z - p.z) < 3.0) and z or p.z
 end
 
+local function spawn(m, x, y, z)
+    local o = CreateObjectNoOffset(m, x, y, z, false, false, false)
+    if o == 0 then o = CreateObjectNoOffset(m, x, y, z, false, false, true) end   -- a door-type model
+    return o
+end
+
 local function place(m, p, heading)
     local d = dimsOf(m)
     local z = ground(p)
-    local o = CreateObjectNoOffset(m, p.x, p.y, z - d.mn.z, false, false, false)
+    local o = spawn(m, p.x, p.y, z - d.mn.z)
     if o ~= 0 then
         SetEntityHeading(o, heading)
         FreezeEntityPosition(o, true)
@@ -78,7 +84,7 @@ local function addArm(m, hingeP, towards)
     local ax = (d.mx.x - d.mn.x) >= (d.mx.y - d.mn.y) and 'x' or 'y'
     local dir = math.deg(math.atan(towards.y - hingeP.y, towards.x - hingeP.x))   -- the arm points this way
     local h = ax == 'x' and dir or (dir - 90.0)                                      -- (a model's +Y is its heading)
-    local o = CreateObjectNoOffset(m, hingeP.x, hingeP.y, z, false, false, false)
+    local o = spawn(m, hingeP.x, hingeP.y, z)
     if o == 0 then print('^3[exti_port] the barrier arm could not be made^0') return end
     FreezeEntityPosition(o, true)
     SetEntityInvincible(o, true)
@@ -117,10 +123,14 @@ local function makeGate()
     local arm = firstModel(CP.armModels, GlobalState.extiPortArmModel)
     used.arm = arm
     if arm then
+        -- one arm from the road edge when it is long enough to reach the booth, otherwise two meeting in the lane
+        local ad = dimsOf(arm)
+        local long = math.max(ad.mx.x - ad.mn.x, ad.mx.y - ad.mn.y)
+        local gap = W - boothHalf
         for _, side in ipairs({ 1, -1 }) do                   -- right = into the port, left = out
             local edge, mid = at(side * W, side * 1.5), at(side * boothHalf, side * 1.5)
             addArm(arm, edge, mid)
-            addArm(arm, mid, edge)
+            if long < gap * 0.8 then addArm(arm, mid, edge) end
         end
     else
         print('^3[exti_port] no barrier arm model found^0')
