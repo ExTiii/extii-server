@@ -515,6 +515,8 @@ RegisterCommand('portdebug', function()
     if doorDims then print(('[exti_port] door size %.2f x %.2f x %.2f'):format(doorDims.len, doorDims.mx.y - doorDims.mn.y, doorDims.mx.z - doorDims.mn.z)) end
     local me = GetEntityCoords(cache.ped)
     for i, d in ipairs(doors) do
+        print(('[exti_port] door %d plan: model %s loaded %s  place %.1f %.1f %.1f  (%.0f m from you)  objects %d  angle %.0f'):format(
+            i, tostring(d.m), tostring(d.m and HasModelLoaded(d.m)), d.c.x, d.c.y, d.c.z, #(d.c - me), #d.objs, d.angle or 0))
         local o = d.objs[1]
         local ex = o and DoesEntityExist(o)
         local at = ex and GetEntityCoords(o) or vec3(0, 0, 0)
