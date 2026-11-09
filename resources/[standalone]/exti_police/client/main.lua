@@ -61,8 +61,9 @@ end
 local claimedFrame = -1
 function POL.lineIs(text)
     if not text then return false end
-    local open, cur = lib.isTextUIOpen()
-    if open ~= true or cur ~= text then return false end
+    -- (compared with the line this script showed last, not the text the list hands back: officers pressed E on
+    -- a line they could see and nothing happened)
+    if lib.isTextUIOpen() == false or POL.shownLine ~= text then return false end
     -- (and one press is used once: two features showing in the same instant can't both act)
     local f = GetFrameCount()
     if claimedFrame == f then return false end
@@ -72,6 +73,7 @@ end
 
 local shownText, shownAt = nil, 0
 function POL.prompt(text)
+    POL.shownLine = text
     -- another script may have hidden it: show it again (and every second: exti_interact drops a line its owner stopped renewing)
     local open, cur = lib.isTextUIOpen()
     if shownText == text and (not text or (open and cur == text and GetGameTimer() - shownAt < 1000)) then return end
@@ -301,6 +303,12 @@ CreateThread(function()
             end
         end
         POL.prompt(text)
+        if action and IsControlJustPressed(0, 38) then
+            -- (F8: why an E press on a police line did or didn't act)
+            local open, cur = lib.isTextUIOpen()
+            print(('[exti_police] E on "%s": picked %s, list open %s, list text "%s"'):format(tostring(text),
+                tostring(LocalPlayer.state.interactSel), tostring(open), tostring(cur)))
+        end
         if action and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and POL.lineIs(text) then
             POL.prompt(nil)
             CreateThread(action)

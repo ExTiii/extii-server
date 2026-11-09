@@ -63,6 +63,7 @@ CreateThread(function()
                 local can = POL.onDuty() and myGrade() >= (nearest.minGrade or 0)
                 local text = can and ('[E] %s %s'):format(nearest.locked and 'فتح' or 'قفل', nearest.label)
                     or ('%s مقفلة · %s'):format(nearest.label, nearest.minGradeLabel and ('من رتبة %s فما فوق'):format(nearest.minGradeLabel) or 'للشرطة فقط')
+                POL.shownLine = text
                 lib.showTextUI(text, { icon = nearest.locked and 'lock' or 'lock-open', position = 'top-center' })
                 shown = true
                 if can and (IsControlJustPressed(0, 38) and (LocalPlayer.state.interactSel == nil or LocalPlayer.state.interactSel == GetCurrentResourceName())) and POL.lineIs(text) then
@@ -71,10 +72,12 @@ CreateThread(function()
                 end
             elseif shown then
                 lib.hideTextUI()
+                POL.shownLine = nil
                 shown = false
             end
         elseif shown then
             lib.hideTextUI()
+            POL.shownLine = nil
             shown = false
         end
         Wait(sleep)
