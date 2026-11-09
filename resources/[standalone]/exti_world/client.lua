@@ -7,7 +7,6 @@
 -- * the weapon wheel (TAB) is off: weapons come from the inventory hotbar
 -- * no hitting people with the gun you are holding, no picking up GTA weapons from the ground
 -- * passengers don't slide into the driver seat by themselves
--- * no GTA traffic or parked-car spawns inside the new Legion Square (the map replaced the old parking lot)
 
 ---------------------------------------------------------------------------
 -- no wanted stars, no GTA emergency services
@@ -185,55 +184,5 @@ CreateThread(function()
             end
         end
         Wait(5000)
-    end
-end)
-
----------------------------------------------------------------------------
--- EX_Tii (Moe): the new Legion Square (NTeam map) is a plaza where GTA used to have a parking lot and a
--- service lane, so the game still routes cars through it. No roads and no parked-car spawns in the plaza:
--- an angled box from its four corners (77.7,-1120.5) (191.5,-1119.9) (265.9,-869.6) (186.4,-841.0).
--- Road toggles are forgotten when the area streams out, so they are applied again every few seconds.
----------------------------------------------------------------------------
-local PLAZA = {
-    a = vec3(134.6, -1120.2, 10.0), b = vec3(226.2, -855.3, 50.0), width = 95.0,   -- centre line south -> north
-    box = { vec3(77.0, -1121.0, 10.0), vec3(266.0, -840.0, 50.0) },                -- the plain box round it (car generators)
-}
-CreateThread(function()
-    while true do
-        SetRoadsInAngledArea(PLAZA.a.x, PLAZA.a.y, PLAZA.a.z, PLAZA.b.x, PLAZA.b.y, PLAZA.b.z, PLAZA.width, false, false, false)
-        local b1, b2 = PLAZA.box[1], PLAZA.box[2]
-        SetAllVehicleGeneratorsActiveInArea(b1.x, b1.y, b1.z, b2.x, b2.y, b2.z, false, false)
-        Wait(5000)
-    end
-end)
-
----------------------------------------------------------------------------
--- EX_Tii (Moe): the Legion Square Fleeca has no interior while the new map is incomplete (no floor: you fall
--- through). Nobody goes in: inside its footprint, or under it, you are put back on the pavement outside.
--- Remove this block when the bank interior is back (and put the branch / heist back in the configs).
----------------------------------------------------------------------------
-local BANK_OFF = {
-    min = vec3(140.0, -1056.0, 20.0), max = vec3(158.0, -1037.0, 33.0),   -- the building footprint (and under it)
-    out = vec4(150.8, -1033.6, 29.35, 160.0),                             -- the pavement in front of the door
-    text = 'البنك مغلق حاليًا',
-}
-CreateThread(function()
-    local lastWarn = 0
-    while true do
-        local ped = cache.ped
-        local c = GetEntityCoords(ped)
-        local near = #(c.xy - BANK_OFF.out.xy) < 60.0
-        if near and c.x > BANK_OFF.min.x and c.x < BANK_OFF.max.x and c.y > BANK_OFF.min.y and c.y < BANK_OFF.max.y
-            and c.z > BANK_OFF.min.z and c.z < BANK_OFF.max.z then
-            local veh = cache.vehicle
-            local ent = veh or ped
-            SetEntityCoords(ent, BANK_OFF.out.x, BANK_OFF.out.y, BANK_OFF.out.z, false, false, false, false)
-            SetEntityHeading(ent, BANK_OFF.out.w)
-            if GetGameTimer() - lastWarn > 3000 then
-                lastWarn = GetGameTimer()
-                lib.notify({ description = BANK_OFF.text, type = 'error' })
-            end
-        end
-        Wait(near and 150 or 1000)
     end
 end)
