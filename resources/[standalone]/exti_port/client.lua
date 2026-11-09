@@ -166,6 +166,60 @@ CreateThread(function()
     end
 end)
 
+-- EX_Tii (Moe): nobody gets over it, whatever the trick (a car roof, a container, an explosion, a ragdoll):
+-- crossing the fence line anywhere but the gate or a door puts you (and your car) back where you were.
+-- Admins in noclip (no collision, frozen) and teleports (a big jump in one step) are left alone.
+local function crossesAt(p1, p2, a, b)
+    local rx, ry = p2.x - p1.x, p2.y - p1.y
+    local sx, sy = b.x - a.x, b.y - a.y
+    local den = rx * sy - ry * sx
+    if math.abs(den) < 1e-6 then return nil end
+    local qx, qy = a.x - p1.x, a.y - p1.y
+    local t = (qx * sy - qy * sx) / den
+    local u = (qx * ry - qy * rx) / den
+    if t >= 0.0 and t <= 1.0 and u >= 0.0 and u <= 1.0 then return vec3(p1.x + t * rx, p1.y + t * ry, p1.z) end
+end
+CreateThread(function()
+    local prev, lastWarn = nil, 0
+    while true do
+        local sleep = 1000
+        if built and center and not GlobalState.extiPortEditing then
+            local ped = cache.ped
+            local ent = cache.vehicle and GetVehiclePedIsIn(ped, false) or ped
+            local pos = GetEntityCoords(ent)
+            if #(pos.xy - center.xy) < reach + 60.0 then
+                sleep = 100
+                local exempt = IsEntityPositionFrozen(ent) or GetEntityCollisionDisabled(ent) or IsEntityDead(ped)
+                if exempt or not prev or #(pos - prev) > 30.0 then
+                    prev = pos
+                else
+                    local bad = false
+                    for _, sg in ipairs(segs) do
+                        local hit = crossesAt(prev, pos, sg.a, sg.b)
+                        -- (high above it - a helicopter, a plane - is not crossing it)
+                        if hit and pos.z < math.max(sg.a.z, sg.b.z) + 8.0 and not nearOpening(hit, 0.3) then bad = true break end
+                    end
+                    if bad then
+                        SetEntityCoordsNoOffset(ent, prev.x, prev.y, prev.z, false, false, false)
+                        SetEntityVelocity(ent, 0.0, 0.0, 0.0)
+                        if GetGameTimer() - lastWarn > 3000 then
+                            lastWarn = GetGameTimer()
+                            lib.notify({ description = 'الميناء مسوّر: الدخول من البوابة أو من أبواب البحر فقط', type = 'error' })
+                        end
+                    else
+                        prev = pos
+                    end
+                end
+            else
+                prev = nil
+            end
+        else
+            prev = nil
+        end
+        Wait(sleep)
+    end
+end)
+
 -- while an admin is marking: numbered markers on every mark (green corners, yellow gate, blue doors)
 CreateThread(function()
     while true do
