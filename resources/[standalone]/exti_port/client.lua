@@ -569,9 +569,10 @@ RegisterCommand('portpick', function()
     local ray = StartExpensiveSynchronousShapeTestLosProbe(cam.x, cam.y, cam.z, to.x, to.y, to.z, -1, cache.ped, 0)
     local _, hit, _, _, ent = GetShapeTestResult(ray)
     local found
-    if hit == 1 and ent and ent ~= 0 and DoesEntityExist(ent) and not isOurs(ent) then
-        local m = GetEntityModel(ent)
-        if m and m ~= 0 and GetEntityType(ent) ~= 1 and GetEntityType(ent) ~= 2 then found = m end
+    -- (only a placed object: the map itself (a bridge wall, a building) has no model to read and asking crashes)
+    if hit == 1 and ent and ent ~= 0 and DoesEntityExist(ent) and GetEntityType(ent) == 3 and not isOurs(ent) then
+        local ok, m = pcall(GetEntityModel, ent)
+        if ok and m and m ~= 0 then found = m end
     end
     if not found then
         -- not hit by the look: the nearest object around you instead
