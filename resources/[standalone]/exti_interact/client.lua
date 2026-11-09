@@ -28,10 +28,20 @@ local function selectables()
     return list
 end
 
+-- EX_Tii (Moe): when the picked line goes away (its script just used the E press), nobody is picked for a
+-- moment: the E that was just pressed must not land on the next line too (pick up a bag next to a shop
+-- clerk = only the pick up, not the shop as well)
+local holdUntil = 0
+local HOLD_MS = 350
+local function publish()
+    if GetGameTimer() < holdUntil then return end
+    LocalPlayer.state:set('interactSel', selected, false)
+end
+
 local function setSelected(res)
     if selected == res then return end
     selected = res
-    LocalPlayer.state:set('interactSel', res, false)
+    publish()
     dirty = true
 end
 
@@ -71,6 +81,11 @@ end
 local function hide(res)
     res = res or 'unknown'
     if not entries[res] then return end
+    if res == selected then
+        holdUntil = GetGameTimer() + HOLD_MS
+        LocalPlayer.state:set('interactSel', '__hold', false)   -- (matches no script: nobody takes this press)
+        SetTimeout(HOLD_MS + 10, publish)
+    end
     entries[res] = nil
     for i = #order, 1, -1 do if order[i] == res then table.remove(order, i) end end
     fixSelection()
