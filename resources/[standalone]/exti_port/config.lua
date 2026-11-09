@@ -23,4 +23,7 @@ Config.doorModels = {
     'prop_fnclink_02gate1', 'prop_fnclink_02gate2', 'prop_fnclink_02gate3', 'prop_fnclink_02gate4', 'prop_fnclink_02gate5',
     'prop_fnclink_02gate6', 'prop_fnclink_02gate7', 'prop_fnclink_06gate2', 'prop_fnclink_06gate3', 'prop_fnclink_07gate1',
     'prop_fnclink_09gate1', 'prop_fnclink_04gate1', 'prop_fncsec_01gate', 'prop_facgate_04_l', 'prop_gate_farm_01a',
+    'prop_facgate_04_r', 'prop_facgate_02_l', 'prop_facgate_02_r', 'prop_facgate_03_l', 'prop_facgate_03_r',
+    'prop_gate_tep_01_l', 'prop_gate_tep_01_r', 'prop_gate_docks_ld', 'prop_fnclink_05gate1', 'prop_fnclink_08gate1',
+    'prop_ld_fence_gate', 'prop_fncres_01gate1', 'prop_fncres_02gate1', 'prop_fnccorgm_05a',
 }

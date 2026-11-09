@@ -52,7 +52,9 @@ local function pickDoor(want)
             local len = mx.x - mn.x
             -- (some gates are the map's own doors: they measure fine but a script can't make them. Try it.)
             local test = 0
-            if len > 0.6 and len < 3.0 and HasModelLoaded(h) then
+            -- (flat gates only: thin like the fence. A gate with its own frame/cage swings as a whole box)
+            local depth = mx.y - mn.y
+            if len > 0.6 and len < 3.0 and depth < 0.45 and HasModelLoaded(h) then
                 local me = GetEntityCoords(cache.ped)
                 test = CreateObjectNoOffset(h, me.x, me.y, me.z - 60.0, false, false, false)
                 if test ~= 0 then DeleteEntity(test) else print(('[exti_port] door model %d can not be made by a script, skipped'):format(h)) end
