@@ -13,11 +13,12 @@ Config.fenceModels = {
     'prop_fnclink_09a', 'prop_fnclink_10a', 'prop_fnclink_04a', 'prop_fnclink_03a', 'prop_fnclink_02a', 'prop_fnclink_01a',
 }
 
--- the doors by the water: a panel of the fence itself that swings open on its own when someone on foot
--- comes this close, and closes again once nobody has been next to it for this long
-Config.doorReach = 1.1   -- (you walk into it: it opens like a pushed house door)
-Config.doorCloseMs = 1500
-Config.doorSwingSpeed = 240   -- degrees a second at its fastest (90 = fully open: about half a second)
+-- the doors by the water: pushed open like GTA's house doors (as far as you walk into them), they swing
+-- back shut by themselves
+Config.doorPushSpeed = 420    -- degrees a second it can follow you at
+Config.doorReturnSpeed = 110  -- degrees a second it swings back shut
+Config.doorMaxAngle = 100     -- as far as it opens
+
 -- small fence gates the door can be (the one closest to half a fence panel wide is used)
 Config.doorModels = {
     'prop_fnclink_03gate1', 'prop_fnclink_03gate2', 'prop_fnclink_03gate3', 'prop_fnclink_03gate4', 'prop_fnclink_03gate5',

@@ -410,74 +410,84 @@ CreateThread(function()
     end
 end)
 
--- the doors: walk up to one on foot and it swings open by itself; it closes once nobody is next to it.
--- Anyone on foot opens it on everyone's screen (the other players near it count too). Cars don't fit.
-CreateThread(function()
-    while true do
-        local sleep = 500
-        if built and #doors > 0 then
-            local me = GetEntityCoords(cache.ped)
-            local close = false
-            for _, d in ipairs(doors) do if #(me.xy - d.c.xy) < 40.0 then close = true break end end
-            if close then
-                sleep = 150
-                -- everyone on foot near the port's doors (me and the players around)
-                local feet = {}
-                for _, pl in ipairs(GetActivePlayers()) do
-                    local ped = GetPlayerPed(pl)
-                    if ped ~= 0 and not IsPedInAnyVehicle(ped, false) then feet[#feet + 1] = GetEntityCoords(ped) end
-                end
-                local now = GetGameTimer()
-                for _, d in ipairs(doors) do
-                    -- someone walking into it: which side is he on? (it opens away from him, like a pushed door)
-                    local someone, side = false, nil
-                    local fx, fy = math.cos(math.rad(d.h)), math.sin(math.rad(d.h))
-                    for _, p in ipairs(feet) do
-                        if math.abs(p.z - d.c.z) < 3.0 and #(p.xy - d.c.xy) < Config.doorReach then
-                            someone = true
-                            local rx, ry = p.x - d.c.x, p.y - d.c.y
-                            side = (fx * ry - fy * rx) >= 0.0 and 1 or -1
-                            break
-                        end
+-- EX_Tii (Moe): the doors work like GTA's open house doors. A person walking into one pushes it: it opens
+-- just as far as his body needs (stop halfway = it rests half open against you), from whichever side he comes,
+-- and it swings back shut by itself once nobody is in its way (never through someone standing there).
+local BODY = 0.5             -- a person's reach on the door (metres): a bit more than his body, so leaning on it pushes it
+local function pushDoors(dt)
+    -- everyone on foot near a door (me and the players around)
+    local feet = {}
+    for _, pl in ipairs(GetActivePlayers()) do
+        local ped = GetPlayerPed(pl)
+        if ped ~= 0 and not IsPedInAnyVehicle(ped, false) then feet[#feet + 1] = GetEntityCoords(ped) end
+    end
+    local busy = false
+    for _, d in ipairs(doors) do
+        local len = d.d.len
+        local fx, fy = math.cos(math.rad(d.h)), math.sin(math.rad(d.h))       -- along the closed door, from the hinge
+        local nx, ny = -fy, fx                                                -- its side (+90 degrees)
+        local hx, hy = d.c.x - fx * len / 2, d.c.y - fy * len / 2             -- the hinge
+        local a = d.angle or 0.0
+        local sgn = d.sgn or 1
+        local need = 0.0
+        for _, p in ipairs(feet) do
+            if math.abs(p.z - d.c.z) < 3.0 then
+                local rx, ry = p.x - hx, p.y - hy
+                local r = math.sqrt(rx * rx + ry * ry)
+                if r > 0.15 and r < len + BODY then
+                    local th = math.deg(math.atan(rx * nx + ry * ny, rx * fx + ry * fy))   -- where he is around the hinge
+                    local half = math.deg(math.asin(math.min(1.0, BODY / math.max(r, BODY))))
+                    if math.abs(a) < 0.5 and math.abs(th) < half then
+                        sgn = th < 0 and 1 or -1   -- closed and touched: it will swing away from him
                     end
-                    if someone then
-                        d.lastSeen = now
-                        if not d.open then
-                            d.open = true
-                            d.dir = -side   -- (swings to the far side)
-                            PlaySoundFromCoord(-1, 'Grab_Gate', d.c.x, d.c.y, d.c.z, 'DLC_Biker_Mailbox_Sounds', false, 10, false)
-                        end
-                    elseif d.open and now - (d.lastSeen or 0) > Config.doorCloseMs then
-                        d.open = false
-                    end
+                    local t = th * sgn                                        -- his place, measured the way it opens
+                    local open = math.abs(a)
+                    if t > -half and t < open + half then need = math.max(need, t + half) end
                 end
             end
         end
-        Wait(sleep)
+        need = math.min(need, Config.doorMaxAngle)
+        local open = math.abs(a)
+        if need > open + 0.05 then
+            if open < 1.0 then PlaySoundFromCoord(-1, 'Grab_Gate', d.c.x, d.c.y, d.c.z, 'DLC_Biker_Mailbox_Sounds', false, 10, false) end
+            open = math.min(need, open + Config.doorPushSpeed * dt)            -- pushed: it moves with you
+        elseif open > need + 0.05 then
+            open = math.max(need, open - Config.doorReturnSpeed * dt)          -- nobody there: it swings back
+        end
+        if open < 0.05 then open, sgn = 0.0, 1 end
+        local newA = open * sgn
+        if math.abs(newA - a) > 0.01 then
+            d.angle, d.sgn = newA, sgn
+            placeDoor(d)
+            busy = true
+        else
+            d.sgn = sgn
+        end
+        if open > 0.0 then busy = true end
     end
-end)
+    return busy
+end
 
--- the swing: every frame a moving door turns a little towards open (90) or closed (0), easing at the ends
 CreateThread(function()
     local last = GetGameTimer()
     while true do
         local now = GetGameTimer()
         local dt = math.min(0.1, (now - last) / 1000.0)
         last = now
-        local moving = false
-        for _, d in ipairs(doors) do
-            local target = d.open and (90.0 * (d.dir or 1)) or 0.0
-            local a = d.angle or 0.0
-            if math.abs(target - a) > 0.05 then
-                moving = true
-                -- fast in the middle, slow near the end (like a real gate on a spring)
-                local step = math.min(Config.doorSwingSpeed, math.max(Config.doorSwingSpeed * 0.25, math.abs(target - a) * 6.0)) * dt
-                if target > a then a = math.min(target, a + step) else a = math.max(target, a - step) end
-                d.angle = a
-                placeDoor(d)
+        local wait = 400
+        if built and #doors > 0 then
+            local me = GetEntityCoords(cache.ped)
+            local near = false
+            for _, d in ipairs(doors) do if #(me.xy - d.c.xy) < 30.0 then near = true break end end
+            if near then
+                local moving = pushDoors(dt)
+                -- every frame right next to a door or while one moves; a bit slower otherwise
+                local close = false
+                for _, d in ipairs(doors) do if #(me.xy - d.c.xy) < 4.0 then close = true break end end
+                wait = (moving or close) and 0 or 100
             end
         end
-        Wait(moving and 0 or 100)
+        Wait(wait)
     end
 end)
 
