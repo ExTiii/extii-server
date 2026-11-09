@@ -178,3 +178,60 @@ end, false)
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() and lookObj and DoesEntityExist(lookObj) then DeleteEntity(lookObj) end
 end)
+
+-- =====================================================================
+-- checkpoints without a gate (/port booth): just the guard booth, made when you are near
+-- =====================================================================
+local booths = {}   -- [index] = object
+local function boothModel()
+    local list = {}
+    if tonumber(GlobalState.extiPortBoothModel) then list[1] = tonumber(GlobalState.extiPortBoothModel) end
+    for _, n in ipairs(Config.checkpoint.boothModels) do list[#list + 1] = joaat(n) end
+    for _, h in ipairs(list) do
+        if IsModelInCdimage(h) and IsModelValid(h) then
+            RequestModel(h)
+            local t = GetGameTimer() + 3000
+            while not HasModelLoaded(h) and GetGameTimer() < t do Wait(10) end
+            if HasModelLoaded(h) then return h end
+        end
+    end
+end
+local function clearBooths()
+    for _, o in pairs(booths) do if DoesEntityExist(o) then DeleteEntity(o) end end
+    booths = {}
+end
+AddStateBagChangeHandler('extiPortBooths', 'global', function() SetTimeout(0, clearBooths) end)
+AddStateBagChangeHandler('extiPortBoothModel', 'global', function() SetTimeout(0, clearBooths) end)
+CreateThread(function()
+    Wait(1500)
+    while true do
+        local list = type(GlobalState.extiPortBooths) == 'table' and GlobalState.extiPortBooths or {}
+        local me = GetEntityCoords(cache.ped).xy
+        for i, b in ipairs(list) do
+            local d = #(me - vector2(b.x, b.y))
+            if d < 250.0 and not booths[i] then
+                local m = boothModel()
+                if m then
+                    local mn = GetModelDimensions(m)
+                    local ok, gz = GetGroundZFor_3dCoord(b.x, b.y, b.z + 2.0, false)
+                    local z = (ok and math.abs(gz - b.z) < 3.0) and gz or b.z
+                    local o = CreateObjectNoOffset(m, b.x, b.y, z - mn.z, false, false, false)
+                    if o ~= 0 then
+                        SetEntityHeading(o, b.h or 0.0)
+                        FreezeEntityPosition(o, true)
+                        SetEntityInvincible(o, true)
+                        booths[i] = o
+                    end
+                end
+            elseif d > 290.0 and booths[i] then
+                if DoesEntityExist(booths[i]) then DeleteEntity(booths[i]) end
+                booths[i] = nil
+            end
+        end
+        for i, o in pairs(booths) do
+            if not list[i] then if DoesEntityExist(o) then DeleteEntity(o) end booths[i] = nil end
+        end
+        Wait(1500)
+    end
+end)
+AddEventHandler('onResourceStop', function(res) if res == GetCurrentResourceName() then clearBooths() end end)

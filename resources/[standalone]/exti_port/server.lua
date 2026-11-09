@@ -19,6 +19,7 @@ local function publish()
     GlobalState.extiPortArmModel = data.armModel
     GlobalState.extiPortBlocks = data.blocks or {}
     GlobalState.extiPortBlockRows = data.blockRows or {}
+    GlobalState.extiPortBooths = data.booths or {}
     GlobalState.extiPortBlockModel = data.blockModel
 end
 local function save()
@@ -40,7 +41,7 @@ end
 
 -- /port corner | gate | door | undo | list | clear yes | done
 lib.addCommand('port', {
-    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / gatetest / edge / block / blockpoint / blocknew / blockmodel / done',
+    help = 'Port (admin): corner / gate / door / undo / list / clear yes / fence / doormodel / height / checkpoint / boothmodel / gatemodel / gatetest / edge / block / blockpoint / blocknew / blockmodel / booth / done',
     params = { { name = 'what', type = 'string', help = 'corner, gate, door, undo, list, clear, done' },
                { name = 'confirm', help = 'a number or yes', optional = true } },
     restricted = 'group.admin',
@@ -175,6 +176,21 @@ lib.addCommand('port', {
         data.blockRowNew = true
         save()
         say(source, 'النقطة القادمة تبدأ صفًا جديدًا (لا يتصل بالسابق)', 'success')
+    elseif what == 'booth' then
+        -- a checkpoint without a gate: just the guard booth, in the middle of the road (you can place several)
+        data.booths = data.booths or {}
+        if args.confirm == 'undo' then
+            local last = table.remove(data.booths)
+            save()
+            return say(source, last and 'حُذف آخر كشك' or 'لا توجد أكشاك', last and 'success' or 'error')
+        elseif args.confirm == 'clear' then
+            data.booths = {}
+            save()
+            return say(source, 'حُذفت كل الأكشاك', 'success')
+        end
+        data.booths[#data.booths + 1] = { x = mark.x, y = mark.y, z = mark.z, h = math.floor(GetEntityHeading(ped) * 10) / 10 }
+        save()
+        say(source, ('كشك رقم %d وُضع هنا'):format(#data.booths), 'success')
     elseif what == 'blockmodel' then
         local m = tonumber(args.confirm)
         if not m then return say(source, 'اكتب: /port blockmodel <الرقم من /portpick وأنت تنظر إلى كتلة>', 'error') end
