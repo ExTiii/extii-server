@@ -8,6 +8,7 @@ local CP = Config.checkpoint
 local objs, arms = {}, {}       -- everything made; the barrier arms { obj, hinge, h, dims, angle }
 local made = false
 local spot = nil                -- { x, y, z, h } (h = facing into the port)
+local used = {}                 -- the models picked (for /portgate)
 
 local function firstModel(list, override)
     local all = {}
@@ -25,7 +26,7 @@ end
 
 local function dimsOf(m)
     local mn, mx = GetModelDimensions(m)
-    return { mn = mn, mx = mx, len = mx.x - mn.x, cy = (mn.y + mx.y) / 2 }
+    return { mn = mn, mx = mx, len = mx.x - mn.x, cx = (mn.x + mx.x) / 2, cy = (mn.y + mx.y) / 2 }
 end
 
 -- a point to the right (+) / forward (+) of the spot, on the road
@@ -55,11 +56,18 @@ local function place(m, p, heading)
 end
 
 -- a barrier arm: its hinge end stays put, it lifts (angle 0 = across the road, CP.armUp = raised)
+-- works whether the model is long along its X or its Y (a.ax = 'x' or 'y')
+local function hingeOff(a) local d = a.d; return a.ax == 'x' and vec3(d.mn.x, d.cy, d.mn.z) or vec3(d.cx, d.mn.y, d.mn.z) end
+local function tipOff(a) local d = a.d; return a.ax == 'x' and vec3(d.mx.x, d.cy, d.mn.z) or vec3(d.cx, d.mx.y, d.mn.z) end
 local function poseArm(a)
-    local d = a.d
     -- turn it, then move it so its hinge end sits on the hinge point (works whatever the model's centre is)
-    SetEntityRotation(a.obj, 0.0, a.sign * a.angle, a.h, 2, true)
-    local now = GetOffsetFromEntityInWorldCoords(a.obj, d.mn.x, d.cy, d.mn.z)
+    if a.ax == 'x' then
+        SetEntityRotation(a.obj, 0.0, a.sign * a.angle, a.h, 2, true)
+    else
+        SetEntityRotation(a.obj, a.sign * a.angle, 0.0, a.h, 2, true)
+    end
+    local o = hingeOff(a)
+    local now = GetOffsetFromEntityInWorldCoords(a.obj, o.x, o.y, o.z)
     local cur = GetEntityCoords(a.obj)
     SetEntityCoordsNoOffset(a.obj, cur.x + (a.hinge.x - now.x), cur.y + (a.hinge.y - now.y), cur.z + (a.hinge.z - now.z), false, false, false)
 end
@@ -67,16 +75,19 @@ end
 local function addArm(m, hingeP, towards)
     local d = dimsOf(m)
     local z = ground(hingeP)
-    local h = math.deg(math.atan(towards.y - hingeP.y, towards.x - hingeP.x))   -- the arm points this way
+    local ax = (d.mx.x - d.mn.x) >= (d.mx.y - d.mn.y) and 'x' or 'y'
+    local dir = math.deg(math.atan(towards.y - hingeP.y, towards.x - hingeP.x))   -- the arm points this way
+    local h = ax == 'x' and dir or (dir - 90.0)                                      -- (a model's +Y is its heading)
     local o = CreateObjectNoOffset(m, hingeP.x, hingeP.y, z, false, false, false)
-    if o == 0 then return end
+    if o == 0 then print('^3[exti_port] the barrier arm could not be made^0') return end
     FreezeEntityPosition(o, true)
     SetEntityInvincible(o, true)
     objs[#objs + 1] = o
-    local a = { obj = o, d = d, h = h, hinge = vec3(hingeP.x, hingeP.y, z + CP.armHeight), angle = 0.0, sign = 1 }
+    local a = { obj = o, d = d, h = h, ax = ax, hinge = vec3(hingeP.x, hingeP.y, z + CP.armHeight), angle = 0.0, sign = 1 }
     -- which way is "up" for this model: try a lift and look where the far end went
     a.angle = 30.0; poseArm(a)
-    local tip = GetOffsetFromEntityInWorldCoords(o, d.mx.x, d.cy, d.mn.z)
+    local t = tipOff(a)
+    local tip = GetOffsetFromEntityInWorldCoords(o, t.x, t.y, t.z)
     if tip.z < a.hinge.z then a.sign = -1 end
     a.angle = 0.0; poseArm(a)
     arms[#arms + 1] = a
@@ -94,6 +105,7 @@ local function makeGate()
     local W = CP.halfWidth
     -- the booth, in the middle of the road
     local booth = firstModel(CP.boothModels, GlobalState.extiPortBoothModel)
+    used = { booth = booth }
     local boothHalf = 1.5
     if booth then
         local _, bd = place(booth, at(0.0, 0.0), spot.h)
@@ -103,6 +115,7 @@ local function makeGate()
     end
     -- the barriers: for each direction one arm from the road edge and one from the booth, meeting in the lane
     local arm = firstModel(CP.armModels, GlobalState.extiPortArmModel)
+    used.arm = arm
     if arm then
         for _, side in ipairs({ 1, -1 }) do                   -- right = into the port, left = out
             local edge, mid = at(side * W, side * 1.5), at(side * boothHalf, side * 1.5)
@@ -115,8 +128,8 @@ local function makeGate()
     -- stop signs at the road edges, facing the cars coming in / going out
     local sign = firstModel(CP.signModels)
     if sign then
-        place(sign, at(W + 0.8, -3.0), spot.h + 180.0)
-        place(sign, at(-W - 0.8, 3.0), spot.h)
+        place(sign, at(W + 0.8, -3.0), spot.h)            -- faces the cars coming in (right side)
+        place(sign, at(-W - 0.8, 3.0), spot.h + 180.0)    -- faces the cars going out (left side)
     end
 end
 
@@ -190,5 +203,33 @@ CreateThread(function()
         Wait(sleep)
     end
 end)
+
+-- /portgate (admin look): which booth / barrier models exist in this game, and what was built
+RegisterCommand('portgate', function()
+    local function list(title, names)
+        for _, n in ipairs(names) do
+            local hsh = joaat(n)
+            local ok = IsModelInCdimage(hsh) and IsModelValid(hsh)
+            local size = ''
+            if ok then
+                RequestModel(hsh)
+                local t = GetGameTimer() + 2000
+                while not HasModelLoaded(hsh) and GetGameTimer() < t do Wait(10) end
+                local mn, mx = GetModelDimensions(hsh)
+                size = (' size %.2f x %.2f x %.2f'):format(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z)
+            end
+            print(('[exti_port] %s %s %s%s'):format(title, n, ok and 'YES' or 'no', size))
+        end
+    end
+    list('booth', CP.boothModels)
+    list('arm', CP.armModels)
+    print(('[exti_port] spot %s made %s booth %s arm %s arms %d cops %s open %s'):format(spot and 'yes' or 'no', tostring(made),
+        tostring(used.booth), tostring(used.arm), #arms, tostring(GlobalState.extiPortCops), tostring(isOpen())))
+    for i, a in ipairs(arms) do
+        local c = GetEntityCoords(a.obj)
+        print(('[exti_port] arm %d axis %s sign %d angle %.0f at %.1f %.1f %.1f'):format(i, a.ax, a.sign, a.angle, c.x, c.y, c.z))
+    end
+    lib.notify({ description = 'افتح F8 وصوّر الأسطر التي تبدأ بـ [exti_port]', type = 'inform' })
+end, false)
 
 AddEventHandler('onResourceStop', function(res) if res == GetCurrentResourceName() then clearGate() end end)

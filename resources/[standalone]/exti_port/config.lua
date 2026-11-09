@@ -40,6 +40,7 @@ Config.checkpoint = {
     policeJob = 'police',
     armUp = 85.0, armSpeed = 70.0, armHeight = 0.0,
     boothModels = { 'prop_air_sechut_01', 'prop_sec_hut_01', 'prop_gatehouse_01', 'prop_air_gate_booth_01', 'prop_parking_hut_2' },
-    armModels = { 'prop_sec_barrier_ld_01a', 'prop_sec_barrier_ld_02a', 'prop_sec_barier_ld_01a', 'prop_sec_barier_ld_02a' },
+    armModels = { 'prop_sec_barrier_ld_01a', 'prop_sec_barrier_ld_02a', 'prop_sec_barier_ld_01a', 'prop_sec_barier_ld_02a',
+                  'prop_sec_barier_01a', 'prop_sec_barier_02a', 'prop_sec_barier_02b', 'prop_sec_barier_03a', 'prop_sec_barier_04a' },
     signModels = { 'prop_sign_road_01a' },
 }
