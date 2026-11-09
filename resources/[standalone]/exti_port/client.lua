@@ -46,7 +46,9 @@ local function parse()
     reach = 0
     for _, c in ipairs(corners) do reach = math.max(reach, #(c.xy - center.xy)) end
     local n = #corners
-    local last = n >= 3 and n or n - 1   -- 3 or more corners: closed (the last one back to the first)
+    -- closed (the last corner back to the first) once there are 3+ corners and the admin typed /port done;
+    -- while marking it stays open, so no line jumps across the terminal
+    local last = (n >= 3 and not GlobalState.extiPortEditing) and n or n - 1
     for i = 1, last do
         local a, b = corners[i], corners[i % n + 1]
         local d = b - a
@@ -115,6 +117,7 @@ local function refresh(value)
     if built then build() end   -- (already near it: rebuilt at once with the new marks)
 end
 AddStateBagChangeHandler('extiPort', 'global', function(_, _, value) refresh(value) end)
+AddStateBagChangeHandler('extiPortEditing', 'global', function() SetTimeout(0, function() refresh(GlobalState.extiPort) end) end)
 CreateThread(function() Wait(500); refresh(GlobalState.extiPort) end)
 
 -- built when you come near, removed when you leave
