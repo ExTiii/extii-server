@@ -37,6 +37,7 @@ end
 -- the door: a small fence gate from the game, as close as possible to half a panel wide
 -- (an admin can choose another one: /portpick on a gate, then /port doormodel <number>)
 local doorModel, doorDims
+local doorFlag = false   -- GTA's "this is a door" setting: the map's own door models only appear with it on
 local function pickDoor(want)
     if doorModel ~= nil then return doorModel end
     local list = {}
@@ -52,18 +53,25 @@ local function pickDoor(want)
             local mn, mx = GetModelDimensions(h)
             local len = mx.x - mn.x
             -- (some gates are the map's own doors: they measure fine but a script can't make them. Try it.)
-            local test = 0
+            local test, flag = 0, false
             -- (flat gates only: thin like the fence. A gate with its own frame/cage swings as a whole box)
             local depth = mx.y - mn.y
             if len > 0.6 and len < 3.0 and depth < 0.45 and HasModelLoaded(h) then
                 local me = GetEntityCoords(cache.ped)
                 test = CreateObjectNoOffset(h, me.x, me.y, me.z - 60.0, false, false, false)
+                if test == 0 then
+                    -- (one of the map's own doors: it is made with the door setting on)
+                    test = CreateObjectNoOffset(h, me.x, me.y, me.z - 60.0, false, false, true)
+                    flag = test ~= 0
+                end
                 if test ~= 0 then DeleteEntity(test) else print(('[exti_port] door model %d can not be made by a script, skipped'):format(h)) end
+            elseif HasModelLoaded(h) then
+                print(('[exti_port] door model %d skipped: %.2f m wide, %.2f m deep (needs 0.6-3 m wide and flat)'):format(h, len, depth))
             end
             if test ~= 0 then
                 local score = (chosen and i == 1) and -1 or math.abs(len - want)   -- (the admin's pick always wins)
                 if not bestScore or score < bestScore then
-                    best, bestScore = h, score
+                    best, bestScore, doorFlag = h, score, flag
                     bestDims = { mn = mn, mx = mx, len = len, cx = (mn.x + mx.x) / 2, cy = (mn.y + mx.y) / 2 }
                 end
             end
@@ -212,7 +220,7 @@ local function build()
                 local dm = doorModel or model
                 local dc = vec3(sx + ax * dd.len / 2, sy + ay * dd.len / 2, z)
                 door.pos, door.half = dc, dd.len / 2 + 0.1   -- (only the door itself lets you through)
-                doors[#doors + 1] = { objs = {}, c = dc, h = h, d = dd, m = dm, angle = 0.0 }
+                doors[#doors + 1] = { objs = {}, c = dc, h = h, d = dd, m = dm, angle = 0.0, flag = (dm == doorModel) and doorFlag or false }
                 if dims.len - dd.len > 0.1 then
                     local fx, fy = sx + ax * (dd.len + dims.len / 2), sy + ay * (dd.len + dims.len / 2)
                     slot(model, fx - ax * dims.cx - bx * dims.cy, fy - ay * dims.cx - by * dims.cy, z, -dims.mn.z, h)
@@ -265,7 +273,7 @@ CreateThread(function()
             for _, d in ipairs(doors) do
                 local d2 = (d.c.x - me.x) ^ 2 + (d.c.y - me.y) ^ 2
                 if d2 < inR and #d.objs == 0 and HasModelLoaded(d.m) then
-                    local obj = CreateObjectNoOffset(d.m, d.c.x, d.c.y, d.c.z, false, false, false)
+                    local obj = CreateObjectNoOffset(d.m, d.c.x, d.c.y, d.c.z, false, false, d.flag == true)
                     if obj ~= 0 then
                         FreezeEntityPosition(obj, true); SetEntityInvincible(obj, true)
                         d.objs = { obj }
